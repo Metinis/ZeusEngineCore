@@ -2,6 +2,7 @@
 #include <string>
 #include <unordered_map>
 #include <glm/vec4.hpp>
+#include <glm/matrix.hpp>
 
 class Shader {
 public:
@@ -12,7 +13,8 @@ public:
     void Unbind() const;
 
     void SetUniformInt(const std::string& name, int value);
-    void SetUniformMat4(const std::string& name, const float* matrix);
+    void SetUniformMat4(const std::string& name, const glm::mat4& matrix);
+    void SetUniformFloat(const std::string& name, float value);
     void SetUniformVec4(const std::string& name, const glm::vec4& value);
 
 private:

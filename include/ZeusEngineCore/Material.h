@@ -1,0 +1,27 @@
+#pragma once
+#include <memory>
+
+#include "Shader.h"
+
+class Material {
+public:
+    explicit Material(const std::shared_ptr<Shader>& shader);
+
+    void SetColor(const std::string& name, const glm::vec4& color);
+
+    void SetFloat(const std::string& name, float value);
+
+    //void SetTexture(const std::string& name, std::sha)
+
+    //glm::vec4& ColorRef() { return m_Color; }  // allow ImGui to edit directly
+
+    void Bind();
+
+    void Unbind() const;
+
+private:
+    std::shared_ptr<Shader> m_Shader;
+    std::unordered_map<std::string, glm::vec4> m_Colors;
+    std::unordered_map<std::string, float> m_Floats;
+    //std::unordered_map<std::string, std::shared_ptr<Texture>> m_Textures;
+};

@@ -1,6 +1,7 @@
 #pragma once
 #include <memory>
-#include <glm/vec4.hpp>
+#include "ZeusEngineCore/IMesh.h"
+#include "ZeusEngineCore/Material.h"
 
 enum class RendererAPI;
 
@@ -15,7 +16,7 @@ public:
     virtual void Submit() = 0;
     virtual void EndFrame() = 0;
 
-    virtual void DrawMesh(glm::vec4 color) = 0;
+    virtual void DrawMesh(const IMesh& mesh, Material& material) = 0;
 
     static std::unique_ptr<IRenderer> Create(RendererAPI api);
 };

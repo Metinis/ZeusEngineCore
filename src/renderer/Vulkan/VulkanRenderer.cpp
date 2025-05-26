@@ -20,6 +20,6 @@ void VulkanRenderer::EndFrame() {
 
 }
 
-void VulkanRenderer::DrawMesh(glm::vec4 color) {
+void VulkanRenderer::DrawMesh(const IMesh& mesh, Material& material) {
 
 }

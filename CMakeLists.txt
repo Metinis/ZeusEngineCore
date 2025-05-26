@@ -21,6 +21,8 @@ set(SOURCES
         src/renderer/IMesh.cpp
         src/renderer/OpenGL/OpenGLMesh.cpp
         src/renderer/Window.cpp
+        src/renderer/Vulkan/VulkanMesh.cpp
+        src/renderer/ShaderManager.cpp
 )
 
 # Engine public headers
@@ -32,6 +34,10 @@ set(HEADERS
         include/ZeusEngineCore/Shader.h
         src/renderer/OpenGL/OpenGLMesh.h
         include/ZeusEngineCore/Window.h
+        include/ZeusEngineCore/IMesh.h
+        include/ZeusEngineCore/Material.h
+        src/renderer/Vulkan/VulkanMesh.h
+        include/ZeusEngineCore/ShaderManager.h
 )
 
 # Create static library

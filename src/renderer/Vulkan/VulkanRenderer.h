@@ -14,5 +14,5 @@ public:
 
     void EndFrame() override;
 
-    void DrawMesh(glm::vec4 color) override;
+    void DrawMesh(const IMesh& mesh, Material& material) override;
 };

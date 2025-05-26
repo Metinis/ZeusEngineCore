@@ -1,6 +1,7 @@
 #include "ZeusEngineCore/Shader.h"
 #include <glad/glad.h>
 #include <iostream>
+#include <glm/gtc/type_ptr.hpp>
 
 
 Shader::Shader(const std::string& vertexSrc, const std::string& fragmentSrc) {
@@ -41,9 +42,11 @@ void Shader::SetUniformInt(const std::string& name, int value) {
 void Shader::SetUniformVec4(const std::string& name, const glm::vec4& value) {
     glUniform4f(GetUniformLocation(name), value.x, value.y, value.z, value.w);
 }
-
-void Shader::SetUniformMat4(const std::string& name, const float* matrix) {
-    glUniformMatrix4fv(GetUniformLocation(name), 1, GL_FALSE, matrix);
+void Shader::SetUniformFloat(const std::string& name, float value) {
+    glUniform1f(GetUniformLocation(name), value);
+}
+void Shader::SetUniformMat4(const std::string& name, const glm::mat4& matrix) {
+    glUniformMatrix4fv(GetUniformLocation(name), 1, GL_FALSE, glm::value_ptr(matrix));
 }
 
 int Shader::GetUniformLocation(const std::string& name) {
