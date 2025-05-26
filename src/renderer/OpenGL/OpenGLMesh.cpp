@@ -40,3 +40,9 @@ void OpenGLMesh::Draw(Material& material) const {
     glBindVertexArray(0);
     material.Unbind();
 }
+void OpenGLMesh::Cleanup() const {
+    glDeleteBuffers(1, &m_VBO);
+    glDeleteBuffers(1, &m_EBO);
+    glDeleteVertexArrays(1, &m_VAO);
+}
+

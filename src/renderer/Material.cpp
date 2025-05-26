@@ -19,6 +19,10 @@ void Material::Bind() {
         slot++;
     }*/
 }
+glm::vec4& Material::ColorRef(const std::string& name) {
+    return m_Colors[name];
+}
+
 void Material::Unbind() const {
     m_Shader->Unbind();
 }

@@ -15,6 +15,8 @@ public:
 
     //glm::vec4& ColorRef() { return m_Color; }  // allow ImGui to edit directly
 
+    glm::vec4& ColorRef(const std::string& name);
+
     void Bind();
 
     void Unbind() const;

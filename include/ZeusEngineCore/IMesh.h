@@ -19,6 +19,7 @@ public:
     virtual ~IMesh() = default;
     virtual void Init(const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices) = 0;
     virtual void Draw(Material& material) const = 0;
+    virtual void Cleanup() const = 0;
 
     static std::shared_ptr<IMesh> Create(RendererAPI api);
 };
