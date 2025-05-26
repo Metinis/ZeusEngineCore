@@ -1,12 +1,12 @@
 #include "ZeusEngineCore/IRenderer.h"
 #include "ZeusEngineCore/RendererAPI.h"
-#include "ZeusEngineCore/OpenGLRenderer.h"
-#include "ZeusEngineCore/VulkanRenderer.h"
+#include "OpenGL/OpenGLRenderer.h"
+#include "Vulkan/VulkanRenderer.h"
 
-IRenderer *IRenderer::Create(RendererAPI api) {
+std::unique_ptr<IRenderer> IRenderer::Create(RendererAPI api) {
     switch (api) {
-        case RendererAPI::OpenGL: return new OpenGLRenderer();
-        case RendererAPI::Vulkan: return new VulkanRenderer();
+        case RendererAPI::OpenGL: return std::make_unique<OpenGLRenderer>();
+        case RendererAPI::Vulkan: return std::make_unique<VulkanRenderer>();
         default: return nullptr;
     }
 }

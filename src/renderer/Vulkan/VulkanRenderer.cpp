@@ -1,4 +1,4 @@
-#include "ZeusEngineCore/VulkanRenderer.h"
+#include "VulkanRenderer.h"
 void VulkanRenderer::Init() {
 
 }
@@ -11,10 +11,15 @@ void VulkanRenderer::BeginFrame() {
 
 }
 
+void VulkanRenderer::Submit() {
+
+}
+
+
 void VulkanRenderer::EndFrame() {
 
 }
 
-void VulkanRenderer::DrawMesh() {
+void VulkanRenderer::DrawMesh(glm::vec4 color) {
 
 }

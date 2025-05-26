@@ -1,6 +1,6 @@
 
 #pragma once
-#include "IRenderer.h"
+#include "ZeusEngineCore/IRenderer.h"
 
 class VulkanRenderer : public IRenderer {
 public:
@@ -10,7 +10,9 @@ public:
 
     void BeginFrame() override;
 
+    void Submit() override;
+
     void EndFrame() override;
 
-    void DrawMesh() override;
+    void DrawMesh(glm::vec4 color) override;
 };

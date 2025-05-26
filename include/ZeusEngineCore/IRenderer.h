@@ -1,4 +1,6 @@
 #pragma once
+#include <memory>
+#include <glm/vec4.hpp>
 
 enum class RendererAPI;
 
@@ -10,9 +12,10 @@ public:
     virtual void Cleanup() = 0;
 
     virtual void BeginFrame() = 0;
+    virtual void Submit() = 0;
     virtual void EndFrame() = 0;
 
-    virtual void DrawMesh(/*Mesh data*/) = 0;
+    virtual void DrawMesh(glm::vec4 color) = 0;
 
-    static IRenderer* Create(RendererAPI api);
+    static std::unique_ptr<IRenderer> Create(RendererAPI api);
 };

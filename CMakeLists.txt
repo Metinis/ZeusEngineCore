@@ -5,26 +5,45 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# Add glad source directory
+add_library(glad STATIC ${CMAKE_CURRENT_SOURCE_DIR}/include/glad/src/glad.c)
+target_include_directories(glad PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/glad/include)
+
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/include/glfw)
+
 # Engine source files
 set(SOURCES
         src/renderer/IRenderer.cpp
-        src/renderer/OpenGLRenderer.cpp
-        src/renderer/VulkanRenderer.cpp
+        src/renderer/OpenGL/OpenGLRenderer.cpp
+        src/renderer/Vulkan/VulkanRenderer.cpp
+        src/renderer/Shader.cpp
+        src/renderer/Material.cpp
+        src/renderer/IMesh.cpp
+        src/renderer/OpenGL/OpenGLMesh.cpp
+        src/renderer/Window.cpp
 )
 
 # Engine public headers
 set(HEADERS
         include/ZeusEngineCore/IRenderer.h
-        include/ZeusEngineCore/OpenGLRenderer.h
-        include/ZeusEngineCore/VulkanRenderer.h
+        src/renderer/OpenGL/OpenGLRenderer.h
+        src/renderer/Vulkan/VulkanRenderer.h
         include/ZeusEngineCore/RendererAPI.h
+        include/ZeusEngineCore/Shader.h
+        src/renderer/OpenGL/OpenGLMesh.h
+        include/ZeusEngineCore/Window.h
 )
 
 # Create static library
 add_library(ZeusEngineCore STATIC ${SOURCES} ${HEADERS})
 
+# Include directories
 target_include_directories(ZeusEngineCore PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/include             # ZeusEngineCore public headers
+)
+
+target_include_directories(ZeusEngineCore PRIVATE
+        ${CMAKE_SOURCE_DIR}/include/glm                 # glm math
 )
 
 # Platform-specific dependencies
@@ -38,11 +57,9 @@ if (APPLE)
             ${IOKIT_LIBRARY}
             ${COREVIDEO_LIBRARY}
     )
-
-    find_package(Vulkan REQUIRED)
-    target_link_libraries(ZeusEngineCore PRIVATE Vulkan::Vulkan)
-
-elseif(WIN32)
-    find_package(Vulkan REQUIRED)
-    target_link_libraries(ZeusEngineCore PRIVATE Vulkan::Vulkan)
 endif()
+
+# Vulkan and glad
+find_package(Vulkan REQUIRED)
+target_link_libraries(ZeusEngineCore PRIVATE Vulkan::Vulkan)
+target_link_libraries(ZeusEngineCore PUBLIC glad glfw)
