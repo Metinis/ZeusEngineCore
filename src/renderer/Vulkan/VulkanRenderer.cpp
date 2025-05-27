@@ -11,7 +11,7 @@ void VulkanRenderer::BeginFrame() {
 
 }
 
-void VulkanRenderer::Submit() {
+void VulkanRenderer::Submit(const glm::mat4& transform, const std::shared_ptr<Material>& material, const std::shared_ptr<IMesh>& mesh) {
 
 }
 
