@@ -8,7 +8,6 @@ std::shared_ptr<IShader> ShaderManager::Load(const std::string &name, const std:
     if(it != s_Shaders.end())
         return it->second;
 
-    //auto shader = std::make_shared<GLShader>();
     auto shader = IShader::Create(api);
     shader->Init(vertexSrc, fragmentSrc);
     s_Shaders[name] = shader;
