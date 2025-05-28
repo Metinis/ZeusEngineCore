@@ -1,7 +1,7 @@
-#include "OpenGLMesh.h"
+#include "GLMesh.h"
 #include <glad/glad.h>
 
-void OpenGLMesh::Init(const std::vector<Vertex> &vertices, const std::vector<uint32_t> &indices) {
+void GLMesh::Init(const std::vector<Vertex> &vertices, const std::vector<uint32_t> &indices) {
     m_IndexCount = indices.size();
 
     glGenVertexArrays(1, &m_VAO);
@@ -30,8 +30,12 @@ void OpenGLMesh::Init(const std::vector<Vertex> &vertices, const std::vector<uin
 
     glBindVertexArray(0);
 }
-
-void OpenGLMesh::Draw(Material& material) const {
+GLMesh::~GLMesh() {
+    glDeleteBuffers(1, &m_VBO);
+    glDeleteBuffers(1, &m_EBO);
+    glDeleteVertexArrays(1, &m_VAO);
+}
+void GLMesh::Draw(Material& material) const {
     material.Bind();
 
     glBindVertexArray(m_VAO);
@@ -39,10 +43,5 @@ void OpenGLMesh::Draw(Material& material) const {
 
     glBindVertexArray(0);
     material.Unbind();
-}
-void OpenGLMesh::Cleanup() const {
-    glDeleteBuffers(1, &m_VBO);
-    glDeleteBuffers(1, &m_EBO);
-    glDeleteVertexArrays(1, &m_VAO);
 }
 

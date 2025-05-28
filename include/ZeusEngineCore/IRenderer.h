@@ -16,7 +16,6 @@ public:
     virtual ~IRenderer() = default;
 
     virtual void Init() = 0;
-    virtual void Cleanup() = 0;
 
     virtual void BeginFrame() = 0;
     virtual void Submit(const glm::mat4& transform, const std::shared_ptr<Material>& material, const std::shared_ptr<IMesh>& mesh) = 0;

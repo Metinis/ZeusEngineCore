@@ -2,11 +2,11 @@
 #pragma once
 #include "ZeusEngineCore/IRenderer.h"
 
-class VulkanRenderer : public IRenderer {
+class VKRenderer : public IRenderer {
 public:
     void Init() override;
 
-    void Cleanup() override;
+    ~VKRenderer() override;
 
     void BeginFrame() override;
 

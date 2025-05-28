@@ -1,11 +1,11 @@
 #pragma once
 #include <memory>
 
-#include "Shader.h"
+#include "ZeusEngineCore/IShader.h"
 
 class Material {
 public:
-    explicit Material(const std::shared_ptr<Shader>& shader);
+    explicit Material(const std::shared_ptr<IShader>& shader);
 
     void SetColor(const std::string& name, const glm::vec4& color);
 
@@ -22,7 +22,7 @@ public:
     void Unbind() const;
 
 private:
-    std::shared_ptr<Shader> m_Shader;
+    std::shared_ptr<IShader> m_Shader;
     std::unordered_map<std::string, glm::vec4> m_Colors;
     std::unordered_map<std::string, float> m_Floats;
     //std::unordered_map<std::string, std::shared_ptr<Texture>> m_Textures;

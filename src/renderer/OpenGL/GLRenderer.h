@@ -1,11 +1,11 @@
 #pragma once
 #include "ZeusEngineCore/IRenderer.h"
 
-class OpenGLRenderer : public IRenderer{
+class GLRenderer : public IRenderer{
 public:
     void Init() override;
 
-    void Cleanup() override;
+    ~GLRenderer() override;
 
     void BeginFrame() override;
 

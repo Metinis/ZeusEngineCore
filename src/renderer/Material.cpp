@@ -1,6 +1,6 @@
 #include "ZeusEngineCore/Material.h"
 
-Material::Material(const std::shared_ptr<Shader>& shader) {
+Material::Material(const std::shared_ptr<IShader>& shader) {
     m_Shader = shader;
 }
 void Material::Bind() {

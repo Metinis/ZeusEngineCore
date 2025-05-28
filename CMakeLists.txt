@@ -14,30 +14,34 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/include/glfw)
 # Engine source files
 set(SOURCES
         src/renderer/IRenderer.cpp
-        src/renderer/OpenGL/OpenGLRenderer.cpp
-        src/renderer/Vulkan/VulkanRenderer.cpp
-        src/renderer/Shader.cpp
+        src/renderer/OpenGL/GLRenderer.cpp
+        src/renderer/Vulkan/VKRenderer.cpp
+        src/renderer/OpenGL/GLShader.cpp
         src/renderer/Material.cpp
         src/renderer/IMesh.cpp
-        src/renderer/OpenGL/OpenGLMesh.cpp
+        src/renderer/OpenGL/GLMesh.cpp
         src/renderer/Window.cpp
-        src/renderer/Vulkan/VulkanMesh.cpp
+        src/renderer/Vulkan/VKMesh.cpp
         src/renderer/ShaderManager.cpp
+        src/renderer/IShader.cpp
 )
 
 # Engine public headers
 set(HEADERS
         include/ZeusEngineCore/IRenderer.h
-        src/renderer/OpenGL/OpenGLRenderer.h
-        src/renderer/Vulkan/VulkanRenderer.h
+        src/renderer/OpenGL/GLRenderer.h
+        src/renderer/Vulkan/VKRenderer.h
         include/ZeusEngineCore/RendererAPI.h
-        include/ZeusEngineCore/Shader.h
-        src/renderer/OpenGL/OpenGLMesh.h
+        src/renderer/OpenGL/GLShader.h
+        src/renderer/OpenGL/GLMesh.h
         include/ZeusEngineCore/Window.h
         include/ZeusEngineCore/IMesh.h
         include/ZeusEngineCore/Material.h
-        src/renderer/Vulkan/VulkanMesh.h
+        src/renderer/Vulkan/VKMesh.h
         include/ZeusEngineCore/ShaderManager.h
+        include/ZeusEngineCore/IShader.h
+        src/renderer/Vulkan/VKShader.cpp
+        src/renderer/Vulkan/VKShader.h
 )
 
 # Create static library
