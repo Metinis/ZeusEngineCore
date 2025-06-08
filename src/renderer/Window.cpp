@@ -1,5 +1,5 @@
 #include "../../include/ZeusEngineCore/Window.h"
-
+#include <stdexcept>  // Required for std::runtime_error
 
 
 Window::Window(int width, int height, const std::string& title, bool useVulkan)

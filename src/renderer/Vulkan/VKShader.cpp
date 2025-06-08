@@ -24,7 +24,7 @@ void VKShader::SetUniformVec4(const std::string &name, const glm::vec4 &value) {
 
 }
 int VKShader::GetUniformLocation(const std::string &name) {
-
+	return 0;
 }
 
 
