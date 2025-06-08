@@ -5,7 +5,7 @@
 class VKShader : public IShader{
 public:
     ~VKShader() override;
-    void Init(const std::string &vertexSrc, const std::string &fragmentSrc) override;
+    void Init(const std::string& vertexPath, const std::string& fragmentPath) override;
 
     void Bind() const override;
     void Unbind() const override;

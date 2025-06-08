@@ -1,5 +1,5 @@
 #include "VKShader.h"
-void VKShader::Init(const std::string &vertexSrc, const std::string &fragmentSrc) {
+void VKShader::Init(const std::string& vertexPath, const std::string& fragmentPath) {
 
 }
 VKShader::~VKShader() = default;

@@ -2,9 +2,13 @@
 #include <glad/glad.h>
 #include <iostream>
 #include <glm/gtc/type_ptr.hpp>
+#include "../../Utils.h"
 
 
-void GLShader::Init(const std::string& vertexSrc, const std::string& fragmentSrc) {
+void GLShader::Init(const std::string& vertexPath, const std::string& fragmentPath) {
+    const std::string vertexSrc = readFile(vertexPath);
+    const std::string fragmentSrc = readFile(fragmentPath);
+
     uint32_t vertex = glCreateShader(GL_VERTEX_SHADER);
     const char* vSrc = vertexSrc.c_str();
     glShaderSource(vertex, 1, &vSrc, nullptr);

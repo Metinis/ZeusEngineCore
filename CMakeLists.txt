@@ -26,6 +26,7 @@ set(SOURCES
         src/renderer/IShader.cpp
         src/renderer/MeshManager.cpp
         src/renderer/MaterialManager.cpp
+        src/Utils.cpp
 )
 
 # Engine public headers
@@ -46,6 +47,7 @@ set(HEADERS
         src/renderer/Vulkan/VKShader.h
         include/ZeusEngineCore/MeshManager.h
         include/ZeusEngineCore/MaterialManager.h
+        src/Utils.h
 )
 
 # Create static library

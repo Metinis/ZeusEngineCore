@@ -5,8 +5,8 @@
 
 class ShaderManager {
 public:
-    static std::shared_ptr<IShader> Load(const std::string &name, const std::string &vertexSrc,
-    const std::string &fragmentSrc, RendererAPI api);
+    static std::shared_ptr<IShader> Load(const std::string &name, const std::string &vertexPath,
+    const std::string &fragmentPath, RendererAPI api);
     static std::shared_ptr<IShader> Get(const std::string& name);
 
 private:
