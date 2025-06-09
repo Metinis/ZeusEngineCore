@@ -1,78 +1,52 @@
 cmake_minimum_required(VERSION 3.28)
-project(ZeusEngineCore)
+project(ZeusEngineCore LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-add_library(glad STATIC ${CMAKE_CURRENT_SOURCE_DIR}/include/glad/src/glad.c)
-target_include_directories(glad PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/glad/include)
-
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/include/glfw)
 
-# Engine source files
-set(SOURCES
-    src/renderer/IRenderer.cpp
-    src/renderer/OpenGL/GLRenderer.cpp
-    src/renderer/Vulkan/VKRenderer.cpp
-    src/renderer/OpenGL/GLShader.cpp
-    src/renderer/Material.cpp
-    src/renderer/IMesh.cpp
-    src/renderer/OpenGL/GLMesh.cpp
-    src/renderer/Window.cpp
-    src/renderer/Vulkan/VKMesh.cpp
-    src/renderer/ShaderManager.cpp
-    src/renderer/IShader.cpp
-    src/renderer/MeshManager.cpp
-    src/renderer/MaterialManager.cpp
-    src/Utils.cpp
+add_library(glad STATIC include/glad/src/glad.c)
+target_include_directories(glad PUBLIC include/glad/include)
+
+add_library(ZeusEngineCore STATIC)
+
+target_compile_features(ZeusEngineCore PUBLIC cxx_std_23)
+
+# Sources
+file(GLOB_RECURSE ZEUSENGINECORE_SOURCES
+        src/*.cpp
 )
 
-set(HEADERS
-    include/ZeusEngineCore/IRenderer.h
-    src/renderer/OpenGL/GLRenderer.h
-    src/renderer/Vulkan/VKRenderer.h
-    include/ZeusEngineCore/RendererAPI.h
-    src/renderer/OpenGL/GLShader.h
-    src/renderer/OpenGL/GLMesh.h
-    include/ZeusEngineCore/Window.h
-    include/ZeusEngineCore/IMesh.h
-    include/ZeusEngineCore/Material.h
-    src/renderer/Vulkan/VKMesh.h
-    include/ZeusEngineCore/ShaderManager.h
-    include/ZeusEngineCore/IShader.h
-    src/renderer/Vulkan/VKShader.cpp
-    src/renderer/Vulkan/VKShader.h
-    include/ZeusEngineCore/MeshManager.h
-    include/ZeusEngineCore/MaterialManager.h
-    src/Utils.h
+target_sources(ZeusEngineCore PRIVATE ${ZEUSENGINECORE_SOURCES})
+
+# Include dirs
+target_include_directories(ZeusEngineCore
+        PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+        PRIVATE
+        ${CMAKE_SOURCE_DIR}/include/glm
 )
 
-add_library(ZeusEngineCore STATIC ${SOURCES} ${HEADERS})
-
-target_include_directories(ZeusEngineCore PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/include
+# Link dependencies
+target_link_libraries(ZeusEngineCore
+        PUBLIC
+        glad
+        glfw
+        PRIVATE
+        Vulkan::Vulkan
 )
 
-target_include_directories(ZeusEngineCore PRIVATE
-    ${CMAKE_SOURCE_DIR}/include/glm
-)
-
-# Link glad and glfw
-target_link_libraries(ZeusEngineCore PUBLIC glad glfw)
-
-# Vulkan
-find_package(Vulkan REQUIRED)
-target_link_libraries(ZeusEngineCore PRIVATE Vulkan::Vulkan)
-
-# Platform-specific frameworks (macOS)
+# macOS frameworks
 if(APPLE)
     find_library(COCOA_LIBRARY Cocoa REQUIRED)
     find_library(IOKIT_LIBRARY IOKit REQUIRED)
     find_library(COREVIDEO_LIBRARY CoreVideo REQUIRED)
+
     target_link_libraries(ZeusEngineCore PRIVATE
-        ${COCOA_LIBRARY}
-        ${IOKIT_LIBRARY}
-        ${COREVIDEO_LIBRARY}
+            ${COCOA_LIBRARY}
+            ${IOKIT_LIBRARY}
+            ${COREVIDEO_LIBRARY}
     )
 endif()
