@@ -7,8 +7,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 
 find_package(Vulkan REQUIRED)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/include/glfw)
-
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/include/glfw glfw)
 
 add_library(ZeusEngineCore STATIC)
 
