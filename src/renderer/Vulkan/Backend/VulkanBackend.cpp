@@ -4,8 +4,8 @@
 
 VulkanBackend::VulkanBackend(const std::vector<const char*>& layers, WindowHandle* windowHandle)
         : m_Instance(layers, GetRequiredExtensions()),
-          m_WindowHandle(windowHandle)
-{
+          m_WindowHandle(windowHandle){
+
     m_DynamicLoader = vk::detail::DispatchLoaderDynamic(m_Instance.Get(), vkGetInstanceProcAddr);
 
     Init();

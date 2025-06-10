@@ -25,8 +25,6 @@ VulkanInstance::VulkanInstance(const std::vector<const char*>& layers, const std
     createInfo.flags |= vk::InstanceCreateFlagBits::eEnumeratePortabilityKHR;
 
     m_Instance = vk::createInstanceUnique(createInfo);
-
-    
 }
 
 const bool VulkanInstance::CheckValidationLayerSupport(const std::vector<const char*>& layers)

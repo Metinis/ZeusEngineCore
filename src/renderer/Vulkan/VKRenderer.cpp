@@ -1,7 +1,6 @@
 #include "VKRenderer.h"
 void VKRenderer::Init(RendererInitInfo& initInfo) {
-	std::vector<const char*> layers = { "VK_LAYER_KHRONOS_validation"};
-
+    std::vector<const char*> layers = { "VK_LAYER_KHRONOS_validation" };
 
     WindowHandle* windowHandlePtr = nullptr;
     if (initInfo.windowHandle.has_value()) {
