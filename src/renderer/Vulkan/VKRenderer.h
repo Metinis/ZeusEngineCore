@@ -1,5 +1,6 @@
 
 #pragma once
+#define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
 #include "ZeusEngineCore/IRenderer.h"
 #include "Backend/VulkanBackend.h"
 

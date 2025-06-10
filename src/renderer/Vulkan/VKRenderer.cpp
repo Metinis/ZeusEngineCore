@@ -1,7 +1,9 @@
 #include "VKRenderer.h"
+#include <vulkan/vulkan.hpp>
+
 void VKRenderer::Init() {
 	std::vector<const char*> layers = { "VK_LAYER_KHRONOS_validation"};
-
+    VULKAN_HPP_DEFAULT_DISPATCHER.init(vkGetInstanceProcAddr);
 	vkBackend = std::make_unique<VulkanBackend>(layers);
 }
 

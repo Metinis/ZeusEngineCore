@@ -1,4 +1,5 @@
 #pragma once
+#define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
 #include <vulkan/vulkan.hpp>
 #include "VulkanInstance.h"
 #include "VulkanDevice.h"
@@ -13,7 +14,6 @@ private:
     void InitMessenger();
 
     VulkanInstance m_Instance;
-    vk::detail::DispatchLoaderDynamic m_DynamicLoader;
-    vk::UniqueHandle<vk::DebugUtilsMessengerEXT, vk::detail::DispatchLoaderDynamic> m_DebugMessenger;
+    vk::UniqueHandle<vk::DebugUtilsMessengerEXT, VULKAN_HPP_DEFAULT_DISPATCHER_TYPE> m_DebugMessenger;
     VulkanDevice m_Device;
 };

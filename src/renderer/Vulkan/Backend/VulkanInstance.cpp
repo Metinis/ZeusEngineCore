@@ -26,7 +26,7 @@ VulkanInstance::VulkanInstance(const std::vector<const char*>& layers, const std
 
     m_Instance = vk::createInstanceUnique(createInfo);
 
-    
+    VULKAN_HPP_DEFAULT_DISPATCHER.init(m_Instance.get());
 }
 
 const bool VulkanInstance::CheckValidationLayerSupport(const std::vector<const char*>& layers)

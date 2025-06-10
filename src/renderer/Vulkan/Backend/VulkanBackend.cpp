@@ -1,16 +1,12 @@
 #include "VulkanBackend.h"
 #include "GLFW/glfw3.h"
 #include <iostream>
-
+VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
 VulkanBackend::VulkanBackend(const std::vector<const char*>& layers)
         : m_Instance(layers, GetRequiredExtensions()),
           m_Device(m_Instance.Get())
 {
-    // Initialize default dispatcher
-    //VULKAN_HPP_DEFAULT_DISPATCHER.init(vkGetInstanceProcAddr);
 
-    // Initialize instance-specific dispatcher
-    m_DynamicLoader = vk::detail::DispatchLoaderDynamic(m_Instance.Get(), vkGetInstanceProcAddr);
 
     Init();
 }
@@ -65,8 +61,6 @@ void VulkanBackend::InitMessenger() {
 
 
     m_DebugMessenger = m_Instance.Get().createDebugUtilsMessengerEXTUnique(
-            createInfo,
-            nullptr,
-            m_DynamicLoader
+            createInfo
     );
 }
