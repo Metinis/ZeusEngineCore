@@ -5,7 +5,7 @@
 
 class VKRenderer : public IRenderer {
 public:
-    void Init() override;
+    void Init(RendererInitInfo& initInfo) override;
 
     ~VKRenderer() override;
 

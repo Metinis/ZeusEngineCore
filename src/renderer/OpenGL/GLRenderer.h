@@ -3,7 +3,7 @@
 
 class GLRenderer : public IRenderer{
 public:
-    void Init() override;
+    void Init( RendererInitInfo& initInfo) override;
 
     ~GLRenderer() override;
 

@@ -1,8 +1,14 @@
 #include "VKRenderer.h"
-void VKRenderer::Init() {
+void VKRenderer::Init(RendererInitInfo& initInfo) {
 	std::vector<const char*> layers = { "VK_LAYER_KHRONOS_validation"};
 
-	vkBackend = std::make_unique<VulkanBackend>(layers);
+
+    WindowHandle* windowHandlePtr = nullptr;
+    if (initInfo.windowHandle.has_value()) {
+        windowHandlePtr = &(*initInfo.windowHandle);
+    }
+
+    vkBackend = std::make_unique<VulkanBackend>(layers, windowHandlePtr);
 }
 
 VKRenderer::~VKRenderer() = default;

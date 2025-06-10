@@ -3,7 +3,7 @@
 #include <glad/glad.h>
 
 
-void GLRenderer::Init() {
+void GLRenderer::Init(RendererInitInfo& initInfo) {
 
 }
 

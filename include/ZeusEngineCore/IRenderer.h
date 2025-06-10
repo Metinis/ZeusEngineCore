@@ -2,20 +2,18 @@
 #include <memory>
 #include "ZeusEngineCore/IMesh.h"
 #include "ZeusEngineCore/Material.h"
+#include "optional"
+#include <vulkan/vulkan.hpp>
+#include "../src/Utils.h"
 
 enum class RendererAPI;
 
-struct RenderCommand {
-    glm::mat4 transform;
-    std::shared_ptr<Material> material;
-    std::shared_ptr<IMesh> mesh;
-};
 
 class IRenderer {
 public:
     virtual ~IRenderer() = default;
 
-    virtual void Init() = 0;
+    virtual void Init(RendererInitInfo& initInfo) = 0;
 
     virtual void BeginFrame() = 0;
     virtual void Submit(const glm::mat4& transform, const std::shared_ptr<Material>& material, const std::shared_ptr<IMesh>& mesh) = 0;

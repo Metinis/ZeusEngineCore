@@ -2,14 +2,10 @@
 #include "GLFW/glfw3.h"
 #include <iostream>
 
-VulkanBackend::VulkanBackend(const std::vector<const char*>& layers)
+VulkanBackend::VulkanBackend(const std::vector<const char*>& layers, WindowHandle* windowHandle)
         : m_Instance(layers, GetRequiredExtensions()),
-          m_Device(m_Instance.Get())
+          m_WindowHandle(windowHandle)
 {
-    // Initialize default dispatcher
-    //VULKAN_HPP_DEFAULT_DISPATCHER.init(vkGetInstanceProcAddr);
-
-    // Initialize instance-specific dispatcher
     m_DynamicLoader = vk::detail::DispatchLoaderDynamic(m_Instance.Get(), vkGetInstanceProcAddr);
 
     Init();
@@ -17,7 +13,35 @@ VulkanBackend::VulkanBackend(const std::vector<const char*>& layers)
 
 void VulkanBackend::Init()
 {
+    InitSurface();
+    m_Device = std::make_unique<VulkanDevice>(m_Instance.Get(), m_Surface.get());
     InitMessenger();
+}
+void VulkanBackend::InitSurface() {
+    if (m_WindowHandle) {
+        GLFWwindow* glfwWindow = static_cast<GLFWwindow*>(m_WindowHandle->nativeWindowHandle);
+
+        VkSurfaceKHR rawSurface;
+        VkResult result = glfwCreateWindowSurface(
+            m_Instance.Get(),
+            glfwWindow,
+            nullptr,
+            &rawSurface
+        );
+
+        if (result != VK_SUCCESS) {
+            throw std::runtime_error("Failed to create Vulkan surface");
+        }
+
+        m_Surface = vk::UniqueHandle<vk::SurfaceKHR, vk::detail::DispatchLoaderDynamic>(
+            rawSurface,
+            vk::detail::ObjectDestroy<vk::Instance, vk::detail::DispatchLoaderDynamic>(
+                m_Instance.Get(),
+                nullptr,
+                m_DynamicLoader
+            )
+        );
+    }
 }
 
 std::vector<const char*> VulkanBackend::GetRequiredExtensions()
