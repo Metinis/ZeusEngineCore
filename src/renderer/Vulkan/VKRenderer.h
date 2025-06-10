@@ -1,6 +1,7 @@
 
 #pragma once
 #include "ZeusEngineCore/IRenderer.h"
+#include "Backend/VulkanBackend.h"
 
 class VKRenderer : public IRenderer {
 public:
@@ -15,4 +16,6 @@ public:
     void EndFrame() override;
 
     void DrawMesh(const IMesh& mesh, Material& material) override;
+private:
+    std::unique_ptr<VulkanBackend> vkBackend;
 };

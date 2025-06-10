@@ -25,6 +25,7 @@ void GLRenderer::EndFrame() {
 //glfw swapping handled in Window
     //draw submitted commands
     for(const auto& cmd : m_RenderQueue) {
+        cmd.material->GetShader()->SetUniformMat4("u_Model", cmd.transform);
         cmd.mesh->Draw(*cmd.material);
     }
     m_RenderQueue.clear();

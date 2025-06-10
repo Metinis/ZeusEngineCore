@@ -19,7 +19,7 @@ file(GLOB_RECURSE ZEUSENGINECORE_SOURCES
         ${CMAKE_CURRENT_SOURCE_DIR}/include/glad/src/glad.c
 )
 
-target_sources(ZeusEngineCore PRIVATE ${ZEUSENGINECORE_SOURCES})
+target_sources(ZeusEngineCore PRIVATE ${ZEUSENGINECORE_SOURCES} "src/renderer/Vulkan/Backend/VulkanDevice.h" "src/renderer/Vulkan/Backend/VulkanDevice.cpp" "src/renderer/Vulkan/Backend/VulkanSwapchain.cpp" "src/renderer/Vulkan/Backend/VulkanSwapchain.h" "src/renderer/Vulkan/Backend/VulkanPipeline.h" "src/renderer/Vulkan/Backend/VulkanPipeline.cpp" "src/renderer/Vulkan/Backend/VulkanCommandBuffer.h" "src/renderer/Vulkan/Backend/VulkanCommandBuffer.cpp" "src/renderer/Vulkan/Backend/VulkanDescriptorSet.h" "src/renderer/Vulkan/Backend/VulkanDescriptorSet.cpp" "src/renderer/Vulkan/Backend/VulkanInstance.h" "src/renderer/Vulkan/Backend/VulkanInstance.cpp" "src/renderer/Vulkan/Backend/VulkanSync.cpp" "src/renderer/Vulkan/Backend/VulkanBackend.h" "src/renderer/Vulkan/Backend/VulkanBackend.cpp")
 
 # Include dirs
 target_include_directories(ZeusEngineCore

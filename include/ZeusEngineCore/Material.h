@@ -7,6 +7,8 @@ class Material {
 public:
     explicit Material(const std::shared_ptr<IShader>& shader);
 
+    std::shared_ptr<IShader>& GetShader();
+
     void SetColor(const std::string& name, const glm::vec4& color);
 
     void SetFloat(const std::string& name, float value);

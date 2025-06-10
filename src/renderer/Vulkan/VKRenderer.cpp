@@ -1,6 +1,8 @@
 #include "VKRenderer.h"
 void VKRenderer::Init() {
+	std::vector<const char*> layers = { "VK_LAYER_KHRONOS_validation"};
 
+	vkBackend = std::make_unique<VulkanBackend>(layers);
 }
 
 VKRenderer::~VKRenderer() = default;
