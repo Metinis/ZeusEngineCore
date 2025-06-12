@@ -50,11 +50,12 @@ std::vector<const char*> VulkanBackend::GetRequiredExtensions()
     const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
     std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
-
+#ifdef __APPLE__
     extensions.emplace_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
     extensions.emplace_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
     extensions.emplace_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
-    //extensions.emplace_back(VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME);
+#endif
+
 
 #ifndef NDEBUG
     std::cout << "available extensions:\n";
