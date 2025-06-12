@@ -1,5 +1,7 @@
 #include "VulkanDevice.h"
 #include <set>
+#include <unordered_set>
+#include <ranges>
 
 VulkanDevice::VulkanDevice(vk::Instance instance, vk::SurfaceKHR surface) : m_Instance(instance), m_Surface(surface)
 {
@@ -29,10 +31,14 @@ void VulkanDevice::CreateLogicalDevice()
 	QueueFamilyIndices indices = FindQueueFamilies(m_PhysicalDevice, m_Surface);
 
 	std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos;
-	std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily.value(), indices.presentFamily.value() };
+	auto uniqueQueueFamilies = std::unordered_set{
+	indices.graphicsFamily.value(),
+	indices.presentFamily.value()
+	};
+
 
 	float queuePriority = 1.0f;
-	for (uint32_t queueFamily : uniqueQueueFamilies) {
+	for (auto queueFamily : uniqueQueueFamilies) {
 		vk::DeviceQueueCreateInfo queueCreateInfo{};
 		queueCreateInfo.queueFamilyIndex = queueFamily;
 		queueCreateInfo.queueCount = 1;
@@ -46,7 +52,8 @@ void VulkanDevice::CreateLogicalDevice()
 	createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
 	createInfo.pQueueCreateInfos = queueCreateInfos.data();
 	createInfo.pEnabledFeatures = &deviceFeatures;
-	createInfo.enabledExtensionCount = 0;
+	createInfo.enabledExtensionCount = s_deviceExtensions.size();
+	createInfo.ppEnabledExtensionNames = s_deviceExtensions.data();
 
 	m_LogicalDevice = m_PhysicalDevice.createDeviceUnique(createInfo);
 
@@ -56,28 +63,40 @@ void VulkanDevice::CreateLogicalDevice()
 
 const bool VulkanDevice::IsDeviceSuitable(vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface)
 {
-	//vk::PhysicalDeviceProperties properties = physicalDevice.getProperties();
-	//vk::PhysicalDeviceFeatures features = physicalDevice.getFeatures();
 	QueueFamilyIndices indices = FindQueueFamilies(physicalDevice, surface);
-	return indices.isComplete();
+	return indices.isComplete() && CheckDeviceExtensionSupport(physicalDevice, std::span{ s_deviceExtensions });
 }
 QueueFamilyIndices VulkanDevice::FindQueueFamilies(vk::PhysicalDevice device, vk::SurfaceKHR surface) {
 	QueueFamilyIndices indices;
-	std::vector<vk::QueueFamilyProperties> queueFamilies = device.getQueueFamilyProperties();
-	int i = 0;
-	for (const auto& queueFamily : queueFamilies) {
-		if (queueFamily.queueFlags & vk::QueueFlagBits::eGraphics) {
+	auto queueFamilies = device.getQueueFamilyProperties();
+	for (size_t i = 0; i < queueFamilies.size(); ++i) {
+		const auto& queueFamily = queueFamilies[i];
+
+		if ((queueFamily.queueFlags & vk::QueueFlagBits::eGraphics) && !indices.graphicsFamily.has_value()) {
 			indices.graphicsFamily = i;
 		}
-		vk::Bool32 presentSupport = device.getSurfaceSupportKHR(i, surface);
-		if (presentSupport) {
+
+		if (device.getSurfaceSupportKHR(i, surface) && !indices.presentFamily.has_value()) {
 			indices.presentFamily = i;
 		}
 
 		if (indices.isComplete()) {
 			break;
 		}
-		i++;
 	}
 	return indices;
 }
+
+
+bool VulkanDevice::CheckDeviceExtensionSupport(vk::PhysicalDevice physicalDevice, std::span<const char* const> deviceExtensions)
+{
+	auto available = physicalDevice.enumerateDeviceExtensionProperties();
+
+	std::unordered_set<std::string_view> names;
+	for (const auto& ext : available) names.insert(ext.extensionName);
+
+	return std::ranges::all_of(deviceExtensions, [&](std::string_view ext) {
+		return names.contains(ext);
+		});
+}
+

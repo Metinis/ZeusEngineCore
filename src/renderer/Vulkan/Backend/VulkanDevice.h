@@ -19,8 +19,12 @@ private:
 	vk::UniqueDevice m_LogicalDevice;
 	vk::Queue m_GraphicsQueue;
 	vk::Queue m_PresentQueue;
+	static constexpr std::array<const char*, 1> s_deviceExtensions = {
+		VK_KHR_SWAPCHAIN_EXTENSION_NAME
+	};
 	void CreatePhysicalDevice();
 	void CreateLogicalDevice();
 	static const bool IsDeviceSuitable(vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface);
 	static QueueFamilyIndices FindQueueFamilies(vk::PhysicalDevice device, vk::SurfaceKHR surface);
+	static bool CheckDeviceExtensionSupport(vk::PhysicalDevice, std::span<const char* const> deviceExtensions);
 };
