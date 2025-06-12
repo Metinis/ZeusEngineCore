@@ -4,6 +4,7 @@ VulkanInstance::VulkanInstance(const std::vector<const char*>& layers, const std
 
     std::vector<const char*> finalExtensions = extensions;
     if (!layers.empty()) {
+        //only add if we have validation layers
         finalExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
         if(!CheckValidationLayerSupport(layers))
             throw std::runtime_error("validation layers requested, but not available!");

@@ -12,7 +12,6 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/include/glfw glfw)
 add_library(ZeusEngineCore STATIC)
 
 target_compile_features(ZeusEngineCore PUBLIC cxx_std_23)
-target_compile_definitions(ZeusEngineCore PUBLIC VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1)
 
 
 # Sources

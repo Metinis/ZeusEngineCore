@@ -19,8 +19,10 @@ private:
 	vk::UniqueDevice m_LogicalDevice;
 	vk::Queue m_GraphicsQueue;
 	vk::Queue m_PresentQueue;
-	static constexpr std::array<const char*, 1> s_deviceExtensions = {
-		VK_KHR_SWAPCHAIN_EXTENSION_NAME
+	static constexpr std::array<const char*, 2> s_deviceExtensions = {
+		VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+		"VK_KHR_portability_subset"
+
 	};
 	void CreatePhysicalDevice();
 	void CreateLogicalDevice();
