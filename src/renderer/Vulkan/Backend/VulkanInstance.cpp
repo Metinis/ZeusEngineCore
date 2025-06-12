@@ -23,7 +23,9 @@ VulkanInstance::VulkanInstance(const std::vector<const char*>& layers, const std
     createInfo.ppEnabledLayerNames = layers.data();
     createInfo.enabledExtensionCount = static_cast<uint32_t>(finalExtensions.size());
     createInfo.ppEnabledExtensionNames = finalExtensions.data();
+#ifdef __APPLE__
     createInfo.flags |= vk::InstanceCreateFlagBits::eEnumeratePortabilityKHR;
+#endif
 
     m_Instance = vk::createInstanceUnique(createInfo);
 }
