@@ -3,100 +3,108 @@
 #include <unordered_set>
 #include <ranges>
 
-VulkanDevice::VulkanDevice(vk::Instance instance, vk::SurfaceKHR surface) : m_Instance(instance), m_Surface(surface)
+
+VulkanDevice::VulkanDevice(vk::Instance instance, vk::SurfaceKHR surface, DispatchLoaderDynamic& loader) :
+	m_GPU(findSuitableGpu(instance, surface)),
+	m_LogicalDevice(createLogicalDevice(m_GPU, instance, loader))
+
 {
-	CreatePhysicalDevice();
-	CreateLogicalDevice();
+	//std::println("Using GPU: {}", std::string_view{ m_GPU.properties.deviceName });
+    
+    //init loader with logical device once everything else is init
+    loader.init(instance, m_LogicalDevice.get());
 }
 
-void VulkanDevice::CreatePhysicalDevice()
+
+vk::UniqueDevice VulkanDevice::createLogicalDevice(const GPU& gpu, const vk::Instance instance, DispatchLoaderDynamic& loader)
 {
-	m_PhysicalDevice = nullptr;
+	static constexpr auto queuePriorities_v = std::array{ 1.0f };
 
-	auto physicalDevices = m_Instance.enumeratePhysicalDevices();
+    vk::DeviceQueueCreateInfo queueCreateInfo{};
+    queueCreateInfo.queueFamilyIndex = 1;
+    queueCreateInfo.queueCount = 1;
+    queueCreateInfo.pQueuePriorities = queuePriorities_v.data();
 
-	for (const auto& device : physicalDevices) {
-		if (IsDeviceSuitable(device, m_Surface)) {
-			m_PhysicalDevice = device;
-			break;
+    vk::PhysicalDeviceFeatures deviceFeatures{};
+    deviceFeatures.fillModeNonSolid = gpu.features.fillModeNonSolid;
+    deviceFeatures.wideLines = gpu.features.wideLines;
+    deviceFeatures.samplerAnisotropy = gpu.features.samplerAnisotropy;
+    deviceFeatures.sampleRateShading = gpu.features.sampleRateShading;
+
+    vk::PhysicalDeviceDynamicRenderingFeatures dynamicRenderingFeature{};
+    dynamicRenderingFeature.dynamicRendering = VK_TRUE;
+
+    vk::PhysicalDeviceSynchronization2Features syncFeature{};
+    syncFeature.synchronization2 = VK_TRUE;
+    syncFeature.pNext = &dynamicRenderingFeature;
+
+    vk::DeviceCreateInfo createInfo{};
+    createInfo.queueCreateInfoCount = 1;
+    createInfo.pQueueCreateInfos = &queueCreateInfo;
+    createInfo.enabledExtensionCount = static_cast<uint32_t>(s_deviceExtensions.size());
+    createInfo.ppEnabledExtensionNames = s_deviceExtensions.data();
+    createInfo.pEnabledFeatures = &deviceFeatures;
+    createInfo.pNext = &syncFeature;
+
+    return gpu.device.createDeviceUnique(createInfo);
+
+}
+
+GPU VulkanDevice::findSuitableGpu(vk::Instance const instance, vk::SurfaceKHR const surface)
+{
+	auto physicalDevices = instance.enumeratePhysicalDevices();
+
+	//check if device supports set extensions
+	auto const hasExtSupport = [](GPU const& gpu) {
+		auto available = gpu.device.enumerateDeviceExtensionProperties();
+
+		std::unordered_set<std::string_view> names;
+		for (const auto& ext : available) names.insert(ext.extensionName);
+
+
+		return std::ranges::all_of(s_deviceExtensions, [&](std::string_view ext) {
+			return names.contains(ext);
+			});
+	};
+
+	//check and assign queue families for graphics and transfer
+	auto const setQueueFamily = [](GPU& gpu) {
+		static constexpr auto queueFlags_v = vk::QueueFlagBits::eGraphics | vk::QueueFlagBits::eTransfer;
+		//find gpu with required flags and assign its queue family
+		for (auto const [index, family] : std::views::enumerate(gpu.device.getQueueFamilyProperties())) {
+			if ((family.queueFlags & queueFlags_v) == queueFlags_v) {
+				gpu.queue_family = static_cast<std::uint32_t>(index);
+				return true;
+			}
 		}
-	}
-	if (m_PhysicalDevice == nullptr) {
-		throw std::runtime_error("failed to find GPUs with Vulkan support!");
-	}
-}
+		return false;
+	};
 
-void VulkanDevice::CreateLogicalDevice()
-{
-	QueueFamilyIndices indices = FindQueueFamilies(m_PhysicalDevice, m_Surface);
-
-	std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos;
-	auto uniqueQueueFamilies = std::unordered_set{
-	indices.graphicsFamily.value(),
-	indices.presentFamily.value()
+	//check if it can present
+	auto const canPresent = [surface](GPU const& gpu) {
+		return gpu.device.getSurfaceSupportKHR(gpu.queue_family, surface) == vk::True;
 	};
 
 
-	float queuePriority = 1.0f;
-	for (auto queueFamily : uniqueQueueFamilies) {
-		vk::DeviceQueueCreateInfo queueCreateInfo{};
-		queueCreateInfo.queueFamilyIndex = queueFamily;
-		queueCreateInfo.queueCount = 1;
-		queueCreateInfo.pQueuePriorities = &queuePriority;
-		queueCreateInfos.push_back(queueCreateInfo);
+	auto fallback = GPU();
+	//iterate over all physical devices and find suitable gpu
+	for (auto const& device : instance.enumeratePhysicalDevices()) {
+		auto gpu = GPU{ .device = device, .properties = device.getProperties() };
+        if (!hasExtSupport(gpu)) continue;
+        if (!setQueueFamily(gpu)) continue;
+        if (!canPresent(gpu)) continue;
+
+		gpu.features = gpu.device.getFeatures();
+		if (gpu.properties.deviceType == vk::PhysicalDeviceType::eDiscreteGpu) {
+			return gpu;
+		}
+		//if discrete gpu found, use it otherwise use fallback
+		fallback = gpu;
 	}
 
-	vk::PhysicalDeviceFeatures deviceFeatures{};
-	vk::DeviceCreateInfo createInfo{};
-
-	createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
-	createInfo.pQueueCreateInfos = queueCreateInfos.data();
-	createInfo.pEnabledFeatures = &deviceFeatures;
-	createInfo.enabledExtensionCount = s_deviceExtensions.size();
-	createInfo.ppEnabledExtensionNames = s_deviceExtensions.data();
-
-	m_LogicalDevice = m_PhysicalDevice.createDeviceUnique(createInfo);
-
-	m_GraphicsQueue = m_LogicalDevice->getQueue(indices.graphicsFamily.value(), 0);
-	m_PresentQueue = m_LogicalDevice->getQueue(indices.presentFamily.value(), 0);
-}
-
-const bool VulkanDevice::IsDeviceSuitable(vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface)
-{
-	QueueFamilyIndices indices = FindQueueFamilies(physicalDevice, surface);
-	return indices.isComplete() && CheckDeviceExtensionSupport(physicalDevice, std::span{ s_deviceExtensions });
-}
-QueueFamilyIndices VulkanDevice::FindQueueFamilies(vk::PhysicalDevice device, vk::SurfaceKHR surface) {
-	QueueFamilyIndices indices;
-	auto queueFamilies = device.getQueueFamilyProperties();
-	for (size_t i = 0; i < queueFamilies.size(); ++i) {
-		const auto& queueFamily = queueFamilies[i];
-
-		if ((queueFamily.queueFlags & vk::QueueFlagBits::eGraphics) && !indices.graphicsFamily.has_value()) {
-			indices.graphicsFamily = i;
-		}
-
-		if (device.getSurfaceSupportKHR(i, surface) && !indices.presentFamily.has_value()) {
-			indices.presentFamily = i;
-		}
-
-		if (indices.isComplete()) {
-			break;
-		}
-	}
-	return indices;
+	if (fallback.device) { return fallback; }
+	throw std::runtime_error{ "No suitable Vulkan Physical Devices" };
 }
 
 
-bool VulkanDevice::CheckDeviceExtensionSupport(vk::PhysicalDevice physicalDevice, std::span<const char* const> deviceExtensions)
-{
-	auto available = physicalDevice.enumerateDeviceExtensionProperties();
-
-	std::unordered_set<std::string_view> names;
-	for (const auto& ext : available) names.insert(ext.extensionName);
-
-	return std::ranges::all_of(deviceExtensions, [&](std::string_view ext) {
-		return names.contains(ext);
-		});
-}
 

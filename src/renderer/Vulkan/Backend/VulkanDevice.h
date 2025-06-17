@@ -1,6 +1,8 @@
 #pragma once
 #include "vulkan/vulkan.hpp"
 #include <optional>
+#include "../../../Utils.h"
+
 struct QueueFamilyIndices {
 	std::optional<uint32_t> graphicsFamily;
 	std::optional<uint32_t> presentFamily;
@@ -9,16 +11,21 @@ struct QueueFamilyIndices {
 		return graphicsFamily.has_value() && presentFamily.has_value();
 	}
 };
+struct GPU {
+	vk::PhysicalDevice device{};
+	vk::PhysicalDeviceProperties properties{};
+	vk::PhysicalDeviceFeatures features{};
+	std::uint32_t queue_family = UINT32_MAX;;
+};
 class VulkanDevice {
 public:
-	VulkanDevice(vk::Instance instance, vk::SurfaceKHR surface);
+	VulkanDevice(vk::Instance instance, vk::SurfaceKHR surface, DispatchLoaderDynamic& loader);
+	[[nodiscard]] vk::Device getLogicalDevice() const { return *m_LogicalDevice; };
+	[[nodiscard]] const GPU& getGPU() const { return m_GPU; };
 private:
-	vk::Instance m_Instance;
-	vk::SurfaceKHR m_Surface;
-	vk::PhysicalDevice m_PhysicalDevice;
+	GPU m_GPU;
 	vk::UniqueDevice m_LogicalDevice;
-	vk::Queue m_GraphicsQueue;
-	vk::Queue m_PresentQueue;
+	vk::Queue m_Queue;
 #ifdef __APPLE__
 	static constexpr std::array<const char*, 2> s_deviceExtensions = {
 		VK_KHR_SWAPCHAIN_EXTENSION_NAME,
@@ -30,9 +37,6 @@ private:
 	};
 #endif
 
-	void CreatePhysicalDevice();
-	void CreateLogicalDevice();
-	static const bool IsDeviceSuitable(vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface);
-	static QueueFamilyIndices FindQueueFamilies(vk::PhysicalDevice device, vk::SurfaceKHR surface);
-	static bool CheckDeviceExtensionSupport(vk::PhysicalDevice, std::span<const char* const> deviceExtensions);
+	vk::UniqueDevice createLogicalDevice(const GPU& gpu, const vk::Instance instance, DispatchLoaderDynamic& loader);
+	static GPU findSuitableGpu(vk::Instance const instance, vk::SurfaceKHR const surface);
 };

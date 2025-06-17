@@ -15,3 +15,8 @@ std::string readFile(const std::filesystem::path& filePath) {
     buffer << file.rdbuf();
     return buffer.str();
 }
+
+void requireSuccess(vk::Result const result, char const* errorMsg)
+{
+    if (result != vk::Result::eSuccess) { throw std::runtime_error{ errorMsg }; }
+}

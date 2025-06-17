@@ -1,4 +1,7 @@
 #include "VulkanInstance.h"
+#include <string_view>
+#include <ranges>
+#include <algorithm>
 VulkanInstance::VulkanInstance(const std::vector<const char*>& layers, const std::vector<const char*>& extensions)
 {
 
@@ -33,18 +36,13 @@ VulkanInstance::VulkanInstance(const std::vector<const char*>& layers, const std
 const bool VulkanInstance::CheckValidationLayerSupport(const std::vector<const char*>& layers)
 {
     const auto availableLayers = vk::enumerateInstanceLayerProperties();
-    for (const char* layerName : layers) {
-        bool layerFound = false;
-        for (const auto& availableLayerName : availableLayers) {
-            if (strcmp(layerName, availableLayerName.layerName) == 0) {
-                layerFound = true;
-                break;
-            }
-        }
-        if (!layerFound) {
-            return false;
-        }
-    }
-    return true;
+    //create a list of names from available layers
+    auto availableNames = availableLayers | std::views::transform([](const auto& layer) {
+        return std::string_view{ layer.layerName };
+        });
+    //for each layer name, check that its in available layer names
+    return std::ranges::all_of(layers, [&](const char* layer) {
+        return std::ranges::find(availableNames, std::string_view{ layer }) != availableNames.end();
+        });
 }
 
