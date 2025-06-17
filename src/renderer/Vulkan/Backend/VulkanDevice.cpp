@@ -21,7 +21,7 @@ vk::UniqueDevice VulkanDevice::createLogicalDevice(const GPU& gpu, const vk::Ins
 	static constexpr auto queuePriorities_v = std::array{ 1.0f };
 
     vk::DeviceQueueCreateInfo queueCreateInfo{};
-    queueCreateInfo.queueFamilyIndex = 1;
+    queueCreateInfo.queueFamilyIndex = gpu.queue_family;
     queueCreateInfo.queueCount = 1;
     queueCreateInfo.pQueuePriorities = queuePriorities_v.data();
 
