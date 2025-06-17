@@ -7,15 +7,15 @@ VulkanSwapchain::VulkanSwapchain(vk::Device device, GPU const& gpu, vk::SurfaceK
     m_DynamicLoader(dynamicLoader)
 {
     const vk::SurfaceFormatKHR surfaceFormat = getSurfaceFormat(m_GPU.device.getSurfaceFormatsKHR(surface));
-    m_CreateInfo.setSurface(surface)
+    /*m_CreateInfo.setSurface(surface)
             .setImageFormat(surfaceFormat.format)
             .setImageColorSpace(surfaceFormat.colorSpace)
             .setImageArrayLayers(1)
                     // Swapchain images will be used as color attachments (render targets).
             .setImageUsage(vk::ImageUsageFlagBits::eColorAttachment)
                     // eFifo is guaranteed to be supported.
-            .setPresentMode(vk::PresentModeKHR::eFifo);
-    /*m_CreateInfo.surface = surface;
+            .setPresentMode(vk::PresentModeKHR::eFifo);*/
+    m_CreateInfo.surface = surface;
     m_CreateInfo.imageFormat = surfaceFormat.format;
     m_CreateInfo.imageColorSpace = surfaceFormat.colorSpace;
     m_CreateInfo.imageArrayLayers = 1;
@@ -23,7 +23,7 @@ VulkanSwapchain::VulkanSwapchain(vk::Device device, GPU const& gpu, vk::SurfaceK
     m_CreateInfo.presentMode = vk::PresentModeKHR::eFifo;
     m_CreateInfo.flags = {};
     m_CreateInfo.compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque;
-    m_CreateInfo.clipped = VK_TRUE;*/
+    m_CreateInfo.clipped = VK_TRUE;
 
     VkBool32 surfaceSupported = VK_FALSE;
     vkGetPhysicalDeviceSurfaceSupportKHR(

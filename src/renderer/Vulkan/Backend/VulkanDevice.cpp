@@ -62,16 +62,18 @@ GPU VulkanDevice::findSuitableGpu(vk::Instance const instance, vk::SurfaceKHR co
 		for (const auto& ext : available) names.insert(ext.extensionName);
 
 
-		return std::ranges::all_of(s_deviceExtensions, [&](std::string_view ext) {
-			return names.contains(ext);
+		return std::all_of(std::begin(s_deviceExtensions), std::end(s_deviceExtensions), [&](const char* ext) {
+				return names.contains(std::string_view{ext});
 			});
-	};
+		};
 
 	//check and assign queue families for graphics and transfer
 	auto const setQueueFamily = [](GPU& gpu) {
 		static constexpr auto queueFlags_v = vk::QueueFlagBits::eGraphics | vk::QueueFlagBits::eTransfer;
-		//find gpu with required flags and assign its queue family
-		for (auto const [index, family] : std::views::enumerate(gpu.device.getQueueFamilyProperties())) {
+		const auto& families = gpu.device.getQueueFamilyProperties();
+
+		for (std::vector<vk::QueueFamilyProperties>::size_type index = 0; index < families.size(); ++index) {
+			const auto& family = families[index];
 			if ((family.queueFlags & queueFlags_v) == queueFlags_v) {
 				gpu.queue_family = static_cast<std::uint32_t>(index);
 				return true;
@@ -79,6 +81,8 @@ GPU VulkanDevice::findSuitableGpu(vk::Instance const instance, vk::SurfaceKHR co
 		}
 		return false;
 	};
+
+
 
 	//check if it can present
 	auto const canPresent = [surface](GPU const& gpu) {
