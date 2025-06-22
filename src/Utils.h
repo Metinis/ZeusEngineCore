@@ -15,8 +15,6 @@ void requireSuccess(vk::Result const result, char const* errorMsg);
 
 struct WindowHandle {
     void* nativeWindowHandle;
-
-
 };
 struct RendererInitInfo {
     std::optional<WindowHandle> windowHandle;

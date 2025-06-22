@@ -1,29 +1,46 @@
 #pragma once
 #include "VulkanDevice.h"
+
+struct RenderTarget {
+	vk::Image image{};
+	vk::ImageView imageView{};
+	vk::Extent2D extent{};
+};
+
 class VulkanSwapchain {
 public:
 	explicit VulkanSwapchain(vk::Device device, GPU const& gpu, vk::SurfaceKHR surface, 
 		const DispatchLoaderDynamic& dynamicLoader, glm::ivec2 size);
 
-	bool recreate(glm::ivec2 size);
-	glm::ivec2 getSize() const { return { m_CreateInfo.imageExtent.width, m_CreateInfo.imageExtent.height }; };
+	bool Recreate(glm::ivec2 size);
+	glm::ivec2 GetSize() const { return { m_CreateInfo.imageExtent.width, m_CreateInfo.imageExtent.height }; };
+	std::optional<RenderTarget> AquireNextImage(vk::Semaphore const toSignal);
+	vk::ImageMemoryBarrier2 GetBaseBarrier() const;
+	vk::Semaphore GetPresentSemaphore() const { return *m_PresentSemaphores.at(m_ImageIndex.value()); };
+	bool Present(vk::Queue const queue);
 
 private:
 	using Swapchain = vk::UniqueHandle<vk::SwapchainKHR, DispatchLoaderDynamic>;
-	void populateImages();
-	void createImageViews();
-	vk::SurfaceFormatKHR getSurfaceFormat(std::span<const vk::SurfaceFormatKHR> supported);
-	vk::Extent2D getImageExtent(vk::SurfaceCapabilitiesKHR const& capabilities, glm::uvec2 const size);
-	std::uint32_t getImageCount(vk::SurfaceCapabilitiesKHR const& capabilities);
+	void PopulateImages();
+	void CreateImageViews();
+	void CreatePresentSemaphores();
+	bool NeedsRecreation(vk::Result const result) const;
+	vk::SurfaceFormatKHR GetSurfaceFormat(std::span<const vk::SurfaceFormatKHR> supported);
+	vk::Extent2D GetImageExtent(vk::SurfaceCapabilitiesKHR const& capabilities, glm::uvec2 const size);
+	std::uint32_t GetImageCount(vk::SurfaceCapabilitiesKHR const& capabilities);
+
+
+	
 
 	vk::Device m_Device;
 	GPU m_GPU{};
 	DispatchLoaderDynamic m_DynamicLoader;
-
+	std::vector<vk::UniqueSemaphore> m_PresentSemaphores{};
 	vk::SwapchainCreateInfoKHR m_CreateInfo{};
 	Swapchain m_Swapchain{};
 	std::vector<vk::Image> m_Images;
 	std::vector<vk::UniqueImageView> m_ImageViews{};
+	std::optional<std::size_t> m_ImageIndex{};
 
 	inline static constexpr auto srgbFormats_v = std::array{
 		vk::Format::eR8G8B8A8Srgb,

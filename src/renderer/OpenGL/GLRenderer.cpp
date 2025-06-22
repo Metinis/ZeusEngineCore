@@ -10,9 +10,10 @@ void GLRenderer::Init(RendererInitInfo& initInfo) {
 GLRenderer::~GLRenderer() = default;
 
 
-void GLRenderer::BeginFrame() {
+bool GLRenderer::BeginFrame() {
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    return true;
 }
 
 void GLRenderer::Submit(const glm::mat4& transform, const std::shared_ptr<Material>& material, const std::shared_ptr<IMesh>& mesh) {

@@ -9,7 +9,7 @@ public:
 
     ~VKRenderer() override;
 
-    void BeginFrame() override;
+    bool BeginFrame() override;
 
     void Submit(const glm::mat4& transform, const std::shared_ptr<Material>& material, const std::shared_ptr<IMesh>& mesh) override;
 
@@ -17,5 +17,6 @@ public:
 
     void DrawMesh(const IMesh& mesh, Material& material) override;
 private:
-    std::unique_ptr<VulkanBackend> vkBackend;
+    std::unique_ptr<VulkanBackend> m_VKBackend;
+    vk::CommandBuffer m_CommandBuffer;
 };

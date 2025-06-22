@@ -7,7 +7,7 @@ public:
 
     ~GLRenderer() override;
 
-    void BeginFrame() override;
+    bool BeginFrame() override;
 
     void Submit(const glm::mat4& transform, const std::shared_ptr<Material>& material, const std::shared_ptr<IMesh>& mesh) override;
 

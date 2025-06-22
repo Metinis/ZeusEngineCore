@@ -15,7 +15,7 @@ public:
 
     virtual void Init(RendererInitInfo& initInfo) = 0;
 
-    virtual void BeginFrame() = 0;
+    virtual bool BeginFrame() = 0;
     virtual void Submit(const glm::mat4& transform, const std::shared_ptr<Material>& material, const std::shared_ptr<IMesh>& mesh) = 0;
     virtual void EndFrame() = 0;
 

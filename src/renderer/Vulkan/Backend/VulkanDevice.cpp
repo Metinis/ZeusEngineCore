@@ -5,8 +5,8 @@
 
 
 VulkanDevice::VulkanDevice(vk::Instance instance, vk::SurfaceKHR surface, DispatchLoaderDynamic& loader) :
-	m_GPU(findSuitableGpu(instance, surface)),
-	m_LogicalDevice(createLogicalDevice(m_GPU, instance, loader))
+	m_GPU(FindSuitableGpu(instance, surface)),
+	m_LogicalDevice(CreateLogicalDevice(m_GPU, instance, loader))
 
 {
 	//std::println("Using GPU: {}", std::string_view{ m_GPU.properties.deviceName });
@@ -15,13 +15,18 @@ VulkanDevice::VulkanDevice(vk::Instance instance, vk::SurfaceKHR surface, Dispat
     loader.init(instance, m_LogicalDevice.get());
 }
 
+void VulkanDevice::SubmitToQueue(vk::SubmitInfo2 submitInfo, vk::Fence drawn)
+{
+	m_Queue.submit2(submitInfo, drawn);
+}
 
-vk::UniqueDevice VulkanDevice::createLogicalDevice(const GPU& gpu, const vk::Instance instance, DispatchLoaderDynamic& loader)
+
+vk::UniqueDevice VulkanDevice::CreateLogicalDevice(const GPU& gpu, const vk::Instance instance, DispatchLoaderDynamic& loader)
 {
 	static constexpr auto queuePriorities_v = std::array{ 1.0f };
 
     vk::DeviceQueueCreateInfo queueCreateInfo{};
-    queueCreateInfo.queueFamilyIndex = gpu.queue_family;
+    queueCreateInfo.queueFamilyIndex = gpu.queueFamily;
     queueCreateInfo.queueCount = 1;
     queueCreateInfo.pQueuePriorities = queuePriorities_v.data();
 
@@ -50,7 +55,7 @@ vk::UniqueDevice VulkanDevice::createLogicalDevice(const GPU& gpu, const vk::Ins
 
 }
 
-GPU VulkanDevice::findSuitableGpu(vk::Instance const instance, vk::SurfaceKHR const surface)
+GPU VulkanDevice::FindSuitableGpu(vk::Instance const instance, vk::SurfaceKHR const surface)
 {
 	auto physicalDevices = instance.enumeratePhysicalDevices();
 
@@ -75,7 +80,7 @@ GPU VulkanDevice::findSuitableGpu(vk::Instance const instance, vk::SurfaceKHR co
 		for (std::vector<vk::QueueFamilyProperties>::size_type index = 0; index < families.size(); ++index) {
 			const auto& family = families[index];
 			if ((family.queueFlags & queueFlags_v) == queueFlags_v) {
-				gpu.queue_family = static_cast<std::uint32_t>(index);
+				gpu.queueFamily = static_cast<std::uint32_t>(index);
 				return true;
 			}
 		}
@@ -86,7 +91,7 @@ GPU VulkanDevice::findSuitableGpu(vk::Instance const instance, vk::SurfaceKHR co
 
 	//check if it can present
 	auto const canPresent = [surface](GPU const& gpu) {
-		return gpu.device.getSurfaceSupportKHR(gpu.queue_family, surface) == vk::True;
+		return gpu.device.getSurfaceSupportKHR(gpu.queueFamily, surface) == vk::True;
 	};
 
 

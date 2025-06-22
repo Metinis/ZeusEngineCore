@@ -6,15 +6,7 @@ VulkanSwapchain::VulkanSwapchain(vk::Device device, GPU const& gpu, vk::SurfaceK
 	m_GPU(gpu),
     m_DynamicLoader(dynamicLoader)
 {
-    const vk::SurfaceFormatKHR surfaceFormat = getSurfaceFormat(m_GPU.device.getSurfaceFormatsKHR(surface));
-    /*m_CreateInfo.setSurface(surface)
-            .setImageFormat(surfaceFormat.format)
-            .setImageColorSpace(surfaceFormat.colorSpace)
-            .setImageArrayLayers(1)
-                    // Swapchain images will be used as color attachments (render targets).
-            .setImageUsage(vk::ImageUsageFlagBits::eColorAttachment)
-                    // eFifo is guaranteed to be supported.
-            .setPresentMode(vk::PresentModeKHR::eFifo);*/
+    const vk::SurfaceFormatKHR surfaceFormat = GetSurfaceFormat(m_GPU.device.getSurfaceFormatsKHR(surface));
     m_CreateInfo.surface = surface;
     m_CreateInfo.imageFormat = surfaceFormat.format;
     m_CreateInfo.imageColorSpace = surfaceFormat.colorSpace;
@@ -28,7 +20,7 @@ VulkanSwapchain::VulkanSwapchain(vk::Device device, GPU const& gpu, vk::SurfaceK
     VkBool32 surfaceSupported = VK_FALSE;
     vkGetPhysicalDeviceSurfaceSupportKHR(
             gpu.device,
-            gpu.queue_family,
+            gpu.queueFamily,
             surface,
             &surfaceSupported
     );
@@ -38,23 +30,20 @@ VulkanSwapchain::VulkanSwapchain(vk::Device device, GPU const& gpu, vk::SurfaceK
     }
 
 
-    if (!recreate(size)) {
+    if (!Recreate(size)) {
         throw std::runtime_error{ "Failed to create Vulkan Swapchain" };
     }
 }
 
-bool VulkanSwapchain::recreate(glm::ivec2 size)
+bool VulkanSwapchain::Recreate(glm::ivec2 size)
 {
     if (size.x <= 0 || size.y <= 0) { return false; }
 
     auto const capabilities = m_GPU.device.getSurfaceCapabilitiesKHR(m_CreateInfo.surface);
-    m_CreateInfo.imageExtent = getImageExtent(capabilities, size);
-    m_CreateInfo.minImageCount = getImageCount(capabilities);
+    m_CreateInfo.imageExtent = GetImageExtent(capabilities, size);
+    m_CreateInfo.minImageCount = GetImageCount(capabilities);
     m_CreateInfo.oldSwapchain = m_Swapchain ? *m_Swapchain : vk::SwapchainKHR{};
     m_CreateInfo.preTransform = capabilities.currentTransform;
-
-    //m_CreateInfo.queueFamilyIndexCount = 1;
-    //m_CreateInfo.pQueueFamilyIndices = &m_GPU.queue_family;
 
     //since we only use one queue
     m_CreateInfo.imageSharingMode = vk::SharingMode::eExclusive;
@@ -66,16 +55,16 @@ bool VulkanSwapchain::recreate(glm::ivec2 size)
     m_Device.waitIdle();
     m_Swapchain = m_Device.createSwapchainKHRUnique(m_CreateInfo, nullptr, m_DynamicLoader);
 
-    populateImages();
-    createImageViews();
+    PopulateImages();
+    CreateImageViews();
 
-    size = getSize();
+    size = GetSize();
     //std::println("[lvk] Swapchain [{}x{}]", size.x, size.y);
 
     return true;
 }
 
-void VulkanSwapchain::populateImages()
+void VulkanSwapchain::PopulateImages()
 {
     //avoiding a new vector every call
     std::uint32_t imageCount = 0;
@@ -86,16 +75,20 @@ void VulkanSwapchain::populateImages()
     result = m_Device.getSwapchainImagesKHR(*m_Swapchain, &imageCount, m_Images.data());
     requireSuccess(result, "Failed to get Swapchain Images");
 }
-
-void VulkanSwapchain::createImageViews()
+constexpr auto subresourceRange_v = [] {
+    vk::ImageSubresourceRange ret{};
+    ret.setAspectMask(vk::ImageAspectFlagBits::eColor)
+            .setBaseMipLevel(0)
+            .setLevelCount(1)
+            .setBaseArrayLayer(0)
+            .setLayerCount(1);
+    return ret;
+    }();
+void VulkanSwapchain::CreateImageViews()
 {
-    vk::ImageSubresourceRange subresourceRange{};
-    subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
-    subresourceRange.layerCount = 1;
-    subresourceRange.levelCount = 1;
     vk::ImageViewCreateInfo imageViewCreateInfo{};
     imageViewCreateInfo.viewType = vk::ImageViewType::e2D;
-    imageViewCreateInfo.subresourceRange = subresourceRange;
+    imageViewCreateInfo.subresourceRange = subresourceRange_v;
     imageViewCreateInfo.format = m_CreateInfo.imageFormat;
 
     m_ImageViews.clear();
@@ -107,7 +100,16 @@ void VulkanSwapchain::createImageViews()
 
 }
 
-vk::SurfaceFormatKHR VulkanSwapchain::getSurfaceFormat(std::span<const vk::SurfaceFormatKHR> supported)
+void VulkanSwapchain::CreatePresentSemaphores()
+{
+    m_PresentSemaphores.clear();
+    m_PresentSemaphores.resize(m_Images.size());
+    for (auto& semaphore : m_PresentSemaphores) {
+        semaphore = m_Device.createSemaphoreUnique({});
+    }
+}
+
+vk::SurfaceFormatKHR VulkanSwapchain::GetSurfaceFormat(std::span<const vk::SurfaceFormatKHR> supported)
 {
     for (auto const desired : srgbFormats_v) {
         auto const isMatch = [desired](vk::SurfaceFormatKHR const& in) {
@@ -122,7 +124,7 @@ vk::SurfaceFormatKHR VulkanSwapchain::getSurfaceFormat(std::span<const vk::Surfa
     return supported.front();
 }
 
-vk::Extent2D VulkanSwapchain::getImageExtent(vk::SurfaceCapabilitiesKHR const& capabilities, glm::uvec2 const size)
+vk::Extent2D VulkanSwapchain::GetImageExtent(vk::SurfaceCapabilitiesKHR const& capabilities, glm::uvec2 const size)
 {
     constexpr auto limitless_v = 0xffffffff;
     if (capabilities.currentExtent.width < limitless_v &&
@@ -136,11 +138,70 @@ vk::Extent2D VulkanSwapchain::getImageExtent(vk::SurfaceCapabilitiesKHR const& c
     return vk::Extent2D{ x, y };
 }
 
-std::uint32_t VulkanSwapchain::getImageCount(vk::SurfaceCapabilitiesKHR const& capabilities)
+std::uint32_t VulkanSwapchain::GetImageCount(vk::SurfaceCapabilitiesKHR const& capabilities)
 {
     if (capabilities.maxImageCount < capabilities.minImageCount) {
         return std::max(minImages_v, capabilities.minImageCount);
     }
     return std::clamp(minImages_v, capabilities.minImageCount,
         capabilities.maxImageCount);
+}
+
+std::optional<RenderTarget> VulkanSwapchain::AquireNextImage(vk::Semaphore const toSignal)
+{
+    assert(!m_ImageIndex);
+    static constexpr auto timeout_v = std::numeric_limits<std::uint64_t>::max();
+
+    auto imageIndex = std::uint32_t{};
+    auto const result = m_Device.acquireNextImageKHR(*m_Swapchain, timeout_v, toSignal, {}, &imageIndex);
+    if (NeedsRecreation(result)) { return {}; }
+
+    m_ImageIndex = static_cast<std::size_t>(imageIndex);
+    return RenderTarget{
+      .image = m_Images.at(*m_ImageIndex),
+      .imageView = *m_ImageViews.at(*m_ImageIndex),
+      .extent = m_CreateInfo.imageExtent,
+    };
+}
+
+bool VulkanSwapchain::NeedsRecreation(vk::Result const result) const
+{
+    switch (result) {
+        case vk::Result::eSuccess:
+        case vk::Result::eSuboptimalKHR: return false;
+        case vk::Result::eErrorOutOfDateKHR: return true;
+        default: break;
+    }
+    throw std::runtime_error{ "Swapchain Error" };
+}
+
+bool VulkanSwapchain::Present(vk::Queue const queue)
+{
+    auto const imageIndex = static_cast<std::uint32_t>(m_ImageIndex.value());
+    auto const waitSemaphore = *m_PresentSemaphores.at(static_cast<std::size_t>(imageIndex));
+
+    std::array<vk::SwapchainKHR, 1> swapchains = { *m_Swapchain };
+    std::array<uint32_t, 1> indices = { imageIndex };
+    std::array<vk::Semaphore, 1> waitSemaphores = { waitSemaphore };
+
+    vk::PresentInfoKHR presentInfo{};
+    presentInfo.swapchainCount = static_cast<uint32_t>(swapchains.size());
+    presentInfo.pSwapchains = swapchains.data();
+    presentInfo.pImageIndices = indices.data();
+    presentInfo.waitSemaphoreCount = static_cast<uint32_t>(waitSemaphores.size());
+    presentInfo.pWaitSemaphores = waitSemaphores.data();
+
+    auto const result = queue.presentKHR(presentInfo);
+    m_ImageIndex.reset();
+    return !NeedsRecreation(result);
+}
+
+vk::ImageMemoryBarrier2 VulkanSwapchain::GetBaseBarrier() const
+{
+    auto ret = vk::ImageMemoryBarrier2{};
+    ret.image = m_Images.at(m_ImageIndex.value());
+    ret.subresourceRange = subresourceRange_v;
+    ret.srcQueueFamilyIndex = m_GPU.queueFamily;
+    ret.dstQueueFamilyIndex = m_GPU.queueFamily;
+    return ret;
 }

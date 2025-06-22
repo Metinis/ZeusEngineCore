@@ -15,13 +15,15 @@ struct GPU {
 	vk::PhysicalDevice device{};
 	vk::PhysicalDeviceProperties properties{};
 	vk::PhysicalDeviceFeatures features{};
-	std::uint32_t queue_family = UINT32_MAX;;
+	std::uint32_t queueFamily = UINT32_MAX;;
 };
 class VulkanDevice {
 public:
 	VulkanDevice(vk::Instance instance, vk::SurfaceKHR surface, DispatchLoaderDynamic& loader);
-	[[nodiscard]] vk::Device getLogicalDevice() const { return *m_LogicalDevice; };
-	[[nodiscard]] const GPU& getGPU() const { return m_GPU; };
+	[[nodiscard]] vk::Device GetLogicalDevice() const { return *m_LogicalDevice; };
+	[[nodiscard]] const GPU& GetGPU() const { return m_GPU; };
+	void SubmitToQueue(vk::SubmitInfo2 submitInfo, vk::Fence drawn);
+	const vk::Queue GetQueue() const { return m_Queue; }
 private:
 	GPU m_GPU;
 	vk::UniqueDevice m_LogicalDevice;
@@ -32,11 +34,12 @@ private:
 		"VK_KHR_portability_subset"
 	};
 #else
-	static constexpr std::array<const char*, 1> s_deviceExtensions = {
+	static constexpr std::array<const char*, 2> s_deviceExtensions = {
 		VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+        VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME,
 	};
 #endif
 
-	vk::UniqueDevice createLogicalDevice(const GPU& gpu, const vk::Instance instance, DispatchLoaderDynamic& loader);
-	static GPU findSuitableGpu(vk::Instance const instance, vk::SurfaceKHR const surface);
+	vk::UniqueDevice CreateLogicalDevice(const GPU& gpu, const vk::Instance instance, DispatchLoaderDynamic& loader);
+	static GPU FindSuitableGpu(vk::Instance const instance, vk::SurfaceKHR const surface);
 };
