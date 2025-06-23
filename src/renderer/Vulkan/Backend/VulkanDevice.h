@@ -19,7 +19,7 @@ struct GPU {
 };
 class VulkanDevice {
 public:
-	VulkanDevice(vk::Instance instance, vk::SurfaceKHR surface, DispatchLoaderDynamic& loader);
+	VulkanDevice(vk::Instance instance, vk::SurfaceKHR surface);
 	[[nodiscard]] vk::Device GetLogicalDevice() const { return *m_LogicalDevice; };
 	[[nodiscard]] const GPU& GetGPU() const { return m_GPU; };
 	void SubmitToQueue(vk::SubmitInfo2 submitInfo, vk::Fence drawn);
@@ -40,6 +40,6 @@ private:
 	};
 #endif
 
-	vk::UniqueDevice CreateLogicalDevice(const GPU& gpu, const vk::Instance instance, DispatchLoaderDynamic& loader);
+	vk::UniqueDevice CreateLogicalDevice(const GPU& gpu, const vk::Instance instance);
 	static GPU FindSuitableGpu(vk::Instance const instance, vk::SurfaceKHR const surface);
 };

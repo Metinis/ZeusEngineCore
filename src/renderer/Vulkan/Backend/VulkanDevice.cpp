@@ -4,15 +4,16 @@
 #include <ranges>
 
 
-VulkanDevice::VulkanDevice(vk::Instance instance, vk::SurfaceKHR surface, DispatchLoaderDynamic& loader) :
+VulkanDevice::VulkanDevice(vk::Instance instance, vk::SurfaceKHR surface) :
 	m_GPU(FindSuitableGpu(instance, surface)),
-	m_LogicalDevice(CreateLogicalDevice(m_GPU, instance, loader))
+	m_LogicalDevice(CreateLogicalDevice(m_GPU, instance))
 
 {
+    m_Queue = m_LogicalDevice->getQueue(m_GPU.queueFamily, 0);
 	//std::println("Using GPU: {}", std::string_view{ m_GPU.properties.deviceName });
     
     //init loader with logical device once everything else is init
-    loader.init(instance, m_LogicalDevice.get());
+    //loader.init(instance, m_LogicalDevice.get());
 }
 
 void VulkanDevice::SubmitToQueue(vk::SubmitInfo2 submitInfo, vk::Fence drawn)
@@ -21,7 +22,7 @@ void VulkanDevice::SubmitToQueue(vk::SubmitInfo2 submitInfo, vk::Fence drawn)
 }
 
 
-vk::UniqueDevice VulkanDevice::CreateLogicalDevice(const GPU& gpu, const vk::Instance instance, DispatchLoaderDynamic& loader)
+vk::UniqueDevice VulkanDevice::CreateLogicalDevice(const GPU& gpu, const vk::Instance instance)
 {
 	static constexpr auto queuePriorities_v = std::array{ 1.0f };
 
@@ -51,7 +52,9 @@ vk::UniqueDevice VulkanDevice::CreateLogicalDevice(const GPU& gpu, const vk::Ins
     createInfo.pEnabledFeatures = &deviceFeatures;
     createInfo.pNext = &syncFeature;
 
-    return gpu.device.createDeviceUnique(createInfo);
+    vk::UniqueDevice device = gpu.device.createDeviceUnique(createInfo);
+    VULKAN_HPP_DEFAULT_DISPATCHER.init(*device);
+    return device;
 
 }
 

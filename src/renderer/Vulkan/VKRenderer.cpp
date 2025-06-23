@@ -1,5 +1,10 @@
 #include "VKRenderer.h"
+#include <vulkan/vulkan.hpp>
+
+VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE;
+
 void VKRenderer::Init(RendererInitInfo& initInfo) {
+    VULKAN_HPP_DEFAULT_DISPATCHER.init();
     std::vector<const char*> layers = { "VK_LAYER_KHRONOS_validation" };
 
     WindowHandle windowHandlePtr;

@@ -18,7 +18,7 @@ VulkanInstance::VulkanInstance(const std::vector<const char*>& layers, const std
     appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
     appInfo.pEngineName = "ZeusEngine";
     appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-    appInfo.apiVersion = VK_API_VERSION_1_0;
+    appInfo.apiVersion = VK_API_VERSION_1_3;
 
     vk::InstanceCreateInfo createInfo{};
     createInfo.pApplicationInfo = &appInfo;
@@ -31,6 +31,7 @@ VulkanInstance::VulkanInstance(const std::vector<const char*>& layers, const std
 #endif
 
     m_Instance = vk::createInstanceUnique(createInfo);
+    VULKAN_HPP_DEFAULT_DISPATCHER.init(*m_Instance);
 }
 
 const bool VulkanInstance::CheckValidationLayerSupport(const std::vector<const char*>& layers)

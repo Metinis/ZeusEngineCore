@@ -1,23 +1,22 @@
 #include "VulkanBackend.h"
 #include "GLFW/glfw3.h"
 #include <iostream>
+#include <vulkan/vulkan.hpp>
 
 VulkanBackend::VulkanBackend(const std::vector<const char*>& layers, WindowHandle windowHandle)
         : m_Instance(layers, GetRequiredExtensions()),
-
-          m_DynamicLoader(DispatchLoaderDynamic(m_Instance.Get(), vkGetInstanceProcAddr)),
 
           m_WindowHandle(std::move(windowHandle)),
 
           m_Surface(CreateSurface(windowHandle, m_Instance.Get())),
 
-          m_Device(m_Instance.Get(), m_Surface.get(), m_DynamicLoader),
+          m_Device(m_Instance.Get(), m_Surface.get()),
 
-          m_DebugMessenger(CreateMessenger(m_Instance.Get(), m_DynamicLoader)),
+          m_DebugMessenger(CreateMessenger(m_Instance.Get())),
 
           m_Waiter(m_Device.GetLogicalDevice()),
 
-          m_Swapchain(CreateSwapchain(windowHandle, m_Device.GetLogicalDevice(), m_Device.GetGPU(), m_Surface.get(), m_DynamicLoader)),
+          m_Swapchain(CreateSwapchain(windowHandle, m_Device.GetLogicalDevice(), m_Device.GetGPU(), m_Surface.get())),
 
           m_Sync(m_Device.GetGPU(), m_Device.GetLogicalDevice())
 
@@ -43,12 +42,12 @@ vk::UniqueSurfaceKHR VulkanBackend::CreateSurface(WindowHandle windowHandle, con
 }
 
 VulkanSwapchain VulkanBackend::CreateSwapchain(const WindowHandle windowHandle, const vk::Device device, const GPU& gpu,
-    const vk::SurfaceKHR surface, const DispatchLoaderDynamic& loader)
+    const vk::SurfaceKHR surface)
 {
     int width;
     int height;
     glfwGetFramebufferSize(static_cast<GLFWwindow*>(windowHandle.nativeWindowHandle), &width, &height);
-    return VulkanSwapchain(device, gpu, surface, loader, glm::ivec2{width, height});
+    return VulkanSwapchain(device, gpu, surface, glm::ivec2{width, height});
 }
 
 bool VulkanBackend::AcquireRenderTarget()
@@ -162,16 +161,25 @@ void VulkanBackend::SubmitAndPresent()
     signalSemaphoreInfo.semaphore = m_Swapchain.GetPresentSemaphore();
     signalSemaphoreInfo.stageMask = vk::PipelineStageFlagBits2::eColorAttachmentOutput;
 
-    submitInfo.setCommandBufferInfos(cmdBuffSubmitInfo);
-    submitInfo.setWaitSemaphoreInfos(waitSemaphoreInfo);
-    submitInfo.setSignalSemaphoreInfos(signalSemaphoreInfo);
+    std::array<vk::CommandBufferSubmitInfo, 1> cmdBuffInfos{ cmdBuffSubmitInfo };
+    std::array<vk::SemaphoreSubmitInfo, 1> waitSemaphoreInfos{ waitSemaphoreInfo };
+    std::array<vk::SemaphoreSubmitInfo, 1> signalSemaphoreInfos{ signalSemaphoreInfo };
 
+    submitInfo.setCommandBufferInfos(cmdBuffInfos);
+    submitInfo.setWaitSemaphoreInfos(waitSemaphoreInfos);
+    submitInfo.setSignalSemaphoreInfos(signalSemaphoreInfos);
+
+    assert(renderSync.drawn);
+    //vk::Queue queue = m_Device.GetLogicalDevice().getQueue();
+    //vk::Queue queue = m_Device.GetQueue();
+    //queue.submit2(submitInfo, *renderSync.drawn);
     m_Device.SubmitToQueue(submitInfo, *renderSync.drawn);
 
     m_Sync.NextFrameIndex();
     m_RenderTarget.reset();
-
     vk::Queue queue = m_Device.GetQueue();
+
+
     auto const fb_size_changed = m_FramebufferSize != m_Swapchain.GetSize();
     auto const out_of_date = !m_Swapchain.Present(queue);
     if (fb_size_changed || out_of_date) {
@@ -211,7 +219,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
     return VK_FALSE;
 }
 
-VulkanBackend::VulkanDebugMessenger VulkanBackend::CreateMessenger(const vk::Instance instance, const DispatchLoaderDynamic& loader) {
+vk::UniqueDebugUtilsMessengerEXT VulkanBackend::CreateMessenger(const vk::Instance instance) {
     vk::DebugUtilsMessengerCreateInfoEXT createInfo{};
     createInfo.messageSeverity =
             vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose |
@@ -225,9 +233,5 @@ VulkanBackend::VulkanDebugMessenger VulkanBackend::CreateMessenger(const vk::Ins
     createInfo.pUserData = nullptr;
 
 
-    return instance.createDebugUtilsMessengerEXTUnique(
-            createInfo,
-            nullptr,
-            loader
-    );
+    return instance.createDebugUtilsMessengerEXTUnique(createInfo);
 }

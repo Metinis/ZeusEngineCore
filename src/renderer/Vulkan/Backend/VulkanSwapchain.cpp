@@ -1,10 +1,10 @@
-#include "VulkanSwapchain.h"
 
-VulkanSwapchain::VulkanSwapchain(vk::Device device, GPU const& gpu, vk::SurfaceKHR surface,
-    const DispatchLoaderDynamic& dynamicLoader, glm::ivec2 size) :
+#include "VulkanSwapchain.h"
+#include <vulkan/vulkan.hpp>
+
+VulkanSwapchain::VulkanSwapchain(vk::Device device, GPU const& gpu, vk::SurfaceKHR surface, glm::ivec2 size) :
 	m_Device(device),
-	m_GPU(gpu),
-    m_DynamicLoader(dynamicLoader)
+	m_GPU(gpu)
 {
     const vk::SurfaceFormatKHR surfaceFormat = GetSurfaceFormat(m_GPU.device.getSurfaceFormatsKHR(surface));
     m_CreateInfo.surface = surface;
@@ -17,13 +17,7 @@ VulkanSwapchain::VulkanSwapchain(vk::Device device, GPU const& gpu, vk::SurfaceK
     m_CreateInfo.compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque;
     m_CreateInfo.clipped = VK_TRUE;
 
-    VkBool32 surfaceSupported = VK_FALSE;
-    vkGetPhysicalDeviceSurfaceSupportKHR(
-            gpu.device,
-            gpu.queueFamily,
-            surface,
-            &surfaceSupported
-    );
+    bool surfaceSupported = gpu.device.getSurfaceSupportKHR(gpu.queueFamily, surface);
 
     if (!surfaceSupported) {
         throw std::runtime_error("Selected physical device does not support presenting to this surface");
@@ -53,10 +47,12 @@ bool VulkanSwapchain::Recreate(glm::ivec2 size)
     assert(m_CreateInfo.imageExtent.width > 0 && m_CreateInfo.imageExtent.height > 0 &&  m_CreateInfo.minImageCount >= minImages_v);
 
     m_Device.waitIdle();
-    m_Swapchain = m_Device.createSwapchainKHRUnique(m_CreateInfo, nullptr, m_DynamicLoader);
+    m_Swapchain = m_Device.createSwapchainKHRUnique(m_CreateInfo);
 
     PopulateImages();
     CreateImageViews();
+
+    CreatePresentSemaphores();
 
     size = GetSize();
     //std::println("[lvk] Swapchain [{}x{}]", size.x, size.y);
@@ -204,4 +200,12 @@ vk::ImageMemoryBarrier2 VulkanSwapchain::GetBaseBarrier() const
     ret.srcQueueFamilyIndex = m_GPU.queueFamily;
     ret.dstQueueFamilyIndex = m_GPU.queueFamily;
     return ret;
+}
+
+VulkanSwapchain::~VulkanSwapchain() {
+    m_Device.waitIdle();
+
+    m_PresentSemaphores.clear();
+    m_ImageViews.clear();
+    m_Swapchain.reset();
 }

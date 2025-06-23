@@ -9,8 +9,8 @@ struct RenderTarget {
 
 class VulkanSwapchain {
 public:
-	explicit VulkanSwapchain(vk::Device device, GPU const& gpu, vk::SurfaceKHR surface, 
-		const DispatchLoaderDynamic& dynamicLoader, glm::ivec2 size);
+	explicit VulkanSwapchain(vk::Device device, GPU const& gpu, vk::SurfaceKHR surface, glm::ivec2 size);
+    ~VulkanSwapchain();
 
 	bool Recreate(glm::ivec2 size);
 	glm::ivec2 GetSize() const { return { m_CreateInfo.imageExtent.width, m_CreateInfo.imageExtent.height }; };
@@ -20,7 +20,6 @@ public:
 	bool Present(vk::Queue const queue);
 
 private:
-	using Swapchain = vk::UniqueHandle<vk::SwapchainKHR, DispatchLoaderDynamic>;
 	void PopulateImages();
 	void CreateImageViews();
 	void CreatePresentSemaphores();
@@ -34,10 +33,9 @@ private:
 
 	vk::Device m_Device;
 	GPU m_GPU{};
-	DispatchLoaderDynamic m_DynamicLoader;
 	std::vector<vk::UniqueSemaphore> m_PresentSemaphores{};
 	vk::SwapchainCreateInfoKHR m_CreateInfo{};
-	Swapchain m_Swapchain{};
+	vk::UniqueSwapchainKHR m_Swapchain{};
 	std::vector<vk::Image> m_Images;
 	std::vector<vk::UniqueImageView> m_ImageViews{};
 	std::optional<std::size_t> m_ImageIndex{};

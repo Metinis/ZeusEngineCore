@@ -31,6 +31,8 @@ target_include_directories(ZeusEngineCore
         ${CMAKE_SOURCE_DIR}/include/glm
 )
 
+target_compile_definitions(ZeusEngineCore PRIVATE VK_NO_PROTOTYPES)
+
 # Link dependencies
 target_link_libraries(ZeusEngineCore
         PUBLIC

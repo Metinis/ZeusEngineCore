@@ -7,7 +7,6 @@
 #include <optional>
 #include <vulkan/vulkan.hpp>
 
-using DispatchLoaderDynamic = vk::detail::DispatchLoaderDynamic;
 
 std::string readFile(const std::filesystem::path& filePath);
 
