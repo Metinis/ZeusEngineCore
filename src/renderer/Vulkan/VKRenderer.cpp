@@ -35,9 +35,11 @@ bool VKRenderer::BeginFrame() {
 void VKRenderer::Submit(const glm::mat4& transform, const std::shared_ptr<Material>& material, const std::shared_ptr<IMesh>& mesh,
                         std::function<void(vk::CommandBuffer)> extraDrawCallback) {
     m_VKBackend->Render(m_CommandBuffer, [=](vk::CommandBuffer cmd) {
-        //mesh->Draw(cmd, material, transform);
+        //do mesh specific drawing here
+
+        // Inject ImGui rendering here
         if (extraDrawCallback) {
-            extraDrawCallback(cmd); // Inject ImGui rendering here
+            extraDrawCallback(cmd);
         }
     });
 }

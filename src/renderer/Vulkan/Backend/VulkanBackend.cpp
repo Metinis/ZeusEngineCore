@@ -137,11 +137,17 @@ void VulkanBackend::Render(vk::CommandBuffer const commandBuffer, std::function<
     renderingInfo.layerCount = 1;
 
     commandBuffer.beginRendering(renderingInfo);
-    //draw
-    if (drawCallback) {
-        drawCallback(commandBuffer); // Injected draw logic
-    }
+    //draw mesh stuff here
 
+    commandBuffer.endRendering();
+
+    // UI pass
+    colorAttachment.loadOp = vk::AttachmentLoadOp::eLoad;
+    renderingInfo.setColorAttachments(colorAttachment);
+    renderingInfo.setPDepthAttachment(nullptr); // no depth
+
+    commandBuffer.beginRendering(renderingInfo);
+    if(drawCallback) drawCallback(commandBuffer);
     commandBuffer.endRendering();
 }
 
