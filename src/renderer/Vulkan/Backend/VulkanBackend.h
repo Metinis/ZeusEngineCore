@@ -3,19 +3,22 @@
 #include "VulkanInstance.h"
 #include "VulkanDevice.h"
 #include "../../../Utils.h"
-#include "ScopedWaiter.h"
+#include "ZeusEngineCore/ScopedWaiter.h"
 #include "VulkanSwapchain.h"
 #include "VulkanSync.h"
+#include "ZeusEngineCore/ContextInfo.h"
+#include <functional>
 
 class VulkanBackend {
 public:
     VulkanBackend(const std::vector<const char*>& layers, WindowHandle windowHandle);
     ~VulkanBackend() = default;
     void Init();
+    VulkanContextInfo GetContext() const;
     bool AcquireRenderTarget();
     vk::CommandBuffer BeginFrame();
     void TransitionForRender(vk::CommandBuffer const commandBuffer) const;
-    void Render(vk::CommandBuffer const commandBuffer);
+    void Render(vk::CommandBuffer const commandBuffer, std::function<void(vk::CommandBuffer)> drawCallback = nullptr);
     void TransitionForPresent(vk::CommandBuffer const commandBuffer) const;
     void SubmitAndPresent();
 private:

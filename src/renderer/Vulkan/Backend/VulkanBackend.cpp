@@ -29,6 +29,19 @@ void VulkanBackend::Init()
 {
 
 }
+VulkanContextInfo VulkanBackend::GetContext() const
+{
+    VulkanContextInfo contextInfo{};
+    contextInfo.apiVersion = m_Instance.GetApiVersion();
+    contextInfo.instance = m_Instance.Get();
+    contextInfo.physicalDevice = m_Device.GetGPU().device;
+    contextInfo.queueFamily = m_Device.GetGPU().queueFamily;
+    contextInfo.device = m_Device.GetLogicalDevice();
+    contextInfo.queue = m_Device.GetQueue();
+    contextInfo.colorFormat = m_Swapchain.GetFormat();
+    contextInfo.samples = vk::SampleCountFlagBits::e1;
+    return contextInfo;
+}
 vk::UniqueSurfaceKHR VulkanBackend::CreateSurface(WindowHandle windowHandle, const vk::Instance instance) {
     GLFWwindow* glfwWindow = static_cast<GLFWwindow*>(windowHandle.nativeWindowHandle);
 
@@ -107,7 +120,7 @@ void VulkanBackend::TransitionForRender(vk::CommandBuffer const commandBuffer) c
     commandBuffer.pipelineBarrier2(dependency_info);
 }
 
-void VulkanBackend::Render(vk::CommandBuffer const commandBuffer)
+void VulkanBackend::Render(vk::CommandBuffer const commandBuffer, std::function<void(vk::CommandBuffer)> drawCallback)
 {
     vk::RenderingAttachmentInfo colorAttachment{};
     colorAttachment.imageView = m_RenderTarget->imageView;
@@ -125,6 +138,10 @@ void VulkanBackend::Render(vk::CommandBuffer const commandBuffer)
 
     commandBuffer.beginRendering(renderingInfo);
     //draw
+    if (drawCallback) {
+        drawCallback(commandBuffer); // Injected draw logic
+    }
+
     commandBuffer.endRendering();
 }
 

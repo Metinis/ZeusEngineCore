@@ -16,7 +16,8 @@ bool GLRenderer::BeginFrame() {
     return true;
 }
 
-void GLRenderer::Submit(const glm::mat4& transform, const std::shared_ptr<Material>& material, const std::shared_ptr<IMesh>& mesh) {
+void GLRenderer::Submit(const glm::mat4& transform, const std::shared_ptr<Material>& material, const std::shared_ptr<IMesh>& mesh,
+                        std::function<void(vk::CommandBuffer)> extraDrawCallback) {
     //todo probably sort by material to reduce state changes
     m_RenderQueue.emplace_back(transform, material, mesh);
 }

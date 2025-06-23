@@ -4,7 +4,7 @@
 #include <algorithm>
 VulkanInstance::VulkanInstance(const std::vector<const char*>& layers, const std::vector<const char*>& extensions)
 {
-
+    m_ApiVersion = VK_API_VERSION_1_3;
     std::vector<const char*> finalExtensions = extensions;
     if (!layers.empty()) {
         //only add if we have validation layers
@@ -18,7 +18,7 @@ VulkanInstance::VulkanInstance(const std::vector<const char*>& layers, const std
     appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
     appInfo.pEngineName = "ZeusEngine";
     appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-    appInfo.apiVersion = VK_API_VERSION_1_3;
+    appInfo.apiVersion = m_ApiVersion;
 
     vk::InstanceCreateInfo createInfo{};
     createInfo.pApplicationInfo = &appInfo;

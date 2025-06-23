@@ -17,6 +17,7 @@ public:
 	std::optional<RenderTarget> AquireNextImage(vk::Semaphore const toSignal);
 	vk::ImageMemoryBarrier2 GetBaseBarrier() const;
 	vk::Semaphore GetPresentSemaphore() const { return *m_PresentSemaphores.at(m_ImageIndex.value()); };
+	vk::Format GetFormat() const { return m_CreateInfo.imageFormat; }
 	bool Present(vk::Queue const queue);
 
 private:

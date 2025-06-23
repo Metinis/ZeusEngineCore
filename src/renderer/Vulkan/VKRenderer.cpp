@@ -32,8 +32,14 @@ bool VKRenderer::BeginFrame() {
 
 }
 
-void VKRenderer::Submit(const glm::mat4& transform, const std::shared_ptr<Material>& material, const std::shared_ptr<IMesh>& mesh) {
-    m_VKBackend->Render(m_CommandBuffer);
+void VKRenderer::Submit(const glm::mat4& transform, const std::shared_ptr<Material>& material, const std::shared_ptr<IMesh>& mesh,
+                        std::function<void(vk::CommandBuffer)> extraDrawCallback) {
+    m_VKBackend->Render(m_CommandBuffer, [=](vk::CommandBuffer cmd) {
+        //mesh->Draw(cmd, material, transform);
+        if (extraDrawCallback) {
+            extraDrawCallback(cmd); // Inject ImGui rendering here
+        }
+    });
 }
 
 
@@ -44,4 +50,9 @@ void VKRenderer::EndFrame() {
 
 void VKRenderer::DrawMesh(const IMesh& mesh, Material& material) {
     m_VKBackend->Render(m_CommandBuffer);
+}
+
+RendererContextVariant VKRenderer::GetContext() const
+{
+    return m_VKBackend->GetContext();
 }
