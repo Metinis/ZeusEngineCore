@@ -29,14 +29,16 @@ private:
 	vk::UniqueDevice m_LogicalDevice;
 	vk::Queue m_Queue;
 #ifdef __APPLE__
-	static constexpr std::array<const char*, 2> s_deviceExtensions = {
+	static constexpr std::array<const char*, 3> s_deviceExtensions = {
 		VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-		"VK_KHR_portability_subset"
+		"VK_KHR_portability_subset",
+		"VK_EXT_shader_object"
 	};
 #else
-	static constexpr std::array<const char*, 2> s_deviceExtensions = {
+	static constexpr std::array<const char*, 3> s_deviceExtensions = {
 		VK_KHR_SWAPCHAIN_EXTENSION_NAME,
         VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME,
+		"VK_EXT_shader_object"
 	};
 #endif
 

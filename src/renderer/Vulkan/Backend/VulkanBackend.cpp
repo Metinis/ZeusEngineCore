@@ -120,7 +120,8 @@ void VulkanBackend::TransitionForRender(vk::CommandBuffer const commandBuffer) c
     commandBuffer.pipelineBarrier2(dependency_info);
 }
 
-void VulkanBackend::Render(vk::CommandBuffer const commandBuffer, std::function<void(vk::CommandBuffer)> drawCallback)
+void VulkanBackend::Render(vk::CommandBuffer const commandBuffer, const std::function<void(vk::CommandBuffer)>& drawCallback,
+                           const std::function<void(vk::CommandBuffer)>& uiDrawCallback)
 {
     vk::RenderingAttachmentInfo colorAttachment{};
     colorAttachment.imageView = m_RenderTarget->imageView;
@@ -138,7 +139,7 @@ void VulkanBackend::Render(vk::CommandBuffer const commandBuffer, std::function<
 
     commandBuffer.beginRendering(renderingInfo);
     //draw mesh stuff here
-
+    if(drawCallback) drawCallback(commandBuffer);
     commandBuffer.endRendering();
 
     // UI pass
@@ -147,7 +148,7 @@ void VulkanBackend::Render(vk::CommandBuffer const commandBuffer, std::function<
     renderingInfo.setPDepthAttachment(nullptr); // no depth
 
     commandBuffer.beginRendering(renderingInfo);
-    if(drawCallback) drawCallback(commandBuffer);
+    if(uiDrawCallback) uiDrawCallback(commandBuffer);
     commandBuffer.endRendering();
 }
 
@@ -193,9 +194,6 @@ void VulkanBackend::SubmitAndPresent()
     submitInfo.setSignalSemaphoreInfos(signalSemaphoreInfos);
 
     assert(renderSync.drawn);
-    //vk::Queue queue = m_Device.GetLogicalDevice().getQueue();
-    //vk::Queue queue = m_Device.GetQueue();
-    //queue.submit2(submitInfo, *renderSync.drawn);
     m_Device.SubmitToQueue(submitInfo, *renderSync.drawn);
 
     m_Sync.NextFrameIndex();
@@ -203,10 +201,18 @@ void VulkanBackend::SubmitAndPresent()
     vk::Queue queue = m_Device.GetQueue();
 
 
-    auto const fb_size_changed = m_FramebufferSize != m_Swapchain.GetSize();
-    auto const out_of_date = !m_Swapchain.Present(queue);
-    if (fb_size_changed || out_of_date) {
+    const bool fb_size_changed = m_FramebufferSize != m_Swapchain.GetSize();
+    if (fb_size_changed) {
+        //m_Device.GetLogicalDevice().waitIdle();
         m_Swapchain.Recreate(m_FramebufferSize);
+        return;
+    }
+
+    const bool out_of_date = !m_Swapchain.Present(queue);
+    if (out_of_date) {
+        //m_Device.GetLogicalDevice().waitIdle();
+        m_Swapchain.Recreate(m_FramebufferSize);
+        return;
     }
 }
 

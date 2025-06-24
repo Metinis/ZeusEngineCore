@@ -2,15 +2,22 @@
 #include <string_view>
 #include <ranges>
 #include <algorithm>
+#include <ranges>
+
 VulkanInstance::VulkanInstance(const std::vector<const char*>& layers, const std::vector<const char*>& extensions)
 {
     m_ApiVersion = VK_API_VERSION_1_3;
     std::vector<const char*> finalExtensions = extensions;
     if (!layers.empty()) {
         //only add if we have validation layers
-        finalExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-        if(!CheckValidationLayerSupport(layers))
-            throw std::runtime_error("validation layers requested, but not available!");
+        bool hasValidationLayer = std::ranges::contains(layers | std::views::transform([](const char* s) { return std::string_view{ s }; }),
+            std::string_view{ "VK_LAYER_KHRONOS_validation" }
+        );
+        if(hasValidationLayer)
+            finalExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+
+        if(!CheckLayerSupport(layers))
+            throw std::runtime_error("Layers requested, but not available!");
     }
 
     vk::ApplicationInfo appInfo{};
@@ -34,7 +41,7 @@ VulkanInstance::VulkanInstance(const std::vector<const char*>& layers, const std
     VULKAN_HPP_DEFAULT_DISPATCHER.init(*m_Instance);
 }
 
-const bool VulkanInstance::CheckValidationLayerSupport(const std::vector<const char*>& layers)
+const bool VulkanInstance::CheckLayerSupport(const std::vector<const char*>& layers)
 {
     const auto availableLayers = vk::enumerateInstanceLayerProperties();
     //create a list of names from available layers

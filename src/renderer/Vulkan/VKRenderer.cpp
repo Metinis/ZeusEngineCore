@@ -5,7 +5,7 @@ VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE;
 
 void VKRenderer::Init(RendererInitInfo& initInfo) {
     VULKAN_HPP_DEFAULT_DISPATCHER.init();
-    std::vector<const char*> layers = { "VK_LAYER_KHRONOS_validation" };
+    std::vector<const char*> layers = { "VK_LAYER_KHRONOS_validation", "VK_LAYER_KHRONOS_shader_object" };
 
     WindowHandle windowHandlePtr;
     if (initInfo.windowHandle.has_value()) {
@@ -32,20 +32,29 @@ bool VKRenderer::BeginFrame() {
 
 }
 
-void VKRenderer::Submit(const glm::mat4& transform, const std::shared_ptr<Material>& material, const std::shared_ptr<IMesh>& mesh,
-                        std::function<void(vk::CommandBuffer)> extraDrawCallback) {
-    m_VKBackend->Render(m_CommandBuffer, [=](vk::CommandBuffer cmd) {
-        //do mesh specific drawing here
+void VKRenderer::Submit(const glm::mat4& transform, const std::shared_ptr<Material>& material, const std::shared_ptr<IMesh>& mesh) {
+    m_RenderQueue.emplace_back(transform, material, mesh);
 
-        // Inject ImGui rendering here
-        if (extraDrawCallback) {
-            extraDrawCallback(cmd);
-        }
-    });
 }
 
 
-void VKRenderer::EndFrame() {
+void VKRenderer::EndFrame(const std::function<void(vk::CommandBuffer)>& uiExtraDrawCallback) {
+    std::function<void(vk::CommandBuffer)> drawCallback = [=](vk::CommandBuffer cmd) {
+        // Do mesh-specific drawing here
+        //for(const auto& cmd : m_RenderQueue) {
+       //     cmd.material->GetShader()->SetUniformMat4("u_Model", cmd.transform);
+        //    cmd.mesh->Draw(*cmd.material);
+        //}
+        //m_RenderQueue.clear();
+    };
+    std::function<void(vk::CommandBuffer)> uiDrawCallback = [=](vk::CommandBuffer cmd) {
+        // Do ui drawing here
+        if (uiExtraDrawCallback) {
+            uiExtraDrawCallback(cmd);
+        }
+    };
+
+    m_VKBackend->Render(m_CommandBuffer, drawCallback, uiDrawCallback);
     m_VKBackend->TransitionForPresent(m_CommandBuffer);
     m_VKBackend->SubmitAndPresent();
 }

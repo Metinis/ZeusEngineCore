@@ -31,6 +31,7 @@ VulkanSwapchain::VulkanSwapchain(vk::Device device, GPU const& gpu, vk::SurfaceK
 
 bool VulkanSwapchain::Recreate(glm::ivec2 size)
 {
+    m_ImageIndex.reset();
     if (size.x <= 0 || size.y <= 0) { return false; }
 
     auto const capabilities = m_GPU.device.getSurfaceCapabilitiesKHR(m_CreateInfo.surface);
@@ -150,7 +151,7 @@ std::optional<RenderTarget> VulkanSwapchain::AquireNextImage(vk::Semaphore const
 
     auto imageIndex = std::uint32_t{};
     auto const result = m_Device.acquireNextImageKHR(*m_Swapchain, timeout_v, toSignal, {}, &imageIndex);
-    if (NeedsRecreation(result)) { return {}; }
+    if (NeedsRecreation(result)) {return {}; }
 
     m_ImageIndex = static_cast<std::size_t>(imageIndex);
     return RenderTarget{

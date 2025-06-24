@@ -18,7 +18,8 @@ public:
     bool AcquireRenderTarget();
     vk::CommandBuffer BeginFrame();
     void TransitionForRender(vk::CommandBuffer const commandBuffer) const;
-    void Render(vk::CommandBuffer const commandBuffer, std::function<void(vk::CommandBuffer)> drawCallback = nullptr);
+    void Render(vk::CommandBuffer const commandBuffer, const std::function<void(vk::CommandBuffer)>& drawCallback = nullptr,
+                const std::function<void(vk::CommandBuffer)>& uiDrawCallback = nullptr);
     void TransitionForPresent(vk::CommandBuffer const commandBuffer) const;
     void SubmitAndPresent();
 private:

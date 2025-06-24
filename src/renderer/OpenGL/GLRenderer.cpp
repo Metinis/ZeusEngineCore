@@ -16,14 +16,13 @@ bool GLRenderer::BeginFrame() {
     return true;
 }
 
-void GLRenderer::Submit(const glm::mat4& transform, const std::shared_ptr<Material>& material, const std::shared_ptr<IMesh>& mesh,
-                        std::function<void(vk::CommandBuffer)> extraDrawCallback) {
+void GLRenderer::Submit(const glm::mat4& transform, const std::shared_ptr<Material>& material, const std::shared_ptr<IMesh>& mesh) {
     //todo probably sort by material to reduce state changes
     m_RenderQueue.emplace_back(transform, material, mesh);
 }
 
 
-void GLRenderer::EndFrame() {
+void GLRenderer::EndFrame(const std::function<void(vk::CommandBuffer)>& uiExtraDrawCallback) {
 //glfw swapping handled in Window
     //draw submitted commands
     for(const auto& cmd : m_RenderQueue) {
