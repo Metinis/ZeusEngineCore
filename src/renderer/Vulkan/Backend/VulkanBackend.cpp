@@ -134,7 +134,7 @@ void VulkanBackend::Render(vk::CommandBuffer const commandBuffer, const std::fun
     colorAttachment.imageLayout = vk::ImageLayout::eAttachmentOptimal;
     colorAttachment.loadOp = vk::AttachmentLoadOp::eClear;
     colorAttachment.storeOp = vk::AttachmentStoreOp::eStore;
-    colorAttachment.clearValue = vk::ClearColorValue{ 1.0f, 0.0f, 0.0f, 1.0f };
+    colorAttachment.clearValue = vk::ClearColorValue{ 0.0f, 0.0f, 0.0f, 1.0f };
 
     vk::RenderingInfo renderingInfo{};
     auto const renderArea = vk::Rect2D{ vk::Offset2D{}, m_RenderTarget->extent };
