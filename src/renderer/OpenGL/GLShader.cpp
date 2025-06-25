@@ -5,9 +5,9 @@
 #include "../../Utils.h"
 
 
-void GLShader::Init(const std::string& vertexPath, const std::string& fragmentPath) {
-    const std::string vertexSrc = readFile(vertexPath);
-    const std::string fragmentSrc = readFile(fragmentPath);
+void GLShader::Init(const ShaderInfo& shaderInfo) {
+    const std::string vertexSrc = ReadFile(shaderInfo.vertexPath);
+    const std::string fragmentSrc = ReadFile(shaderInfo.fragmentPath);
 
     uint32_t vertex = glCreateShader(GL_VERTEX_SHADER);
     const char* vSrc = vertexSrc.c_str();

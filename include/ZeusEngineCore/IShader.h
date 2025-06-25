@@ -3,15 +3,32 @@
 #include <string>
 #include <unordered_map>
 #include <glm/mat4x4.hpp>
-
+#include <variant>
 #include "RendererAPI.h"
+#include <string_view>
+#include <memory>
+#include <ZeusEngineCore/InfoVariants.h>
+
+struct ShaderInfo {
+    RendererAPI api;
+    std::string vertexPath;
+    std::string fragmentPath;
+
+    std::variant<std::monostate, VulkanShaderInfo, OpenGLShaderInfo> backendData;
+};
 
 class IShader {
 public:
-    virtual void Init(const std::string& vertexSrc, const std::string& fragmentSrc) = 0;
+    virtual void Init(const ShaderInfo& shaderInfo) = 0;
     virtual ~IShader() = default;
 
     virtual void Bind() const = 0;
+
+    virtual void Bind(vk::CommandBuffer commandBuffer, glm::ivec2 const framebufferSize) {
+        // By default dont support command buffer
+        throw std::runtime_error("Bind with command buffer not implemented for this shader type");
+    }
+
     virtual void Unbind() const = 0;
 
     virtual void SetUniformInt(const std::string& name, int value) = 0;

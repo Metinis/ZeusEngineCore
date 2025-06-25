@@ -19,9 +19,6 @@ VKRenderer::~VKRenderer() = default;
 
 
 bool VKRenderer::BeginFrame() {
-    //if (!m_VKBackend->AcquireRenderTarget()) {
-        //std::println("failed to aquire render target");
-    //}
     if(!m_VKBackend->AcquireRenderTarget()){
         return false;
     }
@@ -39,18 +36,20 @@ void VKRenderer::Submit(const glm::mat4& transform, const std::shared_ptr<Materi
 
 
 void VKRenderer::EndFrame(const std::function<void(vk::CommandBuffer)>& uiExtraDrawCallback) {
-    std::function<void(vk::CommandBuffer)> drawCallback = [=](vk::CommandBuffer cmd) {
+    std::function<void(vk::CommandBuffer)> drawCallback = [=](vk::CommandBuffer commandBuffer) {
         // Do mesh-specific drawing here
-        //for(const auto& cmd : m_RenderQueue) {
+        for(const auto& cmd : m_RenderQueue) {
+            cmd.material->Bind(commandBuffer, m_VKBackend->GetFramebufferSize());
+            commandBuffer.draw(3, 1, 0, 0);
        //     cmd.material->GetShader()->SetUniformMat4("u_Model", cmd.transform);
         //    cmd.mesh->Draw(*cmd.material);
-        //}
-        //m_RenderQueue.clear();
+        }
+        m_RenderQueue.clear();
     };
-    std::function<void(vk::CommandBuffer)> uiDrawCallback = [=](vk::CommandBuffer cmd) {
+    std::function<void(vk::CommandBuffer)> uiDrawCallback = [=](vk::CommandBuffer commandBuffer) {
         // Do ui drawing here
         if (uiExtraDrawCallback) {
-            uiExtraDrawCallback(cmd);
+            uiExtraDrawCallback(commandBuffer);
         }
     };
 
@@ -66,4 +65,8 @@ void VKRenderer::DrawMesh(const IMesh& mesh, Material& material) {
 RendererContextVariant VKRenderer::GetContext() const
 {
     return m_VKBackend->GetContext();
+}
+
+ShaderInfoVariant VKRenderer::GetShaderInfo() const {
+    return m_VKBackend->GetShaderInfo();
 }

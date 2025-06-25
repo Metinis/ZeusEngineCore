@@ -20,6 +20,8 @@ public:
     void* GetCurrentCommandBuffer() override { return reinterpret_cast<void*>(static_cast<VkCommandBuffer>(m_CommandBuffer)); }
 
     RendererContextVariant GetContext() const override;
+
+    ShaderInfoVariant GetShaderInfo() const override;
 private:
     std::unique_ptr<VulkanBackend> m_VKBackend;
     vk::CommandBuffer m_CommandBuffer;

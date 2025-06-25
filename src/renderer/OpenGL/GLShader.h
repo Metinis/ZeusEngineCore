@@ -9,7 +9,7 @@
 class GLShader : public IShader{
 public:
     ~GLShader() override;
-    void Init(const std::string& vertexPath, const std::string& fragmentPath) override;
+    void Init(const ShaderInfo& shaderInfo) override;
 
     void Bind() const override;
     void Unbind() const override;

@@ -6,7 +6,7 @@
 #include "ZeusEngineCore/ScopedWaiter.h"
 #include "VulkanSwapchain.h"
 #include "VulkanSync.h"
-#include "ZeusEngineCore/ContextInfo.h"
+#include "ZeusEngineCore/InfoVariants.h"
 #include <functional>
 
 class VulkanBackend {
@@ -15,6 +15,7 @@ public:
     ~VulkanBackend() = default;
     void Init();
     VulkanContextInfo GetContext() const;
+    VulkanShaderInfo GetShaderInfo() const;
     bool AcquireRenderTarget();
     vk::CommandBuffer BeginFrame();
     void TransitionForRender(vk::CommandBuffer const commandBuffer) const;
@@ -22,6 +23,7 @@ public:
                 const std::function<void(vk::CommandBuffer)>& uiDrawCallback = nullptr);
     void TransitionForPresent(vk::CommandBuffer const commandBuffer) const;
     void SubmitAndPresent();
+    glm::ivec2 GetFramebufferSize() const {return m_FramebufferSize;}
 private:
     std::vector<const char*> GetRequiredExtensions();
     vk::UniqueDebugUtilsMessengerEXT CreateMessenger(const vk::Instance instance);

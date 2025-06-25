@@ -21,6 +21,8 @@ public:
 
     void Bind();
 
+    void Bind(vk::CommandBuffer commandBuffer, glm::ivec2 framebufferSize);
+
     void Unbind() const;
 
 private:

@@ -6,12 +6,13 @@
 #include <vulkan/vulkan.hpp>
 #include "../src/Utils.h"
 #include <variant>
-#include <ZeusEngineCore/ContextInfo.h>
+#include <ZeusEngineCore/InfoVariants.h>
 #include <functional>
 
 enum class RendererAPI;
 
 using RendererContextVariant = std::variant<std::monostate, VulkanContextInfo, OpenGLContextInfo>;
+using ShaderInfoVariant = std::variant<std::monostate, VulkanShaderInfo, OpenGLShaderInfo>;
 
 class IRenderer {
 public:
@@ -31,6 +32,8 @@ public:
     virtual void* GetCurrentCommandBuffer() = 0;
 
     virtual RendererContextVariant GetContext() const = 0;
+
+    virtual ShaderInfoVariant GetShaderInfo() const = 0;
 
 protected:
     std::vector<RenderCommand> m_RenderQueue;

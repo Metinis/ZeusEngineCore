@@ -18,4 +18,6 @@ public:
     void* GetCurrentCommandBuffer() override {return nullptr;}
 
     RendererContextVariant GetContext() const override { return OpenGLContextInfo{}; };
+
+    ShaderInfoVariant GetShaderInfo() const override;
 };

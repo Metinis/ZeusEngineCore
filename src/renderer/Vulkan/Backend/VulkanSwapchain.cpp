@@ -66,11 +66,11 @@ void VulkanSwapchain::PopulateImages()
     //avoiding a new vector every call
     std::uint32_t imageCount = 0;
     vk::Result result = m_Device.getSwapchainImagesKHR(*m_Swapchain, &imageCount, nullptr);
-    requireSuccess(result, "Failed to get Swapchain Images");
+    RequireSuccess(result, "Failed to get Swapchain Images");
 
     m_Images.resize(imageCount);
     result = m_Device.getSwapchainImagesKHR(*m_Swapchain, &imageCount, m_Images.data());
-    requireSuccess(result, "Failed to get Swapchain Images");
+    RequireSuccess(result, "Failed to get Swapchain Images");
 }
 constexpr auto subresourceRange_v = [] {
     vk::ImageSubresourceRange ret{};

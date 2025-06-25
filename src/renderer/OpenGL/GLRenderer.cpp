@@ -36,3 +36,7 @@ void GLRenderer::DrawMesh(const IMesh& mesh, Material& material) {
     //immediately draw (costly for performance but option available)
     mesh.Draw(material);
 }
+
+ShaderInfoVariant GLRenderer::GetShaderInfo() const {
+    return ShaderInfoVariant {};
+}

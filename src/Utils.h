@@ -8,9 +8,11 @@
 #include <vulkan/vulkan.hpp>
 
 
-std::string readFile(const std::filesystem::path& filePath);
+std::string ReadFile(const std::filesystem::path& filePath);
 
-void requireSuccess(vk::Result const result, char const* errorMsg);
+std::vector<std::uint32_t> ToSpirV(const std::filesystem::path& filePath);
+
+void RequireSuccess(vk::Result const result, char const* errorMsg);
 
 struct WindowHandle {
     void* nativeWindowHandle;

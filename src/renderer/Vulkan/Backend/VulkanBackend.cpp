@@ -42,6 +42,12 @@ VulkanContextInfo VulkanBackend::GetContext() const
     contextInfo.samples = vk::SampleCountFlagBits::e1;
     return contextInfo;
 }
+VulkanShaderInfo VulkanBackend::GetShaderInfo() const
+{
+    VulkanShaderInfo shaderInfo{};
+    shaderInfo.device = m_Device.GetLogicalDevice();
+    return shaderInfo;
+}
 vk::UniqueSurfaceKHR VulkanBackend::CreateSurface(WindowHandle windowHandle, const vk::Instance instance) {
     GLFWwindow* glfwWindow = static_cast<GLFWwindow*>(windowHandle.nativeWindowHandle);
 
