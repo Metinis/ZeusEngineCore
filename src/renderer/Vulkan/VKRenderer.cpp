@@ -40,7 +40,8 @@ void VKRenderer::EndFrame(const std::function<void(vk::CommandBuffer)>& uiExtraD
         // Do mesh-specific drawing here
         for(const auto& cmd : m_RenderQueue) {
             cmd.material->Bind(commandBuffer, m_VKBackend->GetFramebufferSize());
-            commandBuffer.draw(3, 1, 0, 0);
+            cmd.mesh->Draw(*cmd.material, commandBuffer);
+            //commandBuffer.draw(3, 1, 0, 0);
        //     cmd.material->GetShader()->SetUniformMat4("u_Model", cmd.transform);
         //    cmd.mesh->Draw(*cmd.material);
         }

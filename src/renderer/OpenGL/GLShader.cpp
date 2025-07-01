@@ -60,3 +60,8 @@ int GLShader::GetUniformLocation(const std::string& name) {
     m_UniformLocationCache[name] = location;
     return location;
 }
+
+void GLShader::SetWireframe(bool isWireframe) {
+    m_IsWireframe = isWireframe;
+    glPolygonMode(GL_FRONT_AND_BACK,  m_IsWireframe ? GL_LINE : GL_FILL);
+}

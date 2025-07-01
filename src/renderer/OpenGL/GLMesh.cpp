@@ -1,7 +1,8 @@
 #include "GLMesh.h"
 #include <glad/glad.h>
 
-void GLMesh::Init(const std::vector<Vertex> &vertices, const std::vector<uint32_t> &indices) {
+void GLMesh::Init(const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices,
+                  const BackendContextVariant& context) {
     m_IndexCount = indices.size();
 
     glGenVertexArrays(1, &m_VAO);

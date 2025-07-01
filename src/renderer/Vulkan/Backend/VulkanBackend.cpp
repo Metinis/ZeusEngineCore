@@ -18,7 +18,9 @@ VulkanBackend::VulkanBackend(const std::vector<const char*>& layers, WindowHandl
 
           m_Swapchain(CreateSwapchain(windowHandle, m_Device.GetLogicalDevice(), m_Device.GetGPU(), m_Surface.get())),
 
-          m_Sync(m_Device.GetGPU(), m_Device.GetLogicalDevice())
+          m_Sync(m_Device.GetGPU(), m_Device.GetLogicalDevice()),
+
+          m_Allocator(CreateMemoryAllocator(m_Instance.Get(), m_Device.GetGPU().device, m_Device.GetLogicalDevice()))
 
           {
 
@@ -40,12 +42,18 @@ VulkanContextInfo VulkanBackend::GetContext() const
     contextInfo.queue = m_Device.GetQueue();
     contextInfo.colorFormat = m_Swapchain.GetFormat();
     contextInfo.samples = vk::SampleCountFlagBits::e1;
+    contextInfo.allocator = m_Allocator.Get();
     return contextInfo;
 }
+static constexpr auto vertexInput_v = VKShaderVertexInput{
+        .attributes = vertexAttributes_v,
+        .bindings = vertexBindings_v,
+};
 VulkanShaderInfo VulkanBackend::GetShaderInfo() const
 {
     VulkanShaderInfo shaderInfo{};
     shaderInfo.device = m_Device.GetLogicalDevice();
+    shaderInfo.vertexInput = vertexInput_v;
     return shaderInfo;
 }
 vk::UniqueSurfaceKHR VulkanBackend::CreateSurface(WindowHandle windowHandle, const vk::Instance instance) {
@@ -269,4 +277,10 @@ vk::UniqueDebugUtilsMessengerEXT VulkanBackend::CreateMessenger(const vk::Instan
 
 
     return instance.createDebugUtilsMessengerEXTUnique(createInfo);
+}
+
+VulkanMemAlloc VulkanBackend::CreateMemoryAllocator(const vk::Instance instance, const vk::PhysicalDevice physicalDevice,
+                                     const vk::Device logicalDevice) const {
+
+    return VulkanMemAlloc(instance, physicalDevice, logicalDevice);
 }

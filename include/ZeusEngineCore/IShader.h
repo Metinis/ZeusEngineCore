@@ -35,12 +35,17 @@ public:
     virtual void SetUniformMat4(const std::string& name, const glm::mat4& matrix) = 0;
     virtual void SetUniformFloat(const std::string& name, float value) = 0;
     virtual void SetUniformVec4(const std::string& name, const glm::vec4& value) = 0;
+    virtual void SetWireframe(bool isWireframe) = 0;
+    bool* GetWireframeFlag(){return &m_IsWireframe;}
+    float* GetLineWidth() {return &lineWidth;}
 
     static std::shared_ptr<IShader> Create(RendererAPI api);
 
 protected:
-    uint32_t m_RendererID;
+    std::uint32_t m_RendererID;
+    bool m_IsWireframe = false;
     std::unordered_map<std::string, int> m_UniformLocationCache;
+    float lineWidth{1.0f };
 
     virtual int GetUniformLocation(const std::string& name) = 0;
 };

@@ -16,6 +16,7 @@ public:
     void SetUniformMat4(const std::string& name, const glm::mat4& matrix) override;
     void SetUniformFloat(const std::string& name, float value) override;
     void SetUniformVec4(const std::string& name, const glm::vec4& value) override;
+    void SetWireframe(bool isWireframe) override;
 
     static constexpr auto colorBlendEquation_v = [] {
         auto ret = vk::ColorBlendEquationEXT{};
@@ -27,7 +28,7 @@ public:
 
     vk::PrimitiveTopology topology{ vk::PrimitiveTopology::eTriangleList };
     vk::PolygonMode polygonMode{ vk::PolygonMode::eFill };
-    float line_width{ 1.0f };
+
     vk::ColorBlendEquationEXT colorBlendEquation{ colorBlendEquation_v };
     vk::CompareOp depthCompare_op{ vk::CompareOp::eLessOrEqual };
 

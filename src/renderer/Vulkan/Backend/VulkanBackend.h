@@ -7,6 +7,7 @@
 #include "VulkanSwapchain.h"
 #include "VulkanSync.h"
 #include "ZeusEngineCore/InfoVariants.h"
+#include "VulkanMemAlloc.h"
 #include <functional>
 
 class VulkanBackend {
@@ -30,6 +31,8 @@ private:
     vk::UniqueSurfaceKHR CreateSurface(WindowHandle windowHandle, const vk::Instance instance);
     VulkanSwapchain CreateSwapchain(const WindowHandle windowHandle, const vk::Device device,
         const GPU& gpu, const vk::SurfaceKHR surface);
+    VulkanMemAlloc CreateMemoryAllocator(const vk::Instance instance, const vk::PhysicalDevice physicalDevice,
+                                         const vk::Device logicalDevice) const;
 
     //order matters
     VulkanInstance m_Instance;
@@ -40,6 +43,7 @@ private:
     ScopedWaiter m_Waiter;
     VulkanSync m_Sync;
     VulkanSwapchain m_Swapchain;
+    VulkanMemAlloc m_Allocator;
 
     //rendering backend variables
     glm::ivec2 m_FramebufferSize{};

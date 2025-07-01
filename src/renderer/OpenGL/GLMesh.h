@@ -4,7 +4,8 @@
 
 class GLMesh : public IMesh{
 public:
-    void Init(const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices) override;
+    void Init(const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices,
+              const BackendContextVariant& context) override;
     ~GLMesh() override;
     void Draw(Material& material) const override;
 private:

@@ -24,11 +24,20 @@ void GLRenderer::Submit(const glm::mat4& transform, const std::shared_ptr<Materi
 
 void GLRenderer::EndFrame(const std::function<void(vk::CommandBuffer)>& uiExtraDrawCallback) {
 //glfw swapping handled in Window
-    //draw submitted commands
-    for(const auto& cmd : m_RenderQueue) {
-        cmd.material->GetShader()->SetUniformMat4("u_Model", cmd.transform);
-        cmd.mesh->Draw(*cmd.material);
+    // Reuse a dummy VAO for the entire frame
+    static GLuint dummyVAO = 0;
+    if (dummyVAO == 0) {
+        glGenVertexArrays(1, &dummyVAO);
     }
+    glBindVertexArray(dummyVAO);
+
+    // Draw submitted commands
+    for (const auto& cmd : m_RenderQueue) {
+        cmd.material->Bind(); // assumes this binds the correct shader
+        glDrawArrays(GL_TRIANGLES, 0, 3); // rely on gl_VertexIndex inside shader
+    }
+
+    glBindVertexArray(0);
     m_RenderQueue.clear();
 }
 

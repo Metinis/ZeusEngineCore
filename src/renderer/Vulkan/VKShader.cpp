@@ -110,7 +110,7 @@ void VKShader::SetCommonStates(vk::CommandBuffer const commandBuffer) const {
     commandBuffer.setDepthTestEnable(depth_test);
     commandBuffer.setDepthCompareOp(depthCompare_op);
     commandBuffer.setPolygonModeEXT(polygonMode);
-    commandBuffer.setLineWidth(line_width);
+    commandBuffer.setLineWidth(lineWidth);
 }
 
 void VKShader::SetVertexStates(
@@ -138,6 +138,11 @@ void VKShader::BindShaders(vk::CommandBuffer const commandBuffer) const {
     };
     commandBuffer.bindShadersEXT(stages_v, shaders);
 }
+
+void VKShader::SetWireframe(bool isWireframe) {
+    polygonMode = m_IsWireframe ? vk::PolygonMode::eLine : vk::PolygonMode::eFill;
+}
+
 
 
 
