@@ -29,22 +29,13 @@ VulkanBackend::VulkanBackend(const std::vector<const char*>& layers, WindowHandl
 
 void VulkanBackend::Init()
 {
+    m_DeferredDestroyCallback = std::make_shared<std::function<void(BufferHandle)>>(
+            [this](BufferHandle handle) {
+                m_DeferredDestroy.push_back(handle);
+            });
 
 }
-VulkanContextInfo VulkanBackend::GetContext() const
-{
-    VulkanContextInfo contextInfo{};
-    contextInfo.apiVersion = m_Instance.GetApiVersion();
-    contextInfo.instance = m_Instance.Get();
-    contextInfo.physicalDevice = m_Device.GetGPU().device;
-    contextInfo.queueFamily = m_Device.GetGPU().queueFamily;
-    contextInfo.device = m_Device.GetLogicalDevice();
-    contextInfo.queue = m_Device.GetQueue();
-    contextInfo.colorFormat = m_Swapchain.GetFormat();
-    contextInfo.samples = vk::SampleCountFlagBits::e1;
-    contextInfo.allocator = m_Allocator.Get();
-    return contextInfo;
-}
+
 static constexpr auto vertexInput_v = VKShaderVertexInput{
         .attributes = vertexAttributes_v,
         .bindings = vertexBindings_v,
@@ -106,9 +97,16 @@ bool VulkanBackend::AcquireRenderTarget()
 
     return true;
 }
-
+void VulkanBackend::FlushDeferredDestroys() {
+    for (auto& bufferHandle : m_DeferredDestroy) {
+        vmaDestroyBuffer(bufferHandle.allocator, bufferHandle.buffer, bufferHandle.allocation);
+    }
+    m_DeferredDestroy.clear();
+}
 vk::CommandBuffer VulkanBackend::BeginFrame()
 {
+    FlushDeferredDestroys();
+
     RenderSync& renderSync = m_Sync.GetRenderSyncAtFrame();
     vk::CommandBufferBeginInfo commandBufferBeginInfo{};
     commandBufferBeginInfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
@@ -284,3 +282,28 @@ VulkanMemAlloc VulkanBackend::CreateMemoryAllocator(const vk::Instance instance,
 
     return VulkanMemAlloc(instance, physicalDevice, logicalDevice);
 }
+
+VulkanContextInfo VulkanBackend::GetContext()
+{
+    VulkanContextInfo contextInfo{};
+    contextInfo.apiVersion = m_Instance.GetApiVersion();
+    contextInfo.instance = m_Instance.Get();
+    contextInfo.physicalDevice = m_Device.GetGPU().device;
+    contextInfo.queueFamily = m_Device.GetGPU().queueFamily;
+    contextInfo.device = m_Device.GetLogicalDevice();
+    contextInfo.queue = m_Device.GetQueue();
+    contextInfo.colorFormat = m_Swapchain.GetFormat();
+    contextInfo.samples = vk::SampleCountFlagBits::e1;
+    contextInfo.allocator = m_Allocator.Get();
+    contextInfo.deferredDestroyBuffer = m_DeferredDestroyCallback;
+
+
+    return contextInfo;
+}
+
+VulkanBackend::~VulkanBackend() {
+    m_Device.GetLogicalDevice().waitIdle();
+    FlushDeferredDestroys();
+}
+
+

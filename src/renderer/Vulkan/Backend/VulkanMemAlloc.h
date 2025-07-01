@@ -12,4 +12,5 @@ public:
     VulkanBuffer CreateBuffer(BufferCreateInfo const& createInfo, BufferMemoryType const memoryType, vk::DeviceSize const size);
 private:
     VmaAllocator m_Allocator;
+    vk::Device m_Device;
 };

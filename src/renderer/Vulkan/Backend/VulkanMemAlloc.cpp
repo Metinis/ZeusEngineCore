@@ -2,7 +2,8 @@
 #define VMA_IMPLEMENTATION
 #include <vma/vk_mem_alloc.h>
 
-VulkanMemAlloc::VulkanMemAlloc(vk::Instance instance, vk::PhysicalDevice physicalDevice, vk::Device logicalDevice) {
+VulkanMemAlloc::VulkanMemAlloc(vk::Instance instance, vk::PhysicalDevice physicalDevice, vk::Device logicalDevice)
+: m_Device(logicalDevice){
     VmaVulkanFunctions vmaVkFunctions{};
     vmaVkFunctions.vkGetInstanceProcAddr = VULKAN_HPP_DEFAULT_DISPATCHER.vkGetInstanceProcAddr;
     vmaVkFunctions.vkGetDeviceProcAddr = VULKAN_HPP_DEFAULT_DISPATCHER.vkGetDeviceProcAddr;
@@ -19,6 +20,7 @@ VulkanMemAlloc::VulkanMemAlloc(vk::Instance instance, vk::PhysicalDevice physica
 }
 
 VulkanMemAlloc::~VulkanMemAlloc() {
+    m_Device.waitIdle();
     vmaDestroyAllocator(m_Allocator);
 }
 

@@ -1,8 +1,11 @@
 #pragma once
 #include <vulkan/vulkan.hpp>
 #include <span>
+#include <functional>
 #include "vma/vk_mem_alloc.h"
+#include "../../src/renderer/Vulkan/Backend/VulkanBuffer.h"
 
+class VKRenderer;
 struct VulkanContextInfo {
     std::uint32_t apiVersion{};
     vk::Instance instance{};
@@ -13,6 +16,7 @@ struct VulkanContextInfo {
     vk::Format colorFormat{};
     vk::SampleCountFlagBits samples{};
     VmaAllocator allocator{};
+    std::shared_ptr<std::function<void(BufferHandle)>> deferredDestroyBuffer;
 };
 struct OpenGLContextInfo {};
 

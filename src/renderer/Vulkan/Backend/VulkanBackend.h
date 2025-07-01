@@ -13,9 +13,9 @@
 class VulkanBackend {
 public:
     VulkanBackend(const std::vector<const char*>& layers, WindowHandle windowHandle);
-    ~VulkanBackend() = default;
+    ~VulkanBackend();
     void Init();
-    VulkanContextInfo GetContext() const;
+    VulkanContextInfo GetContext();
     VulkanShaderInfo GetShaderInfo() const;
     bool AcquireRenderTarget();
     vk::CommandBuffer BeginFrame();
@@ -33,6 +33,8 @@ private:
         const GPU& gpu, const vk::SurfaceKHR surface);
     VulkanMemAlloc CreateMemoryAllocator(const vk::Instance instance, const vk::PhysicalDevice physicalDevice,
                                          const vk::Device logicalDevice) const;
+    void FlushDeferredDestroys();
+    //void DestroyBuffersDeffered(VmaAllocator allocator, VmaAllocation allocation, vk::Buffer buffer);
 
     //order matters
     VulkanInstance m_Instance;
@@ -48,5 +50,9 @@ private:
     //rendering backend variables
     glm::ivec2 m_FramebufferSize{};
     std::optional<RenderTarget> m_RenderTarget{};
+
+    //deferred buffer destruction
+    std::shared_ptr<std::function<void(BufferHandle)>> m_DeferredDestroyCallback;
+    std::vector<BufferHandle> m_DeferredDestroy;
     
 };

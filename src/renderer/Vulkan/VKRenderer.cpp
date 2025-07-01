@@ -65,7 +65,8 @@ void VKRenderer::DrawMesh(const IMesh& mesh, Material& material) {
 
 RendererContextVariant VKRenderer::GetContext() const
 {
-    return m_VKBackend->GetContext();
+    VulkanContextInfo contextInfo = m_VKBackend->GetContext();
+    return contextInfo;
 }
 
 ShaderInfoVariant VKRenderer::GetShaderInfo() const {
