@@ -17,6 +17,8 @@ struct BufferCreateInfo {
 };
 enum class BufferMemoryType : std::int8_t { Host, Device };
 
+
+
 class VulkanBuffer {
 public:
     VulkanBuffer(BufferCreateInfo const create_info, BufferMemoryType const memory_type, vk::DeviceSize const size);

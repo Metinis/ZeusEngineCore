@@ -1,7 +1,8 @@
-
 #pragma once
 #include "ZeusEngineCore/IMesh.h"
 #include "Backend/VulkanBuffer.h"
+#include "Backend/VulkanDeviceBuffer.h"
+#include <optional>
 
 class VKMesh : public IMesh{
 public:
@@ -11,7 +12,7 @@ public:
     void Draw(Material& material) const override;
     void Draw(Material& material, vk::CommandBuffer commandBuffer) override;
 private:
-    VulkanBuffer CreateMeshVBO(const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices,
+    VulkanDeviceBuffer CreateMeshVBO(const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices,
                                const BackendContextVariant& context);
-    std::optional<VulkanBuffer> m_VBO;
+    std::optional<VulkanDeviceBuffer> m_VBO;
 };

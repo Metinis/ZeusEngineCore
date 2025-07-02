@@ -4,23 +4,25 @@
 #include <vulkan/vulkan.hpp>
 
 VulkanBackend::VulkanBackend(const std::vector<const char*>& layers, WindowHandle windowHandle)
-        : m_Instance(layers, GetRequiredExtensions()),
+    : m_Instance(layers, GetRequiredExtensions()),
 
-          m_WindowHandle(std::move(windowHandle)),
+    m_WindowHandle(std::move(windowHandle)),
 
-          m_Surface(CreateSurface(windowHandle, m_Instance.Get())),
+    m_Surface(CreateSurface(windowHandle, m_Instance.Get())),
 
-          m_Device(m_Instance.Get(), m_Surface.get()),
+    m_Device(m_Instance.Get(), m_Surface.get()),
 
-          m_DebugMessenger(CreateMessenger(m_Instance.Get())),
+    m_DebugMessenger(CreateMessenger(m_Instance.Get())),
 
-          m_Waiter(m_Device.GetLogicalDevice()),
+    m_Waiter(m_Device.GetLogicalDevice()),
 
-          m_Swapchain(CreateSwapchain(windowHandle, m_Device.GetLogicalDevice(), m_Device.GetGPU(), m_Surface.get())),
+    m_Swapchain(CreateSwapchain(windowHandle, m_Device.GetLogicalDevice(), m_Device.GetGPU(), m_Surface.get())),
 
-          m_Sync(m_Device.GetGPU(), m_Device.GetLogicalDevice()),
+    m_Sync(m_Device.GetGPU(), m_Device.GetLogicalDevice()),
 
-          m_Allocator(CreateMemoryAllocator(m_Instance.Get(), m_Device.GetGPU().device, m_Device.GetLogicalDevice()))
+    m_Allocator(CreateMemoryAllocator(m_Instance.Get(), m_Device.GetGPU().device, m_Device.GetLogicalDevice())),
+
+    m_CommandBlockPool(CreateCommandBlockPool())
 
           {
 
@@ -81,8 +83,8 @@ bool VulkanBackend::AcquireRenderTarget()
 
     RenderSync& renderSync = m_Sync.GetRenderSyncAtFrame();
 
-    static constexpr std::uint64_t fence_timeout_v = 3'000'000'000ull; // 3 seconds in nanoseconds
-    vk::Result result = m_Device.GetLogicalDevice().waitForFences(*renderSync.drawn, vk::True, fence_timeout_v);
+    static constexpr std::uint64_t fenceTimeout_v = 3'000'000'000ull; // 3 seconds in nanoseconds
+    vk::Result result = m_Device.GetLogicalDevice().waitForFences(*renderSync.drawn, vk::True, fenceTimeout_v);
     if (result != vk::Result::eSuccess) {
         throw std::runtime_error{ "Failed to wait for Render Fence" };
     }
@@ -283,6 +285,15 @@ VulkanMemAlloc VulkanBackend::CreateMemoryAllocator(const vk::Instance instance,
     return VulkanMemAlloc(instance, physicalDevice, logicalDevice);
 }
 
+vk::UniqueCommandPool VulkanBackend::CreateCommandBlockPool() const
+{
+    vk::CommandPoolCreateInfo commandPoolCreateInfo{};
+    commandPoolCreateInfo.setQueueFamilyIndex(m_Device.GetGPU().queueFamily);
+    commandPoolCreateInfo.setFlags(vk::CommandPoolCreateFlagBits::eTransient);
+    return m_Device.GetLogicalDevice().createCommandPoolUnique(commandPoolCreateInfo);
+
+}
+
 VulkanContextInfo VulkanBackend::GetContext()
 {
     VulkanContextInfo contextInfo{};
@@ -295,6 +306,7 @@ VulkanContextInfo VulkanBackend::GetContext()
     contextInfo.colorFormat = m_Swapchain.GetFormat();
     contextInfo.samples = vk::SampleCountFlagBits::e1;
     contextInfo.allocator = m_Allocator.Get();
+    contextInfo.commandBlockPool = m_CommandBlockPool.get();
     contextInfo.deferredDestroyBuffer = m_DeferredDestroyCallback;
 
 

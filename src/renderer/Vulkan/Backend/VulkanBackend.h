@@ -9,6 +9,7 @@
 #include "ZeusEngineCore/InfoVariants.h"
 #include "VulkanMemAlloc.h"
 #include <functional>
+#include "VulkanCommandBlock.h"
 
 class VulkanBackend {
 public:
@@ -33,6 +34,7 @@ private:
         const GPU& gpu, const vk::SurfaceKHR surface);
     VulkanMemAlloc CreateMemoryAllocator(const vk::Instance instance, const vk::PhysicalDevice physicalDevice,
                                          const vk::Device logicalDevice) const;
+    vk::UniqueCommandPool CreateCommandBlockPool() const;
     void FlushDeferredDestroys();
     //void DestroyBuffersDeffered(VmaAllocator allocator, VmaAllocation allocation, vk::Buffer buffer);
 
@@ -46,6 +48,7 @@ private:
     VulkanSync m_Sync;
     VulkanSwapchain m_Swapchain;
     VulkanMemAlloc m_Allocator;
+    vk::UniqueCommandPool m_CommandBlockPool;
 
     //rendering backend variables
     glm::ivec2 m_FramebufferSize{};

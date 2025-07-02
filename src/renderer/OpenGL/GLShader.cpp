@@ -32,6 +32,7 @@ GLShader::~GLShader() {
 }
 
 void GLShader::Bind() const {
+    glLineWidth(lineWidth);
     glUseProgram(m_RendererID);
 }
 
@@ -61,7 +62,6 @@ int GLShader::GetUniformLocation(const std::string& name) {
     return location;
 }
 
-void GLShader::SetWireframe(bool isWireframe) {
-    m_IsWireframe = isWireframe;
+void GLShader::ToggleWireframe() {
     glPolygonMode(GL_FRONT_AND_BACK,  m_IsWireframe ? GL_LINE : GL_FILL);
 }

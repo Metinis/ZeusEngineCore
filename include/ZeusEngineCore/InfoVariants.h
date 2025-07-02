@@ -16,6 +16,7 @@ struct VulkanContextInfo {
     vk::Format colorFormat{};
     vk::SampleCountFlagBits samples{};
     VmaAllocator allocator{};
+    vk::CommandPool commandBlockPool{};
     std::shared_ptr<std::function<void(BufferHandle)>> deferredDestroyBuffer;
 };
 struct OpenGLContextInfo {};

@@ -24,7 +24,3 @@ VulkanMemAlloc::~VulkanMemAlloc() {
     vmaDestroyAllocator(m_Allocator);
 }
 
-VulkanBuffer VulkanMemAlloc::CreateBuffer(const BufferCreateInfo &createInfo, const BufferMemoryType memoryType,
-                                          const vk::DeviceSize size) {
-
-}

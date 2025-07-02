@@ -139,7 +139,7 @@ void VKShader::BindShaders(vk::CommandBuffer const commandBuffer) const {
     commandBuffer.bindShadersEXT(stages_v, shaders);
 }
 
-void VKShader::SetWireframe(bool isWireframe) {
+void VKShader::ToggleWireframe() {
     polygonMode = m_IsWireframe ? vk::PolygonMode::eLine : vk::PolygonMode::eFill;
 }
 
