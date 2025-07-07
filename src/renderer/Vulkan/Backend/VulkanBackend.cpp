@@ -22,9 +22,11 @@ VulkanBackend::VulkanBackend(const std::vector<const char*>& layers, WindowHandl
 
     m_Allocator(CreateMemoryAllocator(m_Instance.Get(), m_Device.GetGPU().device, m_Device.GetLogicalDevice())),
 
-    m_CommandBlockPool(CreateCommandBlockPool())
+    m_CommandBlockPool(CreateCommandBlockPool()),
 
-          {
+    m_DescSet(std::move(VulkanDescriptorSet(m_Device.GetLogicalDevice())))
+
+    {
 
     Init();
 }
@@ -47,6 +49,7 @@ VulkanShaderInfo VulkanBackend::GetShaderInfo() const
     VulkanShaderInfo shaderInfo{};
     shaderInfo.device = m_Device.GetLogicalDevice();
     shaderInfo.vertexInput = vertexInput_v;
+    shaderInfo.setLayouts = m_DescSet.GetSetLayouts();
     return shaderInfo;
 }
 vk::UniqueSurfaceKHR VulkanBackend::CreateSurface(WindowHandle windowHandle, const vk::Instance instance) {
@@ -228,6 +231,16 @@ void VulkanBackend::SubmitAndPresent()
         m_Swapchain.Recreate(m_FramebufferSize);
         return;
     }
+}
+
+VulkanDescriptorBuffer VulkanBackend::CreateUBO() const
+{
+    BufferCreateInfo bufferCreateInfo{};
+    bufferCreateInfo.allocator = m_Allocator.Get();
+    bufferCreateInfo.queueFamily = m_Device.GetGPU().queueFamily;
+    bufferCreateInfo.usage = vk::BufferUsageFlagBits::eUniformBuffer;
+    bufferCreateInfo.deferredDestroyBuffer = m_DeferredDestroyCallback;
+    return VulkanDescriptorBuffer(bufferCreateInfo);
 }
 
 std::vector<const char*> VulkanBackend::GetRequiredExtensions()

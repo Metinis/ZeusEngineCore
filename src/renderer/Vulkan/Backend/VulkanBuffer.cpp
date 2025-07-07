@@ -20,7 +20,7 @@ VulkanBuffer& VulkanBuffer::operator=(VulkanBuffer&& other) noexcept {
 void VulkanBuffer::Destroy() {
     if (m_Handle.allocator && m_Handle.buffer && m_Handle.allocation) {
         if(m_DestroyCallback){
-            m_DestroyCallback({m_Handle.allocator, m_Handle.buffer, m_Handle.allocation});
+            m_DestroyCallback(m_Handle);
 
         }
         else{
@@ -31,6 +31,7 @@ void VulkanBuffer::Destroy() {
     m_Handle = {};
     m_Size = 0;
     m_Mapped = nullptr;
+    m_DestroyCallback = nullptr;
 }
 
 VulkanBuffer::VulkanBuffer(const BufferCreateInfo createInfo, const BufferMemoryType memoryType,
@@ -50,7 +51,7 @@ VulkanBuffer::VulkanBuffer(const BufferCreateInfo createInfo, const BufferMemory
     }
 
     vk::BufferCreateInfo bufferCreateInfo{};
-    bufferCreateInfo.setQueueFamilyIndices(createInfo.queue_family);
+    bufferCreateInfo.setQueueFamilyIndices(createInfo.queueFamily);
     bufferCreateInfo.setSize(size);
     bufferCreateInfo.setUsage(usage);
 

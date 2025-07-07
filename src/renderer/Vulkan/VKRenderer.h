@@ -2,6 +2,8 @@
 #pragma once
 #include "ZeusEngineCore/IRenderer.h"
 #include "Backend/VulkanBackend.h"
+#include "Backend/VulkanDescriptorBuffer.h"
+#include <optional>
 
 class VKRenderer : public IRenderer {
 public:
@@ -23,6 +25,8 @@ public:
 
     ShaderInfoVariant GetShaderInfo() const override;
 private:
+    void UpdateView();
     std::unique_ptr<VulkanBackend> m_VKBackend;
+    std::optional<VulkanDescriptorBuffer> m_ViewUBO{};
     vk::CommandBuffer m_CommandBuffer;
 };

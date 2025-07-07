@@ -10,6 +10,8 @@
 #include "VulkanMemAlloc.h"
 #include <functional>
 #include "VulkanCommandBlock.h"
+#include "VulkanDescriptorBuffer.h"
+#include "VulkanDescriptorSet.h"
 
 class VulkanBackend {
 public:
@@ -26,6 +28,15 @@ public:
     void TransitionForPresent(vk::CommandBuffer const commandBuffer) const;
     void SubmitAndPresent();
     glm::ivec2 GetFramebufferSize() const {return m_FramebufferSize;}
+    std::size_t GetFrameIndex() const { return m_Sync.GetFrameIndex(); }
+    VulkanDescriptorBuffer CreateUBO() const;
+
+    void BindDescriptorSets(vk::CommandBuffer const commandBuffer, 
+        VulkanDescriptorBuffer& ubo)
+    {
+        m_DescSet.BindDescriptorSets(commandBuffer, GetFrameIndex(),
+            ubo.GetDescriptorInfoAt(GetFrameIndex()));
+    }
 private:
     std::vector<const char*> GetRequiredExtensions();
     vk::UniqueDebugUtilsMessengerEXT CreateMessenger(const vk::Instance instance);
@@ -49,6 +60,7 @@ private:
     VulkanSwapchain m_Swapchain;
     VulkanMemAlloc m_Allocator;
     vk::UniqueCommandPool m_CommandBlockPool;
+    VulkanDescriptorSet m_DescSet;
 
     //rendering backend variables
     glm::ivec2 m_FramebufferSize{};

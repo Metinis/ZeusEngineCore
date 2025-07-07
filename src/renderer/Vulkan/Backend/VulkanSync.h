@@ -20,6 +20,7 @@ public:
 	explicit VulkanSync(const GPU& gpu, const vk::Device device);
 	RenderSync& GetRenderSyncAtFrame() { return m_RenderSync.at(m_FrameIndex); }
 	void NextFrameIndex();
+	std::size_t GetFrameIndex() const { return m_FrameIndex; }
 	
 private:
 	vk::UniqueCommandPool m_RenderCmdPool{};

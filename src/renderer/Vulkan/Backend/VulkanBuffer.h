@@ -12,8 +12,8 @@ struct BufferHandle {
 struct BufferCreateInfo {
     VmaAllocator allocator;
     vk::BufferUsageFlags usage;
-    std::uint32_t queue_family;
-    std::shared_ptr<std::function<void(BufferHandle)>> deferredDestroyBuffer;
+    std::uint32_t queueFamily;
+    std::shared_ptr<std::function<void(BufferHandle)>> deferredDestroyBuffer;  //todo change name
 };
 enum class BufferMemoryType : std::int8_t { Host, Device };
 
@@ -21,7 +21,7 @@ enum class BufferMemoryType : std::int8_t { Host, Device };
 
 class VulkanBuffer {
 public:
-    VulkanBuffer(BufferCreateInfo const create_info, BufferMemoryType const memory_type, vk::DeviceSize const size);
+    VulkanBuffer(BufferCreateInfo const createInfo, BufferMemoryType const memoryType, vk::DeviceSize const size);
     // No copy
     VulkanBuffer(const VulkanBuffer&) = delete;
     VulkanBuffer& operator=(const VulkanBuffer&) = delete;
@@ -39,17 +39,17 @@ public:
     }
     vk::Buffer Get() const { return m_Handle.buffer; }
     vk::DeviceSize Size() const { return m_Size; }
+    void SetSize(const vk::DeviceSize size) { m_Size = size; }
     void* Mapped() const { return m_Mapped; }
     bool Valid() const { return m_Handle.buffer && m_Handle.allocation; }
 private:
-    /*VmaAllocator m_Allocator{};
-    VmaAllocation m_Allocation{};
-    vk::Buffer m_Buffer{};*/
+    void Destroy();
+
     BufferHandle m_Handle{};
     vk::DeviceSize m_Size{};
     void* m_Mapped{};
     std::function<void(BufferHandle)> m_DestroyCallback;
 
-    void Destroy();
+   
 };
 

@@ -27,11 +27,11 @@ struct RenderCommand {
     std::shared_ptr<IMesh> mesh;
 };
 template <typename T>
-[[nodiscard]] constexpr auto toByteArray(T const& t) {
+[[nodiscard]] constexpr auto ToByteArray(T const& t) {
     return std::bit_cast<std::array<std::byte, sizeof(T)>>(t);
 }
 template <typename T>
-[[nodiscard]] constexpr auto toByteSpan(const std::vector<T>& vec) {
+[[nodiscard]] constexpr auto ToByteSpan(const std::vector<T>& vec) {
     return std::span<const std::byte>(
             reinterpret_cast<const std::byte*>(vec.data()),
             vec.size() * sizeof(T)

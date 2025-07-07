@@ -1,5 +1,6 @@
 #include "VKRenderer.h"
 #include <vulkan/vulkan.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE;
 
@@ -13,12 +14,14 @@ void VKRenderer::Init(RendererInitInfo& initInfo) {
     }
 
     m_VKBackend = std::make_unique<VulkanBackend>(layers, windowHandlePtr);
+    m_ViewUBO.emplace(m_VKBackend->CreateUBO());
 }
 
 VKRenderer::~VKRenderer() = default;
 
 
 bool VKRenderer::BeginFrame() {
+    UpdateView();
     if(!m_VKBackend->AcquireRenderTarget()){
         return false;
     }
@@ -40,6 +43,7 @@ void VKRenderer::EndFrame(const std::function<void(vk::CommandBuffer)>& uiExtraD
         // Do mesh-specific drawing here
         for(const auto& cmd : m_RenderQueue) {
             cmd.material->Bind(commandBuffer, m_VKBackend->GetFramebufferSize());
+            m_VKBackend->BindDescriptorSets(commandBuffer, m_ViewUBO.value());
             cmd.mesh->Draw(*cmd.material, commandBuffer);
             //commandBuffer.draw(3, 1, 0, 0);
        //     cmd.material->GetShader()->SetUniformMat4("u_Model", cmd.transform);
@@ -71,4 +75,12 @@ RendererContextVariant VKRenderer::GetContext() const
 
 ShaderInfoVariant VKRenderer::GetShaderInfo() const {
     return m_VKBackend->GetShaderInfo();
+}
+
+void VKRenderer::UpdateView()
+{
+    auto const halfSize = 0.5f * glm::vec2{ m_VKBackend->GetFramebufferSize()};
+    auto const matProjection = glm::ortho(-halfSize.x, halfSize.x, -halfSize.y, halfSize.y);
+    auto const bytes = std::bit_cast<std::array<std::byte, sizeof(matProjection)>>(matProjection);
+    m_ViewUBO->WriteAt(m_VKBackend->GetFrameIndex(), bytes);
 }
