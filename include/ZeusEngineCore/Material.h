@@ -1,6 +1,5 @@
 #pragma once
 #include <memory>
-
 #include "ZeusEngineCore/IShader.h"
 
 class Material {

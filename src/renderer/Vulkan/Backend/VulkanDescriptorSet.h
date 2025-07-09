@@ -13,6 +13,7 @@ public:
                             std::size_t frameIndex, const vk::DescriptorBufferInfo& descUBOInfo,
                             const vk::DescriptorImageInfo& descTextureInfo) const;
 	const std::vector<vk::DescriptorSetLayout>& GetSetLayouts() const { return m_SetLayoutViews; }
+    const vk::PipelineLayout GetPipelineLayout() const {return *m_PipelineLayout;}
 private:
 	void CreateDescriptorPool();
 	void CreatePipelineLayout();

@@ -45,7 +45,18 @@ void VKRenderer::EndFrame(const std::function<void(vk::CommandBuffer)>& uiExtraD
     std::function<void(vk::CommandBuffer)> drawCallback = [=](vk::CommandBuffer commandBuffer) {
         // Do mesh-specific drawing here
         for(const auto& cmd : m_RenderQueue) {
-            cmd.material->Bind(commandBuffer, m_VKBackend->GetFramebufferSize());
+            //cmd.material->Bind(commandBuffer, m_VKBackend->GetFramebufferSize());
+            if(m_VKBackend->GetPipeline()){
+                commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, m_VKBackend->GetPipeline());
+                vk::Extent2D extent = m_VKBackend->GetExtent();
+                vk::Viewport viewport{};
+                viewport.setX(0.0f)
+                        .setY(static_cast<float>(extent.height))
+                        .setWidth(static_cast<float>(extent.width))
+                        .setHeight(-viewport.y);
+                commandBuffer.setViewport(0, viewport);
+                commandBuffer.setScissor(0, vk::Rect2D{{}, extent});
+            }
             m_VKBackend->BindDescriptorSets(commandBuffer, m_ViewUBO.value(), m_Texture.GetDescriptorInfo());
             cmd.mesh->Draw(*cmd.material, commandBuffer);
             //commandBuffer.draw(3, 1, 0, 0);

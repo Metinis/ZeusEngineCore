@@ -13,6 +13,7 @@
 #include "VulkanDescriptorBuffer.h"
 #include "VulkanDescriptorSet.h"
 #include "VulkanImage.h"
+#include "VulkanPipeline.h"
 
 class VulkanBackend {
 public:
@@ -22,6 +23,8 @@ public:
     VulkanContextInfo GetContext();
     VulkanShaderInfo GetShaderInfo() const;
     VulkanTextureInfo GetTextureInfo();
+    vk::Pipeline GetPipeline() const;
+    vk::Extent2D GetExtent() const {return m_RenderTarget->extent;}
     bool AcquireRenderTarget();
     vk::CommandBuffer BeginFrame();
     void TransitionForRender(vk::CommandBuffer const commandBuffer) const;
@@ -67,6 +70,7 @@ private:
     //rendering backend variables
     glm::ivec2 m_FramebufferSize{};
     std::optional<RenderTarget> m_RenderTarget{};
+    std::optional<Pipeline> m_Pipeline{};
 
     //deferred resource destruction
     using DeferredHandle = std::variant<BufferHandle, ImageHandle>;

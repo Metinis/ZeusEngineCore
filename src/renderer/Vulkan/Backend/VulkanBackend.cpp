@@ -33,6 +33,12 @@ VulkanBackend::VulkanBackend(const std::vector<const char*>& layers, WindowHandl
 
 void VulkanBackend::Init()
 {
+    PipelineCreateInfo pipelineCreateInfo{};
+    pipelineCreateInfo.device = m_Device.GetLogicalDevice();
+    pipelineCreateInfo.colorFormat = m_Swapchain.GetFormat();
+    pipelineCreateInfo.samples = vk::SampleCountFlagBits::e1;
+    pipelineCreateInfo.pipelineLayout = m_DescSet.GetPipelineLayout();
+    m_Pipeline.emplace(pipelineCreateInfo);
     m_DeferredDestroyCallback = std::make_shared<std::function<void(DeferredHandle)>>(
             [this](DeferredHandle handle) {
                 m_DeferredDestroy.push_back(handle);
@@ -41,8 +47,8 @@ void VulkanBackend::Init()
 }
 
 static constexpr auto vertexInput_v = VKShaderVertexInput{
-        .attributes = vertexAttributes_v,
-        .bindings = vertexBindings_v,
+        .attributes = vertexAttributes2EXT_v,
+        .bindings = vertexBindings2EXT_v,
 };
 VulkanShaderInfo VulkanBackend::GetShaderInfo() const
 {
@@ -349,6 +355,13 @@ VulkanContextInfo VulkanBackend::GetContext()
 VulkanBackend::~VulkanBackend() {
     m_Device.GetLogicalDevice().waitIdle();
     FlushDeferredDestroys();
+}
+
+vk::Pipeline VulkanBackend::GetPipeline() const {
+    if(m_Pipeline.has_value()){
+        return m_Pipeline.value().Get();
+    }
+    return nullptr;
 }
 
 
