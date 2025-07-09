@@ -9,8 +9,9 @@ public:
 
 	VulkanDescriptorSet(const VulkanDescriptorSet&) = delete;  
 	VulkanDescriptorSet& operator=(const VulkanDescriptorSet&) = delete; 
-	void BindDescriptorSets(vk::CommandBuffer const commandBuffer, std::size_t frameIndex,
-		const vk::DescriptorBufferInfo& descInfo) const;
+	void BindDescriptorSets(vk::CommandBuffer const commandBuffer,
+                            std::size_t frameIndex, const vk::DescriptorBufferInfo& descUBOInfo,
+                            const vk::DescriptorImageInfo& descTextureInfo) const;
 	const std::vector<vk::DescriptorSetLayout>& GetSetLayouts() const { return m_SetLayoutViews; }
 private:
 	void CreateDescriptorPool();

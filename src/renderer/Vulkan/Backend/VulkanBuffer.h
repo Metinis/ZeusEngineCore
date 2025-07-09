@@ -4,6 +4,10 @@
 #include <cstdint>
 #include <functional>
 #include <memory>
+#include "ZeusEngineCore/ScopedWaiter.h"
+#include "ZeusEngineCore/InfoVariants.h"
+#include "VulkanImage.h"
+
 struct BufferHandle {
     VmaAllocator allocator;
     VkBuffer buffer;
@@ -13,7 +17,7 @@ struct BufferCreateInfo {
     VmaAllocator allocator;
     vk::BufferUsageFlags usage;
     std::uint32_t queueFamily;
-    std::shared_ptr<std::function<void(BufferHandle)>> deferredDestroyBuffer;  //todo change name
+    std::shared_ptr<std::function<void(DeferredHandle)>> destroyCallback;
 };
 enum class BufferMemoryType : std::int8_t { Host, Device };
 
@@ -48,8 +52,6 @@ private:
     BufferHandle m_Handle{};
     vk::DeviceSize m_Size{};
     void* m_Mapped{};
-    std::function<void(BufferHandle)> m_DestroyCallback;
-
-   
+    std::function<void(DeferredHandle)> m_DestroyCallback;
 };
 

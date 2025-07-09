@@ -33,8 +33,8 @@ VulkanBackend::VulkanBackend(const std::vector<const char*>& layers, WindowHandl
 
 void VulkanBackend::Init()
 {
-    m_DeferredDestroyCallback = std::make_shared<std::function<void(BufferHandle)>>(
-            [this](BufferHandle handle) {
+    m_DeferredDestroyCallback = std::make_shared<std::function<void(DeferredHandle)>>(
+            [this](DeferredHandle handle) {
                 m_DeferredDestroy.push_back(handle);
             });
 
@@ -51,6 +51,19 @@ VulkanShaderInfo VulkanBackend::GetShaderInfo() const
     shaderInfo.vertexInput = vertexInput_v;
     shaderInfo.setLayouts = m_DescSet.GetSetLayouts();
     return shaderInfo;
+}
+VulkanTextureInfo VulkanBackend::GetTextureInfo()
+{
+    VulkanTextureInfo textureInfo{};
+    textureInfo.allocator = m_Allocator.Get();
+    textureInfo.commandBlock.emplace(VulkanCommandBlock(m_Device.GetLogicalDevice(),
+        m_Device.GetQueue(), m_CommandBlockPool.get()));
+    textureInfo.device = m_Device.GetLogicalDevice();
+    textureInfo.queueFamily = m_Device.GetGPU().queueFamily;
+    textureInfo.sampler.setMagFilter(vk::Filter::eNearest);
+    textureInfo.destroyCallback = m_DeferredDestroyCallback;
+    return textureInfo;
+    
 }
 vk::UniqueSurfaceKHR VulkanBackend::CreateSurface(WindowHandle windowHandle, const vk::Instance instance) {
     GLFWwindow* glfwWindow = static_cast<GLFWwindow*>(windowHandle.nativeWindowHandle);
@@ -103,8 +116,15 @@ bool VulkanBackend::AcquireRenderTarget()
     return true;
 }
 void VulkanBackend::FlushDeferredDestroys() {
-    for (auto& bufferHandle : m_DeferredDestroy) {
-        vmaDestroyBuffer(bufferHandle.allocator, bufferHandle.buffer, bufferHandle.allocation);
+    for (auto& handle : m_DeferredDestroy) {
+        std::visit([](auto& h) {
+            using T = std::decay_t<decltype(h)>;
+            if constexpr (std::is_same_v<T, BufferHandle>) {
+                vmaDestroyBuffer(h.allocator, h.buffer, h.allocation);
+            } else if constexpr (std::is_same_v<T, ImageHandle>) {
+                vmaDestroyImage(h.allocator, h.image, h.allocation);
+            }
+        }, handle);
     }
     m_DeferredDestroy.clear();
 }
@@ -239,7 +259,7 @@ VulkanDescriptorBuffer VulkanBackend::CreateUBO() const
     bufferCreateInfo.allocator = m_Allocator.Get();
     bufferCreateInfo.queueFamily = m_Device.GetGPU().queueFamily;
     bufferCreateInfo.usage = vk::BufferUsageFlagBits::eUniformBuffer;
-    bufferCreateInfo.deferredDestroyBuffer = m_DeferredDestroyCallback;
+    bufferCreateInfo.destroyCallback = m_DeferredDestroyCallback;
     return VulkanDescriptorBuffer(bufferCreateInfo);
 }
 
@@ -320,7 +340,7 @@ VulkanContextInfo VulkanBackend::GetContext()
     contextInfo.samples = vk::SampleCountFlagBits::e1;
     contextInfo.allocator = m_Allocator.Get();
     contextInfo.commandBlockPool = m_CommandBlockPool.get();
-    contextInfo.deferredDestroyBuffer = m_DeferredDestroyCallback;
+    contextInfo.destroyCallback = m_DeferredDestroyCallback;
 
 
     return contextInfo;

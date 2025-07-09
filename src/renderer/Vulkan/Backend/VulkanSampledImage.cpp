@@ -15,7 +15,7 @@ VulkanSampledImage::VulkanSampledImage(const ImageCreateInfo& createInfo,
 	bufferCreateInfo.allocator = createInfo.allocator;
 	bufferCreateInfo.usage = vk::BufferUsageFlagBits::eTransferSrc;
 	bufferCreateInfo.queueFamily = createInfo.queueFamily;
-	//bufferCreateInfo.deferredDestroyBuffer = createInfo.deferredDestroyImage;
+	bufferCreateInfo.destroyCallback = createInfo.destroyCallback;
 
 	const VulkanBuffer stagingBuffer(bufferCreateInfo, BufferMemoryType::Host, bitmap.bytes.size_bytes());
 
@@ -51,7 +51,7 @@ VulkanSampledImage::VulkanSampledImage(const ImageCreateInfo& createInfo,
 	vk::ImageSubresourceLayers subresourceLayers{};
 	subresourceLayers.setAspectMask(vk::ImageAspectFlagBits::eColor);
 	subresourceLayers.setLayerCount(1);
-	subresourceLayers.setLayerCount(mipLevels);
+	subresourceLayers.setMipLevel(0);
 
 	bufferImageCopy.setImageSubresource(subresourceLayers);
 	bufferImageCopy.setImageExtent(vk::Extent3D{ extent.width, extent.height, 1 });

@@ -16,7 +16,7 @@ VulkanDeviceBuffer VKMesh::CreateMeshVBO(const std::vector<Vertex>& vertices, co
                 .allocator = vkContext->allocator,
                 .usage = vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eIndexBuffer,
                 .queueFamily = vkContext->queueFamily,
-                .deferredDestroyBuffer = vkContext->deferredDestroyBuffer
+                .destroyCallback = vkContext->destroyCallback
         };
         auto verticesBytes_v = ToByteSpan(vertices);
         auto indicesBytes_v = ToByteSpan(indices);

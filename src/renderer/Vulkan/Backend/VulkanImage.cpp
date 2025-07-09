@@ -16,7 +16,6 @@ void VulkanImage::Destroy() {
 	if (m_Handle.allocator && m_Handle.image && m_Handle.allocation) {
 		if (m_DestroyCallback) {
 			m_DestroyCallback(m_Handle);
-
 		}
 		else {
 			std::printf("Empty destroy image callback!");
@@ -37,7 +36,8 @@ VulkanImage::VulkanImage(ImageCreateInfo const& createInfo, vk::ImageUsageFlags 
 	}
 	vk::ImageCreateInfo imageCreateInfo{};
 	imageCreateInfo.setExtent({ extent.width, extent.height, 1 });
-	imageCreateInfo.setFormat(format);
+    imageCreateInfo.setImageType(vk::ImageType::e2D);
+    imageCreateInfo.setFormat(format);
 	imageCreateInfo.setUsage(usage);
 	imageCreateInfo.setArrayLayers(1);
 	imageCreateInfo.setMipLevels(levels);
@@ -66,7 +66,8 @@ VulkanImage::VulkanImage(ImageCreateInfo const& createInfo, vk::ImageUsageFlags 
 	m_Handle.format = format;
 	m_Handle.levels = levels;
 
-	m_DestroyCallback = *createInfo.deferredDestroyImage; //deferred so images in use are not used
+    if(createInfo.destroyCallback)
+	    m_DestroyCallback = *createInfo.destroyCallback; //deferred so images in use are not used
 
 }
 

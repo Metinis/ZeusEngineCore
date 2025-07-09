@@ -12,6 +12,7 @@
 #include "VulkanCommandBlock.h"
 #include "VulkanDescriptorBuffer.h"
 #include "VulkanDescriptorSet.h"
+#include "VulkanImage.h"
 
 class VulkanBackend {
 public:
@@ -20,6 +21,7 @@ public:
     void Init();
     VulkanContextInfo GetContext();
     VulkanShaderInfo GetShaderInfo() const;
+    VulkanTextureInfo GetTextureInfo();
     bool AcquireRenderTarget();
     vk::CommandBuffer BeginFrame();
     void TransitionForRender(vk::CommandBuffer const commandBuffer) const;
@@ -32,10 +34,10 @@ public:
     VulkanDescriptorBuffer CreateUBO() const;
 
     void BindDescriptorSets(vk::CommandBuffer const commandBuffer, 
-        VulkanDescriptorBuffer& ubo)
+        VulkanDescriptorBuffer& ubo, const vk::DescriptorImageInfo& descriptorImageInfo)
     {
         m_DescSet.BindDescriptorSets(commandBuffer, GetFrameIndex(),
-            ubo.GetDescriptorInfoAt(GetFrameIndex()));
+            ubo.GetDescriptorInfoAt(GetFrameIndex()), descriptorImageInfo);
     }
 private:
     std::vector<const char*> GetRequiredExtensions();
@@ -66,8 +68,10 @@ private:
     glm::ivec2 m_FramebufferSize{};
     std::optional<RenderTarget> m_RenderTarget{};
 
-    //deferred buffer destruction
-    std::shared_ptr<std::function<void(BufferHandle)>> m_DeferredDestroyCallback;
-    std::vector<BufferHandle> m_DeferredDestroy;
+    //deferred resource destruction
+    using DeferredHandle = std::variant<BufferHandle, ImageHandle>;
+    std::shared_ptr<std::function<void(DeferredHandle)>> m_DeferredDestroyCallback;
+    std::vector<DeferredHandle> m_DeferredDestroy;
+
     
 };

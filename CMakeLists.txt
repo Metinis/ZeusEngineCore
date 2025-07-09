@@ -20,7 +20,7 @@ file(GLOB_RECURSE ZEUSENGINECORE_SOURCES
         ${CMAKE_CURRENT_SOURCE_DIR}/include/glad/src/glad.c
 )
 
-target_sources(ZeusEngineCore PRIVATE ${ZEUSENGINECORE_SOURCES} "src/renderer/Vulkan/Backend/VulkanDescriptorBuffer.h")
+target_sources(ZeusEngineCore PRIVATE ${ZEUSENGINECORE_SOURCES} )
 
 # Include dirs
 target_include_directories(ZeusEngineCore

@@ -3,6 +3,7 @@
 #include "ZeusEngineCore/IRenderer.h"
 #include "Backend/VulkanBackend.h"
 #include "Backend/VulkanDescriptorBuffer.h"
+#include "VKTexture.h"
 #include <optional>
 
 class VKRenderer : public IRenderer {
@@ -28,5 +29,6 @@ private:
     void UpdateView();
     std::unique_ptr<VulkanBackend> m_VKBackend;
     std::optional<VulkanDescriptorBuffer> m_ViewUBO{};
+    VKTexture m_Texture;
     vk::CommandBuffer m_CommandBuffer;
 };

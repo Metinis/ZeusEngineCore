@@ -4,6 +4,9 @@
 #include <cstdint>
 #include <glm/vec2.hpp>
 #include <functional>
+#include <memory>
+#include "VulkanBuffer.h"
+#include "ZeusEngineCore/InfoVariants.h"
 
 struct ImageHandle {
 	VmaAllocator allocator{};
@@ -17,7 +20,7 @@ struct ImageHandle {
 struct ImageCreateInfo {
 	VmaAllocator allocator;
 	std::uint32_t queueFamily;
-	std::shared_ptr<std::function<void(ImageHandle)>> deferredDestroyImage; //todo change name
+	std::shared_ptr<std::function<void(DeferredHandle)>> destroyCallback; //todo change name
 };
 
 struct Bitmap {
@@ -42,12 +45,13 @@ public:
 		Destroy();
 	}
 	vk::Image Get() const { return m_Handle.image; }
-	
+	std::uint32_t GetLevels() const { return m_Handle.levels; }
+	vk::Format GetFormat() const { return m_Handle.format; }
 
 private:
 	void Destroy();
 
-	std::function<void(ImageHandle)> m_DestroyCallback;
+	std::function<void(DeferredHandle)> m_DestroyCallback;
 	ImageHandle m_Handle{};
 	
 };

@@ -8,19 +8,27 @@ VulkanDescriptorSet::VulkanDescriptorSet(const vk::Device device) : m_Device(dev
 }
 
 void VulkanDescriptorSet::BindDescriptorSets(vk::CommandBuffer const commandBuffer, 
-	std::size_t frameIndex, const vk::DescriptorBufferInfo& descInfo) const
+	std::size_t frameIndex, const vk::DescriptorBufferInfo& descUBOInfo, const vk::DescriptorImageInfo& descImageInfo) const
 {
-	auto writes = std::array<vk::WriteDescriptorSet, 1>{};
+	auto writes = std::array<vk::WriteDescriptorSet, 2>{};
 	auto const& descriptorSets = m_DescriptorSets.at(frameIndex);
 	auto const set0 = descriptorSets[0];
 	auto write = vk::WriteDescriptorSet{};
-	auto const viewUBOInfo = descInfo;
+	auto const viewUBOInfo = descUBOInfo;
 	write.setBufferInfo(viewUBOInfo)
 		.setDescriptorType(vk::DescriptorType::eUniformBuffer)
 		.setDescriptorCount(1)
 		.setDstSet(set0)
 		.setDstBinding(0);
 	writes[0] = write;
+    auto const set1 = descriptorSets[1];
+    auto const imageInfo = descImageInfo;
+    write.setImageInfo(imageInfo)
+            .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
+            .setDescriptorCount(1)
+            .setDstSet(set1)
+            .setDstBinding(0);
+    writes[1] = write;
 	m_Device.updateDescriptorSets(writes, {});
 
 	commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
@@ -33,6 +41,8 @@ void VulkanDescriptorSet::CreateDescriptorPool()
 	static constexpr auto poolSizes_v = std::array{
 		// 2 uniform buffers
 		vk::DescriptorPoolSize{vk::DescriptorType::eUniformBuffer, 2},
+        //2 image samplers
+        vk::DescriptorPoolSize{vk::DescriptorType::eCombinedImageSampler, 2},
 	};
 	vk::DescriptorPoolCreateInfo poolCreateInfo{};
 	poolCreateInfo.setPoolSizes(poolSizes_v).setMaxSets(16);
@@ -47,8 +57,13 @@ void VulkanDescriptorSet::CreatePipelineLayout()
 	static constexpr auto set0Bindings_v = std::array{ 
 		layoutBinding(0, vk::DescriptorType::eUniformBuffer), };
 
-	auto setLayoutCreateInfos = std::array<vk::DescriptorSetLayoutCreateInfo, 1>{};
+    static constexpr auto set1Bindings_v = std::array{
+            layoutBinding(0, vk::DescriptorType::eCombinedImageSampler),
+    };
+
+	auto setLayoutCreateInfos = std::array<vk::DescriptorSetLayoutCreateInfo, 2>{};
 	setLayoutCreateInfos[0].setBindings(set0Bindings_v);
+    setLayoutCreateInfos[1].setBindings(set1Bindings_v);
 
 	for (auto const& setLayoutCreateInfo : setLayoutCreateInfos) {
 		m_SetLayouts.push_back(m_Device.createDescriptorSetLayoutUnique(setLayoutCreateInfo));

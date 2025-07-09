@@ -1,5 +1,6 @@
 #include "VulkanDeviceBuffer.h"
 
+
 VulkanDeviceBuffer::VulkanDeviceBuffer(BufferCreateInfo const& createInfo,
 	VulkanCommandBlock commandBlock, ByteSpans const& byteSpans)
 {

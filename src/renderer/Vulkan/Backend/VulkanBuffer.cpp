@@ -69,7 +69,8 @@ VulkanBuffer::VulkanBuffer(const BufferCreateInfo createInfo, const BufferMemory
     m_Handle.allocator = createInfo.allocator;
     m_Handle.buffer = buffer;
     m_Handle.allocation = allocation;
-    m_DestroyCallback = *createInfo.deferredDestroyBuffer;
+    if(createInfo.destroyCallback)
+        m_DestroyCallback = *createInfo.destroyCallback;
     m_Size = size;
     m_Mapped = allocationInfo.pMappedData;
 }

@@ -15,6 +15,9 @@ void VKRenderer::Init(RendererInitInfo& initInfo) {
 
     m_VKBackend = std::make_unique<VulkanBackend>(layers, windowHandlePtr);
     m_ViewUBO.emplace(m_VKBackend->CreateUBO());
+    TextureInfo textureInfo{};
+    textureInfo.textInfoVariant = m_VKBackend->GetTextureInfo();
+    m_Texture.Init(textureInfo);
 }
 
 VKRenderer::~VKRenderer() = default;
@@ -43,7 +46,7 @@ void VKRenderer::EndFrame(const std::function<void(vk::CommandBuffer)>& uiExtraD
         // Do mesh-specific drawing here
         for(const auto& cmd : m_RenderQueue) {
             cmd.material->Bind(commandBuffer, m_VKBackend->GetFramebufferSize());
-            m_VKBackend->BindDescriptorSets(commandBuffer, m_ViewUBO.value());
+            m_VKBackend->BindDescriptorSets(commandBuffer, m_ViewUBO.value(), m_Texture.GetDescriptorInfo());
             cmd.mesh->Draw(*cmd.material, commandBuffer);
             //commandBuffer.draw(3, 1, 0, 0);
        //     cmd.material->GetShader()->SetUniformMat4("u_Model", cmd.transform);
