@@ -13,47 +13,36 @@
 #include "VulkanDescriptorBuffer.h"
 #include "VulkanDescriptorSet.h"
 #include "VulkanImage.h"
-#include "VulkanPipeline.h"
+#include "VulkanPipelineBuilder.h"
 
 class VulkanBackend {
 public:
     VulkanBackend(const std::vector<const char*>& layers, WindowHandle windowHandle);
     ~VulkanBackend();
     void Init();
-    VulkanContextInfo GetContext();
-    VulkanShaderInfo GetShaderInfo() const;
-    VulkanTextureInfo GetTextureInfo();
-    vk::Pipeline GetPipeline() const;
-    vk::Extent2D GetExtent() const {return m_RenderTarget->extent;}
-    bool AcquireRenderTarget();
-    vk::CommandBuffer BeginFrame();
-    void TransitionForRender(vk::CommandBuffer const commandBuffer) const;
-    void Render(vk::CommandBuffer const commandBuffer, const std::function<void(vk::CommandBuffer)>& drawCallback = nullptr,
+    void TransitionForRender(vk::CommandBuffer commandBuffer) const;
+    void Render(vk::CommandBuffer commandBuffer, const std::function<void(vk::CommandBuffer)>& drawCallback = nullptr,
                 const std::function<void(vk::CommandBuffer)>& uiDrawCallback = nullptr);
-    void TransitionForPresent(vk::CommandBuffer const commandBuffer) const;
+    void TransitionForPresent(vk::CommandBuffer commandBuffer) const;
     void SubmitAndPresent();
-    glm::ivec2 GetFramebufferSize() const {return m_FramebufferSize;}
-    std::size_t GetFrameIndex() const { return m_Sync.GetFrameIndex(); }
-    VulkanDescriptorBuffer CreateUBO() const;
-
-    void BindDescriptorSets(vk::CommandBuffer const commandBuffer, 
-        VulkanDescriptorBuffer& ubo, const vk::DescriptorImageInfo& descriptorImageInfo)
+    bool AcquireRenderTarget();
+    void BindDescriptorSets(vk::CommandBuffer const commandBuffer,
+                            VulkanDescriptorBuffer& ubo, const vk::DescriptorImageInfo& descriptorImageInfo)
     {
         m_DescSet.BindDescriptorSets(commandBuffer, GetFrameIndex(),
-            ubo.GetDescriptorInfoAt(GetFrameIndex()), descriptorImageInfo);
+                                     ubo.GetDescriptorInfoAt(GetFrameIndex()), descriptorImageInfo);
     }
-private:
-    std::vector<const char*> GetRequiredExtensions();
-    vk::UniqueDebugUtilsMessengerEXT CreateMessenger(const vk::Instance instance);
-    vk::UniqueSurfaceKHR CreateSurface(WindowHandle windowHandle, const vk::Instance instance);
-    VulkanSwapchain CreateSwapchain(const WindowHandle windowHandle, const vk::Device device,
-        const GPU& gpu, const vk::SurfaceKHR surface);
-    VulkanMemAlloc CreateMemoryAllocator(const vk::Instance instance, const vk::PhysicalDevice physicalDevice,
-                                         const vk::Device logicalDevice) const;
-    vk::UniqueCommandPool CreateCommandBlockPool() const;
-    void FlushDeferredDestroys();
-    //void DestroyBuffersDeffered(VmaAllocator allocator, VmaAllocation allocation, vk::Buffer buffer);
+    VulkanContextInfo GetContext();
 
+    [[nodiscard]] VulkanShaderInfo GetShaderInfo() const;
+    VulkanTextureInfo GetTextureInfo();
+    [[nodiscard]] vk::Extent2D GetExtent() const {return m_RenderTarget->extent;}
+    vk::CommandBuffer BeginFrame();
+    [[nodiscard]] glm::ivec2 GetFramebufferSize() const {return m_FramebufferSize;}
+    [[nodiscard]] std::size_t GetFrameIndex() const { return m_Sync.GetFrameIndex(); }
+    [[nodiscard]] VulkanDescriptorBuffer CreateUBO() const;
+
+private:
     //order matters
     VulkanInstance m_Instance;
     WindowHandle m_WindowHandle;
@@ -70,12 +59,21 @@ private:
     //rendering backend variables
     glm::ivec2 m_FramebufferSize{};
     std::optional<RenderTarget> m_RenderTarget{};
-    std::optional<Pipeline> m_Pipeline{};
 
     //deferred resource destruction
     using DeferredHandle = std::variant<BufferHandle, ImageHandle>;
     std::shared_ptr<std::function<void(DeferredHandle)>> m_DeferredDestroyCallback;
     std::vector<DeferredHandle> m_DeferredDestroy;
+
+    void FlushDeferredDestroys();
+    std::vector<const char*> GetRequiredExtensions();
+    vk::UniqueDebugUtilsMessengerEXT CreateMessenger(vk::Instance instance);
+    vk::UniqueSurfaceKHR CreateSurface(WindowHandle windowHandle, vk::Instance instance);
+    VulkanSwapchain CreateSwapchain(WindowHandle windowHandle, vk::Device device,
+        const GPU& gpu, vk::SurfaceKHR surface);
+    [[nodiscard]] VulkanMemAlloc CreateMemoryAllocator(vk::Instance instance, vk::PhysicalDevice physicalDevice,
+                                         vk::Device logicalDevice) const;
+    [[nodiscard]] vk::UniqueCommandPool CreateCommandBlockPool() const;
 
     
 };

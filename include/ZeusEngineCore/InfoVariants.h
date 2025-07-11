@@ -36,10 +36,11 @@ struct VKShaderVertexInput {
 };
 
 struct VulkanShaderInfo {
-    vk::Device device;
-    std::span<vk::DescriptorSetLayout const> setLayouts;
-    VKShaderVertexInput vertexInput{};
-
+    vk::Device device{};
+    vk::SampleCountFlagBits samples{};
+    vk::Format colorFormat{};
+    vk::Format depthFormat{};
+    vk::PipelineLayout pipelineLayout{};
 };
 struct OpenGLShaderInfo {};
 

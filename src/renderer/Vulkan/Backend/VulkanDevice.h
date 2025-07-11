@@ -32,13 +32,13 @@ private:
 	static constexpr std::array<const char*, 3> s_deviceExtensions = {
 		VK_KHR_SWAPCHAIN_EXTENSION_NAME,
 		"VK_KHR_portability_subset",
-		"VK_EXT_shader_object"
+        VK_EXT_EXTENDED_DYNAMIC_STATE_3_EXTENSION_NAME
 	};
 #else
 	static constexpr std::array<const char*, 3> s_deviceExtensions = {
 		VK_KHR_SWAPCHAIN_EXTENSION_NAME,
         VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME,
-		"VK_EXT_shader_object"
+        VK_EXT_EXTENDED_DYNAMIC_STATE_3_EXTENSION_NAME
 	};
 #endif
 

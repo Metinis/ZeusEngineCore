@@ -37,10 +37,13 @@ vk::UniqueDevice VulkanDevice::CreateLogicalDevice(const GPU& gpu, const vk::Ins
     deviceFeatures.samplerAnisotropy = gpu.features.samplerAnisotropy;
     deviceFeatures.sampleRateShading = gpu.features.sampleRateShading;
 
-	vk::PhysicalDeviceShaderObjectFeaturesEXT shaderObjectFeature{vk::True};
+	//vk::PhysicalDeviceShaderObjectFeaturesEXT shaderObjectFeature{vk::True};
+    vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT dynamicState3Features{};
+    dynamicState3Features.extendedDynamicState3PolygonMode = vk::True;
 
 	vk::PhysicalDeviceDynamicRenderingFeatures dynamicRenderingFeature{vk::True};
-	dynamicRenderingFeature.pNext = &shaderObjectFeature;
+    dynamicRenderingFeature.pNext = &dynamicState3Features;
+	//dynamicRenderingFeature.pNext = &shaderObjectFeature;
 
     vk::PhysicalDeviceSynchronization2Features syncFeature{};
     syncFeature.synchronization2 = VK_TRUE;

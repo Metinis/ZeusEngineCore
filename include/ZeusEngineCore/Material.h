@@ -20,7 +20,7 @@ public:
 
     void Bind();
 
-    void Bind(vk::CommandBuffer commandBuffer, glm::ivec2 framebufferSize);
+    void Bind(vk::CommandBuffer commandBuffer, vk::Extent2D extent);
 
     void Unbind() const;
 

@@ -32,7 +32,7 @@ GLShader::~GLShader() {
 }
 
 void GLShader::Bind() const {
-    glLineWidth(lineWidth);
+    glLineWidth(m_LineWidth);
     glUseProgram(m_RendererID);
 }
 

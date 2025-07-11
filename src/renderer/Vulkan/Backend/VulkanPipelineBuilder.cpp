@@ -1,4 +1,4 @@
-#include "VulkanPipeline.h"
+#include "VulkanPipelineBuilder.h"
 #include "../../../Utils.h"
 
 constexpr auto viewportState_v =
@@ -8,33 +8,10 @@ constexpr auto dynamicStates_v = std::array{
         vk::DynamicState::eViewport,
         vk::DynamicState::eScissor,
         vk::DynamicState::eLineWidth,
+        vk::DynamicState::ePolygonModeEXT //must have dynamic state 3 features enabled!!!
 };
 
-Pipeline::Pipeline(PipelineCreateInfo const& pipelineCreateInfo) : m_CreateInfo(pipelineCreateInfo){
-    std::string vertexPath = "D:/Denio/Projektai/ProjectZeus/ZeusEditor/resources/shaders/vkbasic.vert.spv";
-    std::string fragmentPath = "D:/Denio/Projektai/ProjectZeus/ZeusEditor/resources/shaders/vkbasic.frag.spv";
-    const auto vertexSpirv = ToSpirV(vertexPath);
-    const auto fragmentSpirv = ToSpirV(fragmentPath);
-
-    if (vertexSpirv.empty() || fragmentSpirv.empty()) {
-        throw std::runtime_error{"Failed to load shaders"};
-    }
-
-    m_PipelineLayout = pipelineCreateInfo.pipelineLayout;
-
-    vk::ShaderModuleCreateInfo vertexCreateInfo{};
-    vertexCreateInfo.setCode(vertexSpirv);
-
-    vk::ShaderModuleCreateInfo fragmentCreateInfo{};
-    fragmentCreateInfo.setCode(fragmentSpirv);
-
-    auto const vertexShader = pipelineCreateInfo.device.createShaderModuleUnique(vertexCreateInfo);
-    auto const fragmentShader = pipelineCreateInfo.device.createShaderModuleUnique(fragmentCreateInfo);
-    auto const pipelineState = PipelineState{
-            .vertexShader = *vertexShader,
-            .fragmentShader = *fragmentShader,
-    };
-    Build(pipelineState);
+PipelineBuilder::PipelineBuilder(PipelineBuilderCreateInfo const& pipelineBuilderCreateInfo) : m_CreateInfo(pipelineBuilderCreateInfo){
 
 }
 
@@ -79,7 +56,7 @@ Pipeline::Pipeline(PipelineCreateInfo const& pipelineCreateInfo) : m_CreateInfo(
     return pipelineColorBlendAttachmentState;
 }
 
-void Pipeline::Build(PipelineState const& state){
+vk::UniquePipeline PipelineBuilder::Build(vk::PipelineLayout const layout, PipelineState const& state){
     auto const shaderStages = CreateShaderStages(state.vertexShader, state.fragmentShader);
     vk::PipelineVertexInputStateCreateInfo vertexInputCreateInfo{};
     vertexInputCreateInfo.setVertexAttributeDescriptions(state.vertexAttributes);
@@ -114,7 +91,7 @@ void Pipeline::Build(PipelineState const& state){
     renderingCreateInfo.setDepthAttachmentFormat(m_CreateInfo.depthFormat);
 
     vk::GraphicsPipelineCreateInfo pipelineCreateInfo{};
-    pipelineCreateInfo.setLayout(m_PipelineLayout);
+    pipelineCreateInfo.setLayout(layout);
     pipelineCreateInfo.setStages(shaderStages);
     pipelineCreateInfo.setPVertexInputState(&vertexInputCreateInfo);
     pipelineCreateInfo.setPViewportState(&viewportState_v);
@@ -130,5 +107,5 @@ void Pipeline::Build(PipelineState const& state){
     if(m_CreateInfo.device.createGraphicsPipelines({}, 1, &pipelineCreateInfo, {}, &pipeline) != vk::Result::eSuccess){
         std::printf("Failed to create graphics pipeline!");
     }
-    m_Pipeline = std::move(vk::UniquePipeline{pipeline, m_CreateInfo.device});
+    return vk::UniquePipeline{pipeline, m_CreateInfo.device};
 }

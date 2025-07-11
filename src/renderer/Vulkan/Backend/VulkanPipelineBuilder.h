@@ -27,20 +27,16 @@ struct PipelineState {
     vk::CompareOp depthCompare{vk::CompareOp::eLess};
     std::uint8_t flags{defaultFlags()};
 };
-struct PipelineCreateInfo {
+struct PipelineBuilderCreateInfo {
     vk::Device device{};
     vk::SampleCountFlagBits samples{};
     vk::Format colorFormat{};
     vk::Format depthFormat{};
-    vk::PipelineLayout pipelineLayout{};
 };
-class Pipeline{
+class PipelineBuilder{
 public:
-    Pipeline(PipelineCreateInfo const& pipelineCreateInfo);
-    void Build(PipelineState const& state);
-    const vk::Pipeline Get() const {return *m_Pipeline;}
+    explicit PipelineBuilder(PipelineBuilderCreateInfo const& pipelineBuilderCreateInfo);
+    vk::UniquePipeline Build(vk::PipelineLayout layout, PipelineState const& state);
 private:
-    PipelineCreateInfo m_CreateInfo{};
-    vk::UniquePipeline m_Pipeline{};
-    vk::PipelineLayout m_PipelineLayout{};
+    PipelineBuilderCreateInfo m_CreateInfo{};
 };

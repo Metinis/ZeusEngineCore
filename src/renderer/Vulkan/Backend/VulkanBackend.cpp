@@ -33,29 +33,19 @@ VulkanBackend::VulkanBackend(const std::vector<const char*>& layers, WindowHandl
 
 void VulkanBackend::Init()
 {
-    PipelineCreateInfo pipelineCreateInfo{};
-    pipelineCreateInfo.device = m_Device.GetLogicalDevice();
-    pipelineCreateInfo.colorFormat = m_Swapchain.GetFormat();
-    pipelineCreateInfo.samples = vk::SampleCountFlagBits::e1;
-    pipelineCreateInfo.pipelineLayout = m_DescSet.GetPipelineLayout();
-    m_Pipeline.emplace(pipelineCreateInfo);
     m_DeferredDestroyCallback = std::make_shared<std::function<void(DeferredHandle)>>(
             [this](DeferredHandle handle) {
                 m_DeferredDestroy.push_back(handle);
             });
 
 }
-
-static constexpr auto vertexInput_v = VKShaderVertexInput{
-        .attributes = vertexAttributes2EXT_v,
-        .bindings = vertexBindings2EXT_v,
-};
 VulkanShaderInfo VulkanBackend::GetShaderInfo() const
 {
     VulkanShaderInfo shaderInfo{};
     shaderInfo.device = m_Device.GetLogicalDevice();
-    shaderInfo.vertexInput = vertexInput_v;
-    shaderInfo.setLayouts = m_DescSet.GetSetLayouts();
+    shaderInfo.colorFormat = m_Swapchain.GetFormat();
+    shaderInfo.samples = vk::SampleCountFlagBits::e1;
+    shaderInfo.pipelineLayout = m_DescSet.GetPipelineLayout();
     return shaderInfo;
 }
 VulkanTextureInfo VulkanBackend::GetTextureInfo()
@@ -72,7 +62,7 @@ VulkanTextureInfo VulkanBackend::GetTextureInfo()
     
 }
 vk::UniqueSurfaceKHR VulkanBackend::CreateSurface(WindowHandle windowHandle, const vk::Instance instance) {
-    GLFWwindow* glfwWindow = static_cast<GLFWwindow*>(windowHandle.nativeWindowHandle);
+    auto* glfwWindow = static_cast<GLFWwindow*>(windowHandle.nativeWindowHandle);
 
     VkSurfaceKHR ret{};
     auto const result =
@@ -357,11 +347,5 @@ VulkanBackend::~VulkanBackend() {
     FlushDeferredDestroys();
 }
 
-vk::Pipeline VulkanBackend::GetPipeline() const {
-    if(m_Pipeline.has_value()){
-        return m_Pipeline.value().Get();
-    }
-    return nullptr;
-}
 
 

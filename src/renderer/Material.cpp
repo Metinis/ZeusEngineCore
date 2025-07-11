@@ -22,8 +22,8 @@ void Material::Bind() {
         slot++;
     }*/
 }
-void Material::Bind(vk::CommandBuffer commandBuffer, glm::ivec2 framebufferSize) {
-    m_Shader->Bind(commandBuffer, framebufferSize);
+void Material::Bind(vk::CommandBuffer commandBuffer, const vk::Extent2D extent) {
+    m_Shader->Bind(commandBuffer, extent);
 
     for (const auto& [name, color] : m_Colors)
         m_Shader->SetUniformVec4(name, color);
