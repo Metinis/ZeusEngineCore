@@ -6,14 +6,11 @@
 
 VulkanDevice::VulkanDevice(vk::Instance instance, vk::SurfaceKHR surface) :
 	m_GPU(FindSuitableGpu(instance, surface)),
-	m_LogicalDevice(CreateLogicalDevice(m_GPU, instance))
+	m_LogicalDevice(CreateLogicalDevice(m_GPU, instance)),
+	m_Queue(m_LogicalDevice->getQueue(m_GPU.queueFamily, 0))
 
 {
-    m_Queue = m_LogicalDevice->getQueue(m_GPU.queueFamily, 0);
-	//std::println("Using GPU: {}", std::string_view{ m_GPU.properties.deviceName });
-    
-    //init loader with logical device once everything else is init
-    //loader.init(instance, m_LogicalDevice.get());
+	
 }
 
 void VulkanDevice::SubmitToQueue(vk::SubmitInfo2 submitInfo, vk::Fence drawn)
@@ -37,13 +34,11 @@ vk::UniqueDevice VulkanDevice::CreateLogicalDevice(const GPU& gpu, const vk::Ins
     deviceFeatures.samplerAnisotropy = gpu.features.samplerAnisotropy;
     deviceFeatures.sampleRateShading = gpu.features.sampleRateShading;
 
-	//vk::PhysicalDeviceShaderObjectFeaturesEXT shaderObjectFeature{vk::True};
     vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT dynamicState3Features{};
     dynamicState3Features.extendedDynamicState3PolygonMode = vk::True;
 
 	vk::PhysicalDeviceDynamicRenderingFeatures dynamicRenderingFeature{vk::True};
     dynamicRenderingFeature.pNext = &dynamicState3Features;
-	//dynamicRenderingFeature.pNext = &shaderObjectFeature;
 
     vk::PhysicalDeviceSynchronization2Features syncFeature{};
     syncFeature.synchronization2 = VK_TRUE;

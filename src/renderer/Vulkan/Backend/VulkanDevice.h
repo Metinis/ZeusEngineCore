@@ -29,10 +29,13 @@ private:
 	vk::UniqueDevice m_LogicalDevice;
 	vk::Queue m_Queue;
 #ifdef __APPLE__
-	static constexpr std::array<const char*, 3> s_deviceExtensions = {
+	static constexpr std::array<const char*, 6> s_deviceExtensions = {
 		VK_KHR_SWAPCHAIN_EXTENSION_NAME,
 		"VK_KHR_portability_subset",
-        VK_EXT_EXTENDED_DYNAMIC_STATE_3_EXTENSION_NAME
+        VK_EXT_EXTENDED_DYNAMIC_STATE_3_EXTENSION_NAME,
+		VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME,
+			VK_KHR_COPY_COMMANDS_2_EXTENSION_NAME,
+		VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME
 	};
 #else
 	static constexpr std::array<const char*, 3> s_deviceExtensions = {
