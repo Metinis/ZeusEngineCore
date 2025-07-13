@@ -1,0 +1,18 @@
+#pragma once
+#include "Buffer.h"
+#include "CommandBlock.h"
+
+namespace ZEN::VKAPI {
+    using ByteSpans = std::span<std::span<std::byte const> const>;
+
+    class DeviceBuffer {
+    public:
+        DeviceBuffer(BufferCreateInfo const &createInfo,
+                     CommandBlock commandBlock, ByteSpans const &byteSpans);
+
+        const Buffer &Get() { return *m_DeviceBuffer; }
+
+    private:
+        std::optional<Buffer> m_DeviceBuffer;
+    };
+}

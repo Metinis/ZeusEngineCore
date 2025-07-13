@@ -1,5 +1,7 @@
 #include "ZeusEngineCore/MeshManager.h"
 
+using namespace ZEN;
+
 MeshManager::MeshManager(BackendContextVariant backendData) : m_Context(std::move(backendData)) {}
 
 std::shared_ptr<IMesh> MeshManager::Load(const std::string &name, const std::vector<Vertex>& vertices,

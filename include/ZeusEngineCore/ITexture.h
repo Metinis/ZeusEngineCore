@@ -3,15 +3,19 @@
 #include <memory>
 #include "ZeusEngineCore/InfoVariants.h"
 
-struct TextureInfo {
-	std::string path;
-	TextureInfoVariant textInfoVariant;
-};
+namespace ZEN {
 
-class ITexture{
-public:
-	virtual void Init(TextureInfo& textureInfo) = 0;
-	static std::shared_ptr<ITexture> Create(RendererAPI api);
+    struct TextureInfo {
+        std::string path;
+        TextureInfoVariant textInfoVariant;
+    };
 
-private:
-};
+    class ITexture {
+    public:
+        virtual void Init(TextureInfo &textureInfo) = 0;
+
+        static std::shared_ptr<ITexture> Create(RendererAPI api);
+
+    private:
+    };
+}

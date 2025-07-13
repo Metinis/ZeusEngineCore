@@ -1,5 +1,8 @@
 #include "ZeusEngineCore/ShaderManager.h"
 #include <unordered_map>
+
+using namespace ZEN;
+
 ShaderManager::ShaderManager(const ShaderInfo& shaderInfo) : m_ShaderInfo(shaderInfo)
 {   
    

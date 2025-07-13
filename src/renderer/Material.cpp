@@ -1,5 +1,7 @@
 #include "ZeusEngineCore/Material.h"
 
+using namespace ZEN;
+
 Material::Material(const std::shared_ptr<IShader>& shader) {
     m_Shader = shader;
 }

@@ -1,6 +1,7 @@
 #include "../../include/ZeusEngineCore/Window.h"
 #include <stdexcept>  // Required for std::runtime_error
 
+using namespace ZEN;
 
 Window::Window(int width, int height, const std::string& title, bool useVulkan)
     : m_Width(width), m_Height(height), m_Title(title), m_UseVulkan(useVulkan)

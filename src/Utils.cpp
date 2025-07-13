@@ -2,8 +2,9 @@
 #include <fstream>
 #include <sstream>
 namespace fs = std::filesystem;
+using namespace ZEN;
 
-std::string ReadFile(const std::filesystem::path& filePath) {
+std::string ZEN::ReadFile(const std::filesystem::path& filePath) {
     fs::path absolutePath = fs::absolute(filePath).lexically_normal();
 
     std::ifstream file(absolutePath);
@@ -16,7 +17,7 @@ std::string ReadFile(const std::filesystem::path& filePath) {
     return buffer.str();
 }
 
-std::vector<std::uint32_t> ToSpirV(const std::filesystem::path& filePath) {
+std::vector<std::uint32_t> ZEN::ToSpirV(const std::filesystem::path& filePath) {
     if (filePath.empty()) {
         throw std::runtime_error("SPIR-V file path is empty.");
     }
@@ -52,7 +53,7 @@ std::vector<std::uint32_t> ToSpirV(const std::filesystem::path& filePath) {
     return spirvData;
 }
 
-void RequireSuccess(vk::Result const result, char const* errorMsg)
+void ZEN::RequireSuccess(vk::Result const result, char const* errorMsg)
 {
     if (result != vk::Result::eSuccess) { throw std::runtime_error{ errorMsg }; }
 }

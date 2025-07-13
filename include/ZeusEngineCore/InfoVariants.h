@@ -4,72 +4,75 @@
 #include <variant>
 #include <functional>
 #include "vma/vk_mem_alloc.h"
-#include "../../src/renderer/Vulkan/Backend/VulkanCommandBlock.h"
+#include "../../src/renderer/Vulkan/Backend/CommandBlock.h"
 #include <cstdint>
 
-class VKRenderer;
-struct BufferHandle;
-struct ImageHandle;
+namespace ZEN {
 
-using DeferredHandle = std::variant<BufferHandle, ImageHandle>;
+    namespace VKAPI{
+        class Renderer;
 
-struct VulkanContextInfo {
-    std::uint32_t apiVersion{};
-    vk::Instance instance{};
-    vk::PhysicalDevice physicalDevice{};
-    std::uint32_t queueFamily{};
-    vk::Device device{};
-    vk::Queue queue{};
-    vk::Format colorFormat{};
-    vk::SampleCountFlagBits samples{};
-    VmaAllocator allocator{};
-    vk::CommandPool commandBlockPool{};
-    std::shared_ptr<std::function<void(DeferredHandle)>> destroyCallback;
-};
-struct OpenGLContextInfo {};
+        struct BufferHandle;
+        struct ImageHandle;
 
-using BackendContextVariant = std::variant<std::monostate, VulkanContextInfo, OpenGLContextInfo>;
+        using DeferredHandle = std::variant<BufferHandle, ImageHandle>;
 
-struct VKShaderVertexInput {
-    std::span<vk::VertexInputAttributeDescription2EXT const> attributes{};
-    std::span<vk::VertexInputBindingDescription2EXT const> bindings{};
-};
+        struct ContextInfo {
+            std::uint32_t apiVersion{};
+            vk::Instance instance{};
+            vk::PhysicalDevice physicalDevice{};
+            std::uint32_t queueFamily{};
+            vk::Device device{};
+            vk::Queue queue{};
+            vk::Format colorFormat{};
+            vk::SampleCountFlagBits samples{};
+            VmaAllocator allocator{};
+            vk::CommandPool commandBlockPool{};
+            std::shared_ptr<std::function<void(DeferredHandle)>> destroyCallback;
+        };
+        struct ShaderInfo {
+            vk::Device device{};
+            vk::SampleCountFlagBits samples{};
+            vk::Format colorFormat{};
+            vk::Format depthFormat{};
+            vk::PipelineLayout pipelineLayout{};
+        };
+        [[nodiscard]] constexpr auto
+        createSamplerCreateInfo(vk::SamplerAddressMode const wrap, vk::Filter const filter) {
+            vk::SamplerCreateInfo createInfo{};
+            createInfo.setAddressModeU(wrap);
+            createInfo.setAddressModeV(wrap);
+            createInfo.setAddressModeW(wrap);
+            createInfo.setMinFilter(filter);
+            createInfo.setMagFilter(filter);
+            createInfo.setMaxLod(VK_LOD_CLAMP_NONE);
+            createInfo.setBorderColor(vk::BorderColor::eFloatTransparentBlack);
+            createInfo.setMipmapMode(vk::SamplerMipmapMode::eNearest);
+            return createInfo;
+        }
 
-struct VulkanShaderInfo {
-    vk::Device device{};
-    vk::SampleCountFlagBits samples{};
-    vk::Format colorFormat{};
-    vk::Format depthFormat{};
-    vk::PipelineLayout pipelineLayout{};
-};
-struct OpenGLShaderInfo {};
+        constexpr auto samplerCreateInfo_v = createSamplerCreateInfo(
+                vk::SamplerAddressMode::eClampToEdge, vk::Filter::eLinear);
 
-[[nodiscard]] constexpr auto
-createSamplerCreateInfo(vk::SamplerAddressMode const wrap, vk::Filter const filter) {
-    vk::SamplerCreateInfo createInfo{};
-    createInfo.setAddressModeU(wrap);
-    createInfo.setAddressModeV(wrap);
-    createInfo.setAddressModeW(wrap);
-    createInfo.setMinFilter(filter);
-    createInfo.setMagFilter(filter);
-    createInfo.setMaxLod(VK_LOD_CLAMP_NONE);
-    createInfo.setBorderColor(vk::BorderColor::eFloatTransparentBlack);
-    createInfo.setMipmapMode(vk::SamplerMipmapMode::eNearest);
-    return createInfo;
+        struct TextureInfo {
+            vk::Device device{};
+            VmaAllocator allocator{};
+            std::uint32_t queueFamily{};
+            std::optional<VKAPI::CommandBlock> commandBlock;
+            vk::SamplerCreateInfo sampler{samplerCreateInfo_v};
+            std::shared_ptr<std::function<void(DeferredHandle)>> destroyCallback;
+        };
+    }
+    namespace OGLAPI{
+        struct ContextInfo {
+        };
+        struct ShaderInfo {
+        };
+        struct TextureInfo {
+        };
+    }
+
+    using BackendContextVariant = std::variant<std::monostate, VKAPI::ContextInfo, OGLAPI::ContextInfo>;
+
+    using TextureInfoVariant = std::variant<std::monostate, VKAPI::TextureInfo, OGLAPI::TextureInfo>;
 }
-
-constexpr auto samplerCreateInfo_v = createSamplerCreateInfo(
-    vk::SamplerAddressMode::eClampToEdge, vk::Filter::eLinear);
-
-struct VulkanTextureInfo{
-    vk::Device device{};
-    VmaAllocator allocator{};
-    std::uint32_t queueFamily{};
-    std::optional<VulkanCommandBlock> commandBlock;
-    vk::SamplerCreateInfo sampler{samplerCreateInfo_v};
-    std::shared_ptr<std::function<void(DeferredHandle)>> destroyCallback;
-};
-
-struct OpenGLTextureInfo {};
-
-using TextureInfoVariant = std::variant<std::monostate, VulkanTextureInfo, OpenGLTextureInfo>;

@@ -1,6 +1,8 @@
 #pragma once
 
-enum class RendererAPI {
-    Vulkan,
-    OpenGL
-};
+namespace ZEN {
+    enum class RendererAPI {
+        Vulkan,
+        OpenGL
+    };
+}

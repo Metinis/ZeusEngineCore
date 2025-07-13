@@ -2,6 +2,7 @@
 #include <unordered_map>
 #include "ZeusEngineCore/Material.h"
 
+using namespace ZEN;
 
 std::shared_ptr<Material> MaterialManager::Load(const std::string &name, std::shared_ptr<IShader>& shader) {
     auto it = m_Materials.find(name);
