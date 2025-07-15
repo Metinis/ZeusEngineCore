@@ -27,9 +27,9 @@ namespace ZEN::VKAPI {
 
         RendererContextVariant GetContext() const override;
 
-        ShaderInfoVariant GetShaderInfo() const override;
-
         VKAPI::APIRenderer* GetAPIRenderer() const override;
+
+        VKAPI::APIBackend* GetAPIBackend() const override;
 
     private:
         void UpdateView();

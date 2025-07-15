@@ -13,7 +13,7 @@ namespace ZEN {
     enum class RendererAPI;
 
     using RendererContextVariant = std::variant<std::monostate, VKAPI::ContextInfo, OGLAPI::ContextInfo>;
-    using ShaderInfoVariant = std::variant<std::monostate, VKAPI::ShaderInfo, OGLAPI::ShaderInfo>;
+    //using ShaderInfoVariant = std::variant<std::monostate, VKAPI::ShaderInfo, OGLAPI::ShaderInfo>;
 
     struct RenderCommand {
         glm::mat4 transform;
@@ -41,10 +41,9 @@ namespace ZEN {
 
         virtual RendererContextVariant GetContext() const = 0;
 
-        virtual ShaderInfoVariant GetShaderInfo() const = 0;
-
         virtual VKAPI::APIRenderer* GetAPIRenderer() const = 0;
 
+        virtual VKAPI::APIBackend* GetAPIBackend() const = 0;
     protected:
         std::vector<RenderCommand> m_RenderQueue;
     };

@@ -1,8 +1,8 @@
 #pragma once
 #include "APIBackend.h"
-#include "../Texture.h"
 
 namespace ZEN::VKAPI { //Handles all logic involving rendering/command buffer such as
+    class Texture;
     // binding/drawing
     class APIRenderer {
     public:

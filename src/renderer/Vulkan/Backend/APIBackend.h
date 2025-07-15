@@ -14,7 +14,8 @@
 #include "DescriptorSet.h"
 #include "Image.h"
 #include "PipelineBuilder.h"
-
+#include "../ShaderPipeline.h"
+#include "ZeusEngineCore/RendererAPI.h"
 
 namespace ZEN::VKAPI {
     //Holds all the handles and manages their initialization, hence responsible for returning infos with the
@@ -35,6 +36,7 @@ namespace ZEN::VKAPI {
 
         void Init();
 
+        RendererAPI GetAPI(){return RendererAPI::Vulkan;}
         ContextInfo GetContext();
         [[nodiscard]] RenderFrameInfo GetRenderFrameInfo();
         [[nodiscard]] ShaderInfo GetShaderInfo() const;

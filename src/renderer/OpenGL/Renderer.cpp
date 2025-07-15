@@ -36,10 +36,11 @@ void Renderer::EndFrame(const std::function<void(void*)>& uiExtraDrawCallback) {
 }
 
 
-ZEN::ShaderInfoVariant Renderer::GetShaderInfo() const {
-    return ShaderInfoVariant {};
-}
 
 ZEN::VKAPI::APIRenderer *Renderer::GetAPIRenderer() const {
+    return nullptr;
+}
+
+ZEN::VKAPI::APIBackend *Renderer::GetAPIBackend() const {
     return nullptr;
 }

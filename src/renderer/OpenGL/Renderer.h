@@ -19,8 +19,9 @@ namespace ZEN::OGLAPI {
 
         RendererContextVariant GetContext() const override { return ContextInfo{}; };
 
-        ShaderInfoVariant GetShaderInfo() const override;
 
         VKAPI::APIRenderer* GetAPIRenderer() const override;
+
+        VKAPI::APIBackend* GetAPIBackend() const override;
     };
 }

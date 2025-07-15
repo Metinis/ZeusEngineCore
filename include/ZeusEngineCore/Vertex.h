@@ -3,6 +3,8 @@
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 #include <glm/glm.hpp>
+#include <array>
+#include <vulkan/vulkan.hpp>
 
 namespace ZEN {
     struct Vertex {
@@ -11,28 +13,30 @@ namespace ZEN {
         glm::vec2 TexCoords;
         glm::vec4 Color;
     };
-    constexpr auto vertexAttributes_v = std::to_array({
-                                                              vk::VertexInputAttributeDescription{0, 0,
-                                                                                                  vk::Format::eR32G32B32Sfloat,
-                                                                                                  offsetof(Vertex,
-                                                                                                           Position)},
-                                                              vk::VertexInputAttributeDescription{1, 0,
-                                                                                                  vk::Format::eR32G32B32Sfloat,
-                                                                                                  offsetof(Vertex,
-                                                                                                           Normal)},
-                                                              vk::VertexInputAttributeDescription{2, 0,
-                                                                                                  vk::Format::eR32G32Sfloat,
-                                                                                                  offsetof(Vertex,
-                                                                                                           TexCoords)},
-                                                              vk::VertexInputAttributeDescription{3, 0,
-                                                                                                  vk::Format::eR32G32B32A32Sfloat,
-                                                                                                  offsetof(Vertex,
-                                                                                                           Color)},
-                                                      });
+    namespace VKAPI {
+        constexpr auto vertexAttributes_v = std::to_array({
+                                                                  vk::VertexInputAttributeDescription{0, 0,
+                                                                                                      vk::Format::eR32G32B32Sfloat,
+                                                                                                      offsetof(Vertex,
+                                                                                                               Position)},
+                                                                  vk::VertexInputAttributeDescription{1, 0,
+                                                                                                      vk::Format::eR32G32B32Sfloat,
+                                                                                                      offsetof(Vertex,
+                                                                                                               Normal)},
+                                                                  vk::VertexInputAttributeDescription{2, 0,
+                                                                                                      vk::Format::eR32G32Sfloat,
+                                                                                                      offsetof(Vertex,
+                                                                                                               TexCoords)},
+                                                                  vk::VertexInputAttributeDescription{3, 0,
+                                                                                                      vk::Format::eR32G32B32A32Sfloat,
+                                                                                                      offsetof(Vertex,
+                                                                                                               Color)},
+                                                          });
 
-    constexpr auto vertexBindings_v = std::to_array({
-                                                            vk::VertexInputBindingDescription{0, sizeof(Vertex),
-                                                                                              vk::VertexInputRate::eVertex},
-                                                    });
+        constexpr auto vertexBindings_v = std::to_array({
+                                                                vk::VertexInputBindingDescription{0, sizeof(Vertex),
+                                                                                                  vk::VertexInputRate::eVertex},
+                                                        });
+    }
 
 }

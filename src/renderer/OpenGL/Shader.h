@@ -11,8 +11,6 @@ namespace ZEN::OGLAPI {
     public:
         ~Shader() override;
 
-        void Init(const ZEN::ShaderInfo &shaderInfo) override;
-
         void Bind() const override;
 
         void Unbind() const override;
@@ -25,7 +23,6 @@ namespace ZEN::OGLAPI {
 
         void SetUniformVec4(const std::string &name, const glm::vec4 &value) override;
 
-        void ToggleWireframe() override;
 
     private:
         uint32_t m_RendererID;

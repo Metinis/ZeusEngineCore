@@ -56,10 +56,6 @@ ZEN::RendererContextVariant Renderer::GetContext() const
     return contextInfo;
 }
 
-ZEN::ShaderInfoVariant Renderer::GetShaderInfo() const {
-    return m_Backend->GetShaderInfo();
-}
-
 void Renderer::UpdateView()
 {
     auto const halfSize = 0.5f * glm::vec2{m_Backend->GetFramebufferSize()};
@@ -70,4 +66,8 @@ void Renderer::UpdateView()
 
 APIRenderer* Renderer::GetAPIRenderer() const {
     return m_APIRenderer.get();
+}
+
+APIBackend *Renderer::GetAPIBackend() const {
+    return m_Backend.get();
 }

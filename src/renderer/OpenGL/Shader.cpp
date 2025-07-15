@@ -6,7 +6,7 @@
 
 using namespace ZEN::OGLAPI;
 
-void Shader::Init(const ZEN::ShaderInfo& shaderInfo) {
+/*void Shader::Init() {
     const std::string vertexSrc = ZEN::ReadFile(shaderInfo.vertexPath);
     const std::string fragmentSrc = ZEN::ReadFile(shaderInfo.fragmentPath);
 
@@ -27,7 +27,7 @@ void Shader::Init(const ZEN::ShaderInfo& shaderInfo) {
 
     glDeleteShader(vertex);
     glDeleteShader(fragment);
-}
+}*/
 Shader::~Shader() {
     glDeleteProgram(m_RendererID);
 }
@@ -61,8 +61,4 @@ int Shader::GetUniformLocation(const std::string& name) {
     int location = glGetUniformLocation(m_RendererID, name.c_str());
     m_UniformLocationCache[name] = location;
     return location;
-}
-
-void Shader::ToggleWireframe() {
-    glPolygonMode(GL_FRONT_AND_BACK,  m_IsWireframe ? GL_LINE : GL_FILL);
 }

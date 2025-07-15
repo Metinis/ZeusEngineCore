@@ -1,4 +1,5 @@
 #include "APIRenderer.h"
+#include "../Texture.h"
 
 using namespace ZEN::VKAPI;
 
@@ -152,18 +153,17 @@ void APIRenderer::DrawWithCallback(const std::function<void(void*)>& uiExtraDraw
 
 void APIRenderer::SetUBO(const DescriptorBuffer& ubo) {
     vk::DescriptorBufferInfo info = ubo.GetDescriptorInfoAt(m_FrameInfo.sync->GetFrameIndex());
-    m_Backend->GetDescriptorSet().SetUBO(m_FrameInfo.sync->GetFrameIndex(),
-                                         info);
+    m_Backend->GetDescriptorSet().SetUBO(GetFrameIndex(), info);
 }
 
 void APIRenderer::SetImage(const Texture& texture) {
-    m_Backend->GetDescriptorSet().SetImage(m_FrameInfo.sync->GetFrameIndex(),
+    m_Backend->GetDescriptorSet().SetImage(GetFrameIndex(),
                                            texture.GetDescriptorInfo());
 }
 
 void APIRenderer::BindDescriptorSets() {
     m_Backend->GetDescriptorSet().BindDescriptorSets(m_CommandBuffer,
-                                                     m_FrameInfo.sync->GetFrameIndex());
+                                                     GetFrameIndex());
 }
 
 void APIRenderer::BindShader(vk::Pipeline pipeline) {

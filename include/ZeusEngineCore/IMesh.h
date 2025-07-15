@@ -7,6 +7,7 @@
 #include "RendererAPI.h"
 #include "Material.h"
 #include "ZeusEngineCore/Vertex.h"
+#include "InfoVariants.h"
 
 namespace ZEN{
     class IMesh {

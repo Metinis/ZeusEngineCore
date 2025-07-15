@@ -5,17 +5,25 @@
 #include "ZeusEngineCore/ScopedWaiter.h"
 
 namespace ZEN::VKAPI {
-    class ShaderPipeline : public IShader {
+    class APIRenderer;
+
+    struct ShaderInfo {
+        std::string vertexPath;
+        std::string fragmentPath;
+        vk::Device device{};
+        vk::SampleCountFlagBits samples{};
+        vk::Format colorFormat{};
+        vk::Format depthFormat{};
+        vk::PipelineLayout pipelineLayout{};
+        APIRenderer* apiRenderer;
+    };
+class ShaderPipeline : public ZEN::IShader {
     public:
-        explicit ShaderPipeline(APIRenderer* APIRenderer);
+        explicit ShaderPipeline(const ZEN::VKAPI::ShaderInfo &shaderInfo);
 
         ~ShaderPipeline() override = default;
 
-        void Init(const ZEN::ShaderInfo &shaderInfo) override;
-
         void Bind() const override;
-
-        void Bind(vk::CommandBuffer commandBuffer, vk::Extent2D extent) override;
 
         void Unbind() const override;
 
@@ -26,8 +34,6 @@ namespace ZEN::VKAPI {
         void SetUniformFloat(const std::string &name, float value) override;
 
         void SetUniformVec4(const std::string &name, const glm::vec4 &value) override;
-
-        void ToggleWireframe() override;
 
     private:
         vk::UniquePipeline m_Pipeline;

@@ -4,8 +4,8 @@
 
 using namespace ZEN;
 
-ShaderManager::ShaderManager(ShaderInfo  shaderInfo, VKAPI::APIRenderer* rendererAPI)
-: m_ShaderInfo(std::move(shaderInfo)),
+ShaderManager::ShaderManager(VKAPI::APIBackend* backendAPI, VKAPI::APIRenderer* rendererAPI)
+: m_BackendAPI(backendAPI),
 m_RendererAPI(rendererAPI)
 {   
    
@@ -16,10 +16,7 @@ std::shared_ptr<IShader> ShaderManager::Load(const std::string &name, const std:
     if(it != m_Shaders.end())
         return it->second;
 
-    auto shader = IShader::Create(m_ShaderInfo.api, m_RendererAPI);
-    m_ShaderInfo.vertexPath = vertexPath;
-    m_ShaderInfo.fragmentPath = fragmentPath;
-    shader->Init(m_ShaderInfo);
+    auto shader = IShader::Create(m_BackendAPI, m_RendererAPI, vertexPath, fragmentPath);
     m_Shaders[name] = shader;
     return shader;
 }

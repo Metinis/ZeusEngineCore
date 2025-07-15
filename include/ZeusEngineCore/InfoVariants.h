@@ -30,13 +30,6 @@ namespace ZEN {
             vk::CommandPool commandBlockPool{};
             std::shared_ptr<std::function<void(DeferredHandle)>> destroyCallback;
         };
-        struct ShaderInfo {
-            vk::Device device{};
-            vk::SampleCountFlagBits samples{};
-            vk::Format colorFormat{};
-            vk::Format depthFormat{};
-            vk::PipelineLayout pipelineLayout{};
-        };
         [[nodiscard]] constexpr auto
         createSamplerCreateInfo(vk::SamplerAddressMode const wrap, vk::Filter const filter) {
             vk::SamplerCreateInfo createInfo{};

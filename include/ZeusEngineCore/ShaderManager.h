@@ -6,7 +6,7 @@
 namespace ZEN {
     class ShaderManager {
     public:
-        ShaderManager(ShaderInfo shaderInfo, VKAPI::APIRenderer* rendererAPI);
+        ShaderManager(VKAPI::APIBackend* backendAPI, VKAPI::APIRenderer* rendererAPI);
 
         std::shared_ptr<IShader> Load(const std::string &name, const std::string &vertexPath,
                                       const std::string &fragmentPath);
@@ -16,7 +16,7 @@ namespace ZEN {
     private:
         std::unordered_map<std::string, std::shared_ptr<IShader>> m_Shaders;
 
-        ShaderInfo m_ShaderInfo;
+        VKAPI::APIBackend* m_BackendAPI;
         VKAPI::APIRenderer* m_RendererAPI;
     };
 }

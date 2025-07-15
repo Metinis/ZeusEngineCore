@@ -21,8 +21,6 @@ namespace ZEN {
 
         void Bind();
 
-        void Bind(vk::CommandBuffer commandBuffer, vk::Extent2D extent);
-
         void Unbind() const;
 
     private:
