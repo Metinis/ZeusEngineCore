@@ -1,9 +1,10 @@
 
 #pragma once
 #include "ZeusEngineCore/IRenderer.h"
-#include "Backend/Backend.h"
+#include "Backend/APIBackend.h"
 #include "Backend/DescriptorBuffer.h"
 #include "Texture.h"
+#include "Backend/APIRenderer.h"
 #include <optional>
 
 namespace ZEN::VKAPI {
@@ -32,7 +33,8 @@ namespace ZEN::VKAPI {
     private:
         void UpdateView();
 
-        std::unique_ptr<VKAPI::Backend> m_VKBackend;
+        std::unique_ptr<VKAPI::APIBackend> m_VKBackend;
+        std::unique_ptr<VKAPI::APIRenderer> m_APIRenderer;
         std::optional<DescriptorBuffer> m_ViewUBO{};
         Texture m_Texture;
         vk::CommandBuffer m_CommandBuffer;

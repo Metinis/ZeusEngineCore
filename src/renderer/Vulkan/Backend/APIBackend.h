@@ -17,47 +17,30 @@
 
 
 namespace ZEN::VKAPI {
-    class Backend {
+    //Holds all the handles and manages their initialization, hence responsible for returning infos with the
+    // required handles
+    struct RenderFrameInfo { //info passed to APIRenderer each frame for manipulating accordingly
+        glm::ivec2 framebufferSize;
+        Sync* sync;
+        Device* device;
+        Swapchain* swapchain;
+    };
+    class APIBackend {
     public:
-        Backend(WindowHandle windowHandle);
+        APIBackend(WindowHandle windowHandle);
 
-        ~Backend();
+        void FlushDeferredDestroys();
+
+        ~APIBackend();
 
         void Init();
 
-        void TransitionForRender(vk::CommandBuffer commandBuffer) const;
-
-        void
-        Render(vk::CommandBuffer commandBuffer,
-               const std::function<void(vk::CommandBuffer)> &drawCallback = nullptr,
-               const std::function<void(vk::CommandBuffer)> &uiDrawCallback = nullptr);
-
-        void TransitionForPresent(vk::CommandBuffer commandBuffer) const;
-
-        void SubmitAndPresent();
-
-        bool AcquireRenderTarget();
-
-        void BindDescriptorSets(vk::CommandBuffer const commandBuffer,
-                                DescriptorBuffer &ubo, const vk::DescriptorImageInfo &descriptorImageInfo) {
-            m_DescSet.BindDescriptorSets(commandBuffer, GetFrameIndex(),
-                                         ubo.GetDescriptorInfoAt(GetFrameIndex()), descriptorImageInfo);
-        }
-
         ContextInfo GetContext();
-
+        [[nodiscard]] RenderFrameInfo GetRenderFrameInfo();
         [[nodiscard]] ShaderInfo GetShaderInfo() const;
-
         TextureInfo GetTextureInfo();
-
-        [[nodiscard]] vk::Extent2D GetExtent() const { return m_RenderTarget->extent; }
-
-        vk::CommandBuffer BeginFrame();
-
-        [[nodiscard]] glm::ivec2 GetFramebufferSize() const { return m_FramebufferSize; }
-
-        [[nodiscard]] std::size_t GetFrameIndex() const { return m_Sync.GetFrameIndex(); }
-
+        const DescriptorSet& GetDescriptorSet() {return m_DescSet;}
+        [[nodiscard]] glm::ivec2 GetFramebufferSize() const;
         [[nodiscard]] DescriptorBuffer CreateUBO() const;
 
     private:
@@ -74,16 +57,12 @@ namespace ZEN::VKAPI {
         vk::UniqueCommandPool m_CommandBlockPool;
         DescriptorSet m_DescSet;
 
-        //rendering backend variables
-        glm::ivec2 m_FramebufferSize{};
-        std::optional<RenderTarget> m_RenderTarget{};
-
         //deferred resource destruction
         using DeferredHandle = std::variant<BufferHandle, ImageHandle>;
         std::shared_ptr<std::function<void(DeferredHandle)>> m_DeferredDestroyCallback;
         std::vector<DeferredHandle> m_DeferredDestroy;
 
-        void FlushDeferredDestroys();
+
 
         vk::UniqueDebugUtilsMessengerEXT CreateMessenger(vk::Instance instance);
 

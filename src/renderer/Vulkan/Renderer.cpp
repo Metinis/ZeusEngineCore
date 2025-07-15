@@ -14,7 +14,8 @@ void Renderer::Init(RendererInitInfo& initInfo) {
     if(!initInfo.windowHandle.nativeWindowHandle)
         throw std::runtime_error("Null window handle!");
 
-    m_VKBackend = std::make_unique<VKAPI::Backend>(initInfo.windowHandle);
+    m_VKBackend = std::make_unique<VKAPI::APIBackend>(initInfo.windowHandle);
+    m_APIRenderer = std::make_unique<VKAPI::APIRenderer>(m_VKBackend.get());
     m_ViewUBO.emplace(m_VKBackend->CreateUBO());
     ZEN::TextureInfo textureInfo{};
     textureInfo.textInfoVariant = m_VKBackend->GetTextureInfo();
@@ -25,12 +26,13 @@ Renderer::~Renderer() = default;
 
 
 bool Renderer::BeginFrame() {
-    UpdateView();
-    if(!m_VKBackend->AcquireRenderTarget()){
+
+    if(!m_APIRenderer->AcquireRenderTarget()){
         return false;
     }
-    m_CommandBuffer = m_VKBackend->BeginFrame();
-    m_VKBackend->TransitionForRender(m_CommandBuffer);
+    m_APIRenderer->BeginFrame();
+    UpdateView();
+    m_APIRenderer->TransitionForRender();
 
     return true;
 
@@ -43,11 +45,12 @@ void Renderer::Submit(const glm::mat4& transform, const std::shared_ptr<Material
 
 
 void Renderer::EndFrame(const std::function<void(vk::CommandBuffer)>& uiExtraDrawCallback) {
-    std::function<void(vk::CommandBuffer)> drawCallback = [=, this](vk::CommandBuffer commandBuffer) {
+    std::function<void(vk::CommandBuffer, vk::Extent2D)> drawCallback =
+            [=, this](vk::CommandBuffer commandBuffer, vk::Extent2D extent) {
         // Do mesh-specific drawing here
         for(const auto& cmd : m_RenderQueue) {
-            cmd.material->Bind(commandBuffer, m_VKBackend->GetExtent());
-            m_VKBackend->BindDescriptorSets(commandBuffer, m_ViewUBO.value(), m_Texture.GetDescriptorInfo());
+            cmd.material->Bind(commandBuffer, extent);
+            m_APIRenderer->BindDescriptorSets(m_ViewUBO.value(), m_Texture.GetDescriptorInfo());
             cmd.mesh->Draw(*cmd.material, commandBuffer);
         }
         m_RenderQueue.clear();
@@ -59,13 +62,13 @@ void Renderer::EndFrame(const std::function<void(vk::CommandBuffer)>& uiExtraDra
         }
     };
 
-    m_VKBackend->Render(m_CommandBuffer, drawCallback, uiDrawCallback);
-    m_VKBackend->TransitionForPresent(m_CommandBuffer);
-    m_VKBackend->SubmitAndPresent();
+    m_APIRenderer->Render(drawCallback, uiDrawCallback);
+    m_APIRenderer->TransitionForPresent();
+    m_APIRenderer->SubmitAndPresent();
 }
 
 void Renderer::DrawMesh(const IMesh& mesh, Material& material) {
-    m_VKBackend->Render(m_CommandBuffer);
+    m_APIRenderer->Render();
 }
 
 ZEN::RendererContextVariant Renderer::GetContext() const
@@ -83,5 +86,5 @@ void Renderer::UpdateView()
     auto const halfSize = 0.5f * glm::vec2{ m_VKBackend->GetFramebufferSize()};
     auto const matProjection = glm::ortho(-halfSize.x, halfSize.x, -halfSize.y, halfSize.y);
     auto const bytes = std::bit_cast<std::array<std::byte, sizeof(matProjection)>>(matProjection);
-    m_ViewUBO->WriteAt(m_VKBackend->GetFrameIndex(), bytes);
+    m_ViewUBO->WriteAt(m_APIRenderer->GetFrameIndex(), bytes);
 }
