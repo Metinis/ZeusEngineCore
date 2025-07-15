@@ -5,6 +5,7 @@
 
 using namespace ZEN::VKAPI;
 
+VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE;
 APIBackend::APIBackend(WindowHandle windowHandle)
     : m_Instance(),
 

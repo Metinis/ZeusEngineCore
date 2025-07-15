@@ -1,9 +1,12 @@
 #include "ZeusEngineCore/ShaderManager.h"
 #include <unordered_map>
+#include <utility>
 
 using namespace ZEN;
 
-ShaderManager::ShaderManager(const ShaderInfo& shaderInfo) : m_ShaderInfo(shaderInfo)
+ShaderManager::ShaderManager(ShaderInfo  shaderInfo, VKAPI::APIRenderer* rendererAPI)
+: m_ShaderInfo(std::move(shaderInfo)),
+m_RendererAPI(rendererAPI)
 {   
    
 }
@@ -13,7 +16,7 @@ std::shared_ptr<IShader> ShaderManager::Load(const std::string &name, const std:
     if(it != m_Shaders.end())
         return it->second;
 
-    auto shader = IShader::Create(m_ShaderInfo.api);
+    auto shader = IShader::Create(m_ShaderInfo.api, m_RendererAPI);
     m_ShaderInfo.vertexPath = vertexPath;
     m_ShaderInfo.fragmentPath = fragmentPath;
     shader->Init(m_ShaderInfo);

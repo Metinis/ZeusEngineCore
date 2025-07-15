@@ -23,7 +23,7 @@ void Renderer::Submit(const glm::mat4& transform, const std::shared_ptr<Material
 }
 
 
-void Renderer::EndFrame(const std::function<void(vk::CommandBuffer)>& uiExtraDrawCallback) {
+void Renderer::EndFrame(const std::function<void(void*)>& uiExtraDrawCallback) {
 //glfw swapping handled in Window
     for(const auto& cmd : m_RenderQueue) {
         cmd.mesh->Draw(*cmd.material);
@@ -35,11 +35,11 @@ void Renderer::EndFrame(const std::function<void(vk::CommandBuffer)>& uiExtraDra
     }
 }
 
-void Renderer::DrawMesh(const IMesh& mesh, Material& material) {
-    //immediately draw (costly for performance but option available)
-    mesh.Draw(material);
-}
 
 ZEN::ShaderInfoVariant Renderer::GetShaderInfo() const {
     return ShaderInfoVariant {};
+}
+
+ZEN::VKAPI::APIRenderer *Renderer::GetAPIRenderer() const {
+    return nullptr;
 }

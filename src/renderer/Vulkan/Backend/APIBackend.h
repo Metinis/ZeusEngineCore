@@ -39,7 +39,7 @@ namespace ZEN::VKAPI {
         [[nodiscard]] RenderFrameInfo GetRenderFrameInfo();
         [[nodiscard]] ShaderInfo GetShaderInfo() const;
         TextureInfo GetTextureInfo();
-        const DescriptorSet& GetDescriptorSet() {return m_DescSet;}
+        DescriptorSet& GetDescriptorSet() {return m_DescSet;}
         [[nodiscard]] glm::ivec2 GetFramebufferSize() const;
         [[nodiscard]] DescriptorBuffer CreateUBO() const;
 

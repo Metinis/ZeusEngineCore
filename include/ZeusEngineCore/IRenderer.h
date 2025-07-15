@@ -32,9 +32,7 @@ namespace ZEN {
         virtual void Submit(const glm::mat4 &transform, const std::shared_ptr<Material> &material,
                             const std::shared_ptr<IMesh> &mesh) = 0;
 
-        virtual void EndFrame(const std::function<void(vk::CommandBuffer)> &uiExtraDrawCallback = nullptr) = 0;
-
-        virtual void DrawMesh(const IMesh &mesh, Material &material) = 0;
+        virtual void EndFrame(const std::function<void(void*)>& uiExtraDrawCallback = nullptr) = 0;
 
         static std::unique_ptr<IRenderer> Create(RendererAPI api);
 
@@ -44,6 +42,8 @@ namespace ZEN {
         virtual RendererContextVariant GetContext() const = 0;
 
         virtual ShaderInfoVariant GetShaderInfo() const = 0;
+
+        virtual VKAPI::APIRenderer* GetAPIRenderer() const = 0;
 
     protected:
         std::vector<RenderCommand> m_RenderQueue;

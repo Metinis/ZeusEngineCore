@@ -8,6 +8,7 @@
 #include <string_view>
 #include <memory>
 #include <ZeusEngineCore/InfoVariants.h>
+#include "../../src/renderer/Vulkan/Backend/APIRenderer.h"
 
 namespace ZEN {
     struct ShaderInfo {
@@ -47,7 +48,7 @@ namespace ZEN {
 
         float *GetLineWidth() { return &m_LineWidth; }
 
-        static std::shared_ptr<IShader> Create(RendererAPI api);
+        static std::shared_ptr<IShader> Create(RendererAPI api, VKAPI::APIRenderer* apiRenderer);
 
     protected:
         std::uint32_t m_RendererID;

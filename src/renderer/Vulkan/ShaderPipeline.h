@@ -7,6 +7,8 @@
 namespace ZEN::VKAPI {
     class ShaderPipeline : public IShader {
     public:
+        explicit ShaderPipeline(APIRenderer* APIRenderer);
+
         ~ShaderPipeline() override = default;
 
         void Init(const ZEN::ShaderInfo &shaderInfo) override;
@@ -30,6 +32,7 @@ namespace ZEN::VKAPI {
     private:
         vk::UniquePipeline m_Pipeline;
         ScopedWaiter m_Waiter;
+        APIRenderer* m_APIRenderer;
 
         int GetUniformLocation(const std::string &name) override;
     };

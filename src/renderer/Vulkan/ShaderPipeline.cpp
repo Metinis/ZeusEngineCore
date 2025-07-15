@@ -3,6 +3,9 @@
 
 using namespace ZEN::VKAPI;
 
+ShaderPipeline::ShaderPipeline(APIRenderer *APIRenderer) : m_APIRenderer(APIRenderer) {
+
+}
 void ShaderPipeline::Init(const ZEN::ShaderInfo &shaderInfo) {
     const auto vertexSpirv = ToSpirV(shaderInfo.vertexPath);
     const auto fragmentSpirv = ToSpirV(shaderInfo.fragmentPath);
@@ -41,11 +44,13 @@ void ShaderPipeline::Init(const ZEN::ShaderInfo &shaderInfo) {
 }
 
 void ShaderPipeline::Bind() const {
-
+    m_APIRenderer->BindShader(*m_Pipeline);
+    m_APIRenderer->SetPolygonMode(m_IsWireframe ? vk::PolygonMode::eLine : vk::PolygonMode::eFill);
+    m_APIRenderer->SetLineWidth(m_LineWidth);
 }
 
 void ShaderPipeline::Bind(vk::CommandBuffer commandBuffer, const vk::Extent2D extent) {
-    commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, *m_Pipeline);
+    /*commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, *m_Pipeline);
     commandBuffer.setPolygonModeEXT(m_IsWireframe ? vk::PolygonMode::eLine : vk::PolygonMode::eFill);
     commandBuffer.setLineWidth(m_LineWidth);
     vk::Viewport viewport{};
@@ -54,7 +59,7 @@ void ShaderPipeline::Bind(vk::CommandBuffer commandBuffer, const vk::Extent2D ex
             .setWidth(static_cast<float>(extent.width))
             .setHeight(-viewport.y);
     commandBuffer.setViewport(0, viewport);
-    commandBuffer.setScissor(0, vk::Rect2D{{}, extent});
+    commandBuffer.setScissor(0, vk::Rect2D{{}, extent});*/
 }
 
 void ShaderPipeline::Unbind() const {
@@ -84,3 +89,5 @@ void ShaderPipeline::ToggleWireframe() {
 int ShaderPipeline::GetUniformLocation(const std::string &name) {
     return 0;
 }
+
+

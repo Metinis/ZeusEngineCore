@@ -13,8 +13,7 @@ void DescriptorBuffer::WriteAt(std::size_t frameIndex, std::span<std::byte const
 	WriteTo(m_Buffers.at(frameIndex), bytes);
 }
 
-vk::DescriptorBufferInfo DescriptorBuffer::GetDescriptorInfoAt(std::size_t frameIndex)
-{
+vk::DescriptorBufferInfo DescriptorBuffer::GetDescriptorInfoAt(std::size_t frameIndex) const{
 	auto const& buffer = m_Buffers.at(frameIndex);
 	vk::DescriptorBufferInfo DescriptorBufferInfo{};
 	if(buffer.has_value())

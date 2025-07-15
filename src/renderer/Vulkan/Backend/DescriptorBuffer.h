@@ -11,7 +11,7 @@ namespace ZEN::VKAPI {
 
         void WriteAt(std::size_t frameIndex, std::span<std::byte const> bytes);
 
-        vk::DescriptorBufferInfo GetDescriptorInfoAt(std::size_t frameIndex);
+        vk::DescriptorBufferInfo GetDescriptorInfoAt(std::size_t frameIndex) const;
 
     private:
         BufferCreateInfo m_BufferCreateInfo{};

@@ -5,6 +5,11 @@
 
 using namespace ZEN::VKAPI;
 
+Mesh::Mesh(APIRenderer *apiRenderer) : m_APIRenderer(apiRenderer){
+
+};
+
+
 void Mesh::Init(const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices,
                 const BackendContextVariant& context){
 
@@ -47,8 +52,10 @@ void Mesh::Draw(Material &material, vk::CommandBuffer commandBuffer) {
     commandBuffer.drawIndexed(6, 1, 0, 0, 0);
 }
 void Mesh::Draw(Material &material) const {
-    throw std::runtime_error("Bind without command buffer not implemented vulkan mesh type");
+    //throw std::runtime_error("Bind without command buffer not implemented vulkan mesh type");
+    m_APIRenderer->DrawIndexed(m_VBO.value().Get().Get());
 }
 
-Mesh::~Mesh() {};
+Mesh::~Mesh() {}
+
 

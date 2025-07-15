@@ -10,7 +10,7 @@ namespace ZEN::VKAPI {
         DeviceBuffer(BufferCreateInfo const &createInfo,
                      CommandBlock commandBlock, ByteSpans const &byteSpans);
 
-        const Buffer &Get() { return *m_DeviceBuffer; }
+        [[nodiscard]] const Buffer &Get() const { return *m_DeviceBuffer; }
 
     private:
         std::optional<Buffer> m_DeviceBuffer;

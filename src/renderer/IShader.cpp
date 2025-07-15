@@ -5,10 +5,10 @@
 
 using namespace ZEN;
 
-std::shared_ptr<IShader> IShader::Create(RendererAPI api) {
+std::shared_ptr<IShader> IShader::Create(RendererAPI api, VKAPI::APIRenderer* apiRenderer) {
     switch(api) {
         case RendererAPI::OpenGL: return std::make_shared<OGLAPI::Shader>();
-        case RendererAPI::Vulkan: return std::make_shared<VKAPI::ShaderPipeline>();
+        case RendererAPI::Vulkan: return std::make_shared<VKAPI::ShaderPipeline>(apiRenderer);
         default: return nullptr;
     }
 }

@@ -21,6 +21,6 @@ namespace ZEN{
             throw std::runtime_error("Bind with command buffer not implemented for this mesh type");
         }
 
-        static std::shared_ptr<IMesh> Create(RendererAPI api);
+        static std::shared_ptr<IMesh> Create(RendererAPI api, VKAPI::APIRenderer* apiRenderer);
     };
 }

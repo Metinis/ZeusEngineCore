@@ -4,7 +4,7 @@
 namespace ZEN::VKAPI {
     class DescriptorSet {
     public:
-        DescriptorSet(const vk::Device device);
+        explicit DescriptorSet(vk::Device device);
 
         DescriptorSet(DescriptorSet &&) noexcept = default;
 
@@ -14,11 +14,13 @@ namespace ZEN::VKAPI {
 
         DescriptorSet &operator=(const DescriptorSet &) = delete;
 
-        void BindDescriptorSets(vk::CommandBuffer const commandBuffer,
-                                std::size_t frameIndex, const vk::DescriptorBufferInfo &descUBOInfo,
-                                const vk::DescriptorImageInfo &descTextureInfo) const;
+        void SetUBO(std::size_t frameIndex, const vk::DescriptorBufferInfo& descUBOInfo); //APIRenderer references this
 
-        const std::vector<vk::DescriptorSetLayout> &GetSetLayouts() const { return m_SetLayoutViews; }
+        void SetImage(std::size_t frameIndex, const vk::DescriptorImageInfo& descImageInfo); //APIRenderer references this
+
+        void BindDescriptorSets(vk::CommandBuffer commandBuffer, std::size_t frameIndex) const;
+
+        [[nodiscard]] const std::vector<vk::DescriptorSetLayout> &GetSetLayouts() const { return m_SetLayoutViews; }
 
         const vk::PipelineLayout GetPipelineLayout() const { return *m_PipelineLayout; }
 

@@ -5,17 +5,23 @@ using namespace ZEN::VKAPI;
 APIRenderer::APIRenderer(APIBackend* apiBackend) : m_Backend(apiBackend){
 
 }
-void APIRenderer::BeginFrame()
-{
+bool APIRenderer::BeginFrame(){
+    if(!AcquireRenderTarget())
+        return false;
+
     m_Backend->FlushDeferredDestroys();
     RenderSync& renderSync = m_FrameInfo.sync->GetRenderSyncAtFrame();
     vk::CommandBufferBeginInfo commandBufferBeginInfo{};
     commandBufferBeginInfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
     renderSync.commandBuffer.begin(commandBufferBeginInfo);
     m_CommandBuffer = renderSync.commandBuffer;
+
+    TransitionForRender();
+
+
+    return true;
 }
-bool APIRenderer::AcquireRenderTarget()
-{
+bool APIRenderer::AcquireRenderTarget(){
     m_FrameInfo = m_Backend->GetRenderFrameInfo();
     //minimized
     if (m_FrameInfo.framebufferSize.x <= 0 || m_FrameInfo.framebufferSize.y <= 0) {
@@ -42,8 +48,7 @@ bool APIRenderer::AcquireRenderTarget()
 }
 
 
-void APIRenderer::TransitionForRender() const
-{
+void APIRenderer::TransitionForRender(){
     auto barrier = m_FrameInfo.swapchain->GetBaseBarrier();
     auto dependency_info = vk::DependencyInfo{};
     barrier.setOldLayout(vk::ImageLayout::eUndefined)
@@ -58,11 +63,7 @@ void APIRenderer::TransitionForRender() const
     dependency_info.setImageMemoryBarriers(barrier);
 
     m_CommandBuffer.pipelineBarrier2(dependency_info);
-}
 
-void APIRenderer::Render(const std::function<void(vk::CommandBuffer, vk::Extent2D)>& drawCallback,
-                        const std::function<void(vk::CommandBuffer)>& uiDrawCallback)
-{
     vk::RenderingAttachmentInfo colorAttachment{};
     colorAttachment.imageView = m_RenderTarget->imageView;
     colorAttachment.imageLayout = vk::ImageLayout::eAttachmentOptimal;
@@ -70,30 +71,17 @@ void APIRenderer::Render(const std::function<void(vk::CommandBuffer, vk::Extent2
     colorAttachment.storeOp = vk::AttachmentStoreOp::eStore;
     colorAttachment.clearValue = vk::ClearColorValue{ 0.0f, 0.0f, 0.0f, 1.0f };
 
-    vk::RenderingInfo renderingInfo{};
     auto const renderArea = vk::Rect2D{ vk::Offset2D{}, m_RenderTarget->extent };
 
-    renderingInfo.renderArea = renderArea;
-    renderingInfo.setColorAttachments(colorAttachment);
-    renderingInfo.layerCount = 1;
+    m_RenderingInfo.renderArea = renderArea;
+    m_RenderingInfo.setColorAttachments(colorAttachment);
+    m_RenderingInfo.layerCount = 1;
 
-    m_CommandBuffer.beginRendering(renderingInfo);
-    //draw mesh stuff here
-    if(drawCallback) drawCallback(m_CommandBuffer, m_RenderTarget->extent);
-    m_CommandBuffer.endRendering();
-
-    // UI pass
-    colorAttachment.loadOp = vk::AttachmentLoadOp::eLoad;
-    renderingInfo.setColorAttachments(colorAttachment);
-    renderingInfo.setPDepthAttachment(nullptr); // no depth
-
-    m_CommandBuffer.beginRendering(renderingInfo);
-    if(uiDrawCallback) uiDrawCallback(m_CommandBuffer);
-    m_CommandBuffer.endRendering();
+    m_CommandBuffer.beginRendering(m_RenderingInfo);
 }
 
-void APIRenderer::TransitionForPresent() const
-{
+void APIRenderer::TransitionForPresent() const{
+    m_CommandBuffer.endRendering();
     vk::DependencyInfo dependencyInfo{};
     auto barrier = m_FrameInfo.swapchain->GetBaseBarrier();
 
@@ -110,6 +98,7 @@ void APIRenderer::TransitionForPresent() const
 
 void APIRenderer::SubmitAndPresent()
 {
+    TransitionForPresent();
     RenderSync& renderSync = m_FrameInfo.sync->GetRenderSyncAtFrame();
     renderSync.commandBuffer.end();
 
@@ -153,9 +142,49 @@ void APIRenderer::SubmitAndPresent()
         return;
     }
 }
-void APIRenderer::BindDescriptorSets(DescriptorBuffer &ubo, const vk::DescriptorImageInfo &descriptorImageInfo) {
-    m_Backend->GetDescriptorSet().BindDescriptorSets(m_CommandBuffer, m_FrameInfo.sync->GetFrameIndex(),
-                                 ubo.GetDescriptorInfoAt(m_FrameInfo.sync->GetFrameIndex()), descriptorImageInfo);
+
+void APIRenderer::DrawWithCallback(const std::function<void(void*)>& uiExtraDrawCallback) {
+    if(uiExtraDrawCallback){
+        uiExtraDrawCallback(static_cast<void*>(m_CommandBuffer));
+    }
+
+}
+
+void APIRenderer::SetUBO(const DescriptorBuffer& ubo) {
+    vk::DescriptorBufferInfo info = ubo.GetDescriptorInfoAt(m_FrameInfo.sync->GetFrameIndex());
+    m_Backend->GetDescriptorSet().SetUBO(m_FrameInfo.sync->GetFrameIndex(),
+                                         info);
+}
+
+void APIRenderer::SetImage(const Texture& texture) {
+    m_Backend->GetDescriptorSet().SetImage(m_FrameInfo.sync->GetFrameIndex(),
+                                           texture.GetDescriptorInfo());
+}
+
+void APIRenderer::BindDescriptorSets() {
+    m_Backend->GetDescriptorSet().BindDescriptorSets(m_CommandBuffer,
+                                                     m_FrameInfo.sync->GetFrameIndex());
+}
+
+void APIRenderer::BindShader(vk::Pipeline pipeline) {
+    vk::Extent2D extent = m_RenderTarget->extent;
+    m_CommandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
+    vk::Viewport viewport{};
+    viewport.setX(0.0f)
+            .setY(static_cast<float>(extent.height))
+            .setWidth(static_cast<float>(extent.width))
+            .setHeight(-viewport.y);
+    m_CommandBuffer.setViewport(0, viewport);
+    m_CommandBuffer.setScissor(0, vk::Rect2D{{}, extent});
+}
+
+void APIRenderer::DrawIndexed(vk::Buffer buffer) const {
+    //todo send in offset data etc
+    m_CommandBuffer.bindVertexBuffers(0, buffer, vk::DeviceSize{});
+
+    m_CommandBuffer.bindIndexBuffer(buffer, 4 * sizeof(Vertex),
+                                  vk::IndexType::eUint32);
+    m_CommandBuffer.drawIndexed(6, 1, 0, 0, 0);
 }
 
 

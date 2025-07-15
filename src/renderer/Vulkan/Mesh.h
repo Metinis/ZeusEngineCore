@@ -7,6 +7,7 @@
 namespace ZEN::VKAPI {
     class Mesh : public IMesh {
     public:
+        explicit Mesh(APIRenderer* apiRenderer);
         void Init(const std::vector<Vertex> &vertices, const std::vector<uint32_t> &indices,
                   const BackendContextVariant &context) override;
 
@@ -21,5 +22,6 @@ namespace ZEN::VKAPI {
                                    const BackendContextVariant &context);
 
         std::optional<DeviceBuffer> m_VBO;
+        APIRenderer* m_APIRenderer;
     };
 }

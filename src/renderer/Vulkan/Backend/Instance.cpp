@@ -27,6 +27,7 @@ constexpr std::array extensions_v{
 
 Instance::Instance()
 {
+    VULKAN_HPP_DEFAULT_DISPATCHER.init();
     if (!CheckLayerSupport())
         throw std::runtime_error("Instance Layers requested, but not available!");
 
