@@ -1,7 +1,9 @@
-#include "Renderer.h"
+#include "ZeusEngineCore/Renderer.h"
 #include <glm/gtc/matrix_transform.hpp>
+#include "ZeusEngineCore/Material.h"
+#include "ZeusEngineCore/IMesh.h"
 
-using namespace ZEN::VKAPI;
+using namespace ZEN;
 
 void Renderer::Init(RendererInitInfo& initInfo) {
     if(!initInfo.windowHandle.nativeWindowHandle)
@@ -50,9 +52,9 @@ void Renderer::EndFrame(const std::function<void(void*)>& uiExtraDrawCallback) {
 }
 
 
-ZEN::RendererContextVariant Renderer::GetContext() const
+ZEN::BackendContextVariant Renderer::GetContext() const
 {
-    ContextInfo contextInfo = m_Backend->GetContext();
+    VKAPI::ContextInfo contextInfo = m_Backend->GetContext();
     return contextInfo;
 }
 
@@ -64,10 +66,10 @@ void Renderer::UpdateView()
     m_ViewUBO->WriteAt(m_APIRenderer->GetFrameIndex(), bytes);
 }
 
-APIRenderer* Renderer::GetAPIRenderer() const {
+VKAPI::APIRenderer* Renderer::GetAPIRenderer() const {
     return m_APIRenderer.get();
 }
 
-APIBackend *Renderer::GetAPIBackend() const {
+VKAPI::APIBackend *Renderer::GetAPIBackend() const {
     return m_Backend.get();
 }
