@@ -2,6 +2,7 @@
 #include "ZeusEngineCore/IRendererAPI.h"
 #include "Mesh.h"
 #include "Texture.h"
+#include "ZeusEngineCore/IDescriptorBuffer.h"
 
 using namespace ZEN::OGLAPI;
 ZEN::eRendererAPI ZEN::OGLAPI::APIBackend::GetAPI() const {
@@ -22,4 +23,8 @@ ShaderInfo APIBackend::GetShaderInfo() const {
 
 BackendInfo APIBackend::GetInfo() const {
     return BackendInfo{};
+}
+
+BufferCreateInfo APIBackend::GetBufferCreateInfo(const ZEN::eDescriptorBufferType type) const {
+    return BufferCreateInfo{};
 }

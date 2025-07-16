@@ -1,22 +1,25 @@
 #pragma once
 #include "Buffer.h"
 #include "Sync.h"
+#include "ZeusEngineCore/IDescriptorBuffer.h"
 
 namespace ZEN::VKAPI {
-    class DescriptorBuffer {
+    class DescriptorBuffer : public IDescriptorBuffer {
     public:
         using Buffers = Buffered<std::optional<Buffer>>;
 
-        DescriptorBuffer(const BufferCreateInfo &bufferCreateInfo);
+        explicit DescriptorBuffer(BufferCreateInfo  bufferCreateInfo);
 
-        void WriteAt(std::size_t frameIndex, std::span<std::byte const> bytes);
+        void Write(std::span<std::byte const> bytes) override;
+
+        void Bind() override;
 
         vk::DescriptorBufferInfo GetDescriptorInfoAt(std::size_t frameIndex) const;
 
     private:
         BufferCreateInfo m_BufferCreateInfo{};
         Buffers m_Buffers;
-        vk::BufferUsageFlags m_Usage{};
+        APIRenderer* m_APIRenderer;
 
         void WriteTo(std::optional<Buffer> &outBuffer, std::span<std::byte const> bytes) const;
     };

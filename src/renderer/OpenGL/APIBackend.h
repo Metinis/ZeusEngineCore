@@ -2,9 +2,15 @@
 #include "ZeusEngineCore/IRendererBackend.h"
 #include "Shader.h"
 
+namespace ZEN{
+    enum class eDescriptorBufferType;
+}
 namespace ZEN::OGLAPI {
     struct MeshInfo;
     struct TextureInfo;
+    struct BufferCreateInfo{
+        OGLAPI::APIRenderer *apiRenderer;
+    };
     class APIBackend : public IRendererBackend{
     public:
         explicit APIBackend(){};
@@ -18,6 +24,8 @@ namespace ZEN::OGLAPI {
         ShaderInfo GetShaderInfo() const;
 
         TextureInfo GetTextureInfo() const;
+
+        BufferCreateInfo GetBufferCreateInfo(const eDescriptorBufferType type) const;
     };
 }
 

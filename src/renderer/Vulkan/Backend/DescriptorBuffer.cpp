@@ -1,16 +1,19 @@
 #include "DescriptorBuffer.h"
+#include "APIRenderer.h"
+#include <utility>
 
 using namespace ZEN::VKAPI;
 
-DescriptorBuffer::DescriptorBuffer(const BufferCreateInfo& bufferCreateInfo) :
-	m_BufferCreateInfo(bufferCreateInfo)
+DescriptorBuffer::DescriptorBuffer(BufferCreateInfo  bufferCreateInfo) :
+	m_BufferCreateInfo(std::move(bufferCreateInfo))
 {
+    m_APIRenderer = bufferCreateInfo.apiRenderer;
 	for (auto& buffer : m_Buffers) { WriteTo(buffer, {}); }
 }
 
-void DescriptorBuffer::WriteAt(std::size_t frameIndex, std::span<std::byte const> bytes)
+void DescriptorBuffer::Write(std::span<std::byte const> bytes)
 {
-	WriteTo(m_Buffers.at(frameIndex), bytes);
+	WriteTo(m_Buffers.at(m_APIRenderer->GetFrameIndex()), bytes);
 }
 
 vk::DescriptorBufferInfo DescriptorBuffer::GetDescriptorInfoAt(std::size_t frameIndex) const{
@@ -32,4 +35,8 @@ void DescriptorBuffer::WriteTo(std::optional<Buffer>& outBuffer, std::span<std::
 		outBuffer = Buffer(m_BufferCreateInfo, BufferMemoryType::Host, bytes.size());
 	}
 	std::memcpy(outBuffer->Mapped(), bytes.data(), bytes.size());
+}
+
+void DescriptorBuffer::Bind() {
+    m_APIRenderer->SetUBO(*this); //placeholder
 }

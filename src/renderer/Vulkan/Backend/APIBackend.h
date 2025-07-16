@@ -18,7 +18,11 @@
 #include "ZeusEngineCore/IRendererBackend.h"
 #include "ZeusEngineCore/IRendererAPI.h"
 
+namespace ZEN{
+    enum class eDescriptorBufferType;
+}
 namespace ZEN::VKAPI {
+
     //Holds all the handles and manages their initialization, hence responsible for returning infos with the
     // required handles
     struct RenderFrameInfo { //info passed to APIRenderer each frame for manipulating accordingly
@@ -47,7 +51,7 @@ namespace ZEN::VKAPI {
         TextureInfo GetTextureInfo();
         DescriptorSet& GetDescriptorSet() {return m_DescSet;}
         [[nodiscard]] glm::ivec2 GetFramebufferSize() const;
-        [[nodiscard]] DescriptorBuffer CreateUBO() const;
+        [[nodiscard]] BufferCreateInfo GetBufferCreateInfo(ZEN::eDescriptorBufferType type) const;
 
     private:
         //order matters

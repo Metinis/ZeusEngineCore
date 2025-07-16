@@ -35,12 +35,15 @@ namespace ZEN::VKAPI {
 
     public:
         explicit Texture(TextureInfo& texInfo);
+        void Bind() override;
         [[nodiscard]] vk::DescriptorImageInfo GetDescriptorInfo() const;
+        ~Texture() override;
 
     private:
         std::optional<SampledImage> m_Image;
         vk::UniqueImageView m_View{};
         vk::UniqueSampler m_Sampler{};
+        APIRenderer* m_APIRenderer;
 
 
     };

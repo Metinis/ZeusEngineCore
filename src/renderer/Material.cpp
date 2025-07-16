@@ -1,4 +1,7 @@
+#include <utility>
+
 #include "ZeusEngineCore/Material.h"
+#include "ZeusEngineCore/ITexture.h"
 
 using namespace ZEN;
 
@@ -10,6 +13,9 @@ std::shared_ptr<IShader>& Material::GetShader() {
 }
 void Material::Bind() {
     m_Shader->Bind();
+
+    if(m_Texture.get())
+        m_Texture->Bind();
 
     for (const auto& [name, color] : m_Colors)
         m_Shader->SetUniformVec4(name, color);
@@ -38,6 +44,10 @@ void Material::SetColor(const std::string &name, const glm::vec4 &color) {
 }
 void Material::SetFloat(const std::string &name, const float value) {
     m_Floats[name] = value;
+}
+
+void Material::SetTexture(const std::shared_ptr<ITexture>& texture) {
+    m_Texture = texture;
 }
 
 

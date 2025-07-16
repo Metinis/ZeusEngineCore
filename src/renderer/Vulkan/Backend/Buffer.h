@@ -9,6 +9,7 @@
 #include "Image.h"
 
 namespace ZEN::VKAPI {
+    class APIRenderer;
     struct BufferHandle {
         VmaAllocator allocator;
         VkBuffer buffer;
@@ -19,6 +20,7 @@ namespace ZEN::VKAPI {
         vk::BufferUsageFlags usage;
         std::uint32_t queueFamily;
         std::shared_ptr<std::function<void(DeferredHandle)>> destroyCallback;
+        APIRenderer* apiRenderer;
     };
     enum class BufferMemoryType : std::int8_t {
         Host, Device

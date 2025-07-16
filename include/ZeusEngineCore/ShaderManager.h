@@ -1,9 +1,12 @@
 #pragma once
 #include <memory>
-#include "../../src/renderer/Vulkan/Backend/APIRenderer.h"
-#include "../../src/renderer/OpenGL/Shader.h"
+#include <unordered_map>
 
 namespace ZEN {
+    class IRendererBackend;
+    class IRendererAPI;
+    class IShader;
+
     class ShaderManager {
     public:
         ShaderManager(IRendererBackend* backendAPI, IRendererAPI* rendererAPI);

@@ -3,6 +3,7 @@
 #include "ZeusEngineCore/IShader.h"
 
 namespace ZEN {
+    class ITexture;
     class Material {
     public:
         explicit Material(const std::shared_ptr<IShader> &shader);
@@ -13,7 +14,7 @@ namespace ZEN {
 
         void SetFloat(const std::string &name, float value);
 
-        //void SetTexture(const std::string& name, std::sha)
+        void SetTexture(const std::shared_ptr<ITexture>& texture);
 
         //glm::vec4& ColorRef() { return m_Color; }  // allow ImGui to edit directly
 
@@ -25,6 +26,7 @@ namespace ZEN {
 
     private:
         std::shared_ptr<IShader> m_Shader;
+        std::shared_ptr<ITexture> m_Texture;
         std::unordered_map<std::string, glm::vec4> m_Colors;
         std::unordered_map<std::string, float> m_Floats;
         //std::unordered_map<std::string, std::shared_ptr<Texture>> m_Textures;

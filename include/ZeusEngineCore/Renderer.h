@@ -39,7 +39,6 @@ namespace ZEN {
         //VKAPI placeholder until interface
         std::unique_ptr<IRendererBackend> m_Backend;
         std::unique_ptr<IRendererAPI> m_APIRenderer;
-        std::optional<VKAPI::DescriptorBuffer> m_ViewUBO{};
-        std::optional<VKAPI::Texture> m_Texture;
+        std::unique_ptr<IDescriptorBuffer> m_ViewUBO;
     };
 }

@@ -1,5 +1,6 @@
 #include "Texture.h"
 #include <variant>
+#include "Backend/APIRenderer.h"
 
 using namespace ZEN::VKAPI;
 
@@ -41,6 +42,8 @@ static constexpr auto test_bitmap_v = Bitmap{
 };
 
 Texture::Texture(TextureInfo& texInfo) {
+    m_APIRenderer = texInfo.apiRenderer;
+
     ImageCreateInfo imageCreateInfo{};
     imageCreateInfo.allocator = texInfo.allocator;
     imageCreateInfo.queueFamily = texInfo.queueFamily;
@@ -75,6 +78,13 @@ vk::DescriptorImageInfo Texture::GetDescriptorInfo() const
 	descImageInfo.setSampler(*m_Sampler);
 	return descImageInfo;
 }
+
+void Texture::Bind() {
+    m_APIRenderer->SetImage(*this);
+    m_APIRenderer->BindDescriptorSets(); //placeholder
+}
+
+Texture::~Texture() = default;
 
 
 

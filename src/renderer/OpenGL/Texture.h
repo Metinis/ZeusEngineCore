@@ -10,6 +10,7 @@ namespace ZEN::OGLAPI {
     class Texture : public ITexture {
     public:
         //void Init(ZEN::TextureInfo &textureInfo) override;
-        Texture(const TextureInfo& texInfo);
+        explicit Texture(const TextureInfo& texInfo);
+        void Bind() override;
     };
 }

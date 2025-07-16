@@ -4,6 +4,7 @@
 #include "../Texture.h"
 #include <iostream>
 #include <vulkan/vulkan.hpp>
+#include "ZeusEngineCore/IDescriptorBuffer.h"
 
 using namespace ZEN::VKAPI;
 
@@ -101,14 +102,20 @@ void APIBackend::FlushDeferredDestroys() {
     m_DeferredDestroy.clear();
 }
 
-DescriptorBuffer APIBackend::CreateUBO() const
+BufferCreateInfo APIBackend::GetBufferCreateInfo(const ZEN::eDescriptorBufferType type) const
 {
-    BufferCreateInfo bufferCreateInfo{};
-    bufferCreateInfo.allocator = m_Allocator.Get();
-    bufferCreateInfo.queueFamily = m_Device.GetGPU().queueFamily;
-    bufferCreateInfo.usage = vk::BufferUsageFlagBits::eUniformBuffer;
-    bufferCreateInfo.destroyCallback = m_DeferredDestroyCallback;
-    return DescriptorBuffer(bufferCreateInfo);
+    BufferCreateInfo ret{};
+    ret.allocator = m_Allocator.Get();
+    ret.queueFamily = m_Device.GetGPU().queueFamily;
+
+    if(type == ZEN::eDescriptorBufferType::UBO)
+        ret.usage = vk::BufferUsageFlagBits::eUniformBuffer;
+
+    else if(type == ZEN::eDescriptorBufferType::SSBO)
+        ret.usage = vk::BufferUsageFlagBits::eStorageBuffer;
+
+    ret.destroyCallback = m_DeferredDestroyCallback;
+    return ret;
 }
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(

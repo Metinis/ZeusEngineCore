@@ -12,6 +12,7 @@ Renderer::Renderer(RendererInitInfo &initInfo) {
     //todo create Interface for this
     m_Backend = IRendererBackend::Create(initInfo.api, initInfo.windowHandle);
     m_APIRenderer = IRendererAPI::Create(initInfo.api, m_Backend.get());
+    m_ViewUBO = IDescriptorBuffer::Create(m_Backend.get(), m_APIRenderer.get(), eDescriptorBufferType::UBO);
     //m_ViewUBO.emplace(m_Backend->CreateUBO());
     //ZEN::TextureInfo textureInfo{};
     //textureInfo.textInfoVariant = m_Backend->GetTextureInfo();
@@ -36,12 +37,10 @@ void Renderer::Submit(const glm::mat4& transform, const std::shared_ptr<Material
 
 
 void Renderer::EndFrame(const std::function<void(void*)>& uiExtraDrawCallback) {
-    //m_APIRenderer->SetUBO(m_ViewUBO.value());
+    m_ViewUBO->Bind();
     for(const auto& cmd : m_RenderQueue){
-        //m_APIRenderer->SetImage(m_Texture);
-        //m_APIRenderer->BindDescriptorSets();
         cmd.material->Bind();
-        cmd.mesh->Draw(); //placeholder, later just retrieve draw data
+        cmd.mesh->Draw();
         //call APIRenderer directly here
     }
     m_RenderQueue.clear();
@@ -53,10 +52,11 @@ void Renderer::EndFrame(const std::function<void(void*)>& uiExtraDrawCallback) {
 
 void Renderer::UpdateView()
 {
-    //auto const halfSize = 0.5f * glm::vec2{m_Backend->GetFramebufferSize()};
-    //auto const matProjection = glm::ortho(-halfSize.x, halfSize.x, -halfSize.y, halfSize.y);
-    //auto const bytes = std::bit_cast<std::array<std::byte, sizeof(matProjection)>>(matProjection);
-    //m_ViewUBO->WriteAt(m_APIRenderer->GetFrameIndex(), bytes);
+
+    auto const halfSize = 0.5f * glm::vec2{1280, 720};
+    auto const matProjection = glm::ortho(-halfSize.x, halfSize.x, -halfSize.y, halfSize.y);
+    auto const bytes = std::bit_cast<std::array<std::byte, sizeof(matProjection)>>(matProjection);
+    m_ViewUBO->Write(bytes);
 }
 
 IRendererAPI* Renderer::GetAPIRenderer() const {
