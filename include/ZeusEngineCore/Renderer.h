@@ -3,6 +3,7 @@
 #include <memory>
 #include <glm/glm.hpp>
 #include <functional>
+#include "Transform.h"
 
 namespace ZEN {
     struct RendererInitInfo;
@@ -29,10 +30,11 @@ namespace ZEN {
 
         void EndFrame(const std::function<void(void*)>& uiExtraDrawCallback = nullptr);
 
+        [[nodiscard]] Transform& ViewMatrix(){return m_ViewTransform;}
+
         [[nodiscard]] IRendererAPI* GetAPIRenderer() const;
 
         [[nodiscard]] IRendererBackend* GetAPIBackend() const;
-
     private:
         void UpdateView();
 
@@ -40,5 +42,6 @@ namespace ZEN {
         std::unique_ptr<IRendererBackend> m_Backend;
         std::unique_ptr<IRendererAPI> m_APIRenderer;
         std::unique_ptr<IDescriptorBuffer> m_ViewUBO;
+        Transform m_ViewTransform;
     };
 }

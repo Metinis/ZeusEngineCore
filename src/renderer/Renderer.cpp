@@ -51,8 +51,10 @@ void Renderer::EndFrame(const std::function<void(void*)>& uiExtraDrawCallback) {
 void Renderer::UpdateView()
 {
     auto const halfSize = 0.5f * glm::vec2{1280, 720};
-    auto const matProjection = glm::ortho(-halfSize.x, halfSize.x, -halfSize.y, halfSize.y);
-    auto const bytes = std::bit_cast<std::array<std::byte, sizeof(matProjection)>>(matProjection);
+    glm::mat4 projectionMat = glm::ortho(-halfSize.x, halfSize.x, -halfSize.y, halfSize.y);
+    glm::mat4 viewMat = m_ViewTransform.viewMatrix();
+    glm::mat4 vpMat = projectionMat * viewMat;
+    auto const bytes = std::bit_cast<std::array<std::byte, sizeof(vpMat)>>(vpMat);
     m_ViewUBO->Write(bytes);
 }
 
