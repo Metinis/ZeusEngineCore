@@ -6,6 +6,7 @@
 #include "Vulkan/Backend/APIBackend.h"
 #include "Vulkan/Backend/APIRenderer.h"
 #include "OpenGL/DescriptorBuffer.h"
+#include "Vulkan/Backend/DescriptorBuffer.h"
 
 using namespace ZEN;
 

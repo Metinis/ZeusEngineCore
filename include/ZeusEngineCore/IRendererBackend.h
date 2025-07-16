@@ -1,6 +1,5 @@
 #pragma once
 #include <memory>
-#include "InfoVariants.h"
 
 namespace ZEN {
     enum class eRendererAPI;
@@ -10,7 +9,7 @@ namespace ZEN {
     public:
         static std::unique_ptr<IRendererBackend> Create(eRendererAPI api, WindowHandle handle);
         virtual ~IRendererBackend() = default;
-        virtual eRendererAPI GetAPI() const = 0;
+        [[nodiscard]] virtual eRendererAPI GetAPI() const = 0;
     };
 
 }

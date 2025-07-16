@@ -1,15 +1,11 @@
 #pragma once
-#include <glm/vec2.hpp>
-#include <glm/vec3.hpp>
-#include <glm/vec4.hpp>
-#include <glm/glm.hpp>
+#include <memory>
 #include <vector>
-#include "IRendererAPI.h"
-#include "Material.h"
-#include "ZeusEngineCore/Vertex.h"
-#include "InfoVariants.h"
 
 namespace ZEN{
+    struct Vertex;
+    class IRendererBackend;
+    class IRendererAPI;
     namespace OGLAPI{
         class APIBackend;
     }

@@ -1,4 +1,5 @@
 #include "Sync.h"
+#include "Device.h"
 #include <ranges>
 using namespace ZEN::VKAPI;
 

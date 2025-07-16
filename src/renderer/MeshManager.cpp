@@ -1,5 +1,5 @@
 #include "ZeusEngineCore/MeshManager.h"
-
+#include "ZeusEngineCore/IMesh.h"
 using namespace ZEN;
 
 MeshManager::MeshManager(IRendererBackend* backendAPI, IRendererAPI* rendererAPI)

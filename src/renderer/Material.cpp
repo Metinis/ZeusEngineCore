@@ -1,6 +1,6 @@
 #include <utility>
-
 #include "ZeusEngineCore/Material.h"
+#include "ZeusEngineCore/IShader.h"
 #include "ZeusEngineCore/ITexture.h"
 
 using namespace ZEN;

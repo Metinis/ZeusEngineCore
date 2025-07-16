@@ -1,5 +1,6 @@
 #include <functional>
 #include "Buffer.h"
+#include "Image.h"
 
 using namespace ZEN::VKAPI;
 

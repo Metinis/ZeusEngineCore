@@ -1,4 +1,6 @@
 #pragma once
+#include <vulkan/vulkan.hpp>
+#include <glm/glm.hpp>
 #include "Device.h"
 
 namespace ZEN::VKAPI {
@@ -16,17 +18,17 @@ namespace ZEN::VKAPI {
 
         bool Recreate(glm::ivec2 size);
 
-        glm::ivec2 GetSize() const { return {m_CreateInfo.imageExtent.width, m_CreateInfo.imageExtent.height}; };
+        [[nodiscard]] glm::ivec2 GetSize() const { return {m_CreateInfo.imageExtent.width, m_CreateInfo.imageExtent.height}; };
 
-        std::optional<RenderTarget> AquireNextImage(vk::Semaphore const toSignal);
+        std::optional<RenderTarget> AcquireNextImage(vk::Semaphore toSignal);
 
-        vk::ImageMemoryBarrier2 GetBaseBarrier() const;
+        [[nodiscard]] vk::ImageMemoryBarrier2 GetBaseBarrier() const;
 
-        vk::Semaphore GetPresentSemaphore() const { return *m_PresentSemaphores.at(m_ImageIndex.value()); };
+        [[nodiscard]] vk::Semaphore GetPresentSemaphore() const { return *m_PresentSemaphores.at(m_ImageIndex.value()); };
 
-        vk::Format GetFormat() const { return m_CreateInfo.imageFormat; }
+        [[nodiscard]] vk::Format GetFormat() const { return m_CreateInfo.imageFormat; }
 
-        bool Present(vk::Queue const queue);
+        bool Present(vk::Queue queue);
 
     private:
         void PopulateImages();
@@ -35,11 +37,11 @@ namespace ZEN::VKAPI {
 
         void CreatePresentSemaphores();
 
-        bool NeedsRecreation(vk::Result const result) const;
+        [[nodiscard]] bool NeedsRecreation(vk::Result result) const;
 
         vk::SurfaceFormatKHR GetSurfaceFormat(std::span<const vk::SurfaceFormatKHR> supported);
 
-        vk::Extent2D GetImageExtent(vk::SurfaceCapabilitiesKHR const &capabilities, glm::uvec2 const size);
+        vk::Extent2D GetImageExtent(vk::SurfaceCapabilitiesKHR const &capabilities, glm::uvec2 size);
 
         std::uint32_t GetImageCount(vk::SurfaceCapabilitiesKHR const &capabilities);
 

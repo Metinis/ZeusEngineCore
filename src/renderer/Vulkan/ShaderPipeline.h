@@ -1,7 +1,6 @@
 #pragma once
 
 #include "ZeusEngineCore/IShader.h"
-#include "Backend/PipelineBuilder.h"
 #include "ZeusEngineCore/ScopedWaiter.h"
 
 namespace ZEN::VKAPI {

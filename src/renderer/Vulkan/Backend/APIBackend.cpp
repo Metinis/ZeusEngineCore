@@ -5,6 +5,7 @@
 #include <iostream>
 #include <vulkan/vulkan.hpp>
 #include "ZeusEngineCore/IDescriptorBuffer.h"
+#include "../ShaderPipeline.h"
 
 using namespace ZEN::VKAPI;
 
@@ -18,7 +19,9 @@ APIBackend::APIBackend(WindowHandle windowHandle)
 
     m_Device(m_Instance.Get(), m_Surface.get()),
 
+#ifndef NDEBUG
     m_DebugMessenger(CreateMessenger(m_Instance.Get())),
+#endif
 
     m_Waiter(m_Device.GetLogicalDevice()),
 
@@ -204,6 +207,10 @@ BackendInfo APIBackend::GetInfo() const {
     ret.samples = vk::SampleCountFlagBits::e1;
     ret.apiVersion = m_Instance.GetApiVersion();
     return ret;
+}
+
+ZEN::eRendererAPI APIBackend::GetAPI() const {
+    return ZEN::eRendererAPI::Vulkan;
 }
 
 

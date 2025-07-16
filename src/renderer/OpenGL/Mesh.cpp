@@ -1,5 +1,6 @@
 #include "Mesh.h"
 #include <glad/glad.h>
+#include "ZeusEngineCore/Vertex.h"
 
 using namespace ZEN::OGLAPI;
 Mesh::Mesh(const MeshInfo& meshInfo) {

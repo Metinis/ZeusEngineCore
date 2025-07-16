@@ -1,27 +1,22 @@
 #pragma once
 #include <string>
-#include <glad/glad.h>
-
-#include "GLFW/glfw3.h"
-
-#define GLFW_INCLUDE_NONE
+struct GLFWwindow;
 namespace ZEN {
-
     class Window {
     public:
-        Window(int width, int height, const std::string &title, bool useVulkan);
+        Window(int width, int height, std::string title, bool useVulkan);
 
         ~Window();
 
         void PollEvents();
 
-        float GetDeltaTime() const;
+        [[nodiscard]] float GetDeltaTime() const;
 
         bool ShouldClose();
 
         void SwapBuffers();
 
-        GLFWwindow *GetNativeWindow() const;
+        [[nodiscard]] GLFWwindow *GetNativeWindow() const;
 
     private:
         void Init();

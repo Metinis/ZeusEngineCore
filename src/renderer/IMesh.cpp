@@ -5,6 +5,7 @@
 #include "OpenGL/APIRenderer.h"
 #include "OpenGL/Mesh.h"
 #include "Vulkan/Mesh.h"
+#include "ZeusEngineCore/Vertex.h"
 
 using namespace ZEN;
 

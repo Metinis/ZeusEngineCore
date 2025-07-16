@@ -1,9 +1,11 @@
 #pragma once
-#include "APIBackend.h"
+#include <vulkan/vulkan.hpp>
 #include "ZeusEngineCore/IRendererAPI.h"
+#include "APIBackend.h"
 
 namespace ZEN::VKAPI { //Handles all logic involving rendering/command buffer such as
     class Texture;
+    class DescriptorBuffer;
     // binding/drawing
     class APIRenderer : public IRendererAPI {
     public:

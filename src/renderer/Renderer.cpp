@@ -2,6 +2,10 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include "ZeusEngineCore/Material.h"
 #include "ZeusEngineCore/IMesh.h"
+#include "ZeusEngineCore/Utils.h"
+#include "ZeusEngineCore/IRendererBackend.h"
+#include "ZeusEngineCore/IRendererAPI.h"
+#include "ZeusEngineCore/IDescriptorBuffer.h"
 
 using namespace ZEN;
 
@@ -9,14 +13,9 @@ Renderer::Renderer(RendererInitInfo &initInfo) {
     if(!initInfo.windowHandle.nativeWindowHandle)
         throw std::runtime_error("Null window handle!");
 
-    //todo create Interface for this
     m_Backend = IRendererBackend::Create(initInfo.api, initInfo.windowHandle);
     m_APIRenderer = IRendererAPI::Create(initInfo.api, m_Backend.get());
     m_ViewUBO = IDescriptorBuffer::Create(m_Backend.get(), m_APIRenderer.get(), eDescriptorBufferType::UBO);
-    //m_ViewUBO.emplace(m_Backend->CreateUBO());
-    //ZEN::TextureInfo textureInfo{};
-    //textureInfo.textInfoVariant = m_Backend->GetTextureInfo();
-    //m_Texture.Init(textureInfo);
 }
 
 Renderer::~Renderer() = default;
@@ -41,7 +40,6 @@ void Renderer::EndFrame(const std::function<void(void*)>& uiExtraDrawCallback) {
     for(const auto& cmd : m_RenderQueue){
         cmd.material->Bind();
         cmd.mesh->Draw();
-        //call APIRenderer directly here
     }
     m_RenderQueue.clear();
     if(uiExtraDrawCallback){
@@ -52,7 +50,6 @@ void Renderer::EndFrame(const std::function<void(void*)>& uiExtraDrawCallback) {
 
 void Renderer::UpdateView()
 {
-
     auto const halfSize = 0.5f * glm::vec2{1280, 720};
     auto const matProjection = glm::ortho(-halfSize.x, halfSize.x, -halfSize.y, halfSize.y);
     auto const bytes = std::bit_cast<std::array<std::byte, sizeof(matProjection)>>(matProjection);

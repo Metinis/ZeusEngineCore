@@ -1,12 +1,10 @@
 #pragma once
 #include <vulkan/vulkan.hpp>
-#include <vma/vk_mem_alloc.h>
 #include <cstdint>
 #include <functional>
 #include <memory>
-#include "ZeusEngineCore/ScopedWaiter.h"
+#include "vma/vk_mem_alloc.h"
 #include "ZeusEngineCore/InfoVariants.h"
-#include "Image.h"
 
 namespace ZEN::VKAPI {
     class APIRenderer;
@@ -29,7 +27,7 @@ namespace ZEN::VKAPI {
 
     class Buffer {
     public:
-        Buffer(BufferCreateInfo const createInfo, BufferMemoryType const memoryType, vk::DeviceSize const size);
+        Buffer(BufferCreateInfo createInfo, BufferMemoryType memoryType, vk::DeviceSize size);
 
         // No copy
         Buffer(const Buffer &) = delete;
@@ -47,19 +45,19 @@ namespace ZEN::VKAPI {
             Destroy();
         }
 
-        std::span<std::byte> mappedSpan() const {
+        [[nodiscard]] std::span<std::byte> mappedSpan() const {
             return {static_cast<std::byte *>(m_Mapped), static_cast<size_t>(m_Size)};
         }
 
-        vk::Buffer Get() const { return m_Handle.buffer; }
+        [[nodiscard]] vk::Buffer Get() const { return m_Handle.buffer; }
 
-        vk::DeviceSize Size() const { return m_Size; }
+        [[nodiscard]] vk::DeviceSize Size() const { return m_Size; }
 
         void SetSize(const vk::DeviceSize size) { m_Size = size; }
 
-        void *Mapped() const { return m_Mapped; }
+        [[nodiscard]] void *Mapped() const { return m_Mapped; }
 
-        bool Valid() const { return m_Handle.buffer && m_Handle.allocation; }
+        [[nodiscard]] bool Valid() const { return m_Handle.buffer && m_Handle.allocation; }
 
     private:
         void Destroy();

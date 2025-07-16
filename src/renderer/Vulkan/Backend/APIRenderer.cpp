@@ -1,4 +1,6 @@
 #include "APIRenderer.h"
+#include "DescriptorBuffer.h"
+#include "ZeusEngineCore/Vertex.h"
 #include "../Texture.h"
 
 using namespace ZEN::VKAPI;
@@ -36,7 +38,7 @@ bool APIRenderer::AcquireRenderTarget(){
     if (result != vk::Result::eSuccess) {
         throw std::runtime_error{ "Failed to wait for Render Fence" };
     }
-    m_RenderTarget = m_FrameInfo.swapchain->AquireNextImage(*renderSync.draw);
+    m_RenderTarget = m_FrameInfo.swapchain->AcquireNextImage(*renderSync.draw);
     if (!m_RenderTarget) {
         // acquire failure
         m_FrameInfo.swapchain->Recreate(m_FrameInfo.framebufferSize);

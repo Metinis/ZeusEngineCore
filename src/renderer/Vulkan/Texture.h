@@ -1,6 +1,7 @@
 #pragma once
 #include "ZeusEngineCore/ITexture.h"
 #include "Backend/SampledImage.h"
+#include "Backend/CommandBlock.h"
 
 namespace ZEN::VKAPI {
     class APIRenderer;

@@ -2,6 +2,7 @@
 #include "ZeusEngineCore/IRendererAPI.h"
 #include "Vulkan/Backend/APIBackend.h"
 #include "OpenGL/APIBackend.h"
+#include "ZeusEngineCore/Utils.h"
 
 using namespace ZEN;
 std::unique_ptr <IRendererBackend> IRendererBackend::Create(eRendererAPI api, WindowHandle handle) {

@@ -1,6 +1,5 @@
 #pragma once
 #include "ZeusEngineCore/IRendererBackend.h"
-#include "Shader.h"
 
 namespace ZEN{
     enum class eDescriptorBufferType;
@@ -8,24 +7,27 @@ namespace ZEN{
 namespace ZEN::OGLAPI {
     struct MeshInfo;
     struct TextureInfo;
+    struct BackendInfo;
+    struct ShaderInfo;
+    struct APIRenderer;
     struct BufferCreateInfo{
-        OGLAPI::APIRenderer *apiRenderer;
+        APIRenderer *apiRenderer;
     };
     class APIBackend : public IRendererBackend{
     public:
-        explicit APIBackend(){};
+        explicit APIBackend() = default;
 
-        eRendererAPI GetAPI() const override;
+        [[nodiscard]] eRendererAPI GetAPI() const override;
 
-        BackendInfo GetInfo() const;
+        [[nodiscard]] BackendInfo GetInfo() const;
 
-        MeshInfo GetMeshInfo() const;
+        [[nodiscard]] MeshInfo GetMeshInfo() const;
 
-        ShaderInfo GetShaderInfo() const;
+        [[nodiscard]] ShaderInfo GetShaderInfo() const;
 
-        TextureInfo GetTextureInfo() const;
+        [[nodiscard]] TextureInfo GetTextureInfo() const;
 
-        BufferCreateInfo GetBufferCreateInfo(const eDescriptorBufferType type) const;
+        [[nodiscard]] BufferCreateInfo GetBufferCreateInfo(eDescriptorBufferType type) const;
     };
 }
 

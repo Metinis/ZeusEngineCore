@@ -1,27 +1,26 @@
 #pragma once
 #include <vulkan/vulkan.hpp>
-#include "Instance.h"
-#include "Device.h"
-#include "../../../Utils.h"
-#include "ZeusEngineCore/ScopedWaiter.h"
-#include "Swapchain.h"
-#include "Sync.h"
-#include "ZeusEngineCore/InfoVariants.h"
-#include "MemAllocator.h"
+#include <glm/glm.hpp>
 #include <functional>
-#include "CommandBlock.h"
-#include "DescriptorBuffer.h"
-#include "DescriptorSet.h"
-#include "Image.h"
-#include "PipelineBuilder.h"
-#include "../ShaderPipeline.h"
 #include "ZeusEngineCore/IRendererBackend.h"
-#include "ZeusEngineCore/IRendererAPI.h"
+#include "ZeusEngineCore/ScopedWaiter.h"
+#include "Instance.h"
+#include "Sync.h"
+#include "Device.h"
+#include "Swapchain.h"
+#include "DescriptorSet.h"
+#include "MemAllocator.h"
+#include "ZeusEngineCore/InfoVariants.h"
+
 
 namespace ZEN{
     enum class eDescriptorBufferType;
+    enum class eRenderingAPI;
 }
 namespace ZEN::VKAPI {
+    struct BackendInfo;
+    struct ShaderInfo;
+    struct BufferCreateInfo;
 
     //Holds all the handles and manages their initialization, hence responsible for returning infos with the
     // required handles
@@ -35,19 +34,19 @@ namespace ZEN::VKAPI {
     struct TextureInfo;
     class APIBackend : public IRendererBackend {
     public:
-        APIBackend(WindowHandle windowHandle);
+        explicit APIBackend(WindowHandle windowHandle);
 
         void FlushDeferredDestroys();
 
-        ~APIBackend();
+        ~APIBackend() override;
 
         void Init();
 
-        ZEN::eRendererAPI GetAPI() const {return ZEN::eRendererAPI::Vulkan;}
-        BackendInfo GetInfo() const;
+        [[nodiscard]] ZEN::eRendererAPI GetAPI() const override;
+        [[nodiscard]] BackendInfo GetInfo() const;
         [[nodiscard]] RenderFrameInfo GetRenderFrameInfo();
         [[nodiscard]] ShaderInfo GetShaderInfo() const;
-        MeshInfo GetMeshInfo() const;
+        [[nodiscard]] MeshInfo GetMeshInfo() const;
         TextureInfo GetTextureInfo();
         DescriptorSet& GetDescriptorSet() {return m_DescSet;}
         [[nodiscard]] glm::ivec2 GetFramebufferSize() const;
@@ -59,7 +58,9 @@ namespace ZEN::VKAPI {
         WindowHandle m_WindowHandle;
         vk::UniqueSurfaceKHR m_Surface;
         Device m_Device;
+#ifndef NDEBUG
         vk::UniqueDebugUtilsMessengerEXT m_DebugMessenger;
+#endif
         ScopedWaiter m_Waiter;
         Sync m_Sync;
         Swapchain m_Swapchain;

@@ -1,5 +1,6 @@
 #include "SampledImage.h"
 #include "Buffer.h"
+#include "CommandBlock.h"
 
 using namespace ZEN::VKAPI;
 
@@ -80,4 +81,8 @@ SampledImage::SampledImage(const ImageCreateInfo& createInfo,
 	commandBlock.submitAndWait();
 
 	m_SampledImage = std::move(image);
+}
+
+const Image &SampledImage::Get() {
+    return *m_SampledImage;
 }

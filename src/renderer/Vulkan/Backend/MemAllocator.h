@@ -1,8 +1,6 @@
 #pragma once
 #include <vulkan/vulkan.hpp>
 #include <vma/vk_mem_alloc.h>
-#include "ZeusEngineCore/ScopedWaiter.h"
-#include "Buffer.h"
 
 namespace ZEN::VKAPI {
     class MemAllocator {
@@ -11,7 +9,7 @@ namespace ZEN::VKAPI {
 
         ~MemAllocator();
 
-        VmaAllocator Get() const { return m_Allocator; }
+        [[nodiscard]] VmaAllocator Get() const { return m_Allocator; }
 
     private:
         VmaAllocator m_Allocator;

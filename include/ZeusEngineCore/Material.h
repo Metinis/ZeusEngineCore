@@ -1,8 +1,10 @@
 #pragma once
 #include <memory>
-#include "ZeusEngineCore/IShader.h"
+#include <glm/glm.hpp>
+#include <unordered_map>
 
 namespace ZEN {
+    class IShader;
     class ITexture;
     class Material {
     public:
@@ -29,6 +31,5 @@ namespace ZEN {
         std::shared_ptr<ITexture> m_Texture;
         std::unordered_map<std::string, glm::vec4> m_Colors;
         std::unordered_map<std::string, float> m_Floats;
-        //std::unordered_map<std::string, std::shared_ptr<Texture>> m_Textures;
     };
 }

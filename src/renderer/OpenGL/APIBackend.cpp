@@ -3,6 +3,9 @@
 #include "Mesh.h"
 #include "Texture.h"
 #include "ZeusEngineCore/IDescriptorBuffer.h"
+#include "ZeusEngineCore/Vertex.h"
+#include "Shader.h"
+#include "ZeusEngineCore/InfoVariants.h"
 
 using namespace ZEN::OGLAPI;
 ZEN::eRendererAPI ZEN::OGLAPI::APIBackend::GetAPI() const {

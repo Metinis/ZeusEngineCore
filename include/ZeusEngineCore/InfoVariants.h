@@ -2,9 +2,6 @@
 #include <vulkan/vulkan.hpp>
 #include <span>
 #include <variant>
-#include <functional>
-#include "vma/vk_mem_alloc.h"
-#include "../../src/renderer/Vulkan/Backend/CommandBlock.h"
 #include <cstdint>
 
 namespace ZEN {

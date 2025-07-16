@@ -146,7 +146,7 @@ std::uint32_t Swapchain::GetImageCount(vk::SurfaceCapabilitiesKHR const& capabil
         capabilities.maxImageCount);
 }
 
-std::optional<RenderTarget> Swapchain::AquireNextImage(vk::Semaphore const toSignal)
+std::optional<RenderTarget> Swapchain::AcquireNextImage(vk::Semaphore const toSignal)
 {
     assert(!m_ImageIndex);
     static constexpr auto timeout_v = std::numeric_limits<std::uint64_t>::max();

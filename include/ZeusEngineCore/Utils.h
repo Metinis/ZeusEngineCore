@@ -5,6 +5,8 @@
 #include <optional>
 #include <vulkan/vulkan.hpp>
 #include <bit>
+#include "Vertex.h"
+
 struct GLFWwindow;
 
 namespace ZEN {
@@ -14,7 +16,7 @@ namespace ZEN {
 
     std::vector<std::uint32_t> ToSpirV(const std::filesystem::path &filePath);
 
-    void RequireSuccess(vk::Result const result, char const *errorMsg);
+    void RequireSuccess(vk::Result result, char const *errorMsg);
 
     struct WindowHandle {
         //struct exists if different windowing system was to be added

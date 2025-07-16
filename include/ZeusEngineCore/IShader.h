@@ -1,11 +1,9 @@
 #pragma once
-#include <memory>
 #include <string>
-#include <unordered_map>
-#include <glm/mat4x4.hpp>
-#include <variant>
-#include <string_view>
 #include <memory>
+#include <cstdint>
+#include <glm/glm.hpp>
+#include <unordered_map>
 
 namespace ZEN {
     class IRendererBackend;

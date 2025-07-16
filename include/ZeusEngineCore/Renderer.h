@@ -1,13 +1,14 @@
-
 #pragma once
-#include "../../src/renderer/Vulkan/Backend/APIBackend.h"
-#include "../../src/renderer/Vulkan/Backend/DescriptorBuffer.h"
-#include "../../src/renderer/Vulkan/Texture.h"
-#include "../../src/renderer/Vulkan/Backend/APIRenderer.h"
 #include <optional>
-#include "InfoVariants.h"
+#include <memory>
+#include <glm/glm.hpp>
+#include <functional>
 
 namespace ZEN {
+    struct RendererInitInfo;
+    class IRendererAPI;
+    class IRendererBackend;
+    class IDescriptorBuffer;
     class Material;
     class IMesh;
     struct RenderCommand {
@@ -17,7 +18,7 @@ namespace ZEN {
     };
     class Renderer{
     public:
-        Renderer(RendererInitInfo &initInfo);
+        explicit Renderer(RendererInitInfo &initInfo);
 
         ~Renderer();
 
@@ -28,15 +29,14 @@ namespace ZEN {
 
         void EndFrame(const std::function<void(void*)>& uiExtraDrawCallback = nullptr);
 
-        IRendererAPI* GetAPIRenderer() const;
+        [[nodiscard]] IRendererAPI* GetAPIRenderer() const;
 
-        IRendererBackend* GetAPIBackend() const;
+        [[nodiscard]] IRendererBackend* GetAPIBackend() const;
 
     private:
         void UpdateView();
 
         std::vector<RenderCommand> m_RenderQueue;
-        //VKAPI placeholder until interface
         std::unique_ptr<IRendererBackend> m_Backend;
         std::unique_ptr<IRendererAPI> m_APIRenderer;
         std::unique_ptr<IDescriptorBuffer> m_ViewUBO;

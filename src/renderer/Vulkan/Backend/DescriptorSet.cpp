@@ -1,4 +1,5 @@
 #include "DescriptorSet.h"
+#include <cstdint>
 
 using namespace ZEN::VKAPI;
 

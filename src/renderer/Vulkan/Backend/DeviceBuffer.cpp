@@ -1,4 +1,5 @@
 #include "DeviceBuffer.h"
+#include "CommandBlock.h"
 
 using namespace ZEN::VKAPI;
 

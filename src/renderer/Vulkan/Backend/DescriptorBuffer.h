@@ -1,9 +1,11 @@
 #pragma once
-#include "Buffer.h"
-#include "Sync.h"
 #include "ZeusEngineCore/IDescriptorBuffer.h"
+#include "ZeusEngineCore/EngineConstants.h"
+#include "Buffer.h"
+#include <optional>
 
 namespace ZEN::VKAPI {
+    class Buffer;
     class DescriptorBuffer : public IDescriptorBuffer {
     public:
         using Buffers = Buffered<std::optional<Buffer>>;
@@ -14,10 +16,10 @@ namespace ZEN::VKAPI {
 
         void Bind() override;
 
-        vk::DescriptorBufferInfo GetDescriptorInfoAt(std::size_t frameIndex) const;
+        [[nodiscard]] vk::DescriptorBufferInfo GetDescriptorInfoAt(std::size_t frameIndex) const;
 
     private:
-        BufferCreateInfo m_BufferCreateInfo{};
+        BufferCreateInfo m_BufferCreateInfo;
         Buffers m_Buffers;
         APIRenderer* m_APIRenderer;
 

@@ -1,9 +1,13 @@
 #pragma once
 #include <memory>
 #include <unordered_map>
-#include "../../src/renderer/Vulkan/Backend/APIRenderer.h"
-#include "IMesh.h"
+#include <vector>
+
 namespace ZEN {
+    class IRendererBackend;
+    class IRendererAPI;
+    class IMesh;
+    struct Vertex;
     class MeshManager {
     public:
         MeshManager(IRendererBackend* backendAPI, IRendererAPI* rendererAPI);

@@ -4,7 +4,7 @@
 
 namespace ZEN::OGLAPI{
     class APIRenderer;
-    struct MeshInfo{
+    struct MeshInfo {
         APIRenderer* apiRenderer;
         std::vector<Vertex> vertices;
         std::vector<uint32_t> indices;

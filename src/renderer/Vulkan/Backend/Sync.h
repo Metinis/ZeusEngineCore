@@ -1,12 +1,9 @@
 #pragma once
 #include <vulkan/vulkan.hpp>
-#include "Device.h"
 #include "ZeusEngineCore/EngineConstants.h"
 
 namespace ZEN::VKAPI {
-    template<typename Type>
-    using Buffered = std::array<Type, buffering_v>;
-
+    struct GPU;
     struct RenderSync {
         vk::UniqueSemaphore draw{};
 
@@ -17,13 +14,13 @@ namespace ZEN::VKAPI {
 
     class Sync {
     public:
-        explicit Sync(const GPU &gpu, const vk::Device device);
+        explicit Sync(const GPU &gpu, vk::Device device);
 
         RenderSync &GetRenderSyncAtFrame() { return m_RenderSync.at(m_FrameIndex); }
 
         void NextFrameIndex();
 
-        std::size_t GetFrameIndex() const { return m_FrameIndex; }
+        [[nodiscard]] std::size_t GetFrameIndex() const { return m_FrameIndex; }
 
     private:
         vk::UniqueCommandPool m_RenderCmdPool{};

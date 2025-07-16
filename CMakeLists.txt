@@ -5,6 +5,13 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    message(STATUS "Adding debug info to Release build")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -g")
+    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -g")
+endif()
+
+
 
 find_package(Vulkan REQUIRED)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/include/glfw glfw)

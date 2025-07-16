@@ -1,7 +1,7 @@
 #pragma once
 #include "vulkan/vulkan.hpp"
 #include <optional>
-#include "../../../Utils.h"
+#include "ZeusEngineCore/Utils.h"
 
 namespace ZEN::VKAPI {
     struct GPU {
@@ -21,15 +21,15 @@ namespace ZEN::VKAPI {
 
         void SubmitToQueue(vk::SubmitInfo2 submitInfo, vk::Fence drawn);
 
-        const vk::Queue GetQueue() const { return m_Queue; }
+        [[nodiscard]] vk::Queue GetQueue() const { return m_Queue; }
 
     private:
         GPU m_GPU;
         vk::UniqueDevice m_LogicalDevice;
         vk::Queue m_Queue;
 
-        vk::UniqueDevice CreateLogicalDevice(const GPU &gpu, const vk::Instance instance);
+        vk::UniqueDevice CreateLogicalDevice(const GPU &gpu, vk::Instance instance);
 
-        static GPU FindSuitableGpu(vk::Instance const instance, vk::SurfaceKHR const surface);
+        static GPU FindSuitableGpu(vk::Instance instance, vk::SurfaceKHR surface);
     };
 }

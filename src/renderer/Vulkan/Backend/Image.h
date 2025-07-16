@@ -5,7 +5,6 @@
 #include <glm/vec2.hpp>
 #include <functional>
 #include <memory>
-#include "Buffer.h"
 #include "ZeusEngineCore/InfoVariants.h"
 
 namespace ZEN::VKAPI {
@@ -21,7 +20,7 @@ namespace ZEN::VKAPI {
     struct ImageCreateInfo {
         VmaAllocator allocator;
         std::uint32_t queueFamily;
-        std::shared_ptr<std::function<void(DeferredHandle)>> destroyCallback; //todo change name
+        std::shared_ptr<std::function<void(DeferredHandle)>> destroyCallback;
     };
 
     struct Bitmap {
@@ -50,11 +49,11 @@ namespace ZEN::VKAPI {
             Destroy();
         }
 
-        vk::Image Get() const { return m_Handle.image; }
+        [[nodiscard]] vk::Image Get() const { return m_Handle.image; }
 
-        std::uint32_t GetLevels() const { return m_Handle.levels; }
+        [[nodiscard]] std::uint32_t GetLevels() const { return m_Handle.levels; }
 
-        vk::Format GetFormat() const { return m_Handle.format; }
+        [[nodiscard]] vk::Format GetFormat() const { return m_Handle.format; }
 
     private:
         void Destroy();

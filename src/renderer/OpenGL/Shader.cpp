@@ -2,7 +2,7 @@
 #include <glad/glad.h>
 #include <iostream>
 #include <glm/gtc/type_ptr.hpp>
-#include "../../Utils.h"
+#include "ZeusEngineCore/Utils.h"
 
 using namespace ZEN::OGLAPI;
 

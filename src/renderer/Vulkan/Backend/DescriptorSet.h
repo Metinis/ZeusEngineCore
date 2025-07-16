@@ -1,6 +1,6 @@
 #pragma once
 #include <vulkan/vulkan.hpp>
-#include "Sync.h"
+#include "ZeusEngineCore/EngineConstants.h"
 namespace ZEN::VKAPI {
     class DescriptorSet {
     public:
