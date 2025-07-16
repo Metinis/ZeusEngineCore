@@ -15,7 +15,8 @@
 #include "Image.h"
 #include "PipelineBuilder.h"
 #include "../ShaderPipeline.h"
-#include "ZeusEngineCore/RendererAPI.h"
+#include "ZeusEngineCore/IRendererBackend.h"
+#include "ZeusEngineCore/IRendererAPI.h"
 
 namespace ZEN::VKAPI {
     //Holds all the handles and manages their initialization, hence responsible for returning infos with the
@@ -26,7 +27,9 @@ namespace ZEN::VKAPI {
         Device* device;
         Swapchain* swapchain;
     };
-    class APIBackend {
+    struct MeshInfo;
+    struct TextureInfo;
+    class APIBackend : public IRendererBackend {
     public:
         APIBackend(WindowHandle windowHandle);
 
@@ -36,10 +39,11 @@ namespace ZEN::VKAPI {
 
         void Init();
 
-        RendererAPI GetAPI(){return RendererAPI::Vulkan;}
-        ContextInfo GetContext();
+        ZEN::eRendererAPI GetAPI() const {return ZEN::eRendererAPI::Vulkan;}
+        BackendInfo GetInfo() const;
         [[nodiscard]] RenderFrameInfo GetRenderFrameInfo();
         [[nodiscard]] ShaderInfo GetShaderInfo() const;
+        MeshInfo GetMeshInfo() const;
         TextureInfo GetTextureInfo();
         DescriptorSet& GetDescriptorSet() {return m_DescSet;}
         [[nodiscard]] glm::ivec2 GetFramebufferSize() const;

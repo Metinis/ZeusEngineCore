@@ -5,17 +5,17 @@
 
 using namespace ZEN;
 
-void Renderer::Init(RendererInitInfo& initInfo) {
+Renderer::Renderer(RendererInitInfo &initInfo) {
     if(!initInfo.windowHandle.nativeWindowHandle)
         throw std::runtime_error("Null window handle!");
 
     //todo create Interface for this
-    m_Backend = std::make_unique<VKAPI::APIBackend>(initInfo.windowHandle);
-    m_APIRenderer = std::make_unique<VKAPI::APIRenderer>(m_Backend.get());
-    m_ViewUBO.emplace(m_Backend->CreateUBO());
-    ZEN::TextureInfo textureInfo{};
-    textureInfo.textInfoVariant = m_Backend->GetTextureInfo();
-    m_Texture.Init(textureInfo);
+    m_Backend = IRendererBackend::Create(initInfo.api, initInfo.windowHandle);
+    m_APIRenderer = IRendererAPI::Create(initInfo.api, m_Backend.get());
+    //m_ViewUBO.emplace(m_Backend->CreateUBO());
+    //ZEN::TextureInfo textureInfo{};
+    //textureInfo.textInfoVariant = m_Backend->GetTextureInfo();
+    //m_Texture.Init(textureInfo);
 }
 
 Renderer::~Renderer() = default;
@@ -36,12 +36,12 @@ void Renderer::Submit(const glm::mat4& transform, const std::shared_ptr<Material
 
 
 void Renderer::EndFrame(const std::function<void(void*)>& uiExtraDrawCallback) {
-    m_APIRenderer->SetUBO(m_ViewUBO.value());
+    //m_APIRenderer->SetUBO(m_ViewUBO.value());
     for(const auto& cmd : m_RenderQueue){
-        m_APIRenderer->SetImage(m_Texture);
-        m_APIRenderer->BindDescriptorSets();
+        //m_APIRenderer->SetImage(m_Texture);
+        //m_APIRenderer->BindDescriptorSets();
         cmd.material->Bind();
-        cmd.mesh->Draw(*cmd.material); //placeholder, later just retrieve draw data
+        cmd.mesh->Draw(); //placeholder, later just retrieve draw data
         //call APIRenderer directly here
     }
     m_RenderQueue.clear();
@@ -51,25 +51,20 @@ void Renderer::EndFrame(const std::function<void(void*)>& uiExtraDrawCallback) {
     m_APIRenderer->SubmitAndPresent();
 }
 
-
-ZEN::BackendContextVariant Renderer::GetContext() const
-{
-    VKAPI::ContextInfo contextInfo = m_Backend->GetContext();
-    return contextInfo;
-}
-
 void Renderer::UpdateView()
 {
-    auto const halfSize = 0.5f * glm::vec2{m_Backend->GetFramebufferSize()};
-    auto const matProjection = glm::ortho(-halfSize.x, halfSize.x, -halfSize.y, halfSize.y);
-    auto const bytes = std::bit_cast<std::array<std::byte, sizeof(matProjection)>>(matProjection);
-    m_ViewUBO->WriteAt(m_APIRenderer->GetFrameIndex(), bytes);
+    //auto const halfSize = 0.5f * glm::vec2{m_Backend->GetFramebufferSize()};
+    //auto const matProjection = glm::ortho(-halfSize.x, halfSize.x, -halfSize.y, halfSize.y);
+    //auto const bytes = std::bit_cast<std::array<std::byte, sizeof(matProjection)>>(matProjection);
+    //m_ViewUBO->WriteAt(m_APIRenderer->GetFrameIndex(), bytes);
 }
 
-VKAPI::APIRenderer* Renderer::GetAPIRenderer() const {
+IRendererAPI* Renderer::GetAPIRenderer() const {
     return m_APIRenderer.get();
 }
 
-VKAPI::APIBackend *Renderer::GetAPIBackend() const {
+IRendererBackend* Renderer::GetAPIBackend() const {
     return m_Backend.get();
 }
+
+

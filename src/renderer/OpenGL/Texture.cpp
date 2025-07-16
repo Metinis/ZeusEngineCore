@@ -2,6 +2,6 @@
 
 using namespace ZEN::OGLAPI;
 
-void Texture::Init(ZEN::TextureInfo& textureInfo)
-{
+Texture::Texture(const TextureInfo &texInfo) {
+
 }

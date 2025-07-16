@@ -1,21 +1,22 @@
 #pragma once
 #include "APIBackend.h"
+#include "ZeusEngineCore/IRendererAPI.h"
 
 namespace ZEN::VKAPI { //Handles all logic involving rendering/command buffer such as
     class Texture;
     // binding/drawing
-    class APIRenderer {
+    class APIRenderer : public IRendererAPI {
     public:
-        explicit APIRenderer(APIBackend* apiBackend);
+        explicit APIRenderer(VKAPI::APIBackend* apiBackend);
 
-        bool BeginFrame();
-        void DrawWithCallback(const std::function<void(void*)>& uiExtraDrawCallback);
-        void SubmitAndPresent();
+        bool BeginFrame() override;
+        void DrawWithCallback(const std::function<void(void*)>& uiExtraDrawCallback) override;
+        void SubmitAndPresent() override;
         //vulkan specific
         [[nodiscard]] std::size_t GetFrameIndex() const {return m_FrameInfo.sync->GetFrameIndex();}
         void SetUBO(const DescriptorBuffer& ubo);
         void SetImage(const Texture& texture);
-        void DrawIndexed(vk::Buffer buffer) const;
+        void DrawIndexed(vk::Buffer buffer) const; //todo api agnostic buffer
         void BindShader(vk::Pipeline pipeline);
         void SetPolygonMode(vk::PolygonMode mode) const {m_CommandBuffer.setPolygonModeEXT(mode);}
         void SetLineWidth(float width) const {m_CommandBuffer.setLineWidth(width);}

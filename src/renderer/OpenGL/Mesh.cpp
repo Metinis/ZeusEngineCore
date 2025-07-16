@@ -2,9 +2,8 @@
 #include <glad/glad.h>
 
 using namespace ZEN::OGLAPI;
-void Mesh::Init(const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices,
-                  const BackendContextVariant& context) {
-    m_IndexCount = indices.size();
+Mesh::Mesh(const MeshInfo& meshInfo) {
+    m_IndexCount = meshInfo.indices.size();
 
     glGenVertexArrays(1, &m_VAO);
     glGenBuffers(1, &m_VBO);
@@ -13,10 +12,10 @@ void Mesh::Init(const std::vector<Vertex>& vertices, const std::vector<uint32_t>
     glBindVertexArray(m_VAO);
 
     glBindBuffer(GL_ARRAY_BUFFER, m_VBO);
-    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), vertices.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, meshInfo.vertices.size() * sizeof(Vertex), meshInfo.vertices.data(), GL_STATIC_DRAW);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(uint32_t), indices.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, meshInfo.indices.size() * sizeof(uint32_t), meshInfo.indices.data(), GL_STATIC_DRAW);
 
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Position));
@@ -32,18 +31,17 @@ void Mesh::Init(const std::vector<Vertex>& vertices, const std::vector<uint32_t>
 
     glBindVertexArray(0);
 }
+
 Mesh::~Mesh() {
     glDeleteBuffers(1, &m_VBO);
     glDeleteBuffers(1, &m_EBO);
     glDeleteVertexArrays(1, &m_VAO);
 }
-void Mesh::Draw(Material& material) const {
-    material.Bind();
-
+void Mesh::Draw() const {
     glBindVertexArray(m_VAO);
     glDrawElements(GL_TRIANGLES, m_IndexCount, GL_UNSIGNED_INT, nullptr);
 
     glBindVertexArray(0);
-    material.Unbind();
 }
+
 

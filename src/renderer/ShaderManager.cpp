@@ -4,7 +4,7 @@
 
 using namespace ZEN;
 
-ShaderManager::ShaderManager(VKAPI::APIBackend* backendAPI, VKAPI::APIRenderer* rendererAPI)
+ShaderManager::ShaderManager(IRendererBackend* backendAPI, IRendererAPI* rendererAPI)
 : m_BackendAPI(backendAPI),
 m_RendererAPI(rendererAPI)
 {   

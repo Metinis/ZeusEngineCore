@@ -6,7 +6,7 @@
 
 using namespace ZEN::OGLAPI;
 
-/*void Shader::Init() {
+Shader::Shader(const ShaderInfo& shaderInfo) {
     const std::string vertexSrc = ZEN::ReadFile(shaderInfo.vertexPath);
     const std::string fragmentSrc = ZEN::ReadFile(shaderInfo.fragmentPath);
 
@@ -27,7 +27,8 @@ using namespace ZEN::OGLAPI;
 
     glDeleteShader(vertex);
     glDeleteShader(fragment);
-}*/
+}
+
 Shader::~Shader() {
     glDeleteProgram(m_RendererID);
 }
@@ -62,3 +63,5 @@ int Shader::GetUniformLocation(const std::string& name) {
     m_UniformLocationCache[name] = location;
     return location;
 }
+
+

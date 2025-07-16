@@ -8,64 +8,25 @@
 #include <cstdint>
 
 namespace ZEN {
-
     namespace VKAPI{
-        class Renderer;
-
         struct BufferHandle;
         struct ImageHandle;
-
         using DeferredHandle = std::variant<BufferHandle, ImageHandle>;
 
-        struct ContextInfo {
+        struct BackendInfo{
             std::uint32_t apiVersion{};
             vk::Instance instance{};
             vk::PhysicalDevice physicalDevice{};
-            std::uint32_t queueFamily{};
             vk::Device device{};
+            std::uint32_t queueFamily{};
             vk::Queue queue{};
-            vk::Format colorFormat{};
             vk::SampleCountFlagBits samples{};
-            VmaAllocator allocator{};
-            vk::CommandPool commandBlockPool{};
-            std::shared_ptr<std::function<void(DeferredHandle)>> destroyCallback;
-        };
-        [[nodiscard]] constexpr auto
-        createSamplerCreateInfo(vk::SamplerAddressMode const wrap, vk::Filter const filter) {
-            vk::SamplerCreateInfo createInfo{};
-            createInfo.setAddressModeU(wrap);
-            createInfo.setAddressModeV(wrap);
-            createInfo.setAddressModeW(wrap);
-            createInfo.setMinFilter(filter);
-            createInfo.setMagFilter(filter);
-            createInfo.setMaxLod(VK_LOD_CLAMP_NONE);
-            createInfo.setBorderColor(vk::BorderColor::eFloatTransparentBlack);
-            createInfo.setMipmapMode(vk::SamplerMipmapMode::eNearest);
-            return createInfo;
-        }
-
-        constexpr auto samplerCreateInfo_v = createSamplerCreateInfo(
-                vk::SamplerAddressMode::eClampToEdge, vk::Filter::eLinear);
-
-        struct TextureInfo {
-            vk::Device device{};
-            VmaAllocator allocator{};
-            std::uint32_t queueFamily{};
-            std::optional<VKAPI::CommandBlock> commandBlock;
-            vk::SamplerCreateInfo sampler{samplerCreateInfo_v};
-            std::shared_ptr<std::function<void(DeferredHandle)>> destroyCallback;
+            vk::Format colorFormat{};
         };
     }
     namespace OGLAPI{
-        struct ContextInfo {
-        };
-        struct ShaderInfo {
-        };
-        struct TextureInfo {
+        struct BackendInfo{
+
         };
     }
-
-    using BackendContextVariant = std::variant<std::monostate, VKAPI::ContextInfo, OGLAPI::ContextInfo>;
-
-    using TextureInfoVariant = std::variant<std::monostate, VKAPI::TextureInfo, OGLAPI::TextureInfo>;
 }

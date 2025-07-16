@@ -1,6 +1,7 @@
 #include "APIBackend.h"
 #include "GLFW/glfw3.h"
-
+#include "../Mesh.h"
+#include "../Texture.h"
 #include <iostream>
 #include <vulkan/vulkan.hpp>
 
@@ -152,25 +153,6 @@ vk::UniqueCommandPool APIBackend::CreateCommandBlockPool() const
 
 }
 
-ContextInfo APIBackend::GetContext()
-{
-    ContextInfo contextInfo{};
-    contextInfo.apiVersion = m_Instance.GetApiVersion();
-    contextInfo.instance = m_Instance.Get();
-    contextInfo.physicalDevice = m_Device.GetGPU().device;
-    contextInfo.queueFamily = m_Device.GetGPU().queueFamily;
-    contextInfo.device = m_Device.GetLogicalDevice();
-    contextInfo.queue = m_Device.GetQueue();
-    contextInfo.colorFormat = m_Swapchain.GetFormat();
-    contextInfo.samples = vk::SampleCountFlagBits::e1;
-    contextInfo.allocator = m_Allocator.Get();
-    contextInfo.commandBlockPool = m_CommandBlockPool.get();
-    contextInfo.destroyCallback = m_DeferredDestroyCallback;
-
-
-    return contextInfo;
-}
-
 APIBackend::~APIBackend() {
     m_Device.GetLogicalDevice().waitIdle();
     FlushDeferredDestroys();
@@ -190,6 +172,30 @@ RenderFrameInfo APIBackend::GetRenderFrameInfo() {
         .device = &m_Device,
         .swapchain = &m_Swapchain,
     };
+    return ret;
+}
+
+MeshInfo APIBackend::GetMeshInfo() const {
+    MeshInfo ret{};
+    ret.device = m_Device.GetLogicalDevice();
+    ret.allocator = m_Allocator.Get();
+    ret.destroyCallback = m_DeferredDestroyCallback;
+    ret.queueFamily = m_Device.GetGPU().queueFamily;
+    ret.queue = m_Device.GetQueue();
+    ret.commandBlockPool = *m_CommandBlockPool;
+    return ret;
+}
+
+BackendInfo APIBackend::GetInfo() const {
+    BackendInfo ret{};
+    ret.physicalDevice = m_Device.GetGPU().device;
+    ret.queue = m_Device.GetQueue();
+    ret.device = m_Device.GetLogicalDevice();
+    ret.queueFamily = m_Device.GetGPU().queueFamily;
+    ret.instance = m_Instance.Get();
+    ret.colorFormat = m_Swapchain.GetFormat();
+    ret.samples = vk::SampleCountFlagBits::e1;
+    ret.apiVersion = m_Instance.GetApiVersion();
     return ret;
 }
 

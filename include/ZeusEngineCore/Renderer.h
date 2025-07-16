@@ -17,7 +17,7 @@ namespace ZEN {
     };
     class Renderer{
     public:
-        void Init(RendererInitInfo &initInfo);
+        Renderer(RendererInitInfo &initInfo);
 
         ~Renderer();
 
@@ -28,21 +28,18 @@ namespace ZEN {
 
         void EndFrame(const std::function<void(void*)>& uiExtraDrawCallback = nullptr);
 
+        IRendererAPI* GetAPIRenderer() const;
 
-        BackendContextVariant GetContext() const;
-
-        VKAPI::APIRenderer* GetAPIRenderer() const;
-
-        VKAPI::APIBackend* GetAPIBackend() const;
+        IRendererBackend* GetAPIBackend() const;
 
     private:
         void UpdateView();
 
         std::vector<RenderCommand> m_RenderQueue;
         //VKAPI placeholder until interface
-        std::unique_ptr<VKAPI::APIBackend> m_Backend;
-        std::unique_ptr<VKAPI::APIRenderer> m_APIRenderer;
+        std::unique_ptr<IRendererBackend> m_Backend;
+        std::unique_ptr<IRendererAPI> m_APIRenderer;
         std::optional<VKAPI::DescriptorBuffer> m_ViewUBO{};
-        VKAPI::Texture m_Texture;
+        std::optional<VKAPI::Texture> m_Texture;
     };
 }

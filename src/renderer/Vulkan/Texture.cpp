@@ -40,38 +40,31 @@ static constexpr auto test_bitmap_v = Bitmap{
   .size = {4, 4},
 };
 
+Texture::Texture(TextureInfo& texInfo) {
+    ImageCreateInfo imageCreateInfo{};
+    imageCreateInfo.allocator = texInfo.allocator;
+    imageCreateInfo.queueFamily = texInfo.queueFamily;
+    imageCreateInfo.destroyCallback = texInfo.destroyCallback;
 
-void Texture::Init(ZEN::TextureInfo &textureInfo)
-{
-	if (!std::holds_alternative<TextureInfo>(textureInfo.textInfoVariant)) {
-		throw std::runtime_error{ "Invalid Texture Info Data For Vulkan!" };
-	}
-	auto& vkTextureInfo = std::get<TextureInfo>(textureInfo.textInfoVariant);
-
-	ImageCreateInfo imageCreateInfo{};
-	imageCreateInfo.allocator = vkTextureInfo.allocator;
-	imageCreateInfo.queueFamily = vkTextureInfo.queueFamily;
-	imageCreateInfo.destroyCallback = vkTextureInfo.destroyCallback;
-
-	Bitmap bitmap; 
-	bitmap = rgby_bitmap_v; //placeholder
-	SampledImage sampledImage(imageCreateInfo, std::move(vkTextureInfo.commandBlock.value()),
+    Bitmap bitmap;
+    bitmap = rgby_bitmap_v; //placeholder
+    SampledImage sampledImage(imageCreateInfo, std::move(*texInfo.commandBlock),
                               bitmap);
-	m_Image.emplace(std::move(sampledImage));
+    m_Image.emplace(std::move(sampledImage));
 
-	vk::ImageViewCreateInfo imageViewCreateInfo{};
-	vk::ImageSubresourceRange subresourceRange{};
+    vk::ImageViewCreateInfo imageViewCreateInfo{};
+    vk::ImageSubresourceRange subresourceRange{};
     subresourceRange.setAspectMask(vk::ImageAspectFlagBits::eColor);
-	subresourceRange.setLayerCount(1);
-	subresourceRange.setLevelCount(m_Image.value().Get().GetLevels());
+    subresourceRange.setLayerCount(1);
+    subresourceRange.setLevelCount(m_Image.value().Get().GetLevels());
 
-	imageViewCreateInfo.setImage(m_Image.value().Get().Get());
-	imageViewCreateInfo.setViewType(vk::ImageViewType::e2D);
-	imageViewCreateInfo.setFormat(m_Image.value().Get().GetFormat());
-	imageViewCreateInfo.setSubresourceRange(subresourceRange);
+    imageViewCreateInfo.setImage(m_Image.value().Get().Get());
+    imageViewCreateInfo.setViewType(vk::ImageViewType::e2D);
+    imageViewCreateInfo.setFormat(m_Image.value().Get().GetFormat());
+    imageViewCreateInfo.setSubresourceRange(subresourceRange);
 
-	m_View = vkTextureInfo.device.createImageViewUnique(imageViewCreateInfo);
-	m_Sampler = vkTextureInfo.device.createSamplerUnique(vkTextureInfo.sampler);
+    m_View = texInfo.device.createImageViewUnique(imageViewCreateInfo);
+    m_Sampler = texInfo.device.createSamplerUnique(texInfo.sampler);
 }
 
 vk::DescriptorImageInfo Texture::GetDescriptorInfo() const
@@ -82,4 +75,6 @@ vk::DescriptorImageInfo Texture::GetDescriptorInfo() const
 	descImageInfo.setSampler(*m_Sampler);
 	return descImageInfo;
 }
+
+
 

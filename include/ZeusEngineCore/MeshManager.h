@@ -6,16 +6,17 @@
 namespace ZEN {
     class MeshManager {
     public:
-        MeshManager(BackendContextVariant backendData, VKAPI::APIRenderer* rendererAPI);
+        MeshManager(IRendererBackend* backendAPI, IRendererAPI* rendererAPI);
 
         std::shared_ptr<IMesh> Load(const std::string &name, const std::vector<Vertex> &vertices,
-                                    const std::vector<uint32_t> &indices, RendererAPI api);
+                                    const std::vector<uint32_t> &indices);
 
         std::shared_ptr<IMesh> Get(const std::string &name);
 
     private:
         std::unordered_map<std::string, std::shared_ptr<IMesh>> m_Meshes;
-        BackendContextVariant m_Context;
-        VKAPI::APIRenderer* m_RendererAPI;
+
+        IRendererBackend* m_BackendAPI;
+        IRendererAPI* m_RendererAPI;
     };
 }

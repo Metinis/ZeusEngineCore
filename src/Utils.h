@@ -8,6 +8,7 @@
 struct GLFWwindow;
 
 namespace ZEN {
+    enum class eRendererAPI;
 
     std::string ReadFile(const std::filesystem::path &filePath);
 
@@ -22,6 +23,7 @@ namespace ZEN {
     };
     struct RendererInitInfo {
         WindowHandle windowHandle;
+        eRendererAPI api;
     };
 
     template<typename T>

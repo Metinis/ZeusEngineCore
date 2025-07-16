@@ -2,22 +2,20 @@
 
 using namespace ZEN;
 
-MeshManager::MeshManager(BackendContextVariant backendData, VKAPI::APIRenderer* rendererAPI)
-: m_Context(std::move(backendData)),
-  m_RendererAPI(rendererAPI)
+MeshManager::MeshManager(IRendererBackend* backendAPI, IRendererAPI* rendererAPI)
+: m_BackendAPI(backendAPI),
+m_RendererAPI(rendererAPI)
 {
 
 }
 
 std::shared_ptr<IMesh> MeshManager::Load(const std::string &name, const std::vector<Vertex>& vertices,
-    const std::vector<uint32_t>& indices, const RendererAPI api) {
+    const std::vector<uint32_t>& indices) {
     auto it = m_Meshes.find(name);
     if(it != m_Meshes.end())
         return it->second;
 
-    auto mesh = IMesh::Create(api, m_RendererAPI);
-    mesh->Init(vertices, indices, m_Context);
-
+    auto mesh = IMesh::Create(m_BackendAPI, m_RendererAPI, vertices, indices);
     m_Meshes[name] = mesh;
     return mesh;
 }

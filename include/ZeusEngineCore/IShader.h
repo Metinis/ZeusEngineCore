@@ -7,12 +7,9 @@
 #include <string_view>
 #include <memory>
 
-namespace ZEN::VKAPI {
-    class APIBackend;
-    class APIRenderer;
-}
-
 namespace ZEN {
+    class IRendererBackend;
+    class IRendererAPI;
 
     class IShader {
     public:
@@ -34,8 +31,8 @@ namespace ZEN {
 
         float *GetLineWidth() { return &m_LineWidth; }
 
-        static std::shared_ptr<IShader> Create(VKAPI::APIBackend* apiBackend,
-                                               VKAPI::APIRenderer* apiRenderer,
+        static std::shared_ptr<IShader> Create(IRendererBackend* apiBackend,
+                                               IRendererAPI* apiRenderer,
                                                const std::string& vertexPath,
                                                const std::string& fragmentPath);
 

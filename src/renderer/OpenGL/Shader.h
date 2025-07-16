@@ -7,9 +7,17 @@
 #include "ZeusEngineCore/IShader.h"
 
 namespace ZEN::OGLAPI {
+    class APIRenderer;
+    struct ShaderInfo {
+        APIRenderer* apiRenderer;
+        std::string vertexPath;
+        std::string fragmentPath;
+    };
     class Shader : public IShader {
     public:
         ~Shader() override;
+
+        explicit Shader(const ShaderInfo& shaderInfo);
 
         void Bind() const override;
 
