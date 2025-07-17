@@ -1,6 +1,8 @@
 #include "Texture.h"
 #include <variant>
 #include "Backend/APIRenderer.h"
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image/stb_image.h>
 
 using namespace ZEN::VKAPI;
 
@@ -49,10 +51,21 @@ Texture::Texture(TextureInfo& texInfo) {
     imageCreateInfo.queueFamily = texInfo.queueFamily;
     imageCreateInfo.destroyCallback = texInfo.destroyCallback;
 
+    int texWidth, texHeight, texChannels;
     Bitmap bitmap;
-    bitmap = rgby_bitmap_v; //placeholder
+    stbi_set_flip_vertically_on_load(true);
+    stbi_uc* pixels = stbi_load(texInfo.filepath.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+    if(!pixels){
+        throw std::runtime_error("Invalid image!");
+    }
+    size_t byteSize = static_cast<size_t>(texWidth) * texHeight * 4;
+    bitmap.bytes = std::span<std::byte const>(reinterpret_cast<std::byte const*>(pixels), byteSize);
+    bitmap.size = {texWidth, texHeight};
+    bitmap.owner = static_cast<void*>(pixels);
+
     SampledImage sampledImage(imageCreateInfo, std::move(*texInfo.commandBlock),
                               bitmap);
+    stbi_image_free(const_cast<void*>(bitmap.owner));
     m_Image.emplace(std::move(sampledImage));
 
     vk::ImageViewCreateInfo imageViewCreateInfo{};

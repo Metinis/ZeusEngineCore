@@ -26,6 +26,7 @@ namespace ZEN::VKAPI {
     struct Bitmap {
         std::span<std::byte const> bytes{};
         glm::ivec2 size{};
+        const void* owner = nullptr;
     };
 
     class Image {
