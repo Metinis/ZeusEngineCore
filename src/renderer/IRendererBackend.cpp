@@ -7,8 +7,10 @@
 using namespace ZEN;
 std::unique_ptr <IRendererBackend> IRendererBackend::Create(eRendererAPI api, WindowHandle handle) {
     switch(api) {
-        case eRendererAPI::OpenGL: return std::make_unique<OGLAPI::APIBackend>();
+        case eRendererAPI::OpenGL: return std::make_unique<OGLAPI::APIBackend>(handle);
         case eRendererAPI::Vulkan: return std::make_unique<VKAPI::APIBackend>(handle);
         default: return nullptr;
     }
 }
+
+

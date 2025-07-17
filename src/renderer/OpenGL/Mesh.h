@@ -13,7 +13,7 @@ namespace ZEN::OGLAPI{
     public:
         explicit Mesh(const MeshInfo& meshInfo);
         ~Mesh() override;
-        void Draw() const override;
+        void Draw(std::uint32_t instanceCount) const override;
 
     private:
         uint32_t m_VAO, m_VBO, m_EBO;

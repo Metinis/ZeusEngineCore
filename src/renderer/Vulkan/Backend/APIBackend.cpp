@@ -4,6 +4,7 @@
 #include "../Texture.h"
 #include <iostream>
 #include <vulkan/vulkan.hpp>
+#include <glm/ext/matrix_clip_space.hpp>
 #include "ZeusEngineCore/IDescriptorBuffer.h"
 #include "../ShaderPipeline.h"
 
@@ -211,6 +212,14 @@ BackendInfo APIBackend::GetInfo() const {
 
 ZEN::eRendererAPI APIBackend::GetAPI() const {
     return ZEN::eRendererAPI::Vulkan;
+}
+
+glm::mat4 APIBackend::GetPerspectiveMatrix(const float fov, const float zNear, const float zFar) const {
+    glm::vec2 framebufferSize = GetFramebufferSize();
+    float aspect = framebufferSize.x / framebufferSize.y;
+    //since vulkan uses different coordinate system
+    glm::mat4 projectionMat = glm::perspectiveRH_ZO(glm::radians(fov), aspect, zNear, zFar);
+    return projectionMat;
 }
 
 

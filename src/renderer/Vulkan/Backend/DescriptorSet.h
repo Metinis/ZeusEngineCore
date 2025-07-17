@@ -14,9 +14,11 @@ namespace ZEN::VKAPI {
 
         DescriptorSet &operator=(const DescriptorSet &) = delete;
 
-        void SetUBO(std::size_t frameIndex, const vk::DescriptorBufferInfo& descUBOInfo); //APIRenderer references this
+        void SetUBO(std::size_t frameIndex, const vk::DescriptorBufferInfo& descBufferInfo); //APIRenderer references this
 
         void SetImage(std::size_t frameIndex, const vk::DescriptorImageInfo& descImageInfo); //APIRenderer references this
+
+        void SetSSBO(std::size_t frameIndex, const vk::DescriptorBufferInfo& descBufferInfo); //APIRenderer references this
 
         void BindDescriptorSets(vk::CommandBuffer commandBuffer, std::size_t frameIndex) const;
 

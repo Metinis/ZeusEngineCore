@@ -1,5 +1,6 @@
 #pragma once
 #include "ZeusEngineCore/IRendererBackend.h"
+#include "ZeusEngineCore/Utils.h"
 
 namespace ZEN{
     enum class eDescriptorBufferType;
@@ -15,7 +16,7 @@ namespace ZEN::OGLAPI {
     };
     class APIBackend : public IRendererBackend{
     public:
-        explicit APIBackend() = default;
+        explicit APIBackend(const WindowHandle& windowHandle);
 
         [[nodiscard]] eRendererAPI GetAPI() const override;
 
@@ -28,6 +29,12 @@ namespace ZEN::OGLAPI {
         [[nodiscard]] TextureInfo GetTextureInfo() const;
 
         [[nodiscard]] BufferCreateInfo GetBufferCreateInfo(eDescriptorBufferType type) const;
+
+        [[nodiscard]] glm::mat4 GetPerspectiveMatrix(float fov, float zNear, float zFar) const override;
+
+        glm::vec2 GetFramebufferSize() const;
+    private:
+        WindowHandle m_WindowHandle;
     };
 }
 

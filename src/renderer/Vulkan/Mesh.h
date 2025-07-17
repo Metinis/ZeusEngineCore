@@ -22,7 +22,7 @@ namespace ZEN::VKAPI {
 
         ~Mesh() override;
 
-        void Draw() const override;
+        void Draw(std::uint32_t instanceCount) const override;
 
     private:
         DeviceBuffer CreateMeshVBO(const MeshInfo& meshInfo);

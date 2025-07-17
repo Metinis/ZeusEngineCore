@@ -38,5 +38,15 @@ void DescriptorBuffer::WriteTo(std::optional<Buffer>& outBuffer, std::span<std::
 }
 
 void DescriptorBuffer::Bind() {
-    m_APIRenderer->SetUBO(*this); //placeholder
+    if (m_BufferCreateInfo.usage & vk::BufferUsageFlagBits::eStorageBuffer) {
+        m_APIRenderer->SetSSBO(*this);
+    }
+    else if (m_BufferCreateInfo.usage & vk::BufferUsageFlagBits::eUniformBuffer) {
+        m_APIRenderer->SetUBO(*this);
+    }
+    else {
+        throw std::runtime_error("DescriptorBuffer::Bind: Unsupported buffer usage flag!");
+    }
+
+
 }

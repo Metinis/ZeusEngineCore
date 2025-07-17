@@ -4,6 +4,7 @@
 #include <glm/glm.hpp>
 #include <functional>
 #include "Transform.h"
+#include "Utils.h"
 
 namespace ZEN {
     struct RendererInitInfo;
@@ -13,9 +14,9 @@ namespace ZEN {
     class Material;
     class IMesh;
     struct RenderCommand {
-        glm::mat4 transform;
-        std::shared_ptr<Material> material;
+        std::vector<Transform> transforms; //num of instances
         std::shared_ptr<IMesh> mesh;
+        std::shared_ptr<Material> material;
     };
     class Renderer{
     public:
@@ -25,10 +26,12 @@ namespace ZEN {
 
         bool BeginFrame();
 
-        void Submit(const glm::mat4 &transform, const std::shared_ptr<Material> &material,
-                    const std::shared_ptr<IMesh> &mesh);
+        void Submit(const std::vector<Transform>& transforms, const std::shared_ptr<IMesh> &mesh,
+                    const std::shared_ptr<Material>& material);
 
         void EndFrame(const std::function<void(void*)>& uiExtraDrawCallback = nullptr);
+
+        void UpdateInstances(const std::vector<Transform>& instances);
 
         [[nodiscard]] Transform& ViewMatrix(){return m_ViewTransform;}
 
@@ -38,10 +41,12 @@ namespace ZEN {
     private:
         void UpdateView();
 
+        WindowHandle m_WindowHandle{};
         std::vector<RenderCommand> m_RenderQueue;
         std::unique_ptr<IRendererBackend> m_Backend;
         std::unique_ptr<IRendererAPI> m_APIRenderer;
         std::unique_ptr<IDescriptorBuffer> m_ViewUBO;
+        std::unique_ptr<IDescriptorBuffer> m_InstanceSSBO;
         Transform m_ViewTransform;
     };
 }

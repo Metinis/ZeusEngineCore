@@ -25,6 +25,8 @@ void DescriptorSet::CreateDescriptorPool()
 		vk::DescriptorPoolSize{vk::DescriptorType::eUniformBuffer, 2},
         //2 image samplers
         vk::DescriptorPoolSize{vk::DescriptorType::eCombinedImageSampler, 2},
+        //2 storage buffers
+        vk::DescriptorPoolSize{vk::DescriptorType::eStorageBuffer, 2},
 	};
 	vk::DescriptorPoolCreateInfo poolCreateInfo{};
 	poolCreateInfo.setPoolSizes(poolSizes_v).setMaxSets(16);
@@ -42,10 +44,14 @@ void DescriptorSet::CreatePipelineLayout()
     static constexpr auto set1Bindings_v = std::array{
             layoutBinding(0, vk::DescriptorType::eCombinedImageSampler),
     };
+    static constexpr auto set2Bindings_v = std::array{
+            layoutBinding(0, vk::DescriptorType::eStorageBuffer),
+    };
 
-	auto setLayoutCreateInfos = std::array<vk::DescriptorSetLayoutCreateInfo, 2>{};
+	auto setLayoutCreateInfos = std::array<vk::DescriptorSetLayoutCreateInfo, 3>{};
 	setLayoutCreateInfos[0].setBindings(set0Bindings_v);
     setLayoutCreateInfos[1].setBindings(set1Bindings_v);
+    setLayoutCreateInfos[2].setBindings(set2Bindings_v);
 
 	for (auto const& setLayoutCreateInfo : setLayoutCreateInfos) {
 		m_SetLayouts.push_back(m_Device.createDescriptorSetLayoutUnique(setLayoutCreateInfo));
@@ -66,12 +72,12 @@ void DescriptorSet::CreateDescriptorSets()
 	}
 }
 
-void DescriptorSet::SetUBO(std::size_t frameIndex, const vk::DescriptorBufferInfo& descUBOInfo) {
+void DescriptorSet::SetUBO(std::size_t frameIndex, const vk::DescriptorBufferInfo &descBufferInfo) {
 
     auto const& descriptorSets = m_DescriptorSets.at(frameIndex);
     auto const set0 = descriptorSets[0];
     auto write = vk::WriteDescriptorSet{};
-    auto const viewUBOInfo = descUBOInfo;
+    auto const viewUBOInfo = descBufferInfo;
     write.setBufferInfo(viewUBOInfo)
             .setDescriptorType(vk::DescriptorType::eUniformBuffer)
             .setDescriptorCount(1)
@@ -89,6 +95,19 @@ void DescriptorSet::SetImage(std::size_t frameIndex, const vk::DescriptorImageIn
             .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
             .setDescriptorCount(1)
             .setDstSet(set1)
+            .setDstBinding(0);
+    m_Device.updateDescriptorSets(write, {});
+}
+
+void DescriptorSet::SetSSBO(std::size_t frameIndex, const vk::DescriptorBufferInfo &descBufferInfo) {
+    auto const& descriptorSets = m_DescriptorSets.at(frameIndex);
+    auto const set2 = descriptorSets[2];
+    auto write = vk::WriteDescriptorSet{};
+    auto const SSBOInfo = descBufferInfo;
+    write.setBufferInfo(SSBOInfo)
+            .setDescriptorType(vk::DescriptorType::eStorageBuffer)
+            .setDescriptorCount(1)
+            .setDstSet(set2)
             .setDstBinding(0);
     m_Device.updateDescriptorSets(write, {});
 }

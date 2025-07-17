@@ -13,9 +13,12 @@ Renderer::Renderer(RendererInitInfo &initInfo) {
     if(!initInfo.windowHandle.nativeWindowHandle)
         throw std::runtime_error("Null window handle!");
 
+    m_WindowHandle = initInfo.windowHandle;
+
     m_Backend = IRendererBackend::Create(initInfo.api, initInfo.windowHandle);
     m_APIRenderer = IRendererAPI::Create(initInfo.api, m_Backend.get());
     m_ViewUBO = IDescriptorBuffer::Create(m_Backend.get(), m_APIRenderer.get(), eDescriptorBufferType::UBO);
+    m_InstanceSSBO = IDescriptorBuffer::Create(m_Backend.get(), m_APIRenderer.get(), eDescriptorBufferType::SSBO);
 }
 
 Renderer::~Renderer() = default;
@@ -29,17 +32,19 @@ bool Renderer::BeginFrame() {
     return true;
 }
 
-void Renderer::Submit(const glm::mat4& transform, const std::shared_ptr<Material>& material, const std::shared_ptr<IMesh>& mesh) {
-    m_RenderQueue.emplace_back(transform, material, mesh);
-
+void Renderer::Submit(const std::vector<Transform>& transforms, const std::shared_ptr<IMesh> &mesh,
+                      const std::shared_ptr<Material>& material) {
+    m_RenderQueue.emplace_back(transforms, mesh, material);
 }
 
 
 void Renderer::EndFrame(const std::function<void(void*)>& uiExtraDrawCallback) {
     m_ViewUBO->Bind();
+    m_InstanceSSBO->Bind();
     for(const auto& cmd : m_RenderQueue){
         cmd.material->Bind();
-        cmd.mesh->Draw();
+        cmd.mesh->Draw(cmd.transforms.size());
+        //m_APIRenderer->BindDescriptorSets(); //placeholder
     }
     m_RenderQueue.clear();
     if(uiExtraDrawCallback){
@@ -50,14 +55,23 @@ void Renderer::EndFrame(const std::function<void(void*)>& uiExtraDrawCallback) {
 
 void Renderer::UpdateView()
 {
-    auto const halfSize = 0.5f * glm::vec2{1280, 720};
-    glm::mat4 projectionMat = glm::ortho(-halfSize.x, halfSize.x, -halfSize.y, halfSize.y);
+    glm::mat4 projectionMat = m_Backend->GetPerspectiveMatrix(65.0f, 0.1f, 100.0f);
     glm::mat4 viewMat = m_ViewTransform.viewMatrix();
     glm::mat4 vpMat = projectionMat * viewMat;
     auto const bytes = std::bit_cast<std::array<std::byte, sizeof(vpMat)>>(vpMat);
     m_ViewUBO->Write(bytes);
 }
-
+void Renderer::UpdateInstances(const std::vector<Transform> &instances) {
+    std::vector<glm::mat4> instanceData{};
+    instanceData.reserve(instances.size());
+    for(auto const& instance : instances){
+        instanceData.push_back(instance.modelMatrix());
+    }
+    auto const span = std::span{instanceData};
+    void* data = span.data();
+    auto const bytes = std::span{static_cast<std::byte const*>(data), span.size_bytes()};
+    m_InstanceSSBO->Write(bytes);
+}
 IRendererAPI* Renderer::GetAPIRenderer() const {
     return m_APIRenderer.get();
 }
@@ -65,5 +79,7 @@ IRendererAPI* Renderer::GetAPIRenderer() const {
 IRendererBackend* Renderer::GetAPIBackend() const {
     return m_Backend.get();
 }
+
+
 
 

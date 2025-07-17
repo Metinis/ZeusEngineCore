@@ -51,6 +51,7 @@ namespace ZEN::VKAPI {
         DescriptorSet& GetDescriptorSet() {return m_DescSet;}
         [[nodiscard]] glm::ivec2 GetFramebufferSize() const;
         [[nodiscard]] BufferCreateInfo GetBufferCreateInfo(ZEN::eDescriptorBufferType type) const;
+        [[nodiscard]] glm::mat4 GetPerspectiveMatrix(float fov, float zNear, float zFar) const;
 
     private:
         //order matters

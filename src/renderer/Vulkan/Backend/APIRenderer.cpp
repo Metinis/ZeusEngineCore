@@ -157,6 +157,10 @@ void APIRenderer::SetUBO(const DescriptorBuffer& ubo) {
     vk::DescriptorBufferInfo info = ubo.GetDescriptorInfoAt(m_FrameInfo.sync->GetFrameIndex());
     m_Backend->GetDescriptorSet().SetUBO(GetFrameIndex(), info);
 }
+void APIRenderer::SetSSBO(const DescriptorBuffer& ubo){
+    vk::DescriptorBufferInfo info = ubo.GetDescriptorInfoAt(m_FrameInfo.sync->GetFrameIndex());
+    m_Backend->GetDescriptorSet().SetSSBO(GetFrameIndex(), info);
+}
 
 void APIRenderer::SetImage(const Texture& texture) {
     m_Backend->GetDescriptorSet().SetImage(GetFrameIndex(),
@@ -180,13 +184,13 @@ void APIRenderer::BindShader(vk::Pipeline pipeline) {
     m_CommandBuffer.setScissor(0, vk::Rect2D{{}, extent});
 }
 
-void APIRenderer::DrawIndexed(vk::Buffer buffer) const {
+void APIRenderer::DrawIndexed(vk::Buffer buffer, std::uint32_t instanceCount) const {
     //todo send in offset data etc
     m_CommandBuffer.bindVertexBuffers(0, buffer, vk::DeviceSize{});
 
     m_CommandBuffer.bindIndexBuffer(buffer, 4 * sizeof(Vertex),
                                   vk::IndexType::eUint32);
-    m_CommandBuffer.drawIndexed(6, 1, 0, 0, 0);
+    m_CommandBuffer.drawIndexed(6, instanceCount, 0, 0, 0);
 }
 
 

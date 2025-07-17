@@ -32,8 +32,8 @@ DeviceBuffer Mesh::CreateMeshVBO(const MeshInfo& meshInfo) {
                                   totalBytes_v);
         return std::move(deviceBuffer);
 }
-void Mesh::Draw() const {
-    m_APIRenderer->DrawIndexed(m_VBO.value().Get().Get());
+void Mesh::Draw(std::uint32_t instanceCount) const {
+    m_APIRenderer->DrawIndexed(m_VBO.value().Get().Get(), instanceCount);
 }
 
 Mesh::~Mesh() {}

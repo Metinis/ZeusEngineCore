@@ -17,8 +17,9 @@ namespace ZEN::VKAPI { //Handles all logic involving rendering/command buffer su
         //vulkan specific
         [[nodiscard]] std::size_t GetFrameIndex() const {return m_FrameInfo.sync->GetFrameIndex();}
         void SetUBO(const DescriptorBuffer& ubo);
+        void SetSSBO(const DescriptorBuffer& ubo);
         void SetImage(const Texture& texture); //placeholder use desc info instead
-        void DrawIndexed(vk::Buffer buffer) const; //todo api agnostic buffer
+        void DrawIndexed(vk::Buffer buffer, std::uint32_t instanceCount) const; //todo api agnostic buffer
         void BindShader(vk::Pipeline pipeline);
         void SetPolygonMode(vk::PolygonMode mode) const {m_CommandBuffer.setPolygonModeEXT(mode);}
         void SetLineWidth(float width) const {m_CommandBuffer.setLineWidth(width);}
