@@ -2,6 +2,7 @@
 #include "ZeusEngineCore/Material.h"
 #include "ZeusEngineCore/IShader.h"
 #include "ZeusEngineCore/ITexture.h"
+#include <string>
 
 using namespace ZEN;
 

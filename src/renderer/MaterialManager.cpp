@@ -1,6 +1,7 @@
 #include "ZeusEngineCore/MaterialManager.h"
 #include <unordered_map>
 #include "ZeusEngineCore/Material.h"
+#include <string>
 
 using namespace ZEN;
 

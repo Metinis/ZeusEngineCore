@@ -1,5 +1,6 @@
 #pragma once
 #include "ZeusEngineCore/ITexture.h"
+#include <string>
 
 namespace ZEN::OGLAPI {
     class APIRenderer;

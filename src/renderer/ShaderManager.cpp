@@ -1,5 +1,7 @@
 #include "ZeusEngineCore/ShaderManager.h"
 #include "ZeusEngineCore/IShader.h"
+#include <string>
+
 
 using namespace ZEN;
 
