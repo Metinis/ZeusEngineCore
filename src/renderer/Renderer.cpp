@@ -47,6 +47,7 @@ void Renderer::EndFrame(const std::function<void(void*)>& uiExtraDrawCallback) {
         //m_APIRenderer->BindDescriptorSets(); //placeholder
     }
     m_RenderQueue.clear();
+
     if(uiExtraDrawCallback){
         m_APIRenderer->DrawWithCallback(uiExtraDrawCallback); //injects command buffer
     }

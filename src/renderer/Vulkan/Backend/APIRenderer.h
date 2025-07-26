@@ -2,6 +2,7 @@
 #include <vulkan/vulkan.hpp>
 #include "ZeusEngineCore/IRendererAPI.h"
 #include "APIBackend.h"
+#include "Image.h"
 
 namespace ZEN::VKAPI { //Handles all logic involving rendering/command buffer such as
     class Texture;
@@ -23,17 +24,24 @@ namespace ZEN::VKAPI { //Handles all logic involving rendering/command buffer su
         void BindShader(vk::Pipeline pipeline);
         void SetPolygonMode(vk::PolygonMode mode) const {m_CommandBuffer.setPolygonModeEXT(mode);}
         void SetLineWidth(float width) const {m_CommandBuffer.setLineWidth(width);}
+        void SetDepth(bool isDepth);
         void BindDescriptorSets();
     private:
         //vulkan specific
         bool AcquireRenderTarget();
-        void TransitionForRender();
-        void TransitionForPresent() const;
+        void TransitionForRender(bool shouldClearColor);
+        void TransitionForPresent();
+
+        bool m_IsDepth = false;
 
         vk::CommandBuffer m_CommandBuffer; //command buffer in use
         RenderFrameInfo m_FrameInfo;
         vk::RenderingInfo m_RenderingInfo{};
         APIBackend* m_Backend;
         std::optional<RenderTarget> m_RenderTarget{};
+        std::optional<Image> m_DepthImage{};
+        vk::ImageLayout m_OldLayout = vk::ImageLayout::eUndefined;
+        vk::ImageLayout m_NewLayout = vk::ImageLayout::eUndefined;
+        std::optional<vk::UniqueImageView> m_DepthImageView{};
     };
 }

@@ -7,6 +7,7 @@
 #include <glm/ext/matrix_clip_space.hpp>
 #include "ZeusEngineCore/IDescriptorBuffer.h"
 #include "../ShaderPipeline.h"
+#include "Image.h"
 
 using namespace ZEN::VKAPI;
 
@@ -43,6 +44,8 @@ APIBackend::APIBackend(WindowHandle windowHandle)
 
 void APIBackend::Init()
 {
+
+
     m_DeferredDestroyCallback = std::make_shared<std::function<void(DeferredHandle)>>(
             [this](DeferredHandle handle) {
                 m_DeferredDestroy.push_back(handle);
@@ -56,6 +59,7 @@ ShaderInfo APIBackend::GetShaderInfo() const
     shaderInfo.colorFormat = m_Swapchain.GetFormat();
     shaderInfo.samples = vk::SampleCountFlagBits::e1;
     shaderInfo.pipelineLayout = m_DescSet.GetPipelineLayout();
+    shaderInfo.depthFormat = vk::Format::eD32Sfloat;
     return shaderInfo;
 }
 TextureInfo APIBackend::GetTextureInfo()
@@ -219,7 +223,44 @@ glm::mat4 APIBackend::GetPerspectiveMatrix(const float fov, const float zNear, c
     float aspect = framebufferSize.x / framebufferSize.y;
     //since vulkan uses different coordinate system
     glm::mat4 projectionMat = glm::perspectiveRH_ZO(glm::radians(fov), aspect, zNear, zFar);
+    //projectionMat[1][1] *= -1;
     return projectionMat;
+}
+
+Image APIBackend::CreateDepthImage(vk::Extent2D extent) {
+    vk::FormatProperties props = m_Device.GetGPU().device.getFormatProperties(vk::Format::eD32Sfloat);
+    assert(props.optimalTilingFeatures & vk::FormatFeatureFlagBits::eDepthStencilAttachment);
+
+    ImageCreateInfo depthImageCreateInfo{};
+    depthImageCreateInfo.queueFamily = m_Device.GetGPU().queueFamily;
+    depthImageCreateInfo.destroyCallback = m_DeferredDestroyCallback;
+    depthImageCreateInfo.allocator = m_Allocator.Get();
+
+    Image ret(depthImageCreateInfo,
+                     vk::ImageUsageFlagBits::eDepthStencilAttachment,
+                     1,
+                     vk::Format::eD32Sfloat,
+                     extent
+    );
+    return ret;
+}
+
+vk::UniqueImageView APIBackend::CreateDepthImageView(const vk::Image image, const vk::Format format) {
+    vk::ImageViewCreateInfo viewCreateInfo{
+            {},
+            image,
+            vk::ImageViewType::e2D,
+            format,
+            {},
+            {vk::ImageAspectFlagBits::eDepth, 0, 1, 0, 1}
+    };
+
+    vk::UniqueImageView depthImageView = m_Device.GetLogicalDevice().createImageViewUnique(viewCreateInfo);
+    return depthImageView;
+}
+
+std::uint32_t APIBackend::GetQueueFamily() const {
+    return m_Device.GetGPU().queueFamily;
 }
 
 

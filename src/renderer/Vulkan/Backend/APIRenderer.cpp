@@ -6,7 +6,13 @@
 using namespace ZEN::VKAPI;
 
 APIRenderer::APIRenderer(APIBackend* apiBackend) : m_Backend(apiBackend){
-
+    //todo recreate this on swapchain resize
+    vk::Extent2D extent;
+    extent.width = 1280;
+    extent.height = 720;
+    m_DepthImage.emplace(m_Backend->CreateDepthImage(extent));
+    m_DepthImageView.emplace(m_Backend->CreateDepthImageView(m_DepthImage->Get(), m_DepthImage->GetFormat()));
+    assert(m_DepthImage->GetFormat() == vk::Format::eD32Sfloat);
 }
 bool APIRenderer::BeginFrame(){
     if(!AcquireRenderTarget())
@@ -19,7 +25,7 @@ bool APIRenderer::BeginFrame(){
     renderSync.commandBuffer.begin(commandBufferBeginInfo);
     m_CommandBuffer = renderSync.commandBuffer;
 
-    TransitionForRender();
+    TransitionForRender(true);
 
 
     return true;
@@ -42,6 +48,7 @@ bool APIRenderer::AcquireRenderTarget(){
     if (!m_RenderTarget) {
         // acquire failure
         m_FrameInfo.swapchain->Recreate(m_FrameInfo.framebufferSize);
+
         return false;
     }
 
@@ -49,53 +56,103 @@ bool APIRenderer::AcquireRenderTarget(){
 
     return true;
 }
-
-
-void APIRenderer::TransitionForRender(){
-    auto barrier = m_FrameInfo.swapchain->GetBaseBarrier();
-    auto dependency_info = vk::DependencyInfo{};
-    barrier.setOldLayout(vk::ImageLayout::eUndefined)
+void APIRenderer::TransitionForRender(const bool shouldClearColor){
+    // --- Existing color attachment barrier ---
+    auto colorBarrier = m_FrameInfo.swapchain->GetBaseBarrier();
+    colorBarrier
+            .setOldLayout(vk::ImageLayout::eUndefined)
             .setNewLayout(vk::ImageLayout::eAttachmentOptimal)
             .setSrcAccessMask({})
             .setSrcStageMask(vk::PipelineStageFlagBits2::eTopOfPipe)
             .setDstAccessMask(vk::AccessFlagBits2::eColorAttachmentWrite)
-            .setDstStageMask(vk::PipelineStageFlagBits2::eColorAttachmentOutput)
-            .setSrcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
-            .setDstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED);
+            .setDstStageMask(vk::PipelineStageFlagBits2::eColorAttachmentOutput);
 
-    dependency_info.setImageMemoryBarriers(barrier);
+    // --- New depth barrier ---
+    m_NewLayout = vk::ImageLayout::eDepthAttachmentOptimal;
+    vk::ImageMemoryBarrier2 depthBarrier{
+            vk::PipelineStageFlagBits2::eEarlyFragmentTests,  // Wait for prior depth writes
+            vk::AccessFlagBits2::eDepthStencilAttachmentWrite,
+            vk::PipelineStageFlagBits2::eEarlyFragmentTests,  // Before depth tests/writes
+            vk::AccessFlagBits2::eDepthStencilAttachmentRead | vk::AccessFlagBits2::eDepthStencilAttachmentWrite,
+            m_OldLayout,                     // Previous layout
+            m_NewLayout,        // New layout
+            m_Backend->GetQueueFamily(),
+            m_Backend->GetQueueFamily(),
+            m_DepthImage->Get(),                             // Depth image
+            vk::ImageSubresourceRange(
+                    vk::ImageAspectFlagBits::eDepth,             // Depth aspect only
+                    0, 1, 0, 1                                   // All mips/layers
+            )
+    };
+    m_OldLayout = m_NewLayout;
 
-    m_CommandBuffer.pipelineBarrier2(dependency_info);
+    // Submit both barriers together
+    std::array barriers{colorBarrier, depthBarrier};
+    vk::DependencyInfo dependencyInfo{};
+    dependencyInfo.setImageMemoryBarriers(barriers);
+    m_CommandBuffer.pipelineBarrier2(dependencyInfo);
 
     vk::RenderingAttachmentInfo colorAttachment{};
     colorAttachment.imageView = m_RenderTarget->imageView;
     colorAttachment.imageLayout = vk::ImageLayout::eAttachmentOptimal;
-    colorAttachment.loadOp = vk::AttachmentLoadOp::eClear;
+    colorAttachment.loadOp = shouldClearColor ? vk::AttachmentLoadOp::eClear : vk::AttachmentLoadOp::eLoad;
     colorAttachment.storeOp = vk::AttachmentStoreOp::eStore;
     colorAttachment.clearValue = vk::ClearColorValue{ 0.0f, 0.0f, 0.0f, 1.0f };
+
+    vk::RenderingAttachmentInfo depthAttachment{};
+    depthAttachment.imageView = *m_DepthImageView.value();
+    depthAttachment.imageLayout = vk::ImageLayout::eDepthAttachmentOptimal;
+    depthAttachment.loadOp = shouldClearColor ? vk::AttachmentLoadOp::eClear : vk::AttachmentLoadOp::eLoad;
+    depthAttachment.storeOp = vk::AttachmentStoreOp::eStore;
+    depthAttachment.clearValue = vk::ClearDepthStencilValue{1.0f, 0};
 
     auto const renderArea = vk::Rect2D{ vk::Offset2D{}, m_RenderTarget->extent };
 
     m_RenderingInfo.renderArea = renderArea;
     m_RenderingInfo.setColorAttachments(colorAttachment);
+    if(m_IsDepth)
+        m_RenderingInfo.setPDepthAttachment(&depthAttachment);
     m_RenderingInfo.layerCount = 1;
 
     m_CommandBuffer.beginRendering(m_RenderingInfo);
+
 }
 
-void APIRenderer::TransitionForPresent() const{
+void APIRenderer::TransitionForPresent(){
     m_CommandBuffer.endRendering();
+
+    // --- Existing color barrier ---
+    auto colorBarrier = m_FrameInfo.swapchain->GetBaseBarrier();
+    colorBarrier
+            .setOldLayout(vk::ImageLayout::eAttachmentOptimal)
+            .setNewLayout(vk::ImageLayout::ePresentSrcKHR)
+            .setSrcAccessMask(vk::AccessFlagBits2::eColorAttachmentRead | vk::AccessFlagBits2::eColorAttachmentWrite)
+            .setSrcStageMask(vk::PipelineStageFlagBits2::eColorAttachmentOutput)
+            .setDstAccessMask(colorBarrier.srcAccessMask)
+            .setDstStageMask(colorBarrier.srcStageMask);
+
+    // --- New depth barrier ---
+    m_NewLayout = vk::ImageLayout::eReadOnlyOptimal;
+    vk::ImageMemoryBarrier2 depthBarrier{
+            vk::PipelineStageFlagBits2::eLateFragmentTests,   // After depth writes
+            vk::AccessFlagBits2::eDepthStencilAttachmentWrite,
+            vk::PipelineStageFlagBits2::eFragmentShader,      // If depth will be read later
+            vk::AccessFlagBits2::eShaderRead,                 // If depth will be sampled
+            m_OldLayout,         // Previous layout
+            m_NewLayout,                // New layout (or eGeneral)
+            m_Backend->GetQueueFamily(),
+            m_Backend->GetQueueFamily(),
+            m_DepthImage->Get(),
+            vk::ImageSubresourceRange(
+                    vk::ImageAspectFlagBits::eDepth,
+                    0, 1, 0, 1
+            )
+    };
+    m_OldLayout = m_NewLayout;
+
+    std::array barriers{colorBarrier, depthBarrier};
     vk::DependencyInfo dependencyInfo{};
-    auto barrier = m_FrameInfo.swapchain->GetBaseBarrier();
-
-    barrier.oldLayout = vk::ImageLayout::eAttachmentOptimal;
-    barrier.newLayout = vk::ImageLayout::ePresentSrcKHR;
-    barrier.srcAccessMask = vk::AccessFlagBits2::eColorAttachmentRead | vk::AccessFlagBits2::eColorAttachmentWrite;
-    barrier.srcStageMask = vk::PipelineStageFlagBits2::eColorAttachmentOutput;
-    barrier.dstAccessMask = barrier.srcAccessMask;
-    barrier.dstStageMask = barrier.srcStageMask;
-
-    dependencyInfo.setImageMemoryBarriers(barrier);
+    dependencyInfo.setImageMemoryBarriers(barriers);
     m_CommandBuffer.pipelineBarrier2(dependencyInfo);
 }
 
@@ -147,10 +204,12 @@ void APIRenderer::SubmitAndPresent()
 }
 
 void APIRenderer::DrawWithCallback(const std::function<void(void*)>& uiExtraDrawCallback) {
+    m_CommandBuffer.endRendering();
+    //TransitionForPresent();
+    TransitionForRender(false);
     if(uiExtraDrawCallback){
         uiExtraDrawCallback(static_cast<void*>(m_CommandBuffer));
     }
-
 }
 
 void APIRenderer::SetUBO(const DescriptorBuffer& ubo) {
@@ -179,7 +238,10 @@ void APIRenderer::BindShader(vk::Pipeline pipeline) {
     viewport.setX(0.0f)
             .setY(static_cast<float>(extent.height))
             .setWidth(static_cast<float>(extent.width))
-            .setHeight(-viewport.y);
+            .setHeight(-static_cast<float>(extent.height))
+            .setMinDepth(0.0f)
+            .setMaxDepth(1.0f);
+
     m_CommandBuffer.setViewport(0, viewport);
     m_CommandBuffer.setScissor(0, vk::Rect2D{{}, extent});
 }
@@ -188,9 +250,13 @@ void APIRenderer::DrawIndexed(vk::Buffer buffer, std::uint32_t instanceCount) co
     //todo send in offset data etc
     m_CommandBuffer.bindVertexBuffers(0, buffer, vk::DeviceSize{});
 
-    m_CommandBuffer.bindIndexBuffer(buffer, 4 * sizeof(Vertex),
+    m_CommandBuffer.bindIndexBuffer(buffer, 24 * sizeof(Vertex),
                                   vk::IndexType::eUint32);
-    m_CommandBuffer.drawIndexed(6, instanceCount, 0, 0, 0);
+    m_CommandBuffer.drawIndexed(36, instanceCount, 0, 0, 0);
+}
+
+void APIRenderer::SetDepth(bool isDepth) {
+    m_IsDepth = isDepth;
 }
 
 

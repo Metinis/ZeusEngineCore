@@ -35,10 +35,18 @@ PipelineBuilder::PipelineBuilder(PipelineBuilderCreateInfo const& pipelineBuilde
 [[nodiscard]] constexpr vk::PipelineDepthStencilStateCreateInfo CreateDepthStencilState(std::uint8_t flags,
                            vk::CompareOp const depth_compare) {
     vk::PipelineDepthStencilStateCreateInfo depthStencilStateCreateInfo{};
-    auto const depthTest =
-            (flags & PipelineFlag::DepthTest) == PipelineFlag::DepthTest;
-    depthStencilStateCreateInfo.setDepthTestEnable(depthTest ? vk::True : vk::False)
-            .setDepthCompareOp(depth_compare);
+    //auto const depthTest =
+    //        (flags & PipelineFlag::DepthTest) == PipelineFlag::DepthTest;
+    //depthStencilStateCreateInfo.setDepthTestEnable(depthTest ? vk::True : vk::False)
+    //        .setDepthCompareOp(depth_compare);
+    depthStencilStateCreateInfo.setDepthWriteEnable(vk::True);
+    depthStencilStateCreateInfo.setDepthTestEnable(vk::True);
+    depthStencilStateCreateInfo.setDepthCompareOp(vk::CompareOp::eLess);
+    depthStencilStateCreateInfo.setDepthBoundsTestEnable(vk::True);
+    depthStencilStateCreateInfo.setMinDepthBounds(0.0f);
+    depthStencilStateCreateInfo.setMaxDepthBounds(1.0f);
+    depthStencilStateCreateInfo.setStencilTestEnable(vk::False);
+
     return depthStencilStateCreateInfo;
 }
 
@@ -71,8 +79,13 @@ vk::UniquePipeline PipelineBuilder::Build(vk::PipelineLayout const layout, Pipel
     vk::PipelineInputAssemblyStateCreateInfo inputAssemblyStateCreateInfo{{}, state.topology};
 
     vk::PipelineRasterizationStateCreateInfo rasterizationStateCreateInfo{};
-    rasterizationStateCreateInfo.setPolygonMode(state.polygonMode);
-    rasterizationStateCreateInfo.setCullMode(state.cullMode);
+    rasterizationStateCreateInfo.setLineWidth(1.0f)
+            .setDepthClampEnable(VK_FALSE)
+            .setRasterizerDiscardEnable(VK_FALSE)
+            .setFrontFace(vk::FrontFace::eCounterClockwise)
+            .setCullMode(state.cullMode)
+            .setPolygonMode(state.polygonMode);
+
 
     vk::PipelineDepthStencilStateCreateInfo depthStencilStateCreateInfo =
             CreateDepthStencilState(state.flags, state.depthCompare);
@@ -88,9 +101,9 @@ vk::UniquePipeline PipelineBuilder::Build(vk::PipelineLayout const layout, Pipel
     vk::PipelineRenderingCreateInfo renderingCreateInfo{};
 
     if(m_CreateInfo.colorFormat != vk::Format::eUndefined){
-        renderingCreateInfo.setColorAttachmentFormats(m_CreateInfo.colorFormat);
+        renderingCreateInfo.setColorAttachmentFormats({m_CreateInfo.colorFormat});
     }
-    renderingCreateInfo.setDepthAttachmentFormat(m_CreateInfo.depthFormat);
+    renderingCreateInfo.setDepthAttachmentFormat(vk::Format::eD32Sfloat);
 
     vk::GraphicsPipelineCreateInfo pipelineCreateInfo{};
     pipelineCreateInfo.setLayout(layout);

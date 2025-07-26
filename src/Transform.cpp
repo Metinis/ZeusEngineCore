@@ -8,16 +8,27 @@ struct Matrices {
     glm::mat4 orientation;
     glm::mat4 scale;
 };
-[[nodiscard]] auto toMatrices(glm::vec2 const position, float rotation,
-                               glm::vec2 const scale) -> Matrices {
+[[nodiscard]] auto toMatrices(glm::vec3 const position, glm::vec3 rotation,
+                              glm::vec3 const scale) -> Matrices {
     static constexpr auto mat_v = glm::identity<glm::mat4>();
-    static constexpr auto axis_v = glm::vec3{0.0f, 0.0f, 1.0f};
+    static constexpr auto axis_z = glm::vec3{0.0f, 0.0f, 1.0f};
+    static constexpr auto axis_x = glm::vec3{1.0f, 0.0f, 0.0f};
+    static constexpr auto axis_y = glm::vec3{0.0f, 1.0f, 0.0f};
+
+    rotation = glm::radians(rotation);
+
+    // Apply Z -> X -> Y rotation order
+    glm::mat4 orientation = glm::rotate(mat_v, rotation.z, axis_z);
+    orientation = glm::rotate(orientation, rotation.x, axis_x);
+    orientation = glm::rotate(orientation, rotation.y, axis_y);
+
     return Matrices{
-            .translation = glm::translate(mat_v, glm::vec3{position, 0.0f}),
-            .orientation = glm::rotate(mat_v, glm::radians(rotation), axis_v),
-            .scale = glm::scale(mat_v, glm::vec3{scale, 1.0f}),
+            .translation = glm::translate(mat_v, position),
+            .orientation = orientation,
+            .scale = glm::scale(mat_v, scale),
     };
 }
+
 
 glm::mat4 Transform::modelMatrix() const {
     auto const [t, r, s] = toMatrices(position, rotation, scale);

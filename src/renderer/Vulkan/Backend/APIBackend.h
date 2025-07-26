@@ -18,6 +18,7 @@ namespace ZEN{
     enum class eRenderingAPI;
 }
 namespace ZEN::VKAPI {
+    class Image;
     struct BackendInfo;
     struct ShaderInfo;
     struct BufferCreateInfo;
@@ -44,6 +45,7 @@ namespace ZEN::VKAPI {
 
         [[nodiscard]] ZEN::eRendererAPI GetAPI() const override;
         [[nodiscard]] BackendInfo GetInfo() const;
+        [[nodiscard]] std::uint32_t GetQueueFamily() const;
         [[nodiscard]] RenderFrameInfo GetRenderFrameInfo();
         [[nodiscard]] ShaderInfo GetShaderInfo() const;
         [[nodiscard]] MeshInfo GetMeshInfo() const;
@@ -52,6 +54,8 @@ namespace ZEN::VKAPI {
         [[nodiscard]] glm::ivec2 GetFramebufferSize() const;
         [[nodiscard]] BufferCreateInfo GetBufferCreateInfo(ZEN::eDescriptorBufferType type) const;
         [[nodiscard]] glm::mat4 GetPerspectiveMatrix(float fov, float zNear, float zFar) const;
+        [[nodiscard]] Image CreateDepthImage(vk::Extent2D extent);
+        [[nodiscard]] vk::UniqueImageView CreateDepthImageView(vk::Image image, vk::Format format);
 
     private:
         //order matters
@@ -68,6 +72,7 @@ namespace ZEN::VKAPI {
         MemAllocator m_Allocator;
         vk::UniqueCommandPool m_CommandBlockPool;
         DescriptorSet m_DescSet;
+
 
         //deferred resource destruction
         using DeferredHandle = std::variant<BufferHandle, ImageHandle>;
