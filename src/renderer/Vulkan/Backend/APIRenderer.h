@@ -15,6 +15,8 @@ namespace ZEN::VKAPI { //Handles all logic involving rendering/command buffer su
         bool BeginFrame() override;
         void DrawWithCallback(const std::function<void(void*)>& uiExtraDrawCallback) override;
         void SubmitAndPresent() override;
+        void SetDepth(bool isDepth) override;
+        void Clear(bool shouldClearColor, bool shouldClearDepth) override;
         //vulkan specific
         [[nodiscard]] std::size_t GetFrameIndex() const {return m_FrameInfo.sync->GetFrameIndex();}
         void SetUBO(const DescriptorBuffer& ubo);
@@ -24,24 +26,23 @@ namespace ZEN::VKAPI { //Handles all logic involving rendering/command buffer su
         void BindShader(vk::Pipeline pipeline);
         void SetPolygonMode(vk::PolygonMode mode) const {m_CommandBuffer.setPolygonModeEXT(mode);}
         void SetLineWidth(float width) const {m_CommandBuffer.setLineWidth(width);}
-        void SetDepth(bool isDepth);
         void BindDescriptorSets();
     private:
         //vulkan specific
         bool AcquireRenderTarget();
-        void TransitionForRender(bool shouldClearColor);
+        void TransitionForRender();
         void TransitionForPresent();
+        void SetBarriersForRender() const;
+        void SetBarriersForPresent() const;
+        void SetAttachments(bool shouldClearColor, bool shouldClearDepth, bool shouldUseDepth);
 
-        bool m_IsDepth = false;
+        bool m_IsDepth{true};
 
         vk::CommandBuffer m_CommandBuffer; //command buffer in use
         RenderFrameInfo m_FrameInfo;
-        vk::RenderingInfo m_RenderingInfo{};
         APIBackend* m_Backend;
         std::optional<RenderTarget> m_RenderTarget{};
         std::optional<Image> m_DepthImage{};
-        vk::ImageLayout m_OldLayout = vk::ImageLayout::eUndefined;
-        vk::ImageLayout m_NewLayout = vk::ImageLayout::eUndefined;
         std::optional<vk::UniqueImageView> m_DepthImageView{};
     };
 }

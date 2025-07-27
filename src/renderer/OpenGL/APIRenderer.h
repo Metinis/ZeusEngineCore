@@ -10,6 +10,8 @@ namespace ZEN::OGLAPI {
         bool BeginFrame() override;
         void DrawWithCallback(const std::function<void(void*)>& uiExtraDrawCallback) override;
         void SubmitAndPresent() override;
+        void SetDepth(bool isDepth) override;
+        void Clear(bool shouldClearColor, bool shouldClearDepth) override;
     private:
     };
 }

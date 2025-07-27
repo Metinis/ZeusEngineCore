@@ -11,3 +11,11 @@ void ZEN::OGLAPI::APIRenderer::DrawWithCallback(const std::function<void(void *)
 void ZEN::OGLAPI::APIRenderer::SubmitAndPresent() {
 
 }
+
+void ZEN::OGLAPI::APIRenderer::SetDepth(bool isDepth) {
+
+}
+
+void ZEN::OGLAPI::APIRenderer::Clear(bool shouldClearColor, bool shouldClearDepth) {
+
+}
