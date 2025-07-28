@@ -40,13 +40,12 @@ void Renderer::Submit(const std::vector<Transform>& transforms, const std::share
 
 
 void Renderer::EndFrame(const std::function<void(void*)>& uiExtraDrawCallback) {
-    //m_APIRenderer->SetDepth(true);
+    m_APIRenderer->SetDepth(true);
     m_ViewUBO->Bind();
     m_InstanceSSBO->Bind();
     for(const auto& cmd : m_RenderQueue){
         cmd.material->Bind();
         cmd.mesh->Draw(cmd.transforms.size());
-        //m_APIRenderer->BindDescriptorSets(); //placeholder
     }
     m_RenderQueue.clear();
 

@@ -44,6 +44,7 @@ namespace ZEN::VKAPI {
         void Init();
 
         [[nodiscard]] ZEN::eRendererAPI GetAPI() const override;
+        [[nodiscard]] glm::mat4 GetPerspectiveMatrix(float fov, float zNear, float zFar) const override;
         [[nodiscard]] BackendInfo GetInfo() const;
         [[nodiscard]] std::uint32_t GetQueueFamily() const;
         [[nodiscard]] RenderFrameInfo GetRenderFrameInfo();
@@ -53,9 +54,8 @@ namespace ZEN::VKAPI {
         DescriptorSet& GetDescriptorSet() {return m_DescSet;}
         [[nodiscard]] glm::ivec2 GetFramebufferSize() const;
         [[nodiscard]] BufferCreateInfo GetBufferCreateInfo(ZEN::eDescriptorBufferType type) const;
-        [[nodiscard]] glm::mat4 GetPerspectiveMatrix(float fov, float zNear, float zFar) const;
         [[nodiscard]] Image CreateDepthImage(vk::Extent2D extent);
-        [[nodiscard]] vk::UniqueImageView CreateDepthImageView(vk::Image image, vk::Format format);
+        [[nodiscard]] vk::UniqueImageView CreateDepthImageView(vk::Image image);
 
     private:
         //order matters

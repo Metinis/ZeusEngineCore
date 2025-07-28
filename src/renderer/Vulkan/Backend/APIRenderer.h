@@ -21,7 +21,7 @@ namespace ZEN::VKAPI { //Handles all logic involving rendering/command buffer su
         [[nodiscard]] std::size_t GetFrameIndex() const {return m_FrameInfo.sync->GetFrameIndex();}
         void SetUBO(const DescriptorBuffer& ubo);
         void SetSSBO(const DescriptorBuffer& ubo);
-        void SetImage(const Texture& texture); //placeholder use desc info instead
+        void SetImage(const vk::DescriptorImageInfo& imageInfo); //placeholder use desc info instead
         void DrawIndexed(vk::Buffer buffer, std::uint32_t instanceCount) const; //todo api agnostic buffer
         void BindShader(vk::Pipeline pipeline);
         void SetPolygonMode(vk::PolygonMode mode) const {m_CommandBuffer.setPolygonModeEXT(mode);}
@@ -35,8 +35,6 @@ namespace ZEN::VKAPI { //Handles all logic involving rendering/command buffer su
         void SetBarriersForRender() const;
         void SetBarriersForPresent() const;
         void SetAttachments(bool shouldClearColor, bool shouldClearDepth, bool shouldUseDepth);
-
-        bool m_IsDepth{true};
 
         vk::CommandBuffer m_CommandBuffer; //command buffer in use
         RenderFrameInfo m_FrameInfo;

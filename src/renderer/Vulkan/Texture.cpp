@@ -6,42 +6,7 @@
 
 using namespace ZEN::VKAPI;
 
-// 4-channels.
-constexpr auto whitePixel_v = std::array{ std::byte{0xff}, std::byte{0xff},
-										  std::byte{0xff}, std::byte{0xff} };
-// fallback bitmap.
-constexpr auto whiteBitmap_v = Bitmap{
-  .bytes = whitePixel_v,
-  .size = {1, 1},
-};
 using Pixel = std::array<std::byte, 4>;
-static constexpr auto rgby_pixels_v = std::array{
-  Pixel{std::byte{0xff}, {}, {}, std::byte{0xff}},
-  Pixel{std::byte{}, std::byte{0xff}, {}, std::byte{0xff}},
-  Pixel{std::byte{}, {}, std::byte{0xff}, std::byte{0xff}},
-  Pixel{std::byte{0xff}, std::byte{0xff}, {}, std::byte{0xff}},
-};
-static constexpr auto rgby_bytes_v =
-std::bit_cast<std::array<std::byte, sizeof(rgby_pixels_v)>>(
-	rgby_pixels_v);
-static constexpr auto rgby_bitmap_v = Bitmap{
-  .bytes = rgby_bytes_v,
-  .size = {2, 2},
-};
-static constexpr auto test_pixels = std::array{
-  Pixel{std::byte{0xff}, std::byte{0xff}, std::byte{0xff}, std::byte{0xff}},
-  Pixel{std::byte{0xff}, std::byte{0xff}, std::byte{0xff}, std::byte{0xff}},
-  Pixel{std::byte{0xff}, std::byte{0xff}, std::byte{0xff}, std::byte{0xff}},
-  Pixel{std::byte{0xff}, std::byte{0xff}, std::byte{0xff}, std::byte{0xff}},
-};
-static constexpr auto test_bytes_v =
-std::bit_cast<std::array<std::byte, sizeof(test_pixels)>>(
-	test_pixels);
-
-static constexpr auto test_bitmap_v = Bitmap{
-  .bytes = test_bytes_v,
-  .size = {4, 4},
-};
 
 Texture::Texture(TextureInfo& texInfo) {
     m_APIRenderer = texInfo.apiRenderer;
@@ -83,18 +48,12 @@ Texture::Texture(TextureInfo& texInfo) {
     m_Sampler = texInfo.device.createSamplerUnique(texInfo.sampler);
 }
 
-vk::DescriptorImageInfo Texture::GetDescriptorInfo() const
-{
-	vk::DescriptorImageInfo descImageInfo{};
-	descImageInfo.setImageView(*m_View);
-	descImageInfo.setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
-	descImageInfo.setSampler(*m_Sampler);
-	return descImageInfo;
-}
-
 void Texture::Bind() {
-    m_APIRenderer->SetImage(*this);
-    m_APIRenderer->BindDescriptorSets(); //placeholder
+    vk::DescriptorImageInfo descImageInfo{};
+    descImageInfo.setImageView(*m_View);
+    descImageInfo.setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
+    descImageInfo.setSampler(*m_Sampler);
+    m_APIRenderer->SetImage(descImageInfo);
 }
 
 Texture::~Texture() = default;

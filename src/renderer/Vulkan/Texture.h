@@ -37,7 +37,6 @@ namespace ZEN::VKAPI {
     public:
         explicit Texture(TextureInfo& texInfo);
         void Bind() override;
-        [[nodiscard]] vk::DescriptorImageInfo GetDescriptorInfo() const;
         ~Texture() override;
 
     private:

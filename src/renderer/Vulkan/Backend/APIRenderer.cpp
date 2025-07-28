@@ -1,18 +1,12 @@
 #include "APIRenderer.h"
-#include "DescriptorBuffer.h"
+#include "../DescriptorBuffer.h"
 #include "ZeusEngineCore/Vertex.h"
 #include "../Texture.h"
 
 using namespace ZEN::VKAPI;
 
 APIRenderer::APIRenderer(APIBackend* apiBackend) : m_Backend(apiBackend){
-    //todo recreate this on swapchain resize
-    vk::Extent2D extent;
-    extent.width = 1280;
-    extent.height = 720;
-    m_DepthImage.emplace(m_Backend->CreateDepthImage(extent));
-    m_DepthImageView.emplace(m_Backend->CreateDepthImageView(m_DepthImage->Get(), m_DepthImage->GetFormat()));
-    assert(m_DepthImage->GetFormat() == vk::Format::eD32Sfloat);
+
 }
 bool APIRenderer::BeginFrame(){
     if(!AcquireRenderTarget())
@@ -32,6 +26,7 @@ bool APIRenderer::BeginFrame(){
 }
 bool APIRenderer::AcquireRenderTarget(){
     m_FrameInfo = m_Backend->GetRenderFrameInfo();
+
     //minimized
     if (m_FrameInfo.framebufferSize.x <= 0 || m_FrameInfo.framebufferSize.y <= 0) {
         return false;
@@ -52,12 +47,18 @@ bool APIRenderer::AcquireRenderTarget(){
         return false;
     }
 
+    if(!m_DepthImage.has_value() || !m_DepthImageView.has_value()){
+        m_DepthImage.emplace(m_Backend->CreateDepthImage(m_RenderTarget->extent));
+        m_DepthImageView.emplace(m_Backend->CreateDepthImageView(m_DepthImage->Get()));
+    }
+
     m_FrameInfo.device->GetLogicalDevice().resetFences(*renderSync.drawn);
 
     return true;
 }
 void APIRenderer::TransitionForRender(){
     SetBarriersForRender();
+    //no depth by default
     SetAttachments(false, false, false);
 }
 
@@ -102,8 +103,12 @@ void APIRenderer::SubmitAndPresent()
 
 
     const bool fbSizeChanged = m_FrameInfo.framebufferSize != m_FrameInfo.swapchain->GetSize();
+
     if (fbSizeChanged) {
         m_FrameInfo.swapchain->Recreate(m_FrameInfo.framebufferSize);
+        //recreate depth image
+        m_DepthImage.emplace(m_Backend->CreateDepthImage(m_FrameInfo.swapchain->GetExtent()));
+        m_DepthImageView.emplace(m_Backend->CreateDepthImageView(m_DepthImage->Get()));
         return;
     }
 
@@ -120,53 +125,7 @@ void APIRenderer::DrawWithCallback(const std::function<void(void*)>& uiExtraDraw
     }
 }
 
-void APIRenderer::SetUBO(const DescriptorBuffer& ubo) {
-    vk::DescriptorBufferInfo info = ubo.GetDescriptorInfoAt(m_FrameInfo.sync->GetFrameIndex());
-    m_Backend->GetDescriptorSet().SetUBO(GetFrameIndex(), info);
-}
-void APIRenderer::SetSSBO(const DescriptorBuffer& ubo){
-    vk::DescriptorBufferInfo info = ubo.GetDescriptorInfoAt(m_FrameInfo.sync->GetFrameIndex());
-    m_Backend->GetDescriptorSet().SetSSBO(GetFrameIndex(), info);
-}
 
-void APIRenderer::SetImage(const Texture& texture) {
-    m_Backend->GetDescriptorSet().SetImage(GetFrameIndex(),
-                                           texture.GetDescriptorInfo());
-}
-
-void APIRenderer::BindDescriptorSets() {
-    m_Backend->GetDescriptorSet().BindDescriptorSets(m_CommandBuffer,
-                                                     GetFrameIndex());
-}
-
-void APIRenderer::BindShader(vk::Pipeline pipeline) {
-    vk::Extent2D extent = m_RenderTarget->extent;
-    m_CommandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
-    vk::Viewport viewport{};
-    viewport.setX(0.0f)
-            .setY(static_cast<float>(extent.height))
-            .setWidth(static_cast<float>(extent.width))
-            .setHeight(-static_cast<float>(extent.height))
-            .setMinDepth(0.0f)
-            .setMaxDepth(1.0f);
-
-    m_CommandBuffer.setViewport(0, viewport);
-    m_CommandBuffer.setScissor(0, vk::Rect2D{{}, extent});
-}
-
-void APIRenderer::DrawIndexed(vk::Buffer buffer, std::uint32_t instanceCount) const {
-    //todo send in offset data etc
-    m_CommandBuffer.bindVertexBuffers(0, buffer, vk::DeviceSize{});
-
-    m_CommandBuffer.bindIndexBuffer(buffer, 24 * sizeof(Vertex),
-                                  vk::IndexType::eUint32);
-    m_CommandBuffer.drawIndexed(36, instanceCount, 0, 0, 0);
-}
-
-void APIRenderer::SetDepth(bool isDepth) {
-    m_CommandBuffer.endRendering();
-    SetAttachments(false, false, isDepth);
-}
 
 void APIRenderer::SetBarriersForRender() const {
     // --- Existing color attachment barrier ---
@@ -277,6 +236,52 @@ void APIRenderer::SetAttachments(const bool shouldClearColor, const bool shouldC
 void APIRenderer::Clear(const bool shouldClearColor, const bool shouldClearDepth) {
     m_CommandBuffer.endRendering();
     SetAttachments(shouldClearColor, shouldClearDepth, true);
+}
+void APIRenderer::SetUBO(const DescriptorBuffer& ubo) {
+    vk::DescriptorBufferInfo info = ubo.GetDescriptorInfoAt(GetFrameIndex());
+    m_Backend->GetDescriptorSet().SetUBO(GetFrameIndex(), info);
+}
+void APIRenderer::SetSSBO(const DescriptorBuffer& ubo){
+    vk::DescriptorBufferInfo info = ubo.GetDescriptorInfoAt(GetFrameIndex());
+    m_Backend->GetDescriptorSet().SetSSBO(GetFrameIndex(), info);
+}
+
+void APIRenderer::SetImage(const vk::DescriptorImageInfo& imageInfo) {
+    m_Backend->GetDescriptorSet().SetImage(GetFrameIndex(), imageInfo);
+}
+
+void APIRenderer::BindDescriptorSets() {
+    m_Backend->GetDescriptorSet().BindDescriptorSets(m_CommandBuffer,
+                                                     GetFrameIndex());
+}
+
+void APIRenderer::BindShader(vk::Pipeline pipeline) {
+    vk::Extent2D extent = m_RenderTarget->extent;
+    m_CommandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
+    vk::Viewport viewport{};
+    viewport.setX(0.0f)
+            .setY(static_cast<float>(extent.height))
+            .setWidth(static_cast<float>(extent.width))
+            .setHeight(-static_cast<float>(extent.height))
+            .setMinDepth(0.0f)
+            .setMaxDepth(1.0f);
+
+    m_CommandBuffer.setViewport(0, viewport);
+    m_CommandBuffer.setScissor(0, vk::Rect2D{{}, extent});
+}
+
+void APIRenderer::DrawIndexed(vk::Buffer buffer, std::uint32_t instanceCount) const {
+    //todo send in offset data etc
+    m_CommandBuffer.bindVertexBuffers(0, buffer, vk::DeviceSize{});
+
+    m_CommandBuffer.bindIndexBuffer(buffer, 24 * sizeof(Vertex),
+                                    vk::IndexType::eUint32);
+    m_CommandBuffer.drawIndexed(36, instanceCount, 0, 0, 0);
+}
+
+void APIRenderer::SetDepth(bool isDepth) {
+    m_CommandBuffer.endRendering();
+    SetAttachments(false, false, isDepth);
 }
 
 

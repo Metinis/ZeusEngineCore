@@ -20,6 +20,8 @@ namespace ZEN::VKAPI {
 
         [[nodiscard]] glm::ivec2 GetSize() const { return {m_CreateInfo.imageExtent.width, m_CreateInfo.imageExtent.height}; };
 
+        [[nodiscard]] vk::Extent2D GetExtent() const {return m_CreateInfo.imageExtent;}
+
         std::optional<RenderTarget> AcquireNextImage(vk::Semaphore toSignal);
 
         [[nodiscard]] vk::ImageMemoryBarrier2 GetBaseBarrier() const;

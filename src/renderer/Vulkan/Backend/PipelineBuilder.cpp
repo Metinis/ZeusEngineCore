@@ -103,7 +103,7 @@ vk::UniquePipeline PipelineBuilder::Build(vk::PipelineLayout const layout, Pipel
     if(m_CreateInfo.colorFormat != vk::Format::eUndefined){
         renderingCreateInfo.setColorAttachmentFormats({m_CreateInfo.colorFormat});
     }
-    renderingCreateInfo.setDepthAttachmentFormat(vk::Format::eD32Sfloat);
+    renderingCreateInfo.setDepthAttachmentFormat(m_CreateInfo.depthFormat);
 
     vk::GraphicsPipelineCreateInfo pipelineCreateInfo{};
     pipelineCreateInfo.setLayout(layout);

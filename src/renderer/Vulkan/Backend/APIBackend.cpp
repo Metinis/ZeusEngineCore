@@ -10,6 +10,7 @@
 #include "Image.h"
 
 using namespace ZEN::VKAPI;
+inline constexpr vk::Format depthFormat = vk::Format::eD32Sfloat;
 
 VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE;
 APIBackend::APIBackend(WindowHandle windowHandle)
@@ -52,6 +53,7 @@ void APIBackend::Init()
             });
 
 }
+
 ShaderInfo APIBackend::GetShaderInfo() const
 {
     ShaderInfo shaderInfo{};
@@ -59,7 +61,7 @@ ShaderInfo APIBackend::GetShaderInfo() const
     shaderInfo.colorFormat = m_Swapchain.GetFormat();
     shaderInfo.samples = vk::SampleCountFlagBits::e1;
     shaderInfo.pipelineLayout = m_DescSet.GetPipelineLayout();
-    shaderInfo.depthFormat = vk::Format::eD32Sfloat;
+    shaderInfo.depthFormat = depthFormat;
     return shaderInfo;
 }
 TextureInfo APIBackend::GetTextureInfo()
@@ -228,7 +230,9 @@ glm::mat4 APIBackend::GetPerspectiveMatrix(const float fov, const float zNear, c
 }
 
 Image APIBackend::CreateDepthImage(vk::Extent2D extent) {
-    vk::FormatProperties props = m_Device.GetGPU().device.getFormatProperties(vk::Format::eD32Sfloat);
+    //handle
+    vk::FormatProperties props = m_Device.GetGPU().device.getFormatProperties(depthFormat);
+    //assert that format is supported for depth
     assert(props.optimalTilingFeatures & vk::FormatFeatureFlagBits::eDepthStencilAttachment);
 
     ImageCreateInfo depthImageCreateInfo{};
@@ -239,18 +243,18 @@ Image APIBackend::CreateDepthImage(vk::Extent2D extent) {
     Image ret(depthImageCreateInfo,
                      vk::ImageUsageFlagBits::eDepthStencilAttachment,
                      1,
-                     vk::Format::eD32Sfloat,
+                     depthFormat,
                      extent
     );
     return ret;
 }
 
-vk::UniqueImageView APIBackend::CreateDepthImageView(const vk::Image image, const vk::Format format) {
+vk::UniqueImageView APIBackend::CreateDepthImageView(const vk::Image image) {
     vk::ImageViewCreateInfo viewCreateInfo{
             {},
             image,
             vk::ImageViewType::e2D,
-            format,
+            depthFormat,
             {},
             {vk::ImageAspectFlagBits::eDepth, 0, 1, 0, 1}
     };
