@@ -270,13 +270,20 @@ void APIRenderer::BindShader(vk::Pipeline pipeline) {
     m_CommandBuffer.setScissor(0, vk::Rect2D{{}, extent});
 }
 
-void APIRenderer::DrawIndexed(vk::Buffer buffer, std::uint32_t instanceCount) const {
-    //todo send in offset data etc
+void APIRenderer::DrawIndexed(const DrawIndexedInfo& drawInfo, const std::uint32_t instanceCount) const {
+    /*
     m_CommandBuffer.bindVertexBuffers(0, buffer, vk::DeviceSize{});
 
     m_CommandBuffer.bindIndexBuffer(buffer, 24 * sizeof(Vertex),
                                     vk::IndexType::eUint32);
     m_CommandBuffer.drawIndexed(36, instanceCount, 0, 0, 0);
+     */
+    m_CommandBuffer.bindVertexBuffers(drawInfo.firstBinding, drawInfo.buffer, drawInfo.vertexOffset);
+
+    m_CommandBuffer.bindIndexBuffer(drawInfo.buffer, drawInfo.indexOffset,
+                                    drawInfo.type);
+    m_CommandBuffer.drawIndexed(drawInfo.indexCount, instanceCount,
+                                drawInfo.firstIndex, drawInfo.vertexOffsetInIndices, 0);
 }
 
 void APIRenderer::SetDepth(bool isDepth) {

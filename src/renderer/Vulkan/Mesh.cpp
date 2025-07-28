@@ -30,10 +30,22 @@ DeviceBuffer Mesh::CreateMeshVBO(const MeshInfo& meshInfo) {
                                                meshInfo.queue,
                                                meshInfo.commandBlockPool),
                                   totalBytes_v);
+
+        m_DrawInfo = {
+                .buffer = deviceBuffer.Get().Get(),
+                .indexCount = meshInfo.indices.size(),
+                .firstBinding = 0,
+                .firstIndex = 0,
+                .vertexOffset = 0,
+                .indexOffset = static_cast<uint32_t>((meshInfo.vertices.size() * sizeof(Vertex))),
+                .vertexOffsetInIndices = 0,
+                .type = vk::IndexType::eUint32
+        };
+
         return std::move(deviceBuffer);
 }
 void Mesh::Draw(std::uint32_t instanceCount) const {
-    m_APIRenderer->DrawIndexed(m_VBO.value().Get().Get(), instanceCount);
+    m_APIRenderer->DrawIndexed(m_DrawInfo, instanceCount);
 }
 
 Mesh::~Mesh() {}

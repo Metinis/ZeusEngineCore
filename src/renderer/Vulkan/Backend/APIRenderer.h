@@ -7,6 +7,16 @@
 namespace ZEN::VKAPI { //Handles all logic involving rendering/command buffer such as
     class Texture;
     class DescriptorBuffer;
+    struct DrawIndexedInfo{
+        vk::Buffer buffer{};
+        std::size_t indexCount{};
+        std::uint32_t firstBinding{0};
+        std::uint32_t firstIndex{0};
+        std::uint32_t vertexOffset{};
+        std::uint32_t indexOffset{};
+        std::uint32_t vertexOffsetInIndices{0};
+        vk::IndexType type{vk::IndexType::eUint32};
+    };
     // binding/drawing
     class APIRenderer : public IRendererAPI {
     public:
@@ -21,8 +31,9 @@ namespace ZEN::VKAPI { //Handles all logic involving rendering/command buffer su
         [[nodiscard]] std::size_t GetFrameIndex() const {return m_FrameInfo.sync->GetFrameIndex();}
         void SetUBO(const DescriptorBuffer& ubo);
         void SetSSBO(const DescriptorBuffer& ubo);
-        void SetImage(const vk::DescriptorImageInfo& imageInfo); //placeholder use desc info instead
-        void DrawIndexed(vk::Buffer buffer, std::uint32_t instanceCount) const; //todo api agnostic buffer
+        void SetImage(const vk::DescriptorImageInfo& imageInfo);
+
+        void DrawIndexed(const DrawIndexedInfo& drawInfo, std::uint32_t instanceCount) const;
         void BindShader(vk::Pipeline pipeline);
         void SetPolygonMode(vk::PolygonMode mode) const {m_CommandBuffer.setPolygonModeEXT(mode);}
         void SetLineWidth(float width) const {m_CommandBuffer.setLineWidth(width);}

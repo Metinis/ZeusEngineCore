@@ -1,6 +1,7 @@
 #pragma once
 #include "ZeusEngineCore/IMesh.h"
 #include "Backend/DeviceBuffer.h"
+#include "Backend/APIRenderer.h"
 #include <optional>
 
 namespace ZEN::VKAPI {
@@ -28,6 +29,7 @@ namespace ZEN::VKAPI {
         DeviceBuffer CreateMeshVBO(const MeshInfo& meshInfo);
 
         std::optional<DeviceBuffer> m_VBO;
+        DrawIndexedInfo m_DrawInfo{};
         APIRenderer* m_APIRenderer;
     };
 }
