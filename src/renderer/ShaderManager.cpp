@@ -1,21 +1,29 @@
 #include "ZeusEngineCore/ShaderManager.h"
-#include <unordered_map>
-std::unordered_map<std::string, std::shared_ptr<IShader>> ShaderManager::s_Shaders;
+#include "ZeusEngineCore/IShader.h"
+#include <string>
 
-std::shared_ptr<IShader> ShaderManager::Load(const std::string &name, const std::string &vertexPath,
-    const std::string &fragmentPath, const RendererAPI api) {
-    auto it = s_Shaders.find(name);
-    if(it != s_Shaders.end())
+
+using namespace ZEN;
+
+ShaderManager::ShaderManager(IRendererBackend* backendAPI, IRendererAPI* rendererAPI)
+: m_BackendAPI(backendAPI),
+m_RendererAPI(rendererAPI)
+{   
+   
+}
+std::shared_ptr<IShader> ShaderManager::Load(const std::string &name, const std::string& vertexPath,
+    const std::string& fragmentPath) {
+    auto it = m_Shaders.find(name);
+    if(it != m_Shaders.end())
         return it->second;
 
-    auto shader = IShader::Create(api);
-    shader->Init(vertexPath, fragmentPath);
-    s_Shaders[name] = shader;
+    auto shader = IShader::Create(m_BackendAPI, m_RendererAPI, vertexPath, fragmentPath);
+    m_Shaders[name] = shader;
     return shader;
 }
 std::shared_ptr<IShader> ShaderManager::Get(const std::string &name) {
-    auto it = s_Shaders.find(name);
-    if(it != s_Shaders.end())
+    auto it = m_Shaders.find(name);
+    if(it != m_Shaders.end())
         return it->second;
     return nullptr;
 }

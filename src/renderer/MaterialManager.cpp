@@ -1,21 +1,22 @@
 #include "ZeusEngineCore/MaterialManager.h"
 #include <unordered_map>
 #include "ZeusEngineCore/Material.h"
+#include <string>
 
-std::unordered_map<std::string, std::shared_ptr<Material>> MaterialManager::s_Materials;
+using namespace ZEN;
 
 std::shared_ptr<Material> MaterialManager::Load(const std::string &name, std::shared_ptr<IShader>& shader) {
-    auto it = s_Materials.find(name);
-    if(it != s_Materials.end())
+    auto it = m_Materials.find(name);
+    if(it != m_Materials.end())
         return it->second;
 
     auto material = std::make_shared<Material>(shader);
-    s_Materials[name] = material;
+    m_Materials[name] = material;
     return material;
 }
 std::shared_ptr<Material> MaterialManager::Get(const std::string &name) {
-    auto it = s_Materials.find(name);
-    if(it != s_Materials.end())
+    auto it = m_Materials.find(name);
+    if(it != m_Materials.end())
         return it->second;
     return nullptr;
 }

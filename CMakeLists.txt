@@ -5,7 +5,6 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-
 find_package(Vulkan REQUIRED)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/include/glfw glfw)
 
@@ -13,13 +12,14 @@ add_library(ZeusEngineCore STATIC)
 
 target_compile_features(ZeusEngineCore PUBLIC cxx_std_23)
 
+
 # Sources
 file(GLOB_RECURSE ZEUSENGINECORE_SOURCES
         src/*.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/include/glad/src/glad.c
 )
 
-target_sources(ZeusEngineCore PRIVATE ${ZEUSENGINECORE_SOURCES})
+target_sources(ZeusEngineCore PRIVATE ${ZEUSENGINECORE_SOURCES} )
 
 # Include dirs
 target_include_directories(ZeusEngineCore
@@ -29,6 +29,8 @@ target_include_directories(ZeusEngineCore
         PRIVATE
         ${CMAKE_SOURCE_DIR}/include/glm
 )
+
+target_compile_definitions(ZeusEngineCore PRIVATE VK_NO_PROTOTYPES)
 
 # Link dependencies
 target_link_libraries(ZeusEngineCore

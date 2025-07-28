@@ -1,9 +1,14 @@
 #include "../../include/ZeusEngineCore/Window.h"
-#include <stdexcept>  // Required for std::runtime_error
+#include <stdexcept>
+#include <utility>
+#define GLFW_INCLUDE_NONE
+#include "GLFW/glfw3.h"
+#include <glad/glad.h>
 
+using namespace ZEN;
 
-Window::Window(int width, int height, const std::string& title, bool useVulkan)
-    : m_Width(width), m_Height(height), m_Title(title), m_UseVulkan(useVulkan)
+Window::Window(int width, int height, std::string  title, bool useVulkan)
+    : m_Width(width), m_Height(height), m_Title(std::move(title)), m_UseVulkan(useVulkan)
 {
     Init();
 }
@@ -32,6 +37,7 @@ void Window::Init() {
     }
 
     m_Window = glfwCreateWindow(m_Width, m_Height, m_Title.c_str(), nullptr, nullptr);
+
     if (!m_Window)
         throw std::runtime_error("Failed to create window");
 
