@@ -96,6 +96,7 @@ void APIRenderer::SetMSAA(int msaa)
         glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, m_MSAADepthBuffer);
     }
     else {
+        //No MSAA if 0, hence use regular textures
         glBindTexture(GL_TEXTURE_2D, m_MSAATex);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
             m_Backend->GetFramebufferSize().x, m_Backend->GetFramebufferSize().y, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
