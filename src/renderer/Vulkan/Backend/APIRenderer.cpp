@@ -291,4 +291,12 @@ void APIRenderer::SetDepth(bool isDepth) {
     SetAttachments(false, false, isDepth);
 }
 
+void APIRenderer::SetMSAA(int msaa) {
+    m_MSAA = msaa;
+}
+
+int APIRenderer::GetMaxMSAA() {
+    return 4;
+}
+
 

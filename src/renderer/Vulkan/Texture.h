@@ -27,7 +27,7 @@ namespace ZEN::VKAPI {
         VmaAllocator allocator{};
         std::uint32_t queueFamily{};
         std::optional<CommandBlock> commandBlock;
-        vk::SamplerCreateInfo sampler{samplerCreateInfo_v};
+        vk::SamplerCreateInfo samplerInfo{samplerCreateInfo_v};
         std::shared_ptr<std::function<void(DeferredHandle)>> destroyCallback;
         APIRenderer* apiRenderer;
         std::string filepath;

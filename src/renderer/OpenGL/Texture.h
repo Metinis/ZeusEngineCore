@@ -1,6 +1,7 @@
 #pragma once
 #include "ZeusEngineCore/ITexture.h"
 #include <string>
+#include <cstdint>
 
 namespace ZEN::OGLAPI {
     class APIRenderer;
@@ -13,5 +14,8 @@ namespace ZEN::OGLAPI {
         //void Init(ZEN::TextureInfo &textureInfo) override;
         explicit Texture(const TextureInfo& texInfo);
         void Bind() override;
+    private:
+        std::uint32_t m_TextureHandle{};
     };
+
 }

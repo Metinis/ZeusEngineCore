@@ -15,25 +15,75 @@ Shader::Shader(const ShaderInfo& shaderInfo) {
     glShaderSource(vertex, 1, &vSrc, nullptr);
     glCompileShader(vertex);
 
+    // Check vertex shader compile status
+    {
+        GLint success = 0;
+        glGetShaderiv(vertex, GL_COMPILE_STATUS, &success);
+        if (success == GL_FALSE) {
+            GLint logLength = 0;
+            glGetShaderiv(vertex, GL_INFO_LOG_LENGTH, &logLength);
+            std::string log(logLength, ' ');
+            glGetShaderInfoLog(vertex, logLength, nullptr, &log[0]);
+            std::cerr << "Vertex shader compilation failed:\n" << log << std::endl;
+        }
+    }
+
     uint32_t fragment = glCreateShader(GL_FRAGMENT_SHADER);
     const char* fSrc = fragmentSrc.c_str();
     glShaderSource(fragment, 1, &fSrc, nullptr);
     glCompileShader(fragment);
+
+    // Check fragment shader compile status
+    {
+        GLint success = 0;
+        glGetShaderiv(fragment, GL_COMPILE_STATUS, &success);
+        if (success == GL_FALSE) {
+            GLint logLength = 0;
+            glGetShaderiv(fragment, GL_INFO_LOG_LENGTH, &logLength);
+            std::string log(logLength, ' ');
+            glGetShaderInfoLog(fragment, logLength, nullptr, &log[0]);
+            std::cerr << "Fragment shader compilation failed:\n" << log << std::endl;
+        }
+    }
 
     m_RendererID = glCreateProgram();
     glAttachShader(m_RendererID, vertex);
     glAttachShader(m_RendererID, fragment);
     glLinkProgram(m_RendererID);
 
+    // Check program link status
+    {
+        GLint success = 0;
+        glGetProgramiv(m_RendererID, GL_LINK_STATUS, &success);
+        if (success == GL_FALSE) {
+            GLint logLength = 0;
+            glGetProgramiv(m_RendererID, GL_INFO_LOG_LENGTH, &logLength);
+            std::string log(logLength, ' ');
+            glGetProgramInfoLog(m_RendererID, logLength, nullptr, &log[0]);
+            std::cerr << "Shader program linking failed:\n" << log << std::endl;
+        }
+    }
+
     glDeleteShader(vertex);
     glDeleteShader(fragment);
+
+    GLuint viewBlockIndex = glGetUniformBlockIndex(m_RendererID, "View");
+    glUniformBlockBinding(m_RendererID, viewBlockIndex, 0);
+
+    GLuint instancesBlockIndex = glGetUniformBlockIndex(m_RendererID, "Instances");
+    glUniformBlockBinding(m_RendererID, instancesBlockIndex, 1);
 }
+
 
 Shader::~Shader() {
     glDeleteProgram(m_RendererID);
 }
 
 void Shader::Bind() const {
+    if(m_IsWireframe)
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    else
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     glLineWidth(m_LineWidth);
     glUseProgram(m_RendererID);
 }

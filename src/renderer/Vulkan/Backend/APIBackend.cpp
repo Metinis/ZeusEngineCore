@@ -72,7 +72,11 @@ TextureInfo APIBackend::GetTextureInfo()
                                                   m_Device.GetQueue(), m_CommandBlockPool.get()));
     textureInfo.device = m_Device.GetLogicalDevice();
     textureInfo.queueFamily = m_Device.GetGPU().queueFamily;
-    textureInfo.sampler.setMagFilter(vk::Filter::eNearest);
+    textureInfo.samplerInfo.addressModeU = vk::SamplerAddressMode::eRepeat;
+    textureInfo.samplerInfo.addressModeV = vk::SamplerAddressMode::eRepeat;
+    textureInfo.samplerInfo.setMagFilter(vk::Filter::eLinear);
+    textureInfo.samplerInfo.setMinFilter(vk::Filter::eLinear);
+    textureInfo.samplerInfo.setMipmapMode(vk::SamplerMipmapMode::eLinear);
     textureInfo.destroyCallback = m_DeferredDestroyCallback;
     return textureInfo;
     

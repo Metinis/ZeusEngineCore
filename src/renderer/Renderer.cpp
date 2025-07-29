@@ -50,9 +50,10 @@ void Renderer::EndFrame(const std::function<void(void*)>& uiExtraDrawCallback) {
     m_RenderQueue.clear();
 
     m_APIRenderer->SetDepth(false);
-    if(uiExtraDrawCallback){
+    if (uiExtraDrawCallback) {
         m_APIRenderer->DrawWithCallback(uiExtraDrawCallback); //injects command buffer
     }
+    
     m_APIRenderer->SubmitAndPresent();
 }
 

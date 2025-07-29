@@ -2,11 +2,12 @@
 #include <memory>
 #include <unordered_map>
 #include <vector>
+#include "ZeusEngineCore/IMesh.h"
+#include <string>
 
 namespace ZEN {
     class IRendererBackend;
     class IRendererAPI;
-    class IMesh;
     struct Vertex;
     class MeshManager {
     public:

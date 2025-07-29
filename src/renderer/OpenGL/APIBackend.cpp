@@ -7,11 +7,18 @@
 #include "ZeusEngineCore/Vertex.h"
 #include "Shader.h"
 #include "ZeusEngineCore/InfoVariants.h"
-#include <glfw/glfw3.h>
+#define GLFW_INCLUDE_NONE
+#include "GLFW/glfw3.h"
+#include <glad/glad.h>
 
 using namespace ZEN::OGLAPI;
 
 APIBackend::APIBackend(const ZEN::WindowHandle& windowHandle) : m_WindowHandle(windowHandle){
+    glfwMakeContextCurrent(m_WindowHandle.nativeWindowHandle);
+    glfwSwapInterval(1); // Enable VSync
+    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+        throw std::runtime_error("Failed to initialize GLAD");
+    }
 }
 
 ZEN::eRendererAPI ZEN::OGLAPI::APIBackend::GetAPI() const {
@@ -35,7 +42,9 @@ BackendInfo APIBackend::GetInfo() const {
 }
 
 BufferCreateInfo APIBackend::GetBufferCreateInfo(const ZEN::eDescriptorBufferType type) const {
-    return BufferCreateInfo{};
+    BufferCreateInfo bufferCreateInfo{};
+    bufferCreateInfo.type = type;
+    return bufferCreateInfo;
 }
 
 glm::mat4 APIBackend::GetPerspectiveMatrix(float fov, float zNear, float zFar) const {

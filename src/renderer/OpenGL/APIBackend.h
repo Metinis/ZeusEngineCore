@@ -13,6 +13,8 @@ namespace ZEN::OGLAPI {
     struct APIRenderer;
     struct BufferCreateInfo{
         APIRenderer *apiRenderer;
+        size_t size;
+        ZEN::eDescriptorBufferType type;
     };
     class APIBackend : public IRendererBackend{
     public:
@@ -33,6 +35,8 @@ namespace ZEN::OGLAPI {
         [[nodiscard]] glm::mat4 GetPerspectiveMatrix(float fov, float zNear, float zFar) const override;
 
         glm::vec2 GetFramebufferSize() const;
+
+        WindowHandle GetWindowHandle() const { return m_WindowHandle; }
     private:
         WindowHandle m_WindowHandle;
     };

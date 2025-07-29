@@ -40,8 +40,7 @@ Mesh::~Mesh() {
 }
 void Mesh::Draw(std::uint32_t instanceCount) const {
     glBindVertexArray(m_VAO);
-    glDrawElements(GL_TRIANGLES, m_IndexCount, GL_UNSIGNED_INT, nullptr);
-
+    glDrawElementsInstanced(GL_TRIANGLES, m_IndexCount, GL_UNSIGNED_INT, nullptr, instanceCount);
     glBindVertexArray(0);
 }
 
