@@ -32,6 +32,8 @@ namespace ZEN::VKAPI { //Handles all logic involving rendering/command buffer su
         void SetUBO(const DescriptorBuffer& ubo);
         void SetSSBO(const DescriptorBuffer& ubo);
         void SetImage(const vk::DescriptorImageInfo& imageInfo);
+        void SetMSAA(int msaa) override;
+        int GetMaxMSAA() override;
 
         void DrawIndexed(const DrawIndexedInfo& drawInfo, std::uint32_t instanceCount) const;
         void BindShader(vk::Pipeline pipeline);

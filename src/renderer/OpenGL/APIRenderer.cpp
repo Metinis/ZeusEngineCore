@@ -7,24 +7,15 @@
 using namespace ZEN::OGLAPI;
 
 APIRenderer::APIRenderer(OGLAPI::APIBackend* apiBackend) : m_Backend(apiBackend) {
-    //Generate MSAA Texture
-    GLint maxSamples;
-    glGetIntegerv(GL_MAX_SAMPLES, &maxSamples);
-
-    glGenTextures(1, &m_MSAATex);
-    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, m_MSAATex);
-    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, maxSamples, GL_RGB,
-        m_Backend->GetFramebufferSize().x, m_Backend->GetFramebufferSize().y, GL_TRUE);
-
-    glGenRenderbuffers(1, &m_MSAADepthBuffer);
-    glBindRenderbuffer(GL_RENDERBUFFER, m_MSAADepthBuffer);
-    glRenderbufferStorageMultisample(GL_RENDERBUFFER, maxSamples, GL_DEPTH24_STENCIL8,
-        m_Backend->GetFramebufferSize().x, m_Backend->GetFramebufferSize().y);
+    
     //Generate MSAA FBO
     glGenFramebuffers(1, &m_MSAAFBO);
-    glBindFramebuffer(GL_FRAMEBUFFER, m_MSAAFBO);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, m_MSAATex, 0);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, m_MSAADepthBuffer);
+
+    int maxSamples = GetMaxMSAA();
+    //Generate MSAA Texture
+    SetMSAA(maxSamples);
+
+    
 }
 
 bool APIRenderer::BeginFrame() {
@@ -79,6 +70,41 @@ void APIRenderer::Clear(bool shouldClearColor, bool shouldClearDepth) {
         glClear(clearBit);
     }
     
+}
+int APIRenderer::GetMaxMSAA() {
+    int maxSamples;
+    glGetIntegerv(GL_MAX_SAMPLES, &maxSamples);
+    return maxSamples;
+}
+void APIRenderer::SetMSAA(int msaa)
+{
+    m_MSAA = msaa;
+    glDeleteTextures(1, &m_MSAATex);
+    glDeleteRenderbuffers(1, &m_MSAADepthBuffer);
+    glBindFramebuffer(GL_FRAMEBUFFER, m_MSAAFBO);
+
+    glGenTextures(1, &m_MSAATex);
+    glGenRenderbuffers(1, &m_MSAADepthBuffer);
+    if (msaa) {
+        glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, m_MSAATex);
+        glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, msaa, GL_RGB,
+            m_Backend->GetFramebufferSize().x, m_Backend->GetFramebufferSize().y, GL_TRUE);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, m_MSAATex, 0);
+        glBindRenderbuffer(GL_RENDERBUFFER, m_MSAADepthBuffer);
+        glRenderbufferStorageMultisample(GL_RENDERBUFFER, msaa, GL_DEPTH24_STENCIL8,
+            m_Backend->GetFramebufferSize().x, m_Backend->GetFramebufferSize().y);
+        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, m_MSAADepthBuffer);
+    }
+    else {
+        glBindTexture(GL_TEXTURE_2D, m_MSAATex);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
+            m_Backend->GetFramebufferSize().x, m_Backend->GetFramebufferSize().y, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_MSAATex, 0);
+        glBindRenderbuffer(GL_RENDERBUFFER, m_MSAADepthBuffer);
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8,
+            m_Backend->GetFramebufferSize().x, m_Backend->GetFramebufferSize().y);
+        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, m_MSAADepthBuffer);
+    }
 }
 void APIRenderer::SwapBuffers() {
     glfwSwapBuffers(m_Backend->GetWindowHandle().nativeWindowHandle);

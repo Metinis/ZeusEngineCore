@@ -13,12 +13,10 @@ namespace ZEN::OGLAPI {
         void SubmitAndPresent() override;
         void SetDepth(bool isDepth) override;
         void Clear(bool shouldClearColor, bool shouldClearDepth) override;
+        void SetMSAA(int msaa) override;
+        int GetMaxMSAA() override;
     private:
         void SwapBuffers();
-
-        GLuint m_FBO;
-        GLuint m_DepthBuffer;
-        GLuint m_FBOTex;
 
         GLuint m_MSAAFBO;
         GLuint m_MSAADepthBuffer;
