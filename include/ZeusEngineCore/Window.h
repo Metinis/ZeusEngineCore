@@ -14,8 +14,6 @@ namespace ZEN {
 
         bool ShouldClose();
 
-        void SwapBuffers();
-
         [[nodiscard]] GLFWwindow *GetNativeWindow() const;
 
     private:

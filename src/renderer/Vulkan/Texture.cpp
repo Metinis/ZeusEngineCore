@@ -45,7 +45,7 @@ Texture::Texture(TextureInfo& texInfo) {
     imageViewCreateInfo.setSubresourceRange(subresourceRange);
 
     m_View = texInfo.device.createImageViewUnique(imageViewCreateInfo);
-    m_Sampler = texInfo.device.createSamplerUnique(texInfo.sampler);
+    m_Sampler = texInfo.device.createSamplerUnique(texInfo.samplerInfo);
 }
 
 void Texture::Bind() {

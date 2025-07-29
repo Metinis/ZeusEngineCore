@@ -1,9 +1,7 @@
 #include "../../include/ZeusEngineCore/Window.h"
 #include <stdexcept>
 #include <utility>
-#define GLFW_INCLUDE_NONE
 #include "GLFW/glfw3.h"
-#include <glad/glad.h>
 
 using namespace ZEN;
 
@@ -41,13 +39,6 @@ void Window::Init() {
     if (!m_Window)
         throw std::runtime_error("Failed to create window");
 
-    if (!m_UseVulkan) {
-        glfwMakeContextCurrent(m_Window);
-        glfwSwapInterval(1); // Enable VSync
-        if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
-            throw std::runtime_error("Failed to initialize GLAD");
-        }
-    }
 
     m_LastTime = static_cast<float>(glfwGetTime());
 }
@@ -68,9 +59,6 @@ GLFWwindow* Window::GetNativeWindow() const {
 }
 bool Window::ShouldClose() {
     return glfwWindowShouldClose(m_Window);
-}
-void Window::SwapBuffers() {
-    glfwSwapBuffers(m_Window);
 }
 
 

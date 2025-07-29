@@ -1,6 +1,7 @@
 #pragma once
 #include "IRendererAPI.h"
 #include <memory>
+#include <string>
 
 namespace ZEN {
     class ITexture {
