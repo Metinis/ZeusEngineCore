@@ -40,12 +40,6 @@ void Renderer::Submit(const std::vector<Transform>& transforms, const std::share
 
 
 void Renderer::EndFrame(const std::function<void(void*)>& uiExtraDrawCallback) {
-
-    m_APIRenderer->SetDepth(false);
-    if (uiExtraDrawCallback) {
-        m_APIRenderer->DrawWithCallback(uiExtraDrawCallback); //injects command buffer
-    }
-
     m_APIRenderer->SetDepth(true);
     m_ViewUBO->Bind();
     m_InstanceSSBO->Bind();
@@ -54,6 +48,11 @@ void Renderer::EndFrame(const std::function<void(void*)>& uiExtraDrawCallback) {
         cmd.mesh->Draw(cmd.transforms.size());
     }
     m_RenderQueue.clear();
+
+    m_APIRenderer->SetDepth(false);
+    if (uiExtraDrawCallback) {
+        m_APIRenderer->DrawWithCallback(uiExtraDrawCallback); //injects command buffer
+    }
     
     m_APIRenderer->SubmitAndPresent();
 }

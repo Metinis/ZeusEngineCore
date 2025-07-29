@@ -7,8 +7,6 @@
 using namespace ZEN::OGLAPI;
 
 APIRenderer::APIRenderer(OGLAPI::APIBackend* apiBackend) : m_Backend(apiBackend) {
-
-
     //Generate MSAA Texture
     GLint maxSamples;
     glGetIntegerv(GL_MAX_SAMPLES, &maxSamples);
@@ -39,23 +37,16 @@ bool APIRenderer::BeginFrame() {
 void APIRenderer::DrawWithCallback(const std::function<void(void *)> &uiExtraDrawCallback) {
     //Render to FBO (non msaa)
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    Clear(true, false);
     if(uiExtraDrawCallback)
         uiExtraDrawCallback(nullptr);
-
-    //Copy into MSAA FBO
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_MSAAFBO);
-    glBlitFramebuffer(
-        0, 0, m_Backend->GetFramebufferSize().x, m_Backend->GetFramebufferSize().y,
-        0, 0, m_Backend->GetFramebufferSize().x, m_Backend->GetFramebufferSize().y,
-        GL_COLOR_BUFFER_BIT, GL_NEAREST
-    );
     glBindFramebuffer(GL_FRAMEBUFFER, m_MSAAFBO);
 }
 
 void APIRenderer::SubmitAndPresent() {
-    //Copy MSAA FBO Data into default FBO
+    //Swap and render any data in default framebuffer
+    SwapBuffers();
+
+    //Copy MSAA FBO Data into default FBO, rendered later
     glBindFramebuffer(GL_READ_FRAMEBUFFER, m_MSAAFBO);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
     glBlitFramebuffer(
@@ -63,7 +54,7 @@ void APIRenderer::SubmitAndPresent() {
         0, 0, m_Backend->GetFramebufferSize().x, m_Backend->GetFramebufferSize().y,
         GL_COLOR_BUFFER_BIT, GL_NEAREST
     );
-    SwapBuffers();
+    
 }
 
 void APIRenderer::SetDepth(bool isDepth) {
