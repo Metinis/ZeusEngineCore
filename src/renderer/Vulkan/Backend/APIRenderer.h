@@ -55,5 +55,9 @@ namespace ZEN::VKAPI { //Handles all logic involving rendering/command buffer su
         std::optional<RenderTarget> m_RenderTarget{};
         std::optional<Image> m_DepthImage{};
         std::optional<vk::UniqueImageView> m_DepthImageView{};
+        std::optional<Image> m_MSAADepthImage{};
+        std::optional<vk::UniqueImageView> m_MSAADepthImageView{};
+        std::optional<Image> m_ColorImage{};
+        std::optional<vk::UniqueImageView> m_ColorImageView{};
     };
 }

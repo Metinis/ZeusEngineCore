@@ -28,6 +28,7 @@ bool Renderer::BeginFrame() {
     if(!m_APIRenderer->BeginFrame()){
         return false;
     }
+    m_APIRenderer->SetMSAA(4);
     m_APIRenderer->Clear(true, true);
     UpdateView();
     return true;
@@ -40,20 +41,24 @@ void Renderer::Submit(const std::vector<Transform>& transforms, const std::share
 
 
 void Renderer::EndFrame(const std::function<void(void*)>& uiExtraDrawCallback) {
+    //m_APIRenderer->SetMSAA(4);
     m_APIRenderer->SetDepth(true);
     m_ViewUBO->Bind();
     m_InstanceSSBO->Bind();
-    for(const auto& cmd : m_RenderQueue){
+
+    for (const auto& cmd : m_RenderQueue) {
         cmd.material->Bind();
         cmd.mesh->Draw(cmd.transforms.size());
     }
     m_RenderQueue.clear();
 
+    m_APIRenderer->SetMSAA(0);
     m_APIRenderer->SetDepth(false);
+
     if (uiExtraDrawCallback) {
-        m_APIRenderer->DrawWithCallback(uiExtraDrawCallback); //injects command buffer
+        m_APIRenderer->DrawWithCallback(uiExtraDrawCallback);
     }
-    
+
     m_APIRenderer->SubmitAndPresent();
 }
 

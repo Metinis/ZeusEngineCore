@@ -54,8 +54,10 @@ namespace ZEN::VKAPI {
         DescriptorSet& GetDescriptorSet() {return m_DescSet;}
         [[nodiscard]] glm::ivec2 GetFramebufferSize() const;
         [[nodiscard]] BufferCreateInfo GetBufferCreateInfo(ZEN::eDescriptorBufferType type) const;
-        [[nodiscard]] Image CreateDepthImage(vk::Extent2D extent);
+        [[nodiscard]] Image CreateDepthImage(vk::Extent2D extent, vk::SampleCountFlagBits sampleCount);
         [[nodiscard]] vk::UniqueImageView CreateDepthImageView(vk::Image image);
+        [[nodiscard]] Image CreateColorImage(vk::Extent2D extent, vk::SampleCountFlagBits sampleCount);
+        [[nodiscard]] vk::UniqueImageView CreateColorImageView(vk::Image image);
 
     private:
         //order matters

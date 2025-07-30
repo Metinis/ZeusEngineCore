@@ -32,7 +32,7 @@ namespace ZEN::VKAPI {
     class Image {
     public:
         Image(ImageCreateInfo const &createInfo, vk::ImageUsageFlags usage,
-              std::uint32_t levels, vk::Format format, vk::Extent2D extent);
+              std::uint32_t levels, vk::Format format, vk::Extent2D extent, vk::SampleCountFlagBits sampleCount = vk::SampleCountFlagBits::e1);
 
         // No copy
         Image(const Image &) = delete;

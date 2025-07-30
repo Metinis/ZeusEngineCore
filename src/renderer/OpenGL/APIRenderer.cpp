@@ -45,7 +45,7 @@ void APIRenderer::SubmitAndPresent() {
         0, 0, m_Backend->GetFramebufferSize().x, m_Backend->GetFramebufferSize().y,
         GL_COLOR_BUFFER_BIT, GL_NEAREST
     );
-    
+
 }
 
 void APIRenderer::SetDepth(bool isDepth) {

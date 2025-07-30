@@ -30,7 +30,7 @@ void Image::Destroy() {
 }
 
 Image::Image(ImageCreateInfo const& createInfo, vk::ImageUsageFlags usage,
-             std::uint32_t levels, vk::Format format, vk::Extent2D extent)
+             std::uint32_t levels, vk::Format format, vk::Extent2D extent, vk::SampleCountFlagBits sampleCount)
 {
 	if (extent.width == 0 || extent.height == 0) {
 		//todo use println
@@ -44,7 +44,7 @@ Image::Image(ImageCreateInfo const& createInfo, vk::ImageUsageFlags usage,
 	imageCreateInfo.setUsage(usage);
 	imageCreateInfo.setArrayLayers(1);
 	imageCreateInfo.setMipLevels(levels);
-	imageCreateInfo.setSamples(vk::SampleCountFlagBits::e1); //1 sample per pixel, no multisampling
+	imageCreateInfo.setSamples(sampleCount);
 	imageCreateInfo.setTiling(vk::ImageTiling::eOptimal);
 	imageCreateInfo.setInitialLayout(vk::ImageLayout::eUndefined);
 	imageCreateInfo.setQueueFamilyIndices(createInfo.queueFamily);

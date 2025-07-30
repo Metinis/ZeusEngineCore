@@ -233,7 +233,7 @@ glm::mat4 APIBackend::GetPerspectiveMatrix(const float fov, const float zNear, c
     return projectionMat;
 }
 
-Image APIBackend::CreateDepthImage(vk::Extent2D extent) {
+Image APIBackend::CreateDepthImage(vk::Extent2D extent, vk::SampleCountFlagBits sampleCount) {
     //handle
     vk::FormatProperties props = m_Device.GetGPU().device.getFormatProperties(depthFormat);
     //assert that format is supported for depth
@@ -248,7 +248,8 @@ Image APIBackend::CreateDepthImage(vk::Extent2D extent) {
                      vk::ImageUsageFlagBits::eDepthStencilAttachment,
                      1,
                      depthFormat,
-                     extent
+                     extent,
+                     sampleCount
     );
     return ret;
 }
@@ -265,6 +266,37 @@ vk::UniqueImageView APIBackend::CreateDepthImageView(const vk::Image image) {
 
     vk::UniqueImageView depthImageView = m_Device.GetLogicalDevice().createImageViewUnique(viewCreateInfo);
     return depthImageView;
+}
+
+Image APIBackend::CreateColorImage(vk::Extent2D extent, vk::SampleCountFlagBits sampleCount) {
+
+    ImageCreateInfo ImageCreateInfo{};
+    ImageCreateInfo.queueFamily = m_Device.GetGPU().queueFamily;
+    ImageCreateInfo.destroyCallback = m_DeferredDestroyCallback;
+    ImageCreateInfo.allocator = m_Allocator.Get();
+
+    Image ret(ImageCreateInfo,
+                     vk::ImageUsageFlagBits::eTransientAttachment | vk::ImageUsageFlagBits::eColorAttachment,
+                     1,
+                     m_Swapchain.GetFormat(),
+                     extent,
+                     sampleCount
+    );
+    return ret;
+}
+
+vk::UniqueImageView APIBackend::CreateColorImageView(const vk::Image image) {
+    vk::ImageViewCreateInfo viewCreateInfo{
+                {},
+                image,
+                vk::ImageViewType::e2D,
+                m_Swapchain.GetFormat(),
+                {},
+                {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1}
+    };
+
+    vk::UniqueImageView colorImageView = m_Device.GetLogicalDevice().createImageViewUnique(viewCreateInfo);
+    return colorImageView;
 }
 
 std::uint32_t APIBackend::GetQueueFamily() const {

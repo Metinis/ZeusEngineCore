@@ -73,8 +73,13 @@ vk::UniquePipeline PipelineBuilder::Build(vk::PipelineLayout const layout, Pipel
     vertexInputCreateInfo.setVertexBindingDescriptions(state.vertexBindings);
 
     vk::PipelineMultisampleStateCreateInfo multisampleStateCreateInfo{};
-    multisampleStateCreateInfo.setRasterizationSamples(m_CreateInfo.samples);
+    //multisampleStateCreateInfo.setRasterizationSamples(m_CreateInfo.samples);
+    multisampleStateCreateInfo.setRasterizationSamples(vk::SampleCountFlagBits::e4);
     multisampleStateCreateInfo.setSampleShadingEnable(vk::False);
+    multisampleStateCreateInfo.setMinSampleShading(1.0f);
+    multisampleStateCreateInfo.setPSampleMask(nullptr);
+    multisampleStateCreateInfo.setAlphaToCoverageEnable(vk::False);
+    multisampleStateCreateInfo.setAlphaToOneEnable(vk::False);
 
     vk::PipelineInputAssemblyStateCreateInfo inputAssemblyStateCreateInfo{{}, state.topology};
 
