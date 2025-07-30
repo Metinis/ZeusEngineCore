@@ -1,6 +1,6 @@
 #pragma once
 #include "ZeusEngineCore/IRendererAPI.h"
-#include <glad/glad.h>
+//#include <glad/glad.h>
 
 namespace ZEN::OGLAPI {
     class APIBackend;
@@ -18,9 +18,9 @@ namespace ZEN::OGLAPI {
     private:
         void SwapBuffers();
 
-        GLuint m_MSAAFBO;
-        GLuint m_MSAADepthBuffer;
-        GLuint m_MSAATex;
+        std::uint32_t m_MSAAFBO;
+        std::uint32_t  m_MSAADepthBuffer;
+        std::uint32_t  m_MSAATex;
         
         APIBackend* m_Backend;
     };

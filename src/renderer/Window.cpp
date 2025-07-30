@@ -1,7 +1,10 @@
 #include "../../include/ZeusEngineCore/Window.h"
 #include <stdexcept>
 #include <utility>
+#define GLFW_INCLUDE_NONE
 #include "GLFW/glfw3.h"
+#include <glad/glad.h>
+
 
 using namespace ZEN;
 

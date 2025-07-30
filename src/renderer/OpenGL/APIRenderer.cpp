@@ -2,6 +2,7 @@
 #include "APIBackend.h"
 #define GLFW_INCLUDE_NONE
 #include "GLFW/glfw3.h"
+#include <glad/glad.h>
 
 
 using namespace ZEN::OGLAPI;
@@ -30,7 +31,6 @@ void APIRenderer::DrawWithCallback(const std::function<void(void *)> &uiExtraDra
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     if(uiExtraDrawCallback)
         uiExtraDrawCallback(nullptr);
-    glBindFramebuffer(GL_FRAMEBUFFER, m_MSAAFBO);
 }
 
 void APIRenderer::SubmitAndPresent() {
@@ -45,7 +45,6 @@ void APIRenderer::SubmitAndPresent() {
         0, 0, m_Backend->GetFramebufferSize().x, m_Backend->GetFramebufferSize().y,
         GL_COLOR_BUFFER_BIT, GL_NEAREST
     );
-    
 }
 
 void APIRenderer::SetDepth(bool isDepth) {
