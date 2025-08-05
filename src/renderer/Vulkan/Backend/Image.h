@@ -56,11 +56,14 @@ namespace ZEN::VKAPI {
 
         [[nodiscard]] vk::Format GetFormat() const { return m_Handle.format; }
 
+        [[nodiscard]] vk::SampleCountFlagBits GetSampleCount() const {return m_SampleCount; }
+
     private:
         void Destroy();
 
         std::function<void(DeferredHandle)> m_DestroyCallback;
         ImageHandle m_Handle{};
+        vk::SampleCountFlagBits m_SampleCount;
 
     };
 }

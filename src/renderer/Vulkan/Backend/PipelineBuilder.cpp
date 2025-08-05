@@ -10,7 +10,8 @@ constexpr auto dynamicStates_v = std::array{
         vk::DynamicState::eViewport,
         vk::DynamicState::eScissor,
         vk::DynamicState::eLineWidth,
-        vk::DynamicState::ePolygonModeEXT //must have dynamic state 3 features enabled!!!
+        vk::DynamicState::ePolygonModeEXT, //must have dynamic state 3 features enabled!!!
+        vk::DynamicState::eRasterizationSamplesEXT
 };
 
 PipelineBuilder::PipelineBuilder(PipelineBuilderCreateInfo const& pipelineBuilderCreateInfo) : m_CreateInfo(pipelineBuilderCreateInfo){

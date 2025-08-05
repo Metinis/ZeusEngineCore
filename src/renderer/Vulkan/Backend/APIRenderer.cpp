@@ -6,12 +6,11 @@
 using namespace ZEN::VKAPI;
 
 APIRenderer::APIRenderer(APIBackend* apiBackend) : m_Backend(apiBackend){
-    m_MSAA = 4;
+    m_Samples = vk::SampleCountFlagBits::e4;
 }
 bool APIRenderer::BeginFrame(){
     if(!AcquireRenderTarget())
         return false;
-    //m_MSAA = 4;
     m_Backend->FlushDeferredDestroys();
     RenderSync& renderSync = m_FrameInfo.sync->GetRenderSyncAtFrame();
     vk::CommandBufferBeginInfo commandBufferBeginInfo{};
@@ -24,7 +23,7 @@ bool APIRenderer::BeginFrame(){
 
     return true;
 }
-constexpr vk::SampleCountFlagBits sampleCount = vk::SampleCountFlagBits::e4; //todo use actual count
+//constexpr vk::SampleCountFlagBits sampleCount = vk::SampleCountFlagBits::e4; //todo use actual count
 bool APIRenderer::AcquireRenderTarget(){
     m_FrameInfo = m_Backend->GetRenderFrameInfo();
 
@@ -47,18 +46,13 @@ bool APIRenderer::AcquireRenderTarget(){
 
         return false;
     }
-    if(!m_ColorImage.has_value() || !m_ColorImageView.has_value()) {
-        m_ColorImage.emplace(m_Backend->CreateColorImage(m_RenderTarget->extent, sampleCount));
+    if(!m_ColorImage.has_value() || !m_ColorImageView.has_value() || m_ColorImage.value().GetSampleCount() != m_Samples) {
+        m_ColorImage.emplace(m_Backend->CreateColorImage(m_RenderTarget->extent, m_Samples));
         m_ColorImageView.emplace(m_Backend->CreateColorImageView(m_ColorImage->Get()));
     }
 
-    /*if(!m_DepthImage.has_value() || !m_DepthImageView.has_value()){
-        m_DepthImage.emplace(m_Backend->CreateDepthImage(m_RenderTarget->extent, vk::SampleCountFlagBits::e1));
-        m_DepthImageView.emplace(m_Backend->CreateDepthImageView(m_DepthImage->Get()));
-    }*/
-
-    if(!m_MSAADepthImage.has_value() || !m_MSAADepthImageView.has_value()) {
-        m_MSAADepthImage.emplace(m_Backend->CreateDepthImage(m_RenderTarget->extent, sampleCount));
+    if(!m_MSAADepthImage.has_value() || !m_MSAADepthImageView.has_value() || m_MSAADepthImage.value().GetSampleCount() != m_Samples) {
+        m_MSAADepthImage.emplace(m_Backend->CreateDepthImage(m_RenderTarget->extent, m_Samples));
         m_MSAADepthImageView.emplace(m_Backend->CreateDepthImageView(m_MSAADepthImage->Get()));
     }
 
@@ -117,11 +111,11 @@ void APIRenderer::SubmitAndPresent()
     if (fbSizeChanged) {
         m_FrameInfo.swapchain->Recreate(m_FrameInfo.framebufferSize);
         //recreate color image
-        m_ColorImage.emplace(m_Backend->CreateColorImage(m_RenderTarget->extent, sampleCount));
+        m_ColorImage.emplace(m_Backend->CreateColorImage(m_RenderTarget->extent, m_Samples));
         m_ColorImageView.emplace(m_Backend->CreateColorImageView(m_ColorImage->Get()));
         //recreate depth image
         //recreate msaa depth image
-        m_MSAADepthImage.emplace(m_Backend->CreateDepthImage(m_RenderTarget->extent, sampleCount));
+        m_MSAADepthImage.emplace(m_Backend->CreateDepthImage(m_RenderTarget->extent, m_Samples));
         m_MSAADepthImageView.emplace(m_Backend->CreateDepthImageView(m_DepthImage->Get()));
         return;
     }
@@ -135,9 +129,13 @@ void APIRenderer::SubmitAndPresent()
 
 
 void APIRenderer::DrawWithCallback(const std::function<void(void*)>& uiExtraDrawCallback) {
+    m_CommandBuffer.endRendering();
+    SetAttachments(false, false, false);
     if(uiExtraDrawCallback){
         uiExtraDrawCallback(static_cast<void*>(m_CommandBuffer));
     }
+    //m_CommandBuffer.endRendering();
+    //SetAttachments(false, false, false);
 }
 
 
@@ -222,12 +220,13 @@ void APIRenderer::SetAttachments(const bool shouldClearColor, const bool shouldC
     vk::RenderingAttachmentInfo colorAttachment{};
 
     colorAttachment.imageView = m_RenderTarget.value().imageView;
-
     colorAttachment.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
     colorAttachment.loadOp = shouldClearColor ? vk::AttachmentLoadOp::eClear : vk::AttachmentLoadOp::eLoad;
     colorAttachment.storeOp = vk::AttachmentStoreOp::eStore;
     colorAttachment.clearValue = vk::ClearColorValue{0.0f, 0.0f, 0.0f, 1.0f };
-    if(m_MSAA) {
+
+
+    if(m_Samples != vk::SampleCountFlagBits::e1) {
         colorAttachment.imageView = m_ColorImageView.value().get();
         colorAttachment.resolveMode = vk::ResolveModeFlagBits::eAverage;
         colorAttachment.resolveImageView = m_RenderTarget.value().imageView;
@@ -246,7 +245,7 @@ void APIRenderer::SetAttachments(const bool shouldClearColor, const bool shouldC
 
     if(shouldUseDepth) {
         vk::RenderingAttachmentInfo depthAttachment{};
-        depthAttachment.imageView = *m_MSAADepthImageView.value();
+        depthAttachment.imageView = *m_MSAADepthImageView.value(); //todo use another depth buffer in future
         depthAttachment.imageLayout = vk::ImageLayout::eDepthAttachmentOptimal;
         depthAttachment.loadOp = shouldClearDepth ? vk::AttachmentLoadOp::eClear : vk::AttachmentLoadOp::eLoad;
         depthAttachment.storeOp = vk::AttachmentStoreOp::eStore;
@@ -308,10 +307,25 @@ void APIRenderer::SetDepth(bool isDepth) {
     m_CommandBuffer.endRendering();
     SetAttachments(false, false, isDepth);
 }
-
+constexpr vk::SampleCountFlagBits toSampleCountFlagBits(int sampleCount) {
+    switch (sampleCount) {
+        case 1:  return vk::SampleCountFlagBits::e1;
+        case 2:  return vk::SampleCountFlagBits::e2;
+        case 4:  return vk::SampleCountFlagBits::e4;
+        case 8:  return vk::SampleCountFlagBits::e8;
+        case 16: return vk::SampleCountFlagBits::e16;
+        case 32: return vk::SampleCountFlagBits::e32;
+        case 64: return vk::SampleCountFlagBits::e64;
+        //default: throw std::invalid_argument("Unsupported sample count");
+        default: return vk::SampleCountFlagBits::e2;
+    }
+}
 void APIRenderer::SetMSAA(int msaa) {
+    m_Samples = toSampleCountFlagBits(msaa);
+}
+void APIRenderer::SetAndUpdateMSAA(int msaa) {
     m_CommandBuffer.endRendering();
-    m_MSAA = msaa;
+    m_Samples = toSampleCountFlagBits(msaa);
     SetAttachments(false, false, false); //todo check this
 }
 

@@ -7,6 +7,7 @@ Image& Image::operator=(Image&& other) noexcept {
 	if (this != &other) {
 		Destroy();
 		m_Handle = other.m_Handle;
+		m_SampleCount = other.m_SampleCount;
 		m_DestroyCallback = std::move(other.m_DestroyCallback);
 
 		other.m_Handle = {};
@@ -68,6 +69,8 @@ Image::Image(ImageCreateInfo const& createInfo, vk::ImageUsageFlags usage,
 	m_Handle.extent = extent;
 	m_Handle.format = format;
 	m_Handle.levels = levels;
+
+	m_SampleCount = sampleCount;
 
     if(createInfo.destroyCallback)
 	    m_DestroyCallback = *createInfo.destroyCallback; //deferred so images in use are not used

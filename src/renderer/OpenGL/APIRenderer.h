@@ -13,7 +13,8 @@ namespace ZEN::OGLAPI {
         void SubmitAndPresent() override;
         void SetDepth(bool isDepth) override;
         void Clear(bool shouldClearColor, bool shouldClearDepth) override;
-        void SetMSAA(int msaa) override;
+        void SetMSAA(int msaa) override {m_MSAA = msaa;}
+        void SetAndUpdateMSAA(int msaa) override;
         int GetMaxMSAA() override;
     private:
         void SwapBuffers();

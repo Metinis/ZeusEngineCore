@@ -33,6 +33,7 @@ namespace ZEN::VKAPI { //Handles all logic involving rendering/command buffer su
         void SetSSBO(const DescriptorBuffer& ubo);
         void SetImage(const vk::DescriptorImageInfo& imageInfo);
         void SetMSAA(int msaa) override;
+        void SetAndUpdateMSAA(int msaa) override;
         int GetMaxMSAA() override;
 
         void DrawIndexed(const DrawIndexedInfo& drawInfo, std::uint32_t instanceCount) const;
@@ -59,5 +60,6 @@ namespace ZEN::VKAPI { //Handles all logic involving rendering/command buffer su
         std::optional<vk::UniqueImageView> m_MSAADepthImageView{};
         std::optional<Image> m_ColorImage{};
         std::optional<vk::UniqueImageView> m_ColorImageView{};
+        vk::SampleCountFlagBits m_Samples;
     };
 }

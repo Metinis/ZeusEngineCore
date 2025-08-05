@@ -19,16 +19,17 @@ Renderer::Renderer(RendererInitInfo &initInfo) {
     m_APIRenderer = IRendererAPI::Create(initInfo.api, m_Backend.get());
     m_ViewUBO = IDescriptorBuffer::Create(m_Backend.get(), m_APIRenderer.get(), eDescriptorBufferType::UBO);
     m_InstanceSSBO = IDescriptorBuffer::Create(m_Backend.get(), m_APIRenderer.get(), eDescriptorBufferType::SSBO);
+    m_MSAA = 4;
 }
 
 Renderer::~Renderer() = default;
 
 
 bool Renderer::BeginFrame() {
+    m_APIRenderer->SetMSAA(m_MSAA);
     if(!m_APIRenderer->BeginFrame()){
         return false;
     }
-    m_APIRenderer->SetMSAA(4);
     m_APIRenderer->Clear(true, true);
     UpdateView();
     return true;
@@ -52,7 +53,7 @@ void Renderer::EndFrame(const std::function<void(void*)>& uiExtraDrawCallback) {
     }
     m_RenderQueue.clear();
 
-    m_APIRenderer->SetMSAA(0);
+    m_APIRenderer->SetAndUpdateMSAA(1);
     m_APIRenderer->SetDepth(false);
 
     if (uiExtraDrawCallback) {

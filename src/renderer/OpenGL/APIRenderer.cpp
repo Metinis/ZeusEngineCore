@@ -13,7 +13,7 @@ APIRenderer::APIRenderer(OGLAPI::APIBackend* apiBackend) : m_Backend(apiBackend)
 
     int maxSamples = GetMaxMSAA();
     //Generate MSAA Texture
-    SetMSAA(maxSamples);
+    SetAndUpdateMSAA(maxSamples);
 
     
 }
@@ -76,7 +76,7 @@ int APIRenderer::GetMaxMSAA() {
     glGetIntegerv(GL_MAX_SAMPLES, &maxSamples);
     return maxSamples;
 }
-void APIRenderer::SetMSAA(int msaa)
+void APIRenderer::SetAndUpdateMSAA(int msaa)
 {
     m_MSAA = msaa;
     glDeleteTextures(1, &m_MSAATex);

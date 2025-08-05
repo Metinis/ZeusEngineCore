@@ -18,6 +18,7 @@ namespace ZEN {
         virtual void SubmitAndPresent() = 0;
         virtual void SetDepth(bool isDepth) = 0;
         virtual void SetMSAA(int msaa) = 0;
+        virtual void SetAndUpdateMSAA(int msaa) = 0;
         virtual void Clear(bool shouldClearColor, bool shouldClearDepth) = 0;
         int GetMSAA() const { return m_MSAA; }
         virtual int GetMaxMSAA() = 0;
