@@ -39,7 +39,8 @@ namespace ZEN {
 
         [[nodiscard]] IRendererBackend* GetAPIBackend() const;
 
-        int* GetMSAAFlag() {return &m_MSAA;}
+        std::uint32_t GetMSAA() const { return m_MSAA; }
+        void SetMSAA(std::uint32_t msaa) { m_MSAA = msaa; }
     private:
         void UpdateView();
 
@@ -50,6 +51,6 @@ namespace ZEN {
         std::unique_ptr<IDescriptorBuffer> m_ViewUBO;
         std::unique_ptr<IDescriptorBuffer> m_InstanceSSBO;
         Transform m_ViewTransform;
-        int m_MSAA;
+        std::uint32_t m_MSAA;
     };
 }

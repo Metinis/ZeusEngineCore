@@ -42,7 +42,6 @@ void Renderer::Submit(const std::vector<Transform>& transforms, const std::share
 
 
 void Renderer::EndFrame(const std::function<void(void*)>& uiExtraDrawCallback) {
-    //m_APIRenderer->SetMSAA(4);
     m_APIRenderer->SetDepth(true);
     m_ViewUBO->Bind();
     m_InstanceSSBO->Bind();
@@ -53,13 +52,12 @@ void Renderer::EndFrame(const std::function<void(void*)>& uiExtraDrawCallback) {
     }
     m_RenderQueue.clear();
 
-    m_APIRenderer->SetAndUpdateMSAA(1);
+    m_APIRenderer->SetMSAA(1);
     m_APIRenderer->SetDepth(false);
 
     if (uiExtraDrawCallback) {
         m_APIRenderer->DrawWithCallback(uiExtraDrawCallback);
     }
-
     m_APIRenderer->SubmitAndPresent();
 }
 

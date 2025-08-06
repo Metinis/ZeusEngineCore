@@ -13,7 +13,7 @@ APIRenderer::APIRenderer(OGLAPI::APIBackend* apiBackend) : m_Backend(apiBackend)
 
     int maxSamples = GetMaxMSAA();
     //Generate MSAA Texture
-    SetAndUpdateMSAA(maxSamples);
+    //SetAndUpdateMSAA(maxSamples);
 
     
 }
@@ -76,7 +76,7 @@ int APIRenderer::GetMaxMSAA() {
     glGetIntegerv(GL_MAX_SAMPLES, &maxSamples);
     return maxSamples;
 }
-void APIRenderer::SetAndUpdateMSAA(int msaa)
+/*void APIRenderer::SetAndUpdateMSAA(int msaa)
 {
     m_MSAA = msaa;
     glDeleteTextures(1, &m_MSAATex);
@@ -106,7 +106,7 @@ void APIRenderer::SetAndUpdateMSAA(int msaa)
             m_Backend->GetFramebufferSize().x, m_Backend->GetFramebufferSize().y);
         glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, m_MSAADepthBuffer);
     }
-}
+}*/
 void APIRenderer::SwapBuffers() {
     glfwSwapBuffers(m_Backend->GetWindowHandle().nativeWindowHandle);
 }

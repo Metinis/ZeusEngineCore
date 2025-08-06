@@ -17,6 +17,7 @@ bool APIRenderer::BeginFrame(){
     commandBufferBeginInfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
     renderSync.commandBuffer.begin(commandBufferBeginInfo);
     m_CommandBuffer = renderSync.commandBuffer;
+   
 
     TransitionForRender();
 
@@ -47,15 +48,18 @@ bool APIRenderer::AcquireRenderTarget(){
         return false;
     }
     if(!m_ColorImage.has_value() || !m_ColorImageView.has_value() || m_ColorImage.value().GetSampleCount() != m_Samples) {
+        //if msaa changes, wait for previous frame to fully finish by waiting idle
+        m_FrameInfo.device->GetLogicalDevice().waitIdle();
         m_ColorImage.emplace(m_Backend->CreateColorImage(m_RenderTarget->extent, m_Samples));
         m_ColorImageView.emplace(m_Backend->CreateColorImageView(m_ColorImage->Get()));
     }
 
     if(!m_MSAADepthImage.has_value() || !m_MSAADepthImageView.has_value() || m_MSAADepthImage.value().GetSampleCount() != m_Samples) {
+        m_FrameInfo.device->GetLogicalDevice().waitIdle();
         m_MSAADepthImage.emplace(m_Backend->CreateDepthImage(m_RenderTarget->extent, m_Samples));
         m_MSAADepthImageView.emplace(m_Backend->CreateDepthImageView(m_MSAADepthImage->Get()));
     }
-
+    
     m_FrameInfo.device->GetLogicalDevice().resetFences(*renderSync.drawn);
 
     return true;
@@ -64,6 +68,8 @@ void APIRenderer::TransitionForRender(){
     SetBarriersForRender();
     //no depth by default
     SetAttachments(false, false, false);
+    
+    
 }
 
 void APIRenderer::TransitionForPresent(){
@@ -110,13 +116,17 @@ void APIRenderer::SubmitAndPresent()
 
     if (fbSizeChanged) {
         m_FrameInfo.swapchain->Recreate(m_FrameInfo.framebufferSize);
-        //recreate color image
-        m_ColorImage.emplace(m_Backend->CreateColorImage(m_RenderTarget->extent, m_Samples));
-        m_ColorImageView.emplace(m_Backend->CreateColorImageView(m_ColorImage->Get()));
-        //recreate depth image
+        //use framebuffer size since m_RenderTarget is not updated
+        vk::Extent2D extent;
+        extent.width = m_FrameInfo.framebufferSize.x;
+        extent.height = m_FrameInfo.framebufferSize.y;
         //recreate msaa depth image
-        m_MSAADepthImage.emplace(m_Backend->CreateDepthImage(m_RenderTarget->extent, m_Samples));
-        m_MSAADepthImageView.emplace(m_Backend->CreateDepthImageView(m_DepthImage->Get()));
+        m_MSAADepthImage.emplace(m_Backend->CreateDepthImage(extent, m_Samples));
+        m_MSAADepthImageView.emplace(m_Backend->CreateDepthImageView(m_MSAADepthImage->Get()));
+        //recreate color image
+        m_ColorImage.emplace(m_Backend->CreateColorImage(extent, m_Samples));
+        m_ColorImageView.emplace(m_Backend->CreateColorImageView(m_ColorImage->Get()));
+
         return;
     }
 
@@ -134,8 +144,6 @@ void APIRenderer::DrawWithCallback(const std::function<void(void*)>& uiExtraDraw
     if(uiExtraDrawCallback){
         uiExtraDrawCallback(static_cast<void*>(m_CommandBuffer));
     }
-    //m_CommandBuffer.endRendering();
-    //SetAttachments(false, false, false);
 }
 
 
@@ -255,6 +263,8 @@ void APIRenderer::SetAttachments(const bool shouldClearColor, const bool shouldC
     }
 
     m_CommandBuffer.beginRendering(renderingInfo);
+    m_CommandBuffer.setRasterizationSamplesEXT(m_Samples);
+    
 }
 
 void APIRenderer::Clear(const bool shouldClearColor, const bool shouldClearDepth) {
@@ -311,34 +321,30 @@ constexpr vk::SampleCountFlagBits toSampleCountFlagBits(int sampleCount) {
     switch (sampleCount) {
         case 1:  return vk::SampleCountFlagBits::e1;
         case 2:  return vk::SampleCountFlagBits::e2;
-        case 4:  return vk::SampleCountFlagBits::e4;
-        case 8:  return vk::SampleCountFlagBits::e8;
-        case 16: return vk::SampleCountFlagBits::e16;
-        case 32: return vk::SampleCountFlagBits::e32;
-        case 64: return vk::SampleCountFlagBits::e64;
-        //default: throw std::invalid_argument("Unsupported sample count");
-        default: return vk::SampleCountFlagBits::e2;
+        case 3:  return vk::SampleCountFlagBits::e4;
+        case 4:  return vk::SampleCountFlagBits::e8;
+        case 5: return vk::SampleCountFlagBits::e16;
+        case 6: return vk::SampleCountFlagBits::e32;
+        case 7: return vk::SampleCountFlagBits::e64;
+        default: return vk::SampleCountFlagBits::e1;
     }
 }
 void APIRenderer::SetMSAA(int msaa) {
+    assert(msaa > 0);
     m_Samples = toSampleCountFlagBits(msaa);
-}
-void APIRenderer::SetAndUpdateMSAA(int msaa) {
-    m_CommandBuffer.endRendering();
-    m_Samples = toSampleCountFlagBits(msaa);
-    SetAttachments(false, false, false); //todo check this
 }
 
 int APIRenderer::GetMaxMSAA() {
 
     vk::SampleCountFlags counts = m_FrameInfo.device->GetGPU().properties.limits.framebufferColorSampleCounts &
         m_FrameInfo.device->GetGPU().properties.limits.framebufferDepthSampleCounts;
-    if (counts & vk::SampleCountFlagBits::e64) { return 64; }
-    if (counts & vk::SampleCountFlagBits::e32) { return 32; }
-    if (counts & vk::SampleCountFlagBits::e16) { return 16; }
-    if (counts & vk::SampleCountFlagBits::e8) { return 8; }
-    if (counts & vk::SampleCountFlagBits::e4) { return 4; }
+    if (counts & vk::SampleCountFlagBits::e64) { return 7; }
+    if (counts & vk::SampleCountFlagBits::e32) { return 6; }
+    if (counts & vk::SampleCountFlagBits::e16) { return 5; }
+    if (counts & vk::SampleCountFlagBits::e8) { return 4; }
+    if (counts & vk::SampleCountFlagBits::e4) { return 3; }
     if (counts & vk::SampleCountFlagBits::e2) { return 2; }
+    if (counts & vk::SampleCountFlagBits::e1) { return 1; }
 
     return 0;
 }

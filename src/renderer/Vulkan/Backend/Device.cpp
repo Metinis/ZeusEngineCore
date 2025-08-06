@@ -48,6 +48,7 @@ vk::UniqueDevice Device::CreateLogicalDevice(const GPU& gpu, const vk::Instance 
 
     vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT dynamicState3Features{};
     dynamicState3Features.extendedDynamicState3PolygonMode = vk::True;
+	dynamicState3Features.extendedDynamicState3RasterizationSamples = vk::True;
 
 	vk::PhysicalDeviceDynamicRenderingFeatures dynamicRenderingFeature{vk::True};
     dynamicRenderingFeature.pNext = &dynamicState3Features;

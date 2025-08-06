@@ -43,6 +43,7 @@ void ShaderPipeline::Bind() const {
     m_APIRenderer->BindShader(*m_Pipeline);
     m_APIRenderer->BindDescriptorSets();
     m_APIRenderer->SetPolygonMode(m_IsWireframe ? vk::PolygonMode::eLine : vk::PolygonMode::eFill);
+    //m_APIRenderer->SetAndUpdateMSAA(4);
     m_APIRenderer->SetLineWidth(m_LineWidth);
 }
 void ShaderPipeline::Unbind() const {
