@@ -9,6 +9,7 @@ namespace ZEN {
 	public:
 		Scene();
 		entt::entity createEntity();
+		entt::registry& getRegistry();
 	private:
 		entt::registry m_Registry{};
 	};

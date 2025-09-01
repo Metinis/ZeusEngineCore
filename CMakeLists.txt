@@ -23,6 +23,7 @@ target_sources(ZeusEngineCore PRIVATE ${ZEUSENGINECORE_SOURCES} )
 target_include_directories(ZeusEngineCore
         PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/entt
         ${CMAKE_CURRENT_SOURCE_DIR}/include/glad/include
         PRIVATE
         ${CMAKE_SOURCE_DIR}/include/glm
