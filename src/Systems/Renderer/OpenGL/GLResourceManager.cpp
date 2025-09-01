@@ -7,6 +7,19 @@
 #include "GLFW/glfw3.h"
 #include <glad/glad.h>
 
+ZEN::GLResourceManager::~GLResourceManager() {
+    for (auto& [id, drawable] : m_Drawables) {
+        deleteMeshDrawable(id);
+    }
+    for (auto& [id, drawable] : m_Shaders) {
+        deleteShader(id);
+    }
+    for (auto& [id, drawable] : m_UBOs) {
+        deleteUBO(id);
+    }
+}
+
+
 uint32_t ZEN::GLResourceManager::createMeshDrawable(const MeshComp &meshComp) {
     GLDrawable drawable{};
     glGenVertexArrays(1, &drawable.vao);
@@ -41,26 +54,18 @@ uint32_t ZEN::GLResourceManager::createMeshDrawable(const MeshComp &meshComp) {
 }
 
 void ZEN::GLResourceManager::bindMeshDrawable(uint32_t drawableID) {
-    auto it = m_Drawables.find(drawableID);
-    if(it != m_Drawables.end()) {
-        glBindVertexArray(it->second.vao);
-    }
-    else {
-        std::cerr << "Drawable not found" << "\n";
-    }
+    withResource(m_Drawables, drawableID, [](GLDrawable& d) {
+        glBindVertexArray(d.vao);
+    });
 }
 
 
 void ZEN::GLResourceManager::deleteMeshDrawable(uint32_t drawableID) {
-    auto it = m_Drawables.find(drawableID);
-    if(it != m_Drawables.end()) {
-        glDeleteBuffers(1, &it->second.vbo);
-        glDeleteBuffers(1, &it->second.ebo);
-        glDeleteVertexArrays(1, &it->second.vao);
-    }
-    else {
-        std::cerr << "Drawable not found" << "\n";
-    }
+    withResource(m_Drawables, drawableID, [](GLDrawable& d) {
+        glDeleteBuffers(1, &d.vbo);
+        glDeleteBuffers(1, &d.ebo);
+        glDeleteVertexArrays(1, &d.vao);
+    });
 }
 
 
@@ -146,23 +151,15 @@ uint32_t ZEN::GLResourceManager::createShader(std::string_view vertexPath, std::
 }
 
 void ZEN::GLResourceManager::bindShader(uint32_t shaderID) {
-    auto it = m_Shaders.find(shaderID);
-    if(it != m_Shaders.end()) {
-        glUseProgram(it->second.programID);
-    }
-    else {
-        std::cerr << "Shader not found" << "\n";
-    }
+    withResource(m_Shaders, shaderID, [](GLShader& s) {
+        glUseProgram(s.programID);
+    });
 }
 
 void ZEN::GLResourceManager::deleteShader(uint32_t shaderID) {
-    auto it = m_Shaders.find(shaderID);
-    if(it != m_Shaders.end()) {
-        glDeleteProgram(it->second.programID);
-    }
-    else {
-        std::cerr << "Shader not found" << "\n";
-    }
+    withResource(m_Shaders, shaderID, [](GLShader& s) {
+        glDeleteProgram(s.programID);
+    });
 }
 
 uint32_t ZEN::GLResourceManager::createUBO(uint32_t binding) {
@@ -176,29 +173,21 @@ uint32_t ZEN::GLResourceManager::createUBO(uint32_t binding) {
 }
 
 void ZEN::GLResourceManager::writeToUBO(uint32_t uboID, std::span<const std::byte> bytes) {
-    auto it = m_UBOs.find(uboID);
-    if(it != m_UBOs.end()) {
-        glBindBuffer(GL_UNIFORM_BUFFER, it->second.bufferHandle);
-        if(it->second.size < bytes.size()){
-            it->second.size = bytes.size();
-            glBufferData(GL_UNIFORM_BUFFER, it->second.size, nullptr, GL_DYNAMIC_DRAW);
+    withResource(m_UBOs, uboID, [bytes](GLUniform& u) {
+        glBindBuffer(GL_UNIFORM_BUFFER, u.bufferHandle);
+        if(u.size < bytes.size()){
+            u.size = bytes.size();
+            glBufferData(GL_UNIFORM_BUFFER, u.size, nullptr, GL_DYNAMIC_DRAW);
         }
         glBufferSubData(GL_UNIFORM_BUFFER, 0, bytes.size(), bytes.data());
-    }
-    else {
-        std::cerr << "UBO not found" << "\n";
-    }
+    });
 }
 
 void ZEN::GLResourceManager::bindUBO(uint32_t uboID) {
-    auto it = m_UBOs.find(uboID);
-    if(it != m_UBOs.end()) {
-        glBindBuffer(GL_UNIFORM_BUFFER, it->second.bufferHandle);
-        glBindBufferBase(GL_UNIFORM_BUFFER, it->second.bufferBinding, it->second.bufferHandle);
-    }
-    else {
-        std::cerr << "UBO not found" << "\n";
-    }
+    withResource(m_UBOs, uboID, [](GLUniform& u) {
+        glBindBuffer(GL_UNIFORM_BUFFER, u.bufferHandle);
+        glBindBufferBase(GL_UNIFORM_BUFFER, u.bufferBinding, u.bufferHandle);
+    });
 
 }
 

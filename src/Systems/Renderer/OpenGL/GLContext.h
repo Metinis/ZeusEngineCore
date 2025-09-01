@@ -1,16 +1,17 @@
 #pragma once
 #include "GLResourceManager.h"
+#include "../IContext.h"
 
 struct GLFWwindow;
 
 namespace ZEN {
-	class GLContext {
+	class GLContext : public IContext{
 	public:
 		explicit GLContext(GLFWwindow* window);
-		IResourceManager& getResourceManager() {return m_ResourceManager;}
-		void drawMesh(const MeshDrawableComp& meshRenderable);
-		void clear(bool shouldClearColor, bool shouldClearDepth);
-		void swapBuffers();
+		IResourceManager& getResourceManager() override {return m_ResourceManager;}
+		void drawMesh(const MeshDrawableComp& meshRenderable) override;
+		void clear(bool shouldClearColor, bool shouldClearDepth) override;
+		void swapBuffers() override;
 	private:
 		GLResourceManager m_ResourceManager{};
 		GLFWwindow* m_WindowHandle{};

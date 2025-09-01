@@ -3,10 +3,22 @@
 #include <ZeusEngineCore/API.h>
 #include "ZeusEngineCore/MeshComp.h"
 #include <memory>
+#include <unordered_map>
+#include <iostream>
 
 namespace ZEN {
     class IResourceManager {
     public:
+        template<typename T, typename F>
+        static void withResource(std::unordered_map<uint32_t, T>& resources, uint32_t id, F&& func) {
+            auto it = resources.find(id);
+            if (it == resources.end()) {
+                std::cerr << "Resource not found: " << id << "\n";
+                return;
+            }
+            func(it->second);
+        }
+
         virtual ~IResourceManager() = default;
         virtual uint32_t createMeshDrawable(const MeshComp& meshComp) = 0;
         virtual void deleteMeshDrawable(uint32_t drawableID) = 0;
@@ -17,7 +29,6 @@ namespace ZEN {
         virtual void bindUBO(uint32_t uboID) = 0;
         virtual void writeToUBO(uint32_t uboID, std::span<const std::byte> bytes) = 0;
         virtual void deleteUBO(uint32_t uboID) = 0;
-
 
         static std::unique_ptr<IResourceManager> Create(eRendererAPI api);
     };

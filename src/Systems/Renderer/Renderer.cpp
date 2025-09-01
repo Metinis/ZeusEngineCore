@@ -2,14 +2,14 @@
 
 using namespace ZEN;
 
-Renderer::Renderer(GLFWwindow* window) : m_Context(window) {
-
+Renderer::Renderer(eRendererAPI api, GLFWwindow* window) {
+    m_Context = IContext::create(api, window);
 }
 
 void Renderer::beginFrame() {
-    m_Context.clear(true, true);
+    m_Context->clear(true, true);
 }
 
 void Renderer::endFrame() {
-    m_Context.swapBuffers();
+    m_Context->swapBuffers();
 }

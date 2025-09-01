@@ -4,11 +4,11 @@
 namespace ZEN {
 	class Renderer {
 	public:
-		explicit Renderer(GLFWwindow* window);
+		explicit Renderer(eRendererAPI api, GLFWwindow* window);
 		void beginFrame();
 		void endFrame();
-		GLContext& getContext() {return m_Context;}
+		IContext* getContext() {return m_Context.get();}
 	private:
-		GLContext m_Context;
+		std::unique_ptr<IContext> m_Context;
 	};
 }
