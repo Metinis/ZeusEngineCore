@@ -12,7 +12,7 @@ GLContext::GLContext(GLFWwindow* window) : m_WindowHandle(window){
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
         throw std::runtime_error("Failed to initialize GLAD");
     }
-
+    glEnable(GL_DEPTH_TEST);
 }
 void GLContext::drawMesh(const MeshDrawableComp& meshDrawable) {
     //retrieve GLDrawable by meshID from resource manager

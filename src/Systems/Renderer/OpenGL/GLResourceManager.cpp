@@ -132,6 +132,10 @@ uint32_t ZEN::GLResourceManager::createShader(std::string_view vertexPath, std::
         return 0;
     }
 
+    //todo make this dynamic
+    GLuint viewBlockIndex = glGetUniformBlockIndex(program, "View");
+    glUniformBlockBinding(program, viewBlockIndex, 0);
+
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
 

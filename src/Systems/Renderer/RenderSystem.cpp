@@ -8,8 +8,8 @@ m_Renderer(renderer), m_DefaultShader(shaderComp) {
 }
 void RenderSystem::onUpdate(entt::registry &registry) {
     //write camera data
-    auto view = registry.view<CameraComp>;
-    for (auto entity: view) {
+    auto cameraView = registry.view<CameraComp>();
+    for (auto entity: cameraView) {
         auto& camera = registry.get<CameraComp>(entity);
         if(camera.isPrimary) {
             //update view ubo
@@ -20,8 +20,8 @@ void RenderSystem::onUpdate(entt::registry &registry) {
     }
 
     //create buffers for all meshes without drawable comps
-    view = registry.view<MeshComp>(entt::exclude<MeshDrawableComp>);
-    for (auto entity : view) {
+    auto meshView = registry.view<MeshComp>(entt::exclude<MeshDrawableComp>);
+    for (auto entity : meshView) {
         uint32_t shaderID = 0;
         if (registry.all_of<ShaderComp>(entity)) {
             shaderID = registry.get<ShaderComp>(entity).shaderID;
@@ -31,7 +31,7 @@ void RenderSystem::onUpdate(entt::registry &registry) {
             registry.emplace<ShaderComp>(entity, ShaderComp{ shaderID });
         }
 
-        auto &mesh = view.get<MeshComp>(entity);
+        auto &mesh = meshView.get<MeshComp>(entity);
         MeshDrawableComp meshDrawable {
             .indexCount = mesh.indices.size(),
             .meshID = m_Renderer->getContext().

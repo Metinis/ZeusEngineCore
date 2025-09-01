@@ -17,6 +17,10 @@ namespace ZEN {
 
         [[nodiscard]] GLFWwindow *getNativeWindow() const;
 
+        float getWidth(){return m_Width;}
+
+        float getHeight(){return m_Height;}
+
     private:
         void calculateDeltaTime();
 
