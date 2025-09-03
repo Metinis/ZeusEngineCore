@@ -6,6 +6,8 @@
 #include <sstream>
 #include "GLFW/glfw3.h"
 #include <glad/glad.h>
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image/stb_image.h>
 
 ZEN::GLResourceManager::~GLResourceManager() {
     for (auto& [id, drawable] : m_Drawables) {
@@ -141,11 +143,14 @@ uint32_t ZEN::GLResourceManager::createShader(std::string_view vertexPath, std::
     GLuint viewBlockIndex = glGetUniformBlockIndex(program, "View");
     glUniformBlockBinding(program, viewBlockIndex, 0);
 
+    GLuint instanceBlockIndex = glGetUniformBlockIndex(program, "Instances");
+    glUniformBlockBinding(program, instanceBlockIndex, 1);
+
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
 
     uint32_t id = nextShaderID++;
-    m_Shaders[id] = GLShader{program};
+    m_Shaders[id] = GLShader{.programID = program};
 
     return id;
 }
@@ -193,6 +198,47 @@ void ZEN::GLResourceManager::bindUBO(uint32_t uboID) {
 
 void ZEN::GLResourceManager::deleteUBO(uint32_t uboID) {
 
+}
+
+uint32_t ZEN::GLResourceManager::createTexture(std::string_view texturePath) {
+    int texWidth, texHeight, texChannels;
+    stbi_set_flip_vertically_on_load(true);
+    stbi_uc* pixels = stbi_load(texturePath.data(), &texWidth,
+        &texHeight, &texChannels, STBI_rgb_alpha);
+    if(!pixels){
+        throw std::runtime_error("Invalid image!");
+    }
+
+    GLTexture texture{};
+    glGenTextures(1, &texture.textureID);
+    glBindTexture(GL_TEXTURE_2D, texture.textureID);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texWidth, texHeight, 0,
+                 GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+    glGenerateMipmap(GL_TEXTURE_2D);
+
+    stbi_image_free(pixels);
+
+    m_Textures[nextTextureID++] = texture;
+
+    return texture.textureID;
+}
+
+void ZEN::GLResourceManager::bindTexture(uint32_t textureID) {
+    withResource(m_Textures, textureID, [](GLTexture& t) {
+        glBindTexture(GL_TEXTURE_2D, t.textureID);
+    });
+}
+
+void ZEN::GLResourceManager::deleteTexture(uint32_t textureID) {
+    withResource(m_Textures, textureID, [](GLTexture& t) {
+        glDeleteTextures(1, &t.textureID);
+    });
 }
 
 

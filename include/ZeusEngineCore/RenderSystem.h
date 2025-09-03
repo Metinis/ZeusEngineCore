@@ -5,12 +5,13 @@
 namespace ZEN {
 	class RenderSystem {
 	public:
-		explicit RenderSystem(Renderer *renderer, const ShaderComp& shaderComp);
+		explicit RenderSystem(Renderer *renderer, const MaterialComp& shaderComp);
 		void onUpdate(entt::registry& registry);
 		void onRender(entt::registry& registry);
 	private:
 		Renderer* m_Renderer{};
 		UniformComp m_ViewUBO{};
-		ShaderComp m_DefaultShader{};
+		UniformComp m_InstanceUBO{};
+		MaterialComp m_DefaultShader{};
 	};
 }

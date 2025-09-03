@@ -6,6 +6,7 @@
 
 using namespace ZEN;
 
+
 Window::Window(int width, int height, std::string title, ZEN::eRendererAPI api)
     : m_Width(width), m_Height(height), m_Title(std::move(title)) {
     if (!glfwInit())
@@ -30,7 +31,6 @@ Window::Window(int width, int height, std::string title, ZEN::eRendererAPI api)
     if (!m_Window)
         throw std::runtime_error("Failed to create window");
 
-
     m_LastTime = static_cast<float>(glfwGetTime());
 }
 Window::~Window() {
@@ -39,9 +39,17 @@ Window::~Window() {
         glfwTerminate();
     }
 }
+
 void Window::pollEvents() {
     glfwPollEvents();
     calculateDeltaTime();
+    int width, height;
+    glfwGetFramebufferSize(m_Window, &width, &height);
+
+    if (width != m_Width || height != m_Height) {
+        m_Width = width;
+        m_Height = height;
+    }
 }
 void Window::calculateDeltaTime() {
     float currentTime = static_cast<float>(glfwGetTime());
