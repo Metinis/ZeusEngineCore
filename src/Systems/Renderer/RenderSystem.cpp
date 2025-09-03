@@ -1,11 +1,10 @@
 #include "ZeusEngineCore/RenderSystem.h"
+#include "ZeusEngineCore/Scene.h"
 
 using namespace ZEN;
 
-RenderSystem::RenderSystem(Renderer *renderer, const MaterialComp& shaderComp) :
-m_Renderer(renderer), m_DefaultShader(shaderComp) {
-    m_ViewUBO.uboID = m_Renderer->getContext()->getResourceManager().createUBO(0);
-    m_InstanceUBO.uboID = m_Renderer->getContext()->getResourceManager().createUBO(1);
+RenderSystem::RenderSystem(Renderer *renderer, Scene *scene) :
+m_Renderer(renderer), m_Scene(scene){
 
 }
 void RenderSystem::onUpdate(entt::registry &registry) {
@@ -17,7 +16,7 @@ void RenderSystem::onUpdate(entt::registry &registry) {
             shaderID = registry.get<MaterialComp>(entity).shaderID;
         } else {
             // Fallback shader if none exists
-            shaderID = m_DefaultShader.shaderID;
+            shaderID = m_Renderer->getDefaultShader().shaderID;
             registry.emplace<MaterialComp>(entity, MaterialComp{ shaderID });
         }
 
@@ -41,13 +40,28 @@ void RenderSystem::onRender(entt::registry& registry) {
             //update view ubo
             glm::mat4 vpMat = camera.projection * transform.getViewMatrix();
             auto const bytes = std::bit_cast<std::array<std::byte, sizeof(vpMat)>>(vpMat);
-            m_Renderer->getContext()->getResourceManager().writeToUBO(m_ViewUBO.uboID, bytes);
+            m_Renderer->getContext()->getResourceManager().
+                writeToUBO(m_Renderer->getViewUBO().uboID, bytes);
+            //update global ubo
+            GlobalUBO globalUBO{
+                .lightPos = m_Scene->getLightPos(),
+                .cameraPos = transform.position,
+                //.time = glfwGetTime(),
+                .ambientColor = m_Scene->getAmbientColor(),
+            };
+            auto const globalBytes = std::bit_cast<std::array<std::byte,
+                sizeof(globalUBO)>>(globalUBO);
+            m_Renderer->getContext()->getResourceManager().
+                writeToUBO(m_Renderer->getGlobalUBO().uboID, globalBytes);
         }
     }
+
     //bind uniform vp matrix
-    m_Renderer->getContext()->getResourceManager().bindUBO(m_ViewUBO.uboID);
+    m_Renderer->getContext()->getResourceManager().bindUBO(m_Renderer->getViewUBO().uboID);
     //bind instance ubo (different binding so its ok)
-    m_Renderer->getContext()->getResourceManager().bindUBO(m_InstanceUBO.uboID);
+    m_Renderer->getContext()->getResourceManager().bindUBO(m_Renderer->getInstanceUBO().uboID);
+    //bind global ubo (different binding so its ok)
+    m_Renderer->getContext()->getResourceManager().bindUBO(m_Renderer->getGlobalUBO().uboID);
 
     //render all meshes with drawable comps
     auto view = registry.view<MeshDrawableComp, MaterialComp, TransformComp>();
@@ -59,7 +73,7 @@ void RenderSystem::onRender(entt::registry& registry) {
             m_Renderer->getContext()->getResourceManager().bindShader(lastShaderID);
             auto const bytes = std::bit_cast<std::array<std::byte,
                 sizeof(transform.getModelMatrix())>>(transform.getModelMatrix());
-            m_Renderer->getContext()->getResourceManager().writeToUBO(m_InstanceUBO.uboID, bytes);
+            m_Renderer->getContext()->getResourceManager().writeToUBO(m_Renderer->getInstanceUBO().uboID, bytes);
         }
         m_Renderer->getContext()->getResourceManager().bindTexture(view.get<MaterialComp>(entity).textureID);
         m_Renderer->getContext()->drawMesh(view.get<MeshDrawableComp>(entity));

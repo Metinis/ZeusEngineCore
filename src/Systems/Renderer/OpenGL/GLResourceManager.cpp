@@ -146,6 +146,9 @@ uint32_t ZEN::GLResourceManager::createShader(std::string_view vertexPath, std::
     GLuint instanceBlockIndex = glGetUniformBlockIndex(program, "Instances");
     glUniformBlockBinding(program, instanceBlockIndex, 1);
 
+    GLuint globalBlockIndex = glGetUniformBlockIndex(program, "Globals");
+    glUniformBlockBinding(program, globalBlockIndex, 2);
+
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
 
@@ -197,7 +200,9 @@ void ZEN::GLResourceManager::bindUBO(uint32_t uboID) {
 }
 
 void ZEN::GLResourceManager::deleteUBO(uint32_t uboID) {
-
+    withResource(m_UBOs, uboID, [](GLUniform& u) {
+        glDeleteBuffers(1, &u.bufferHandle);
+    });
 }
 
 uint32_t ZEN::GLResourceManager::createTexture(std::string_view texturePath) {
