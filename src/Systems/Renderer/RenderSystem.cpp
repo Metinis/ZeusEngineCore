@@ -62,20 +62,38 @@ void RenderSystem::onRender(entt::registry& registry) {
     m_Renderer->getContext()->getResourceManager().bindUBO(m_Renderer->getInstanceUBO().uboID);
     //bind global ubo (different binding so its ok)
     m_Renderer->getContext()->getResourceManager().bindUBO(m_Renderer->getGlobalUBO().uboID);
+    //bind material ubo (different binding so its ok)
+    m_Renderer->getContext()->getResourceManager().bindUBO(m_Renderer->getMaterialUBO().uboID);
 
     //render all meshes with drawable comps
+    //todo sort by material
     auto view = registry.view<MeshDrawableComp, MaterialComp, TransformComp>();
-    uint32_t lastShaderID{};
+    uint32_t lastMaterialID{};
     for(auto& entity : view) {
-        if(view.get<MaterialComp>(entity).shaderID != lastShaderID) {
-            lastShaderID = view.get<MaterialComp>(entity).shaderID;
-            auto transform = view.get<TransformComp>(entity);
-            m_Renderer->getContext()->getResourceManager().bindShader(lastShaderID);
-            auto const bytes = std::bit_cast<std::array<std::byte,
-                sizeof(transform.getModelMatrix())>>(transform.getModelMatrix());
-            m_Renderer->getContext()->getResourceManager().writeToUBO(m_Renderer->getInstanceUBO().uboID, bytes);
+        if(view.get<MaterialComp>(entity).shaderID != lastMaterialID) {
+            //bind shader
+            auto& material = view.get<MaterialComp>(entity);
+            lastMaterialID = material.shaderID;
+            m_Renderer->getContext()->getResourceManager().bindShader(lastMaterialID);
+
+            //write to material ubo
+            MaterialUBO materialUBO{
+                .specularStrength = material.specular,
+            };
+            auto const materialBytes = std::bit_cast<std::array<std::byte,
+                sizeof(materialUBO)>>(materialUBO);
+            m_Renderer->getContext()->getResourceManager().
+                writeToUBO(m_Renderer->getMaterialUBO().uboID, materialBytes);
+
+            //bind material texture
+            m_Renderer->getContext()->getResourceManager().bindTexture(material.textureID);
         }
-        m_Renderer->getContext()->getResourceManager().bindTexture(view.get<MaterialComp>(entity).textureID);
+        //write to instance ubo (todo check if last mesh is same for instancing)
+        auto transform = view.get<TransformComp>(entity);
+        auto const bytes = std::bit_cast<std::array<std::byte,
+            sizeof(transform.getModelMatrix())>>(transform.getModelMatrix());
+        m_Renderer->getContext()->getResourceManager().writeToUBO(m_Renderer->getInstanceUBO().uboID, bytes);
+
         m_Renderer->getContext()->drawMesh(view.get<MeshDrawableComp>(entity));
     }
 }

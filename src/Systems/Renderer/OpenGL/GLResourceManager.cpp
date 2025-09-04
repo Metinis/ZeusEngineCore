@@ -149,6 +149,9 @@ uint32_t ZEN::GLResourceManager::createShader(std::string_view vertexPath, std::
     GLuint globalBlockIndex = glGetUniformBlockIndex(program, "Globals");
     glUniformBlockBinding(program, globalBlockIndex, 2);
 
+    GLuint materialBlockIndex = glGetUniformBlockIndex(program, "Material");
+    glUniformBlockBinding(program, materialBlockIndex, 3);
+
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
 

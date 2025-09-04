@@ -13,6 +13,9 @@ namespace ZEN {
 		float _pad4;
 	};
 
+	struct MaterialUBO {
+		float specularStrength{0.5f};
+	};
 
 	class Renderer {
 	public:
@@ -24,12 +27,14 @@ namespace ZEN {
 		UniformComp& getViewUBO() {return m_ViewUBO;}
 		UniformComp& getInstanceUBO() {return m_InstanceUBO;}
 		UniformComp& getGlobalUBO() {return m_GlobalUBO;}
+		UniformComp& getMaterialUBO() {return m_MaterialUBO;}
 		MaterialComp& getDefaultShader() {return m_DefaultShader;}
 	private:
 		std::unique_ptr<IContext> m_Context;
 		UniformComp m_ViewUBO{};
 		UniformComp m_InstanceUBO{};
 		UniformComp m_GlobalUBO{};
+		UniformComp m_MaterialUBO{};
 		MaterialComp m_DefaultShader{};
 	};
 }
