@@ -140,6 +140,7 @@ uint32_t ZEN::GLResourceManager::createShader(std::string_view vertexPath, std::
     }
 
     //todo make this dynamic
+    //ubo bindings
     GLuint viewBlockIndex = glGetUniformBlockIndex(program, "View");
     glUniformBlockBinding(program, viewBlockIndex, 0);
 
@@ -151,6 +152,14 @@ uint32_t ZEN::GLResourceManager::createShader(std::string_view vertexPath, std::
 
     GLuint materialBlockIndex = glGetUniformBlockIndex(program, "Material");
     glUniformBlockBinding(program, materialBlockIndex, 3);
+
+    //texture bindings
+    glUseProgram(program);
+    GLint location = glGetUniformLocation(program, "diffuse_tex");
+    glUniform1i(location, 0);
+
+    location = glGetUniformLocation(program, "specular_map");
+    glUniform1i(location, 1);
 
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
@@ -237,8 +246,9 @@ uint32_t ZEN::GLResourceManager::createTexture(std::string_view texturePath) {
     return texture.textureID;
 }
 
-void ZEN::GLResourceManager::bindTexture(uint32_t textureID) {
-    withResource(m_Textures, textureID, [](GLTexture& t) {
+void ZEN::GLResourceManager::bindTexture(uint32_t textureID, uint32_t binding) {
+    withResource(m_Textures, textureID, [binding](GLTexture& t) {
+        glActiveTexture(GL_TEXTURE0 + binding);
         glBindTexture(GL_TEXTURE_2D, t.textureID);
     });
 }

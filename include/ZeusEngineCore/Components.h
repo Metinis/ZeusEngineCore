@@ -14,6 +14,7 @@ namespace ZEN {
     struct MaterialComp {
         uint32_t shaderID;
         uint32_t textureID;
+        uint32_t specularTexID;
         float specular;
     };
     struct UniformComp {

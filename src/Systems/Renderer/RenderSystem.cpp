@@ -86,7 +86,8 @@ void RenderSystem::onRender(entt::registry& registry) {
                 writeToUBO(m_Renderer->getMaterialUBO().uboID, materialBytes);
 
             //bind material texture
-            m_Renderer->getContext()->getResourceManager().bindTexture(material.textureID);
+            m_Renderer->getContext()->getResourceManager().bindTexture(material.textureID, 0);
+            m_Renderer->getContext()->getResourceManager().bindTexture(material.specularTexID, 1);
         }
         //write to instance ubo (todo check if last mesh is same for instancing)
         auto transform = view.get<TransformComp>(entity);

@@ -34,7 +34,7 @@ namespace ZEN {
         virtual void deleteUBO(uint32_t uboID) = 0;
 
         virtual uint32_t createTexture(std::string_view texturePath) = 0;
-        virtual void bindTexture(uint32_t textureID) = 0;
+        virtual void bindTexture(uint32_t textureID, uint32_t binding) = 0;
         virtual void deleteTexture(uint32_t textureID) = 0;
 
         static std::unique_ptr<IResourceManager> Create(eRendererAPI api);
