@@ -6,7 +6,8 @@
 
 using namespace ZEN;
 
-GLContext::GLContext(GLFWwindow* window) : m_WindowHandle(window){
+GLContext::GLContext(GLFWwindow* window, IResourceManager* resourceManager)
+: m_WindowHandle(window), m_ResourceManager(resourceManager){
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1); // Enable VSync
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
@@ -16,7 +17,7 @@ GLContext::GLContext(GLFWwindow* window) : m_WindowHandle(window){
 }
 void GLContext::drawMesh(const MeshDrawableComp& meshDrawable) {
     //retrieve GLDrawable by meshID from resource manager
-    m_ResourceManager.bindMeshDrawable(meshDrawable.meshID);
+    m_ResourceManager->bindMeshDrawable(meshDrawable.meshID);
     glDrawElementsInstanced(GL_TRIANGLES, meshDrawable.indexCount, GL_UNSIGNED_INT,
         nullptr, meshDrawable.instanceCount);
     glBindVertexArray(0);
@@ -36,6 +37,20 @@ void GLContext::clear(bool shouldClearColor, bool shouldClearDepth) {
 
 void GLContext::depthMask(bool val) {
     glDepthMask(val);
+
+}
+
+void GLContext::setDepthMode(eDepthModes depthMode) {
+    switch (depthMode) {
+        case LEQUAL:
+            glDepthFunc(GL_LEQUAL);
+            return;
+        case LESS:
+            glDepthFunc(GL_LESS);
+            return;
+        default:
+            return;
+    }
 }
 
 

@@ -23,8 +23,8 @@ namespace ZEN {
     public:
         ~GLResourceManager() override;
 
-        uint32_t createMeshDrawable(const MeshComp& meshComp)  override;
-        void bindMeshDrawable(uint32_t drawableID);
+        uint32_t createMeshDrawable(const MeshComp& meshComp) override;
+        void bindMeshDrawable(uint32_t drawableID) override;
         void deleteMeshDrawable(uint32_t drawableID) override;
 
         uint32_t createShader(std::string_view vertexPath, std::string_view fragPath) override;

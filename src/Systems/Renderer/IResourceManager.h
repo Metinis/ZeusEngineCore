@@ -22,6 +22,7 @@ namespace ZEN {
         virtual ~IResourceManager() = default;
 
         virtual uint32_t createMeshDrawable(const MeshComp& meshComp) = 0;
+        virtual void bindMeshDrawable(uint32_t drawableID) = 0;
         virtual void deleteMeshDrawable(uint32_t drawableID) = 0;
 
         virtual uint32_t createShader(std::string_view vertexPath, std::string_view fragPath) = 0;
@@ -40,6 +41,6 @@ namespace ZEN {
         virtual uint32_t createCubeMapTexture(const std::string& texturePath) = 0;
         virtual void bindCubeMapTexture(uint32_t textureID) = 0;
 
-        static std::unique_ptr<IResourceManager> Create(eRendererAPI api);
+        static std::unique_ptr<IResourceManager> create(eRendererAPI api);
     };
 }

@@ -3,10 +3,11 @@
 
 #include "OpenGL/GLContext.h"
 
-std::unique_ptr<ZEN::IContext> ZEN::IContext::create(eRendererAPI api, GLFWwindow* window) {
+std::unique_ptr<ZEN::IContext> ZEN::IContext::create(eRendererAPI api,
+    GLFWwindow* window, IResourceManager* resourceManager) {
     switch (api) {
         case OpenGL:
-            return std::make_unique<GLContext>(window);
+            return std::make_unique<GLContext>(window, resourceManager);
 
         case Vulkan:
             return nullptr;

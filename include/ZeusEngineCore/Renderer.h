@@ -20,6 +20,7 @@ namespace ZEN {
 		void endFrame();
 		void setDefaultShader(const MaterialComp& shader);
 		IContext* getContext() {return m_Context.get();}
+		IResourceManager* getResourceManager() {return m_ResourceManager.get();}
 		UniformComp& getViewUBO() {return m_ViewUBO;}
 		UniformComp& getInstanceUBO() {return m_InstanceUBO;}
 		UniformComp& getGlobalUBO() {return m_GlobalUBO;}
