@@ -39,6 +39,10 @@ namespace ZEN {
         uint32_t createTexture(std::string_view texturePath) override;
         void bindTexture(uint32_t textureID, uint32_t binding) override;
         void deleteTexture(uint32_t textureID) override;
+
+        uint32_t createCubeMapTexture(const std::string& texturePath)  override;
+        void bindCubeMapTexture(uint32_t textureID) override;
+
     private:
         std::unordered_map<uint32_t, GLShader> m_Shaders{};
         uint32_t nextShaderID{1};

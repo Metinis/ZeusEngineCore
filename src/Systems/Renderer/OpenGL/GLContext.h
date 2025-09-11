@@ -11,6 +11,7 @@ namespace ZEN {
 		IResourceManager& getResourceManager() override {return m_ResourceManager;}
 		void drawMesh(const MeshDrawableComp& meshRenderable) override;
 		void clear(bool shouldClearColor, bool shouldClearDepth) override;
+		void depthMask(bool val) override;
 		void swapBuffers() override;
 	private:
 		GLResourceManager m_ResourceManager{};

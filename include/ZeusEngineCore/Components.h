@@ -8,17 +8,23 @@ namespace ZEN {
         std::vector<Vertex> vertices{};
     };
     struct MeshDrawableComp {
-        size_t indexCount;
-        uint32_t meshID;
+        size_t indexCount{};
+        uint32_t meshID{};
+        int instanceCount{1};
     };
     struct MaterialComp {
+        uint32_t shaderID{};
+        uint32_t textureID{};
+        uint32_t specularTexID{};
+        float specular{};
+        int shininess{};
+    };
+    struct SkyboxComp {
         uint32_t shaderID;
         uint32_t textureID;
-        uint32_t specularTexID;
-        float specular;
     };
     struct UniformComp {
-        uint32_t uboID;
+        uint32_t uboID{};
     };
     struct TransformComp {
         glm::vec3 position{0.0f, 0.0f, 3.0f};
@@ -34,6 +40,20 @@ namespace ZEN {
             auto const [t, r, s] = toMatrices(-position, -rotation, scale);
             return r * t * s;
         }
+    };
+    struct DirectionalLightComp {
+        glm::vec3 lightDir{};
+        glm::vec3 ambient{};
+        bool isPrimary{true};
+    };
+    struct PointLightComp {
+        glm::vec3 ambient{};
+        glm::vec3 diffuse{};
+        glm::vec3 specular{};
+
+        float constant{};
+        float linear{};
+        float quadratic{};
     };
     struct CameraComp {
         glm::mat4 projection = glm::mat4(1.0f);

@@ -17,7 +17,8 @@ GLContext::GLContext(GLFWwindow* window) : m_WindowHandle(window){
 void GLContext::drawMesh(const MeshDrawableComp& meshDrawable) {
     //retrieve GLDrawable by meshID from resource manager
     m_ResourceManager.bindMeshDrawable(meshDrawable.meshID);
-    glDrawElementsInstanced(GL_TRIANGLES, meshDrawable.indexCount, GL_UNSIGNED_INT, nullptr, 1);
+    glDrawElementsInstanced(GL_TRIANGLES, meshDrawable.indexCount, GL_UNSIGNED_INT,
+        nullptr, meshDrawable.instanceCount);
     glBindVertexArray(0);
 }
 
@@ -31,6 +32,10 @@ void GLContext::clear(bool shouldClearColor, bool shouldClearDepth) {
     if (clearBit) {
         glClear(clearBit);
     }
+}
+
+void GLContext::depthMask(bool val) {
+    glDepthMask(val);
 }
 
 

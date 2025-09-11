@@ -1,4 +1,3 @@
-
 #include "GLResourceManager.h"
 #define GLFW_INCLUDE_NONE
 #include <iostream>
@@ -8,15 +7,28 @@
 #include <glad/glad.h>
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image/stb_image.h>
+#include <string.h>
+
+constexpr std::array uboBindings{
+    "View",
+    "Instances",
+    "Globals",
+    "Material"
+};
+constexpr std::array textureBindings{
+    "u_DiffuseMap",
+    "u_SpecularMap"
+};
+
 
 ZEN::GLResourceManager::~GLResourceManager() {
-    for (auto& [id, drawable] : m_Drawables) {
+    for (auto &[id, drawable]: m_Drawables) {
         deleteMeshDrawable(id);
     }
-    for (auto& [id, drawable] : m_Shaders) {
+    for (auto &[id, drawable]: m_Shaders) {
         deleteShader(id);
     }
-    for (auto& [id, drawable] : m_UBOs) {
+    for (auto &[id, drawable]: m_UBOs) {
         deleteUBO(id);
     }
 }
@@ -34,19 +46,20 @@ uint32_t ZEN::GLResourceManager::createMeshDrawable(const MeshComp &meshComp) {
     glBufferData(GL_ARRAY_BUFFER, meshComp.vertices.size() * sizeof(Vertex), meshComp.vertices.data(), GL_STATIC_DRAW);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, drawable.ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, meshComp.indices.size() * sizeof(uint32_t), meshComp.indices.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, meshComp.indices.size() * sizeof(uint32_t), meshComp.indices.data(),
+                 GL_STATIC_DRAW);
 
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Position));
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void *) offsetof(Vertex, Position));
 
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Normal));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void *) offsetof(Vertex, Normal));
 
     glEnableVertexAttribArray(2);
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, TexCoords));
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void *) offsetof(Vertex, TexCoords));
 
     glEnableVertexAttribArray(3);
-    glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Color));
+    glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void *) offsetof(Vertex, Color));
 
     glBindVertexArray(0);
 
@@ -56,14 +69,14 @@ uint32_t ZEN::GLResourceManager::createMeshDrawable(const MeshComp &meshComp) {
 }
 
 void ZEN::GLResourceManager::bindMeshDrawable(uint32_t drawableID) {
-    withResource(m_Drawables, drawableID, [](GLDrawable& d) {
+    withResource(m_Drawables, drawableID, [](GLDrawable &d) {
         glBindVertexArray(d.vao);
     });
 }
 
 
 void ZEN::GLResourceManager::deleteMeshDrawable(uint32_t drawableID) {
-    withResource(m_Drawables, drawableID, [](GLDrawable& d) {
+    withResource(m_Drawables, drawableID, [](GLDrawable &d) {
         glDeleteBuffers(1, &d.vbo);
         glDeleteBuffers(1, &d.ebo);
         glDeleteVertexArrays(1, &d.vao);
@@ -92,7 +105,7 @@ uint32_t ZEN::GLResourceManager::createShader(std::string_view vertexPath, std::
 
     // Compile vertex shader
     GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    const char* vSrc = vertexSrc.c_str();
+    const char *vSrc = vertexSrc.c_str();
     glShaderSource(vertexShader, 1, &vSrc, nullptr);
     glCompileShader(vertexShader);
 
@@ -108,7 +121,7 @@ uint32_t ZEN::GLResourceManager::createShader(std::string_view vertexPath, std::
 
     // Compile fragment shader
     GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    const char* fSrc = fragSrc.c_str();
+    const char *fSrc = fragSrc.c_str();
     glShaderSource(fragmentShader, 1, &fSrc, nullptr);
     glCompileShader(fragmentShader);
 
@@ -139,27 +152,22 @@ uint32_t ZEN::GLResourceManager::createShader(std::string_view vertexPath, std::
         return 0;
     }
 
-    //todo make this dynamic
     //ubo bindings
-    GLuint viewBlockIndex = glGetUniformBlockIndex(program, "View");
-    glUniformBlockBinding(program, viewBlockIndex, 0);
-
-    GLuint instanceBlockIndex = glGetUniformBlockIndex(program, "Instances");
-    glUniformBlockBinding(program, instanceBlockIndex, 1);
-
-    GLuint globalBlockIndex = glGetUniformBlockIndex(program, "Globals");
-    glUniformBlockBinding(program, globalBlockIndex, 2);
-
-    GLuint materialBlockIndex = glGetUniformBlockIndex(program, "Material");
-    glUniformBlockBinding(program, materialBlockIndex, 3);
+    for (uint32_t i{0}; i < uboBindings.size(); ++i) {
+        GLuint blockIndex = glGetUniformBlockIndex(program, uboBindings[i]);
+        if (blockIndex != GL_INVALID_INDEX) {
+            glUniformBlockBinding(program, blockIndex, i);
+        }
+    }
 
     //texture bindings
     glUseProgram(program);
-    GLint location = glGetUniformLocation(program, "diffuse_tex");
-    glUniform1i(location, 0);
-
-    location = glGetUniformLocation(program, "specular_map");
-    glUniform1i(location, 1);
+    for (int i{0}; i < textureBindings.size(); ++i) {
+        GLint location = glGetUniformLocation(program, textureBindings[i]);
+        if (location != GL_INVALID_INDEX) {
+            glUniform1i(location, i);
+        }
+    }
 
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
@@ -171,13 +179,13 @@ uint32_t ZEN::GLResourceManager::createShader(std::string_view vertexPath, std::
 }
 
 void ZEN::GLResourceManager::bindShader(uint32_t shaderID) {
-    withResource(m_Shaders, shaderID, [](GLShader& s) {
+    withResource(m_Shaders, shaderID, [](GLShader &s) {
         glUseProgram(s.programID);
     });
 }
 
 void ZEN::GLResourceManager::deleteShader(uint32_t shaderID) {
-    withResource(m_Shaders, shaderID, [](GLShader& s) {
+    withResource(m_Shaders, shaderID, [](GLShader &s) {
         glDeleteProgram(s.programID);
     });
 }
@@ -193,9 +201,9 @@ uint32_t ZEN::GLResourceManager::createUBO(uint32_t binding) {
 }
 
 void ZEN::GLResourceManager::writeToUBO(uint32_t uboID, std::span<const std::byte> bytes) {
-    withResource(m_UBOs, uboID, [bytes](GLUniform& u) {
+    withResource(m_UBOs, uboID, [bytes](GLUniform &u) {
         glBindBuffer(GL_UNIFORM_BUFFER, u.bufferHandle);
-        if(u.size < bytes.size()){
+        if (u.size < bytes.size()) {
             u.size = bytes.size();
             glBufferData(GL_UNIFORM_BUFFER, u.size, nullptr, GL_DYNAMIC_DRAW);
         }
@@ -204,15 +212,14 @@ void ZEN::GLResourceManager::writeToUBO(uint32_t uboID, std::span<const std::byt
 }
 
 void ZEN::GLResourceManager::bindUBO(uint32_t uboID) {
-    withResource(m_UBOs, uboID, [](GLUniform& u) {
+    withResource(m_UBOs, uboID, [](GLUniform &u) {
         glBindBuffer(GL_UNIFORM_BUFFER, u.bufferHandle);
         glBindBufferBase(GL_UNIFORM_BUFFER, u.bufferBinding, u.bufferHandle);
     });
-
 }
 
 void ZEN::GLResourceManager::deleteUBO(uint32_t uboID) {
-    withResource(m_UBOs, uboID, [](GLUniform& u) {
+    withResource(m_UBOs, uboID, [](GLUniform &u) {
         glDeleteBuffers(1, &u.bufferHandle);
     });
 }
@@ -220,9 +227,9 @@ void ZEN::GLResourceManager::deleteUBO(uint32_t uboID) {
 uint32_t ZEN::GLResourceManager::createTexture(std::string_view texturePath) {
     int texWidth, texHeight, texChannels;
     stbi_set_flip_vertically_on_load(true);
-    stbi_uc* pixels = stbi_load(texturePath.data(), &texWidth,
-        &texHeight, &texChannels, STBI_rgb_alpha);
-    if(!pixels){
+    stbi_uc *pixels = stbi_load(texturePath.data(), &texWidth,
+                                &texHeight, &texChannels, STBI_rgb_alpha);
+    if (!pixels) {
         throw std::runtime_error("Invalid image!");
     }
 
@@ -247,17 +254,66 @@ uint32_t ZEN::GLResourceManager::createTexture(std::string_view texturePath) {
 }
 
 void ZEN::GLResourceManager::bindTexture(uint32_t textureID, uint32_t binding) {
-    withResource(m_Textures, textureID, [binding](GLTexture& t) {
+    withResource(m_Textures, textureID, [binding](GLTexture &t) {
         glActiveTexture(GL_TEXTURE0 + binding);
         glBindTexture(GL_TEXTURE_2D, t.textureID);
     });
 }
 
 void ZEN::GLResourceManager::deleteTexture(uint32_t textureID) {
-    withResource(m_Textures, textureID, [](GLTexture& t) {
+    withResource(m_Textures, textureID, [](GLTexture &t) {
         glDeleteTextures(1, &t.textureID);
     });
 }
 
+constexpr std::array<std::string, 6> cubeSides {
+    "right.jpg",
+    "left.jpg",
+    "top.jpg",
+    "bottom.jpg",
+    "front.jpg",
+    "back.jpg"
+
+};
+
+uint32_t ZEN::GLResourceManager::createCubeMapTexture(const std::string& texturePath) {
+    //gen the texture handle
+    GLTexture texture{};
+    glGenTextures(1, &texture.textureID);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, texture.textureID);
+    m_Textures[nextTextureID++] = texture;
+
+    //load the faces
+    int texWidth, texHeight, texChannels;
+    stbi_set_flip_vertically_on_load(false);
+    for (unsigned int i = 0; i < cubeSides.size(); i++) {
+        std::string facePath = texturePath;
+        facePath += cubeSides[i];
+
+        stbi_uc *pixels = stbi_load(facePath.c_str(), &texWidth,
+                                    &texHeight, &texChannels, STBI_rgb);
+        if (!pixels) {
+            throw std::runtime_error("Invalid image!");
+        }
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,0, GL_RGB,
+            texWidth, texHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, pixels);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+        stbi_image_free(pixels);
+    }
 
 
+
+    //return the id in resources
+    return texture.textureID;
+}
+
+
+void ZEN::GLResourceManager::bindCubeMapTexture(uint32_t textureID) {
+    withResource(m_Textures, textureID, [](GLTexture &t) {
+        glBindTexture(GL_TEXTURE_CUBE_MAP, t.textureID);
+    });
+}
