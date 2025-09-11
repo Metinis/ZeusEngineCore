@@ -84,7 +84,7 @@ void RenderSystem::renderDrawables(const entt::registry &registry) {
         m_Renderer->getResourceManager()->writeToUBO(m_Renderer->getInstanceUBO().uboID, bytes);
 
         //todo submit mesh to renderer
-        m_Renderer->getContext()->drawMesh(viewDraw.get<MeshDrawableComp>(entity));
+        m_Renderer->getContext()->drawMesh(*m_Renderer->getResourceManager(), viewDraw.get<MeshDrawableComp>(entity));
     }
 }
 
@@ -105,7 +105,7 @@ void RenderSystem::renderSkybox(const entt::registry &registry, const glm::mat4&
         //bind cubemap texture
         m_Renderer->getResourceManager()->bindCubeMapTexture(skyboxComp.textureID);
 
-        m_Renderer->getContext()->drawMesh(skyboxView.get<MeshDrawableComp>(entity));
+        m_Renderer->getContext()->drawMesh(*m_Renderer->getResourceManager(), skyboxView.get<MeshDrawableComp>(entity));
         m_Renderer->getContext()->depthMask(true);
         m_Renderer->getContext()->setDepthMode(LESS);
     }

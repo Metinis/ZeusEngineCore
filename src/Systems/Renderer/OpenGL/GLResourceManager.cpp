@@ -7,7 +7,6 @@
 #include <glad/glad.h>
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image/stb_image.h>
-#include <string.h>
 
 constexpr std::array uboBindings{
     "View",
@@ -20,7 +19,17 @@ constexpr std::array textureBindings{
     "u_SpecularMap"
 };
 
-
+ZEN::GLResourceManager::GLResourceManager() {
+    /*unsigned char whitePixel[4] = { 255, 255, 255, 255 };
+    GLTexture tex{};
+    glGenTextures(1, &tex.textureID);
+    glBindTexture(GL_TEXTURE_2D, tex.textureID);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0,
+                 GL_RGBA, GL_UNSIGNED_BYTE, whitePixel);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    m_Textures[0] = tex;*/
+}
 ZEN::GLResourceManager::~GLResourceManager() {
     for (auto &[id, drawable]: m_Drawables) {
         deleteMeshDrawable(id);

@@ -26,6 +26,9 @@ namespace ZEN {
     struct UniformComp {
         uint32_t uboID{};
     };
+    struct TagComp {
+        std::string tag;
+    };
     struct TransformComp {
         glm::vec3 position{0.0f, 0.0f, 3.0f};
         glm::vec3 rotation{0.0f, 0.0f, 0.0f};

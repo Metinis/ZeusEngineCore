@@ -3,8 +3,8 @@
 using namespace ZEN;
 
 Renderer::Renderer(eRendererAPI api, GLFWwindow* window) {
+    m_Context = IContext::create(api, window);
     m_ResourceManager = IResourceManager::create(api);
-    m_Context = IContext::create(api, window, m_ResourceManager.get());
     m_ViewUBO.uboID = m_ResourceManager->createUBO(0);
     m_InstanceUBO.uboID = m_ResourceManager->createUBO(1);
     m_GlobalUBO.uboID = m_ResourceManager->createUBO(2);

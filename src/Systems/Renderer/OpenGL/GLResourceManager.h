@@ -21,6 +21,7 @@ namespace ZEN {
     };
     class GLResourceManager : public IResourceManager{
     public:
+        GLResourceManager();
         ~GLResourceManager() override;
 
         uint32_t createMeshDrawable(const MeshComp& meshComp) override;

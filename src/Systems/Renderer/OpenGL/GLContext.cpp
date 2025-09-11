@@ -6,8 +6,8 @@
 
 using namespace ZEN;
 
-GLContext::GLContext(GLFWwindow* window, IResourceManager* resourceManager)
-: m_WindowHandle(window), m_ResourceManager(resourceManager){
+GLContext::GLContext(GLFWwindow* window)
+: m_WindowHandle(window){
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1); // Enable VSync
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
@@ -15,11 +15,11 @@ GLContext::GLContext(GLFWwindow* window, IResourceManager* resourceManager)
     }
     glEnable(GL_DEPTH_TEST);
 }
-void GLContext::drawMesh(const MeshDrawableComp& meshDrawable) {
+void GLContext::drawMesh(IResourceManager& resourceManager, const MeshDrawableComp& meshRenderable) {
     //retrieve GLDrawable by meshID from resource manager
-    m_ResourceManager->bindMeshDrawable(meshDrawable.meshID);
-    glDrawElementsInstanced(GL_TRIANGLES, meshDrawable.indexCount, GL_UNSIGNED_INT,
-        nullptr, meshDrawable.instanceCount);
+    resourceManager.bindMeshDrawable(meshRenderable.meshID);
+    glDrawElementsInstanced(GL_TRIANGLES, meshRenderable.indexCount, GL_UNSIGNED_INT,
+        nullptr, meshRenderable.instanceCount);
     glBindVertexArray(0);
 }
 
