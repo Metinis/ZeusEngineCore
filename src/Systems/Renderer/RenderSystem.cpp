@@ -28,12 +28,8 @@ void RenderSystem::onUpdate(entt::registry &registry) {
         registry.emplace<MeshDrawableComp>(entity, meshDrawable);
     }
 }
-
-void RenderSystem::onRender(entt::registry& registry) {
-
-    //write camera data
-    glm::mat4 view;
-    glm::mat4 projection;
+void RenderSystem::writeCameraData(const entt::registry& registry, glm::mat4& view,
+            glm::mat4& projection) {
     auto cameraView = registry.view<CameraComp, TransformComp>();
     for (auto entity: cameraView) {
         auto& camera = registry.get<CameraComp>(entity);
@@ -57,20 +53,8 @@ void RenderSystem::onRender(entt::registry& registry) {
             m_Renderer->getResourceManager()->writeToUBO(m_Renderer->getGlobalUBO().uboID, globalBytes);
         }
     }
-
-
-
-
-    //bind uniform vp matrix
-    m_Renderer->getResourceManager()->bindUBO(m_Renderer->getViewUBO().uboID);
-    //bind instance ubo (different binding so its ok)
-    m_Renderer->getResourceManager()->bindUBO(m_Renderer->getInstanceUBO().uboID);
-    //bind global ubo (different binding so its ok)
-    m_Renderer->getResourceManager()->bindUBO(m_Renderer->getGlobalUBO().uboID);
-    //bind material ubo (different binding so its ok)
-    m_Renderer->getResourceManager()->bindUBO(m_Renderer->getMaterialUBO().uboID);
-
-    //render all meshes with drawable comps
+}
+void RenderSystem::renderDrawables(const entt::registry &registry) {
     //todo sort by material
     auto viewDraw = registry.view<MeshDrawableComp, MaterialComp, TransformComp>();
     uint32_t lastMaterialID{};
@@ -102,13 +86,15 @@ void RenderSystem::onRender(entt::registry& registry) {
         //todo submit mesh to renderer
         m_Renderer->getContext()->drawMesh(viewDraw.get<MeshDrawableComp>(entity));
     }
+}
 
-    //draw skybox
+void RenderSystem::renderSkybox(const entt::registry &registry, const glm::mat4& view,
+    const glm::mat4& projection) {
     auto skyboxView = registry.view<SkyboxComp, MeshDrawableComp>();
     for (auto entity: skyboxView) {
         m_Renderer->getContext()->depthMask(false);
         m_Renderer->getContext()->setDepthMode(LEQUAL);
-        glm::mat4 viewCube = glm::mat4(glm::mat3(view)); // remove translation
+        glm::mat4 viewCube = glm::mat4(glm::mat3(view));
         glm::mat4 vp = projection * viewCube;
         auto const bytes = std::bit_cast<std::array<std::byte, sizeof(vp)>>(vp);
         m_Renderer->getResourceManager()->writeToUBO(m_Renderer->getViewUBO().uboID, bytes);
@@ -123,4 +109,31 @@ void RenderSystem::onRender(entt::registry& registry) {
         m_Renderer->getContext()->depthMask(true);
         m_Renderer->getContext()->setDepthMode(LESS);
     }
+}
+
+void RenderSystem::bindSceneUBOs() {
+    //bind uniform vp matrix
+    m_Renderer->getResourceManager()->bindUBO(m_Renderer->getViewUBO().uboID);
+    //bind instance ubo (different binding so its ok)
+    m_Renderer->getResourceManager()->bindUBO(m_Renderer->getInstanceUBO().uboID);
+    //bind global ubo (different binding so its ok)
+    m_Renderer->getResourceManager()->bindUBO(m_Renderer->getGlobalUBO().uboID);
+    //bind material ubo (different binding so its ok)
+    m_Renderer->getResourceManager()->bindUBO(m_Renderer->getMaterialUBO().uboID);
+}
+
+
+void RenderSystem::onRender(const entt::registry& registry) {
+    //write camera data
+    glm::mat4 view;
+    glm::mat4 projection;
+    writeCameraData(registry, view, projection);
+
+    bindSceneUBOs();
+
+    //render all meshes with drawable comps
+    renderDrawables(registry);
+
+    //draw skybox
+    renderSkybox(registry, view, projection);
 }
