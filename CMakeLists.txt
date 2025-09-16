@@ -13,7 +13,6 @@ add_library(ZeusEngineCore STATIC)
 target_compile_features(ZeusEngineCore PUBLIC cxx_std_23)
 
 
-# Sources
 file(GLOB_RECURSE ZEUSENGINECORE_SOURCES
         src/*.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/include/glad/src/glad.c
@@ -21,10 +20,10 @@ file(GLOB_RECURSE ZEUSENGINECORE_SOURCES
 
 target_sources(ZeusEngineCore PRIVATE ${ZEUSENGINECORE_SOURCES} )
 
-# Include dirs
 target_include_directories(ZeusEngineCore
         PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/entt
         ${CMAKE_CURRENT_SOURCE_DIR}/include/glad/include
         PRIVATE
         ${CMAKE_SOURCE_DIR}/include/glm
@@ -32,7 +31,6 @@ target_include_directories(ZeusEngineCore
 
 target_compile_definitions(ZeusEngineCore PRIVATE VK_NO_PROTOTYPES)
 
-# Link dependencies
 target_link_libraries(ZeusEngineCore
         PUBLIC
         glfw
@@ -40,7 +38,6 @@ target_link_libraries(ZeusEngineCore
         Vulkan::Vulkan
 )
 
-# macOS frameworks
 if(APPLE)
     find_library(COCOA_LIBRARY Cocoa REQUIRED)
     find_library(IOKIT_LIBRARY IOKit REQUIRED)

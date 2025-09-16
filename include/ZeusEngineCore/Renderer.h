@@ -1,52 +1,51 @@
 #pragma once
-#include <optional>
-#include <memory>
-#include <glm/glm.hpp>
-#include <functional>
-#include "Transform.h"
-#include "Utils.h"
+#include "../src/Systems/Renderer/OpenGL/GLContext.h"
 
 namespace ZEN {
-    struct RendererInitInfo;
-    class IRendererAPI;
-    class IRendererBackend;
-    class IDescriptorBuffer;
-    class Material;
-    class IMesh;
-    struct RenderCommand {
-        std::vector<Transform> transforms; //num of instances
-        std::shared_ptr<IMesh> mesh;
-        std::shared_ptr<Material> material;
-    };
-    class Renderer{
-    public:
-        explicit Renderer(RendererInitInfo &initInfo);
+	struct GlobalUBO {
+		glm::vec3 lightDir; float _pad0;
+		glm::vec3 cameraPos; float _pad1;
+		//alignas(16) float time;
+		glm::vec3 ambientColor; float _pad2;
+	};
 
-        ~Renderer();
+	struct MaterialUBO {
+		glm::vec2 specularAndShininess{0.5f, 32}; float _pad[2];
+	};
 
-        bool BeginFrame();
+	struct Texture {
+		uint32_t textureID; //id inside resource manager
+	};
+	struct FBO {
+		uint32_t fboID;
+	};
 
-        void Submit(const std::vector<Transform>& transforms, const std::shared_ptr<IMesh> &mesh,
-                    const std::shared_ptr<Material>& material);
+	class Renderer {
+	public:
+		explicit Renderer(eRendererAPI api, GLFWwindow* window);
+		void beginFrame();
+		void bindDefaultFBO();
+		void endFrame();
+		void setDefaultShader(const MaterialComp& shader);
+		IContext* getContext() {return m_Context.get();}
+		IResourceManager* getResourceManager() {return m_ResourceManager.get();}
+		UniformComp& getViewUBO() {return m_ViewUBO;}
+		UniformComp& getInstanceUBO() {return m_InstanceUBO;}
+		UniformComp& getGlobalUBO() {return m_GlobalUBO;}
+		UniformComp& getMaterialUBO() {return m_MaterialUBO;}
+		MaterialComp& getDefaultShader() {return m_DefaultShader;}
+		Texture& getColorTexture() {return m_ColorTex;}
+	private:
+		std::unique_ptr<IContext> m_Context{};
+		std::unique_ptr<IResourceManager> m_ResourceManager{};
+		UniformComp m_ViewUBO{};
+		UniformComp m_InstanceUBO{};
+		UniformComp m_GlobalUBO{};
+		UniformComp m_MaterialUBO{};
+		MaterialComp m_DefaultShader{};
 
-        void EndFrame(const std::function<void(void*)>& uiExtraDrawCallback = nullptr);
-
-        void UpdateInstances(const std::vector<Transform>& instances);
-
-        [[nodiscard]] Transform& ViewMatrix(){return m_ViewTransform;}
-
-        [[nodiscard]] IRendererAPI* GetAPIRenderer() const;
-
-        [[nodiscard]] IRendererBackend* GetAPIBackend() const;
-    private:
-        void UpdateView();
-
-        WindowHandle m_WindowHandle{};
-        std::vector<RenderCommand> m_RenderQueue;
-        std::unique_ptr<IRendererBackend> m_Backend;
-        std::unique_ptr<IRendererAPI> m_APIRenderer;
-        std::unique_ptr<IDescriptorBuffer> m_ViewUBO;
-        std::unique_ptr<IDescriptorBuffer> m_InstanceSSBO;
-        Transform m_ViewTransform;
-    };
+		FBO m_MainFBO{};
+		Texture m_ColorTex{};
+		Texture m_DepthTex{};
+	};
 }

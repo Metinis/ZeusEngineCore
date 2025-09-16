@@ -1,25 +1,28 @@
 #pragma once
 #include <string>
+#include <ZeusEngineCore/API.h>
 struct GLFWwindow;
 namespace ZEN {
     class Window {
     public:
-        Window(int width, int height, std::string title, bool useVulkan);
+        Window(int width, int height, std::string title, ZEN::eRendererAPI api);
 
         ~Window();
 
-        void PollEvents();
+        void pollEvents();
 
-        [[nodiscard]] float GetDeltaTime() const;
+        [[nodiscard]] float getDeltaTime() const;
 
-        bool ShouldClose();
+        bool shouldClose();
 
-        [[nodiscard]] GLFWwindow *GetNativeWindow() const;
+        [[nodiscard]] GLFWwindow *getNativeWindow() const;
+
+        float getWidth(){return m_Width;}
+
+        float getHeight(){return m_Height;}
 
     private:
-        void Init();
-
-        void CalculateDeltaTime();
+        void calculateDeltaTime();
 
         GLFWwindow *m_Window = nullptr;
         int m_Width = 1280;
@@ -27,6 +30,5 @@ namespace ZEN {
         float m_LastTime;
         float m_DeltaTime;
         std::string m_Title;
-        bool m_UseVulkan;
     };
 }
