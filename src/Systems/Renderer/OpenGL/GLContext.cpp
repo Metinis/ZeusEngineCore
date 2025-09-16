@@ -14,6 +14,8 @@ GLContext::GLContext(GLFWwindow* window)
         throw std::runtime_error("Failed to initialize GLAD");
     }
     glEnable(GL_DEPTH_TEST);
+    //glEnable(GL_CULL_FACE);
+    glCullFace(GL_FRONT);
 }
 void GLContext::drawMesh(IResourceManager& resourceManager, const MeshDrawableComp& meshRenderable) {
     //retrieve GLDrawable by meshID from resource manager

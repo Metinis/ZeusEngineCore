@@ -12,6 +12,9 @@ namespace ZEN {
         static void shutdown();
 
         static std::shared_ptr<MeshComp> get(const std::string& name);
+        static const std::unordered_map<std::string, std::shared_ptr<MeshComp>>& getAll() {
+            return s_Meshes;
+        }
         static void add(const std::string& name, std::shared_ptr<MeshComp> mesh);
 
     private:

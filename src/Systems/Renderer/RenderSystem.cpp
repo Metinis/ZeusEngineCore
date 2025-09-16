@@ -67,7 +67,7 @@ void RenderSystem::renderDrawables(const entt::registry &registry) {
 
             //write to material ubo
             MaterialUBO materialUBO {
-                .specularAndShininess = {0.5, 32}
+                .specularAndShininess = {material.specular, float(material.shininess)}
             };
             auto const materialBytes = std::bit_cast<std::array<std::byte,
                 sizeof(materialUBO)>>(materialUBO);

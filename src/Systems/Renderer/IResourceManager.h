@@ -41,6 +41,13 @@ namespace ZEN {
         virtual uint32_t createCubeMapTexture(const std::string& texturePath) = 0;
         virtual void bindCubeMapTexture(uint32_t textureID) = 0;
 
+        virtual uint32_t createFBO() = 0;
+        virtual void bindFBO(uint32_t fboID) = 0;
+
+        virtual uint32_t createColorTex(int width, int height) = 0;
+        virtual uint32_t getTexture(uint32_t textureID) = 0;
+        virtual uint32_t createDepthBuffer(int width, int height) = 0;
+
         static std::unique_ptr<IResourceManager> create(eRendererAPI api);
     };
 }

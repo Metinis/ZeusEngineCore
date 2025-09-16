@@ -13,10 +13,18 @@ namespace ZEN {
 		glm::vec2 specularAndShininess{0.5f, 32}; float _pad[2];
 	};
 
+	struct Texture {
+		uint32_t textureID; //id inside resource manager
+	};
+	struct FBO {
+		uint32_t fboID;
+	};
+
 	class Renderer {
 	public:
 		explicit Renderer(eRendererAPI api, GLFWwindow* window);
 		void beginFrame();
+		void bindDefaultFBO();
 		void endFrame();
 		void setDefaultShader(const MaterialComp& shader);
 		IContext* getContext() {return m_Context.get();}
@@ -26,6 +34,7 @@ namespace ZEN {
 		UniformComp& getGlobalUBO() {return m_GlobalUBO;}
 		UniformComp& getMaterialUBO() {return m_MaterialUBO;}
 		MaterialComp& getDefaultShader() {return m_DefaultShader;}
+		Texture& getColorTexture() {return m_ColorTex;}
 	private:
 		std::unique_ptr<IContext> m_Context{};
 		std::unique_ptr<IResourceManager> m_ResourceManager{};
@@ -34,5 +43,9 @@ namespace ZEN {
 		UniformComp m_GlobalUBO{};
 		UniformComp m_MaterialUBO{};
 		MaterialComp m_DefaultShader{};
+
+		FBO m_MainFBO{};
+		Texture m_ColorTex{};
+		Texture m_DepthTex{};
 	};
 }

@@ -257,9 +257,9 @@ uint32_t ZEN::GLResourceManager::createTexture(std::string_view texturePath) {
 
     stbi_image_free(pixels);
 
-    m_Textures[nextTextureID++] = texture;
+    m_Textures[nextTextureID] = texture;
 
-    return texture.textureID;
+    return nextTextureID++;
 }
 
 void ZEN::GLResourceManager::bindTexture(uint32_t textureID, uint32_t binding) {
@@ -325,4 +325,55 @@ void ZEN::GLResourceManager::bindCubeMapTexture(uint32_t textureID) {
     withResource(m_Textures, textureID, [](GLTexture &t) {
         glBindTexture(GL_TEXTURE_CUBE_MAP, t.textureID);
     });
+}
+
+uint32_t ZEN::GLResourceManager::createFBO() {
+    GLFBO fbo{};
+    glGenFramebuffers(1, &fbo.handle);
+    m_FBOs[nextFBOID] = fbo;
+    return nextFBOID++;
+}
+
+void ZEN::GLResourceManager::bindFBO(uint32_t fboID) {
+    if(fboID == 0) {
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        return;
+    }
+    withResource(m_FBOs, fboID, [](GLFBO &f) {
+        glBindFramebuffer(GL_FRAMEBUFFER, f.handle);
+    });
+}
+
+
+uint32_t ZEN::GLResourceManager::createColorTex(int width, int height) {
+    GLTexture tex{};
+    glGenTextures(1, &tex.textureID);
+    glBindTexture(GL_TEXTURE_2D, tex.textureID);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0,
+                 GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                           GL_TEXTURE_2D, tex.textureID, 0);
+    m_Textures[nextTextureID] = tex;
+    return nextTextureID++;
+}
+
+uint32_t ZEN::GLResourceManager::getTexture(uint32_t textureID) {
+    uint32_t ret = 0;
+    withResource(m_Textures, textureID, [&ret](GLTexture &t) {
+        ret = t.textureID;
+    });
+    return ret;
+}
+
+uint32_t ZEN::GLResourceManager::createDepthBuffer(int width, int height) {
+    GLDepthBuffer depthBuffer{};
+    glGenRenderbuffers(1, &depthBuffer.handle);
+    glBindRenderbuffer(GL_RENDERBUFFER, depthBuffer.handle);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
+                              GL_RENDERBUFFER, depthBuffer.handle);
+    m_DepthBuffers[nextDepthBufferID] = depthBuffer;
+    return nextDepthBufferID++;
 }
