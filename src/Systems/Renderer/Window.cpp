@@ -37,11 +37,43 @@ Window::Window(int width, int height, std::string title, ZEN::eRendererAPI api,
 
     glfwSetWindowUserPointer(m_Window, &dispatcher);
 
+    dispatcher.sink<CursorLockEvent>().connect<&Window::onCursorLockChange>(*this);
+
     glfwSetFramebufferSizeCallback(m_Window, [](GLFWwindow* window, int width, int height) {
         auto* disp = static_cast<entt::dispatcher*>(
             glfwGetWindowUserPointer(window)
         );
-        disp->trigger<ZEN::WindowResizeEvent>({width, height});
+        disp->trigger<WindowResizeEvent>({width, height});
+    });
+
+    glfwSetKeyCallback(m_Window, [](GLFWwindow* window, int key, int scan,
+        int action, int mods) {
+        auto* disp = static_cast<entt::dispatcher*>(
+            glfwGetWindowUserPointer(window)
+        );
+        if(action == GLFW_PRESS) {
+            disp->trigger<KeyPressedEvent>({key, scan, mods});
+        }
+        if(action == GLFW_REPEAT) {
+            disp->trigger<KeyRepeatEvent>({key, scan, mods});
+        }
+        if(action == GLFW_RELEASE) {
+            disp->trigger<KeyReleaseEvent>({key, scan, mods});
+        }
+    });
+    glfwSetMouseButtonCallback(m_Window, [](GLFWwindow* window, int button, int action, int mods) {
+        auto* disp = static_cast<entt::dispatcher*>(
+            glfwGetWindowUserPointer(window)
+        );
+        if(action == GLFW_PRESS) {
+            disp->trigger<MouseButtonPressEvent>({button, mods});
+        }
+        if(action == GLFW_REPEAT) {
+            disp->trigger<MouseButtonRepeatEvent>({button, mods});
+        }
+        if(action == GLFW_RELEASE) {
+            disp->trigger<MouseButtonReleaseEvent>({button, mods});
+        }
     });
 }
 Window::~Window() {
@@ -62,6 +94,15 @@ void Window::pollEvents() {
         m_Height = height;
     }
 }
+
+void Window::onCursorLockChange(CursorLockEvent &e) {
+    if (e.lock) {
+        glfwSetInputMode(m_Window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    } else {
+        glfwSetInputMode(m_Window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    }
+}
+
 void Window::calculateDeltaTime() {
     float currentTime = static_cast<float>(glfwGetTime());
     m_DeltaTime = currentTime - m_LastTime;

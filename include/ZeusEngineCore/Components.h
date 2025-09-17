@@ -43,6 +43,19 @@ namespace ZEN {
             auto const [t, r, s] = toMatrices(-position, -rotation, scale);
             return r * t * s;
         }
+
+        [[nodiscard]] glm::vec3 getFront() const {
+            // rotation.x = pitch, rotation.y = yaw, rotation.z = roll
+            float pitch = glm::radians(rotation.x);
+            float yaw   = glm::radians(rotation.y);
+
+            glm::vec3 front;
+            front.x = sin(yaw) * cos(pitch);   // swapped sin/cos
+            front.y = sin(pitch);
+            front.z = cos(yaw) * cos(pitch);   // positive Z is forward
+
+            return -glm::normalize(front);
+        }
     };
     struct DirectionalLightComp {
         glm::vec3 lightDir{};

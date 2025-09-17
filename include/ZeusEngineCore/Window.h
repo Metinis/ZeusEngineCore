@@ -4,6 +4,7 @@
 #include <ZeusEngineCore/API.h>
 struct GLFWwindow;
 namespace ZEN {
+    struct CursorLockEvent;
     class Window {
     public:
         Window(int width, int height, std::string title, ZEN::eRendererAPI api,
@@ -22,6 +23,8 @@ namespace ZEN {
         float getWidth(){return m_Width;}
 
         float getHeight(){return m_Height;}
+
+        void onCursorLockChange(CursorLockEvent& e);
 
     private:
         void calculateDeltaTime();
