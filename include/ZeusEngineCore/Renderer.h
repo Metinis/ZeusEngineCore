@@ -1,5 +1,12 @@
 #pragma once
+#include <entt.hpp>
+
 #include "../src/Systems/Renderer/OpenGL/GLContext.h"
+
+namespace ZEN {
+	struct SceneViewResizeEvent;
+	struct WindowResizeEvent;
+}
 
 namespace ZEN {
 	struct GlobalUBO {
@@ -22,11 +29,12 @@ namespace ZEN {
 
 	class Renderer {
 	public:
-		explicit Renderer(eRendererAPI api, GLFWwindow* window);
+		explicit Renderer(eRendererAPI api, GLFWwindow* window, entt::dispatcher& dispatcher);
 		void beginFrame();
 		void bindDefaultFBO();
 		void endFrame();
 		void setDefaultShader(const MaterialComp& shader);
+		void onResize(const WindowResizeEvent& e);
 		IContext* getContext() {return m_Context.get();}
 		IResourceManager* getResourceManager() {return m_ResourceManager.get();}
 		UniformComp& getViewUBO() {return m_ViewUBO;}
@@ -47,5 +55,9 @@ namespace ZEN {
 		FBO m_MainFBO{};
 		Texture m_ColorTex{};
 		Texture m_DepthTex{};
+
+		bool m_Resized{};
+		float m_Width{};
+		float m_Height{};
 	};
 }

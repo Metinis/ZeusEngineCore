@@ -12,3 +12,7 @@ entt::entity Scene::createEntity() {
 entt::registry& Scene::getRegistry() {
 	return m_Registry;
 }
+
+entt::dispatcher & Scene::getDispatcher() {
+	return m_Dispather;
+}

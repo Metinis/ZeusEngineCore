@@ -1,11 +1,13 @@
 #pragma once
+#include <entt.hpp>
 #include <string>
 #include <ZeusEngineCore/API.h>
 struct GLFWwindow;
 namespace ZEN {
     class Window {
     public:
-        Window(int width, int height, std::string title, ZEN::eRendererAPI api);
+        Window(int width, int height, std::string title, ZEN::eRendererAPI api,
+            entt::dispatcher& dispatcher);
 
         ~Window();
 

@@ -377,3 +377,10 @@ uint32_t ZEN::GLResourceManager::createDepthBuffer(int width, int height) {
     m_DepthBuffers[nextDepthBufferID] = depthBuffer;
     return nextDepthBufferID++;
 }
+
+void ZEN::GLResourceManager::deleteDepthBuffer(uint32_t bufferID) {
+    withResource(m_DepthBuffers, bufferID, [](GLDepthBuffer &b) {
+        glDeleteRenderbuffers(1, &b.handle);
+    });
+
+}

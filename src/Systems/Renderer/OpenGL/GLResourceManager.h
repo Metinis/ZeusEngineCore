@@ -56,6 +56,7 @@ namespace ZEN {
         uint32_t createColorTex(int width, int height) override;
         uint32_t getTexture(uint32_t textureID) override;
         uint32_t createDepthBuffer(int width, int height) override;
+        void deleteDepthBuffer(uint32_t bufferID) override;
 
     private:
         std::unordered_map<uint32_t, GLShader> m_Shaders{};

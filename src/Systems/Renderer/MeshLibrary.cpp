@@ -12,6 +12,7 @@ namespace ZEN {
 
 void MeshLibrary::init() {
     s_Meshes["Cube"]  = createCube();
+    s_Meshes["Skybox"] = createSkybox();
 }
 std::shared_ptr<MeshComp> MeshLibrary::get(const std::string &name) {
     auto it = s_Meshes.find(name);
@@ -78,6 +79,29 @@ std::shared_ptr<MeshComp> MeshLibrary::createCube() {
        20,21,22,22,23,20
     };
     return std::make_shared<MeshComp>(mesh);
+}
+
+std::shared_ptr<MeshComp> MeshLibrary::createSkybox() {
+    MeshComp skyboxMesh{};
+    skyboxMesh.vertices = {
+        {{-1.0f,  1.0f, -1.0f}}, {{-1.0f, -1.0f, -1.0f}}, {{ 1.0f, -1.0f, -1.0f}}, {{ 1.0f,  1.0f, -1.0f}}, // Back
+        {{-1.0f, -1.0f,  1.0f}}, {{-1.0f,  1.0f,  1.0f}}, {{ 1.0f,  1.0f,  1.0f}}, {{ 1.0f, -1.0f,  1.0f}}, // Front
+        {{-1.0f,  1.0f,  1.0f}}, {{-1.0f, -1.0f,  1.0f}}, {{-1.0f, -1.0f, -1.0f}}, {{-1.0f,  1.0f, -1.0f}}, // Left
+        {{ 1.0f,  1.0f, -1.0f}}, {{ 1.0f, -1.0f, -1.0f}}, {{ 1.0f, -1.0f,  1.0f}}, {{ 1.0f,  1.0f,  1.0f}}, // Right
+        {{-1.0f,  1.0f,  1.0f}}, {{-1.0f,  1.0f, -1.0f}}, {{ 1.0f,  1.0f, -1.0f}}, {{ 1.0f,  1.0f,  1.0f}}, // Top
+        {{-1.0f, -1.0f, -1.0f}}, {{-1.0f, -1.0f,  1.0f}}, {{ 1.0f, -1.0f,  1.0f}}, {{ 1.0f, -1.0f, -1.0f}}  // Bottom
+    };
+
+    // Cube indices
+    skyboxMesh.indices = {
+        0,1,2, 2,3,0,       // Back
+        4,5,6, 6,7,4,       // Front
+        8,9,10, 10,11,8,    // Left
+        12,13,14, 14,15,12, // Right
+        16,17,18, 18,19,16, // Top
+        20,21,22, 22,23,20  // Bottom
+    };
+    return std::make_shared<MeshComp>(skyboxMesh);
 }
 
 void MeshLibrary::shutdown() {

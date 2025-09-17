@@ -3,11 +3,13 @@
 #include <utility>
 #include "GLFW/glfw3.h"
 #include <ZeusEngineCore/API.h>
+#include <ZeusEngineCore/InputEvents.h>
 
 using namespace ZEN;
 
 
-Window::Window(int width, int height, std::string title, ZEN::eRendererAPI api)
+Window::Window(int width, int height, std::string title, ZEN::eRendererAPI api,
+    entt::dispatcher& dispatcher)
     : m_Width(width), m_Height(height), m_Title(std::move(title)) {
     if (!glfwInit())
         throw std::runtime_error("Failed to initialize GLFW");
@@ -32,6 +34,15 @@ Window::Window(int width, int height, std::string title, ZEN::eRendererAPI api)
         throw std::runtime_error("Failed to create window");
 
     m_LastTime = static_cast<float>(glfwGetTime());
+
+    glfwSetWindowUserPointer(m_Window, &dispatcher);
+
+    glfwSetFramebufferSizeCallback(m_Window, [](GLFWwindow* window, int width, int height) {
+        auto* disp = static_cast<entt::dispatcher*>(
+            glfwGetWindowUserPointer(window)
+        );
+        disp->trigger<ZEN::WindowResizeEvent>({width, height});
+    });
 }
 Window::~Window() {
     if(m_Window) {

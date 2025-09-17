@@ -47,6 +47,7 @@ namespace ZEN {
         virtual uint32_t createColorTex(int width, int height) = 0;
         virtual uint32_t getTexture(uint32_t textureID) = 0;
         virtual uint32_t createDepthBuffer(int width, int height) = 0;
+        virtual void deleteDepthBuffer(uint32_t bufferID) = 0;
 
         static std::unique_ptr<IResourceManager> create(eRendererAPI api);
     };
