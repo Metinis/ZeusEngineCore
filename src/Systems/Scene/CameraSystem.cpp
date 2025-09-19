@@ -16,21 +16,10 @@ CameraSystem::CameraSystem(entt::dispatcher &dispatcher) : m_Dispatcher(dispatch
     dispatcher.sink<MouseButtonPressEvent>().connect<&CameraSystem::onMouseButtonPressed>(*this);
     dispatcher.sink<MouseButtonReleaseEvent>().connect<&CameraSystem::onMouseButtonReleased>(*this);
     dispatcher.sink<PanelFocusEvent>().connect<&CameraSystem::onPanelFocusEvent>(*this);
+    dispatcher.sink<MouseMoveEvent>().connect<&CameraSystem::onMouseMove>(*this);
 }
 
 void CameraSystem::onUpdate(entt::registry &registry, float deltaTime) {
-    //lock mouse if right button pressed and scene panel selected
-    if(m_PanelSelected && m_MouseButtonsDown.contains(GLFW_MOUSE_BUTTON_RIGHT)
-        && !m_CursorLocked) {
-        //glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-        std::cout<<"cursor locked"<<"\n";
-        m_CursorLocked = true;
-    }
-    else if (!m_CursorLocked){
-        //glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL;
-        //std::cout<<"cursor unlocked"<<"\n";
-        m_CursorLocked = false;
-    }
     auto view = registry.view<CameraComp>();
 
     for (auto entity : view) {
@@ -55,7 +44,17 @@ void CameraSystem::onUpdate(entt::registry &registry, float deltaTime) {
             if (glm::length(moveVec) > 0.0f) {
                 transform->position += glm::normalize(moveVec) * deltaTime * m_MoveSpeed;
             }
+            if(m_CursorLocked) {
+                constexpr float sensitivity = 0.1f;
+                double xOffset = m_CursorPosLastX - m_CursorPosX;
+                double yOffset = m_CursorPosLastY - m_CursorPosY;
 
+                transform->rotation.y += xOffset * sensitivity;
+                transform->rotation.x += yOffset * sensitivity;
+
+                m_CursorPosLastX = m_CursorPosX;
+                m_CursorPosLastY = m_CursorPosY;
+            }
         }
 
         //update perspective matrix if resized
@@ -93,6 +92,7 @@ void CameraSystem::onMouseButtonPressed(const MouseButtonPressEvent &e) {
     //m_MouseButtonsDown.insert(e.button);
     if(e.button == GLFW_MOUSE_BUTTON_RIGHT && m_PanelSelected) {
         m_Dispatcher.trigger<CursorLockEvent>(CursorLockEvent{true});
+        m_CursorLocked = true;
     }
 }
 
@@ -100,7 +100,13 @@ void CameraSystem::onMouseButtonReleased(const MouseButtonReleaseEvent &e) {
     //m_MouseButtonsDown.erase(e.button);
     if(e.button == GLFW_MOUSE_BUTTON_RIGHT) {
         m_Dispatcher.trigger<CursorLockEvent>(CursorLockEvent{false});
+        m_CursorLocked = false;
     }
+}
+
+void CameraSystem::onMouseMove(const MouseMoveEvent &e) {
+    m_CursorPosX = e.xPos;
+    m_CursorPosY = e.yPos;
 }
 
 void CameraSystem::onPanelFocusEvent(const PanelFocusEvent &e) {

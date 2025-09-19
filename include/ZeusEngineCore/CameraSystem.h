@@ -11,6 +11,7 @@ namespace ZEN {
     struct MouseButtonPressEvent;
     struct MouseButtonReleaseEvent;
     struct PanelFocusEvent;
+    struct MouseMoveEvent;
     class CameraSystem {
     public:
         explicit CameraSystem(entt::dispatcher& dispatcher);
@@ -23,12 +24,17 @@ namespace ZEN {
 
         void onMouseButtonPressed(const MouseButtonPressEvent& e);
         void onMouseButtonReleased(const MouseButtonReleaseEvent& e);
+        void onMouseMove(const MouseMoveEvent& e);
 
         void onPanelFocusEvent(const PanelFocusEvent& e);
 
         float m_Width{};
         float m_Height{};
         float m_MoveSpeed{5.0f};
+        double m_CursorPosLastX{};
+        double m_CursorPosLastY{};
+        double m_CursorPosX{};
+        double m_CursorPosY{};
         bool m_Resized{};
         bool m_PanelSelected{};
         bool m_CursorLocked{};

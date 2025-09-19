@@ -75,6 +75,12 @@ Window::Window(int width, int height, std::string title, ZEN::eRendererAPI api,
             disp->trigger<MouseButtonReleaseEvent>({button, mods});
         }
     });
+    glfwSetCursorPosCallback(m_Window, [](GLFWwindow* window, double xPos, double yPos) {
+        auto* disp = static_cast<entt::dispatcher*>(
+            glfwGetWindowUserPointer(window)
+        );
+        disp->trigger<MouseMoveEvent>({xPos, yPos});
+    });
 }
 Window::~Window() {
     if(m_Window) {

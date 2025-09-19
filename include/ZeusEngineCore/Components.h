@@ -51,7 +51,7 @@ namespace ZEN {
 
             glm::vec3 front;
             front.x = sin(yaw) * cos(pitch);   // swapped sin/cos
-            front.y = sin(pitch);
+            front.y = -sin(pitch);
             front.z = cos(yaw) * cos(pitch);   // positive Z is forward
 
             return -glm::normalize(front);
