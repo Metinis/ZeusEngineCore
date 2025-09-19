@@ -20,7 +20,7 @@ constexpr std::array textureBindings{
 };
 
 ZEN::GLResourceManager::GLResourceManager() {
-    /*unsigned char whitePixel[4] = { 255, 255, 255, 255 };
+    unsigned char whitePixel[4] = { 255, 255, 255, 255 };
     GLTexture tex{};
     glGenTextures(1, &tex.textureID);
     glBindTexture(GL_TEXTURE_2D, tex.textureID);
@@ -28,7 +28,7 @@ ZEN::GLResourceManager::GLResourceManager() {
                  GL_RGBA, GL_UNSIGNED_BYTE, whitePixel);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    m_Textures[0] = tex;*/
+    m_Textures[0] = tex;
 }
 ZEN::GLResourceManager::~GLResourceManager() {
     for (auto &[id, drawable]: m_Drawables) {
@@ -290,7 +290,7 @@ uint32_t ZEN::GLResourceManager::createCubeMapTexture(const std::string& texture
     GLTexture texture{};
     glGenTextures(1, &texture.textureID);
     glBindTexture(GL_TEXTURE_CUBE_MAP, texture.textureID);
-    m_Textures[nextTextureID++] = texture;
+    m_Textures[nextTextureID] = texture;
 
     //load the faces
     int texWidth, texHeight, texChannels;
@@ -317,7 +317,7 @@ uint32_t ZEN::GLResourceManager::createCubeMapTexture(const std::string& texture
 
 
     //return the id in resources
-    return texture.textureID;
+    return nextTextureID++;
 }
 
 

@@ -45,8 +45,14 @@ void Renderer::endFrame() {
     m_Context->swapBuffers();
 }
 
-void Renderer::setDefaultShader(const MaterialComp &shader) {
-    m_DefaultShader = shader;
+uint32_t Renderer::createDefaultShader(const std::string& vertPath, const std::string& fragPath,
+    const std::string& resourceRoot) {
+
+    uint32_t defaultShaderID = m_ResourceManager->createShader(
+    std::string(resourceRoot) + vertPath, resourceRoot + fragPath);
+    MaterialComp defaultShader {.shaderID = defaultShaderID};
+    m_DefaultShader = defaultShader;
+    return m_DefaultShader.shaderID;
 }
 
 void Renderer::onResize(const WindowResizeEvent &e) {
@@ -54,5 +60,9 @@ void Renderer::onResize(const WindowResizeEvent &e) {
     m_Resized = true;
     m_Width = e.width;
     m_Height = e.height;
+}
+
+void * Renderer::getColorTextureHandle() {
+    return (void*)m_ResourceManager->getTexture(m_ColorTex.textureID);
 }
 

@@ -16,8 +16,8 @@ namespace ZEN {
         uint32_t shaderID{};
         uint32_t textureID{};
         uint32_t specularTexID{};
-        float specular{};
-        int shininess{};
+        float specular{1.0f};
+        int shininess{1};
     };
     struct SkyboxComp {
         uint32_t shaderID;

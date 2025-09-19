@@ -24,7 +24,7 @@ namespace ZEN {
         static std::shared_ptr<MeshComp> createCube();
         static std::shared_ptr<MeshComp> createSkybox();
         //static std::shared_ptr<MeshComp> createPlane();
-        //static std::shared_ptr<MeshComp> createSphere();
+        static std::shared_ptr<MeshComp> createSphere(float radius, unsigned int sectorCount, unsigned int stackCount);
     };
 }
 

@@ -57,26 +57,22 @@ void RenderSystem::writeCameraData(const entt::registry& registry, glm::mat4& vi
 void RenderSystem::renderDrawables(const entt::registry &registry) {
     //todo sort by material
     auto viewDraw = registry.view<MeshDrawableComp, MaterialComp, TransformComp>();
-    uint32_t lastMaterialID{};
     for(auto& entity : viewDraw) {
-        if(viewDraw.get<MaterialComp>(entity).shaderID != lastMaterialID) {
-            //bind shader
-            auto& material = viewDraw.get<MaterialComp>(entity);
-            lastMaterialID = material.shaderID;
-            m_Renderer->getResourceManager()->bindShader(lastMaterialID);
+        //bind shader
+        auto& material = viewDraw.get<MaterialComp>(entity);
+        m_Renderer->getResourceManager()->bindShader(material.shaderID);
 
-            //write to material ubo
-            MaterialUBO materialUBO {
-                .specularAndShininess = {material.specular, float(material.shininess)}
-            };
-            auto const materialBytes = std::bit_cast<std::array<std::byte,
-                sizeof(materialUBO)>>(materialUBO);
-            m_Renderer->getResourceManager()->writeToUBO(m_Renderer->getMaterialUBO().uboID, materialBytes);
+        //write to material ubo
+        MaterialUBO materialUBO {
+            .specularAndShininess = {material.specular, float(material.shininess)}
+        };
+        auto const materialBytes = std::bit_cast<std::array<std::byte,
+            sizeof(materialUBO)>>(materialUBO);
+        m_Renderer->getResourceManager()->writeToUBO(m_Renderer->getMaterialUBO().uboID, materialBytes);
 
-            //bind material texture
-            m_Renderer->getResourceManager()->bindTexture(material.textureID, 0);
-            m_Renderer->getResourceManager()->bindTexture(material.specularTexID, 1);
-        }
+        //bind material texture
+        m_Renderer->getResourceManager()->bindTexture(material.textureID, 0);
+        m_Renderer->getResourceManager()->bindTexture(material.specularTexID, 1);
         //write to instance ubo (todo check if last mesh is same for instancing)
         auto transform = viewDraw.get<TransformComp>(entity);
         auto const bytes = std::bit_cast<std::array<std::byte,

@@ -13,6 +13,7 @@ namespace ZEN {
 void MeshLibrary::init() {
     s_Meshes["Cube"]  = createCube();
     s_Meshes["Skybox"] = createSkybox();
+    s_Meshes["Sphere"] = createSphere(1.0f, 32, 16);
 }
 std::shared_ptr<MeshComp> MeshLibrary::get(const std::string &name) {
     auto it = s_Meshes.find(name);
@@ -102,6 +103,56 @@ std::shared_ptr<MeshComp> MeshLibrary::createSkybox() {
         20,21,22, 22,23,20  // Bottom
     };
     return std::make_shared<MeshComp>(skyboxMesh);
+}
+
+std::shared_ptr<MeshComp> MeshLibrary::createSphere(float radius, unsigned int sectorCount, unsigned int stackCount) {
+    MeshComp sphere{};
+
+    const float PI = 3.14159265359f;
+
+    for (unsigned int i = 0; i <= stackCount; ++i) {
+        float stackAngle = PI / 2 - i * (PI / stackCount); // from pi/2 to -pi/2
+        float xy = radius * cosf(stackAngle);
+        float y = radius * sinf(stackAngle);
+
+        for (unsigned int j = 0; j <= sectorCount; ++j) {
+            float sectorAngle = j * (2 * PI / sectorCount);
+
+            float x = xy * cosf(sectorAngle);
+            float z = xy * sinf(sectorAngle);
+
+            Vertex v{};
+            v.Position = {x, y, z};
+            v.Normal = glm::normalize(glm::vec3{x, y, z});
+            v.TexCoords = {
+                (float)j / sectorCount,
+                (float)i / stackCount
+            };
+            sphere.vertices.push_back(v);
+        }
+    }
+
+    // indices
+    for (unsigned int i = 0; i < stackCount; ++i) {
+        unsigned int k1 = i * (sectorCount + 1);
+        unsigned int k2 = k1 + sectorCount + 1;
+
+        for (unsigned int j = 0; j < sectorCount; ++j, ++k1, ++k2) {
+            if (i != 0) {
+                sphere.indices.push_back(k1);
+                sphere.indices.push_back(k2);
+                sphere.indices.push_back(k1 + 1);
+            }
+
+            if (i != (stackCount - 1)) {
+                sphere.indices.push_back(k1 + 1);
+                sphere.indices.push_back(k2);
+                sphere.indices.push_back(k2 + 1);
+            }
+        }
+    }
+
+    return std::make_shared<MeshComp>(sphere);
 }
 
 void MeshLibrary::shutdown() {

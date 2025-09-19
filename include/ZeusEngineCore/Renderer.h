@@ -33,7 +33,8 @@ namespace ZEN {
 		void beginFrame();
 		void bindDefaultFBO();
 		void endFrame();
-		void setDefaultShader(const MaterialComp& shader);
+		uint32_t createDefaultShader(const std::string& vertPath, const std::string& fragPath,
+			const std::string& resourceRoot);
 		void onResize(const WindowResizeEvent& e);
 		IContext* getContext() {return m_Context.get();}
 		IResourceManager* getResourceManager() {return m_ResourceManager.get();}
@@ -43,6 +44,7 @@ namespace ZEN {
 		UniformComp& getMaterialUBO() {return m_MaterialUBO;}
 		MaterialComp& getDefaultShader() {return m_DefaultShader;}
 		Texture& getColorTexture() {return m_ColorTex;}
+		void* getColorTextureHandle();
 	private:
 		std::unique_ptr<IContext> m_Context{};
 		std::unique_ptr<IResourceManager> m_ResourceManager{};
