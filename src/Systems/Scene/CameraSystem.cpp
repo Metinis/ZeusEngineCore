@@ -107,6 +107,10 @@ void CameraSystem::onMouseButtonReleased(const MouseButtonReleaseEvent &e) {
 void CameraSystem::onMouseMove(const MouseMoveEvent &e) {
     m_CursorPosX = e.xPos;
     m_CursorPosY = e.yPos;
+    if(!m_CursorLocked) {
+        m_CursorPosLastX = m_CursorPosX;
+        m_CursorPosLastY = m_CursorPosY;
+    }
 }
 
 void CameraSystem::onPanelFocusEvent(const PanelFocusEvent &e) {
