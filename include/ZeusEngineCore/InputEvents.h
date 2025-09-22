@@ -46,4 +46,7 @@ namespace ZEN {
         double xPos;
         double yPos;
     };
+    struct SelectEntityEvent {
+        entt::entity entity;
+    };
 }

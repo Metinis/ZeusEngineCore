@@ -21,7 +21,7 @@ namespace ZEN {
 
         virtual ~IResourceManager() = default;
 
-        virtual uint32_t createMeshDrawable(const MeshComp& meshComp) = 0;
+        virtual uint32_t createMeshDrawable(const Mesh& meshComp) = 0;
         virtual void bindMeshDrawable(uint32_t drawableID) = 0;
         virtual void deleteMeshDrawable(uint32_t drawableID) = 0;
 

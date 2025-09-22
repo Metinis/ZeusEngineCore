@@ -3,14 +3,20 @@
 #include "ZeusEngineCore/Util.h"
 
 namespace ZEN {
-    struct MeshComp {
+    struct Mesh {
         std::vector<uint32_t> indices{};
         std::vector<Vertex> vertices{};
     };
-    struct MeshDrawableComp {
+    struct MeshComp {
+        std::vector<Mesh> meshes{};
+    };
+    struct MeshDrawable {
         size_t indexCount{};
         uint32_t meshID{};
         int instanceCount{1};
+    };
+    struct MeshDrawableComp {
+        std::vector<MeshDrawable> drawables{};
     };
     struct MaterialComp {
         uint32_t shaderID{};

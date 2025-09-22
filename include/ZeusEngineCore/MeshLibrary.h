@@ -16,6 +16,7 @@ namespace ZEN {
             return s_Meshes;
         }
         static void add(const std::string& name, std::shared_ptr<MeshComp> mesh);
+        static void load(const std::string& name, const std::string& path);
 
     private:
         static std::unordered_map<std::string, std::shared_ptr<MeshComp>> s_Meshes;

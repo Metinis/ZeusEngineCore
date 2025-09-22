@@ -21,11 +21,17 @@ void RenderSystem::onUpdate(entt::registry &registry) {
         }
 
         auto &mesh = meshView.get<MeshComp>(entity);
-        MeshDrawableComp meshDrawable {
-            .indexCount = mesh.indices.size(),
-            .meshID = m_Renderer->getResourceManager()->createMeshDrawable(mesh),
-        };
-        registry.emplace<MeshDrawableComp>(entity, meshDrawable);
+
+        std::vector<MeshDrawable> drawables{};
+        drawables.reserve(mesh.meshes.size());
+        for(auto& m : mesh.meshes) {
+            MeshDrawable drawable{};
+            drawable.indexCount = m.indices.size();
+            drawable.meshID = m_Renderer->getResourceManager()->createMeshDrawable(m);
+            drawables.push_back(drawable);
+        }
+        MeshDrawableComp drawableComp{.drawables = drawables};
+        registry.emplace<MeshDrawableComp>(entity, drawableComp);
     }
 }
 void RenderSystem::writeCameraData(const entt::registry& registry, glm::mat4& view,

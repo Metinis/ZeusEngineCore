@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 find_package(Vulkan REQUIRED)
+find_package(assimp REQUIRED)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/include/glfw glfw)
 
 add_library(ZeusEngineCore STATIC)
@@ -25,8 +26,7 @@ target_include_directories(ZeusEngineCore
         ${CMAKE_CURRENT_SOURCE_DIR}/include
         ${CMAKE_CURRENT_SOURCE_DIR}/include/entt
         ${CMAKE_CURRENT_SOURCE_DIR}/include/glad/include
-        PRIVATE
-        ${CMAKE_SOURCE_DIR}/include/glm
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/glm
 )
 
 target_compile_definitions(ZeusEngineCore PRIVATE VK_NO_PROTOTYPES)
@@ -36,6 +36,7 @@ target_link_libraries(ZeusEngineCore
         glfw
         PRIVATE
         Vulkan::Vulkan
+        assimp::assimp
 )
 
 if(APPLE)

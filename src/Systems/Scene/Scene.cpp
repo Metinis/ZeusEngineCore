@@ -50,6 +50,15 @@ void Scene::createDefaultScene(const std::string& resourceRoot, Renderer* render
     skyboxComp.textureID = renderer->getResourceManager()->createCubeMapTexture(resourceRoot + "/textures/skybox/");
     m_Registry.emplace<ZEN::SkyboxComp>(skyboxEntity, skyboxComp);
     m_Registry.emplace<ZEN::MeshComp>(skyboxEntity, skyboxMesh);
+
+    MeshLibrary::load("test", resourceRoot + "/models/Survival_BackPack_2/Survival_BackPack_2.fbx");
+    entt::entity backpack = createEntity();
+    m_Registry.emplace<ZEN::MeshComp>(backpack, *ZEN::MeshLibrary::get("test"));
+    m_Registry.emplace<ZEN::TransformComp>(backpack,
+        ZEN::TransformComp{.position = {4.0f, 0.0f, -3.0f}});
+    m_Registry.emplace<ZEN::MaterialComp>(backpack, comp);
+    m_Registry.emplace<ZEN::TagComp>(backpack, ZEN::TagComp{.tag = "Backpack"});
+
 }
 
 entt::entity Scene::createEntity() {

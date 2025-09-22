@@ -19,10 +19,12 @@ GLContext::GLContext(GLFWwindow* window)
 }
 void GLContext::drawMesh(IResourceManager& resourceManager, const MeshDrawableComp& meshRenderable) {
     //retrieve GLDrawable by meshID from resource manager
-    resourceManager.bindMeshDrawable(meshRenderable.meshID);
-    glDrawElementsInstanced(GL_TRIANGLES, meshRenderable.indexCount, GL_UNSIGNED_INT,
-        nullptr, meshRenderable.instanceCount);
-    glBindVertexArray(0);
+    for(auto& drawable : meshRenderable.drawables) {
+        resourceManager.bindMeshDrawable(drawable.meshID);
+        glDrawElementsInstanced(GL_TRIANGLES, drawable.indexCount, GL_UNSIGNED_INT,
+            nullptr, drawable.instanceCount);
+        glBindVertexArray(0);
+    }
 }
 
 void GLContext::clear(bool shouldClearColor, bool shouldClearDepth) {

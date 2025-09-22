@@ -93,6 +93,9 @@ void CameraSystem::onMouseButtonPressed(const MouseButtonPressEvent &e) {
     if(e.button == GLFW_MOUSE_BUTTON_RIGHT && m_PanelSelected) {
         m_Dispatcher.trigger<CursorLockEvent>(CursorLockEvent{true});
         m_CursorLocked = true;
+
+        //m_CursorPosLastX = m_CursorPosX;
+        //m_CursorPosLastY = m_CursorPosY;
     }
 }
 
