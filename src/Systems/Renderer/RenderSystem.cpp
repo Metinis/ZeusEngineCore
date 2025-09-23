@@ -77,8 +77,9 @@ void RenderSystem::renderDrawables(const entt::registry &registry) {
         m_Renderer->getResourceManager()->writeToUBO(m_Renderer->getMaterialUBO().uboID, materialBytes);
 
         //bind material texture
-        m_Renderer->getResourceManager()->bindTexture(material.textureID, 0);
-        m_Renderer->getResourceManager()->bindTexture(material.specularTexID, 1);
+        //m_Renderer->getResourceManager()->bindTexture(material.textureID, 0);
+        //m_Renderer->getResourceManager()->bindTexture(material.specularTexID, 1);
+        m_Renderer->getResourceManager()->bindMaterial(material);
         //write to instance ubo (todo check if last mesh is same for instancing)
         auto transform = viewDraw.get<TransformComp>(entity);
         auto const bytes = std::bit_cast<std::array<std::byte,

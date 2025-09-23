@@ -5,6 +5,9 @@
 #include <memory>
 #include <unordered_map>
 #include <iostream>
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
 
 namespace ZEN {
     class IResourceManager {
@@ -35,8 +38,11 @@ namespace ZEN {
         virtual void deleteUBO(uint32_t uboID) = 0;
 
         virtual uint32_t createTexture(std::string_view texturePath) = 0;
+        virtual uint32_t createTextureAssimp(const aiTexture& aiTex) = 0;
         virtual void bindTexture(uint32_t textureID, uint32_t binding) = 0;
         virtual void deleteTexture(uint32_t textureID) = 0;
+
+        virtual void bindMaterial(const MaterialComp& material) = 0;
 
         virtual uint32_t createCubeMapTexture(const std::string& texturePath) = 0;
         virtual void bindCubeMapTexture(uint32_t textureID) = 0;

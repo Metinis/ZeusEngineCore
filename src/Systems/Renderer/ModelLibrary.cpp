@@ -1,7 +1,7 @@
 #include <utility>
 
-#include "ZeusEngineCore/MeshLibrary.h"
-
+#include "ZeusEngineCore/ModelLibrary.h"
+#include "IResourceManager.h"
 #include <iostream>
 
 #include "ZeusEngineCore/Components.h"
@@ -13,21 +13,31 @@
 using namespace ZEN;
 
 namespace ZEN {
-    std::unordered_map<std::string, std::shared_ptr<MeshComp>> MeshLibrary::s_Meshes;
+    std::unordered_map<std::string, std::shared_ptr<MeshComp>> ModelLibrary::s_Meshes;
+    std::unordered_map<std::string, std::shared_ptr<MaterialComp>> ModelLibrary::s_Materials;
+    IResourceManager* ModelLibrary::s_ResourceManager;
 }
 
 
-void MeshLibrary::init() {
+void ModelLibrary::init(IResourceManager* resourceManager) {
     s_Meshes["Cube"]  = createCube();
     s_Meshes["Skybox"] = createSkybox();
     s_Meshes["Sphere"] = createSphere(1.0f, 32, 16);
+    s_ResourceManager = resourceManager;
 }
-std::shared_ptr<MeshComp> MeshLibrary::get(const std::string &name) {
+std::shared_ptr<MeshComp> ModelLibrary::get(const std::string &name) {
     auto it = s_Meshes.find(name);
     if (it != s_Meshes.end()) return it->second;
     return nullptr;
 }
-void MeshLibrary::add(const std::string& name, std::shared_ptr<MeshComp> mesh) {
+
+std::shared_ptr<MaterialComp> ModelLibrary::getMaterial(const std::string &name) {
+    auto it = s_Materials.find(name);
+    if (it != s_Materials.end()) return it->second;
+    return nullptr;
+}
+
+void ModelLibrary::add(const std::string& name, std::shared_ptr<MeshComp> mesh) {
     s_Meshes[name] = std::move(mesh);
 }
 glm::mat4 aiMat4ToGlm(const aiMatrix4x4& aiMat) {
@@ -53,43 +63,61 @@ struct BoundingBox {
         return glm::max(s.x, glm::max(s.y, s.z));
     }
 };
+constexpr auto processMeshPos = [](const aiVector3D& verts, const glm::mat4& transform) {
+    glm::vec3 pos = {
+        verts.x,
+        verts.y,
+        verts.z
+    };
+    return glm::vec3(transform * glm::vec4(pos, 1.0f)); //transformed pos
+};
+constexpr auto processMeshNormals = [](const aiVector3D& normals, const glm::mat4& transform) {
+    glm::vec3 normal = {
+        normals.x,
+        normals.y,
+        normals.z
+    };
+    return glm::normalize(glm::mat3(transform) * normal);
+};
+constexpr auto processMeshUVs = [](const aiVector3D& uvs) {
+    glm::vec2 uv = {
+        uvs.x,
+        uvs.y,
+    };
+    return uv;
+};
+std::unordered_map<const aiTexture*, uint32_t> s_EmbeddedTextureCache;
+constexpr auto processTexturesEmbedded = [](std::vector<uint32_t>& textureIDs, const aiScene* scene,
+    const aiString& texPath) {
+    unsigned int texIndex = atoi(texPath.C_Str() + 1);
+    const aiTexture* tex = scene->mTextures[texIndex];
+    auto it = s_EmbeddedTextureCache.find(tex);
+    uint32_t texID;
+    if (it != s_EmbeddedTextureCache.end()) {
+        texID = it->second; // reuse
+    } else {
+        texID = ModelLibrary::s_ResourceManager->createTextureAssimp(*tex);
+        s_EmbeddedTextureCache[tex] = texID; // cache
+        textureIDs.push_back(texID);
+    }
+};
 
-Mesh processMesh(aiMesh* mesh, const aiScene* scene, const glm::mat4& transform)
-{
+Mesh processMesh(aiMesh* mesh, const aiScene* scene, const glm::mat4& transform, MaterialComp& materialComp) {
     std::vector<Vertex> vertices;
     std::vector<uint32_t> indices;
 
     for (uint32_t i{0}; i < mesh->mNumVertices; ++i)
     {
         Vertex vertex{};
-        glm::vec3 pos = {
-            mesh->mVertices[i].x,
-            mesh->mVertices[i].y,
-            mesh->mVertices[i].z
-        };
-        pos = glm::vec3(transform * glm::vec4(pos, 1.0f));
-        vertex.Position = pos;
-
+        vertex.Position = processMeshPos(mesh->mVertices[i], transform);
+        vertex.Normal = glm::vec3(0.0f);
+        vertex.TexCoords = glm::vec2(0.0f, 0.0f);
         if(mesh->HasNormals()) {
-            glm::vec3 normal = {
-                mesh->mNormals[i].x,
-                mesh->mNormals[i].y,
-                mesh->mNormals[i].z
-            };
-            normal = glm::normalize(glm::mat3(transform) * normal);
-            vertex.Normal = normal;
-        } else {
-            vertex.Normal = glm::vec3(0.0f);
+            vertex.Normal = processMeshNormals(mesh->mNormals[i], transform);
         }
 
         if(mesh->mTextureCoords[0]) {
-            vertex.TexCoords = {
-                mesh->mTextureCoords[0][i].x,
-                mesh->mTextureCoords[0][i].y
-            };
-        }
-        else {
-            vertex.TexCoords = glm::vec2(0.0f, 0.0f);
+            vertex.TexCoords = processMeshUVs(mesh->mTextureCoords[0][i]);
         }
 
         vertices.push_back(vertex);
@@ -100,19 +128,40 @@ Mesh processMesh(aiMesh* mesh, const aiScene* scene, const glm::mat4& transform)
         for (uint32_t j{0}; j < face.mNumIndices; ++j)
             indices.push_back(face.mIndices[j]);
     }
+    if(mesh->mMaterialIndex >= 0)
+    {
+        aiMaterial *material = scene->mMaterials[mesh->mMaterialIndex];
+
+        unsigned int diffuseCount = material->GetTextureCount(aiTextureType_DIFFUSE);
+
+        for(uint32_t i{0}; i < diffuseCount; ++i) {
+            aiString texPath;
+            material->GetTexture(aiTextureType_DIFFUSE, i, &texPath);
+            if (texPath.length > 0 && texPath.C_Str()[0] == '*') {
+                processTexturesEmbedded(materialComp.textureIDs, scene, texPath);
+            }
+            material->GetTexture(aiTextureType_SPECULAR, i, &texPath);
+            if (texPath.length > 0 && texPath.C_Str()[0] == '*') {
+                processTexturesEmbedded(materialComp.specularTexIDs, scene, texPath);
+            }
+
+            else if(texPath.length > 0) {
+                //load external file
+            }
+        }
+    }
 
     return Mesh(indices, vertices);
 }
 
 void processNode(aiNode* node, const aiScene* scene, std::vector<Mesh>& meshes,
-                 const glm::mat4& parentTransform, BoundingBox& bbox)
-{
+                 const glm::mat4& parentTransform, BoundingBox& bbox, MaterialComp& materialComp) {
     glm::mat4 nodeTransform = aiMat4ToGlm(node->mTransformation);
     glm::mat4 globalTransform = parentTransform * nodeTransform;
 
     for (unsigned int i = 0; i < node->mNumMeshes; i++) {
         aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
-        Mesh processed = processMesh(mesh, scene, globalTransform);
+        Mesh processed = processMesh(mesh, scene, globalTransform, materialComp);
 
         for (auto& v : processed.vertices) {
             bbox.expand(v.Position);
@@ -122,23 +171,43 @@ void processNode(aiNode* node, const aiScene* scene, std::vector<Mesh>& meshes,
     }
 
     for (unsigned int i = 0; i < node->mNumChildren; i++) {
-        processNode(node->mChildren[i], scene, meshes, globalTransform, bbox);
+        processNode(node->mChildren[i], scene, meshes, globalTransform, bbox, materialComp);
     }
 }
 
 
-void MeshLibrary::load(const std::string &name, const std::string& path) {
+void ModelLibrary::load(const std::string &name, const std::string& path) {
     Assimp::Importer import;
-    const aiScene* scene = import.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
+    const aiScene* scene = import.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_EmbedTextures);
 
     if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
         std::cout << "ERROR::ASSIMP::" << import.GetErrorString() << std::endl;
         return;
     }
+    /*std::cout << "Scene textures: " << scene->mNumTextures << "\n";
+    for (unsigned int i = 0; i < scene->mNumTextures; ++i) {
+        const aiTexture* tex = scene->mTextures[i];
+        std::cout << "Embedded texture " << i
+                  << " width: " << tex->mWidth
+                  << " height: " << tex->mHeight
+                  << " compressed: " << (tex->mHeight == 0) << "\n";
+    }
+    for (unsigned int m = 0; m < scene->mNumMaterials; ++m) {
+        aiMaterial* mat = scene->mMaterials[m];
+        unsigned int texCount = mat->GetTextureCount(aiTextureType_DIFFUSE);
+        std::cout << "Material " << m << " diffuse count: " << texCount << "\n";
+        for (unsigned int i = 0; i < texCount; ++i) {
+            aiString path;
+            mat->GetTexture(aiTextureType_DIFFUSE, i, &path);
+            std::cout << "  path: " << path.C_Str() << "\n";
+        }
+    }*/
+
 
     std::vector<Mesh> meshes;
+    MaterialComp material{};
     BoundingBox bbox;
-    processNode(scene->mRootNode, scene, meshes, glm::mat4(1.0f), bbox);
+    processNode(scene->mRootNode, scene, meshes, glm::mat4(1.0f), bbox, material);
 
     float scaleFactor = 1.0f / bbox.maxDimension();
     glm::mat4 scaleMat = glm::scale(glm::mat4(1.0f), glm::vec3(scaleFactor));
@@ -151,12 +220,15 @@ void MeshLibrary::load(const std::string &name, const std::string& path) {
         }
     }
 
+
     s_Meshes[name] = std::make_shared<MeshComp>(meshes);
-    std::cout << "Loaded model '" << name << "' with " << meshes.size() << " meshes\n";
+    s_Materials[name] = std::make_shared<MaterialComp>(material);
+    std::cout << "Loaded model '" << name << "' with " << meshes.size() << " meshes "
+    << material.textureIDs.size()<<" Texture IDs" << "\n";
 }
 
 
-std::shared_ptr<MeshComp> MeshLibrary::createCube() {
+std::shared_ptr<MeshComp> ModelLibrary::createCube() {
     Mesh mesh;
 
     mesh.vertices = {
@@ -214,7 +286,7 @@ std::shared_ptr<MeshComp> MeshLibrary::createCube() {
     return std::make_shared<MeshComp>(std::vector<Mesh>{mesh});
 }
 
-std::shared_ptr<MeshComp> MeshLibrary::createSkybox() {
+std::shared_ptr<MeshComp> ModelLibrary::createSkybox() {
     Mesh skyboxMesh{};
     skyboxMesh.vertices = {
         {{-1.0f,  1.0f, -1.0f}}, {{-1.0f, -1.0f, -1.0f}}, {{ 1.0f, -1.0f, -1.0f}}, {{ 1.0f,  1.0f, -1.0f}}, // Back
@@ -238,7 +310,7 @@ std::shared_ptr<MeshComp> MeshLibrary::createSkybox() {
 }
 
 
-std::shared_ptr<MeshComp> MeshLibrary::createSphere(float radius, unsigned int sectorCount, unsigned int stackCount) {
+std::shared_ptr<MeshComp> ModelLibrary::createSphere(float radius, unsigned int sectorCount, unsigned int stackCount) {
     Mesh sphere{};
 
     const float PI = 3.14159265359f;
@@ -287,7 +359,7 @@ std::shared_ptr<MeshComp> MeshLibrary::createSphere(float radius, unsigned int s
     return std::make_shared<MeshComp>(std::vector<Mesh>{sphere});
 }
 
-void MeshLibrary::shutdown() {
+void ModelLibrary::shutdown() {
     s_Meshes.clear();
 }
 

@@ -1,5 +1,7 @@
 #pragma once
 #include <unordered_map>
+
+
 #include "../IResourceManager.h"
 
 namespace ZEN {
@@ -44,8 +46,11 @@ namespace ZEN {
         void deleteUBO(uint32_t uboID) override;
 
         uint32_t createTexture(std::string_view texturePath) override;
+        uint32_t createTextureAssimp(const aiTexture& aiTex) override;
         void bindTexture(uint32_t textureID, uint32_t binding) override;
         void deleteTexture(uint32_t textureID) override;
+
+        void bindMaterial(const MaterialComp& material) override;
 
         uint32_t createCubeMapTexture(const std::string& texturePath)  override;
         void bindCubeMapTexture(uint32_t textureID) override;

@@ -1,6 +1,6 @@
 #include "ZeusEngineCore/Scene.h"
 
-#include <ZeusEngineCore/MeshLibrary.h>
+#include <ZeusEngineCore/ModelLibrary.h>
 
 using namespace ZEN;
 
@@ -11,26 +11,28 @@ Scene::Scene() {
 void Scene::createDefaultScene(const std::string& resourceRoot, Renderer* renderer) {
 	uint32_t textureID = renderer->getResourceManager()->createTexture(
         resourceRoot + "/textures/container2.png");
+    uint32_t textureID2 = renderer->getResourceManager()->createTexture(
+        resourceRoot + "/textures/texture.jpg");
     uint32_t specularID = renderer->getResourceManager()->createTexture(
         resourceRoot + "/textures/container2_specular.png");
     uint32_t defaultShaderID = renderer->getDefaultShader().shaderID;
     ZEN::MaterialComp comp {
         .shaderID = defaultShaderID,
-        .textureID = textureID,
-        .specularTexID = specularID,
+        .textureIDs = {textureID, textureID2},
+        .specularTexIDs = {specularID},
         .specular = 0.5f,
         .shininess = 32,
     };
 
     entt::entity entity = createEntity();
-    m_Registry.emplace<ZEN::MeshComp>(entity, *ZEN::MeshLibrary::get("Cube"));
+    m_Registry.emplace<ZEN::MeshComp>(entity, *ZEN::ModelLibrary::get("Cube"));
     m_Registry.emplace<ZEN::TransformComp>(entity,
         ZEN::TransformComp{.position = {0.0f, 0.0f, -3.0f}});
     m_Registry.emplace<ZEN::MaterialComp>(entity, comp);
     m_Registry.emplace<ZEN::TagComp>(entity, ZEN::TagComp{.tag = "Cube 1"});
 
     entt::entity entity2 = createEntity();
-    m_Registry.emplace<ZEN::MeshComp>(entity2, *ZEN::MeshLibrary::get("Cube"));
+    m_Registry.emplace<ZEN::MeshComp>(entity2, *ZEN::ModelLibrary::get("Cube"));
     m_Registry.emplace<ZEN::TransformComp>(entity2,
         ZEN::TransformComp{.position = {2.0f, 0.0f, -3.0f}});
     m_Registry.emplace<ZEN::MaterialComp>(entity2, comp);
@@ -42,7 +44,7 @@ void Scene::createDefaultScene(const std::string& resourceRoot, Renderer* render
     m_Registry.emplace<ZEN::TagComp>(cameraEntity, ZEN::TagComp{.tag = "Scene Camera"});
 
     entt::entity skyboxEntity = createEntity();
-    ZEN::MeshComp skyboxMesh = *ZEN::MeshLibrary::get("Skybox");
+    ZEN::MeshComp skyboxMesh = *ZEN::ModelLibrary::get("Skybox");
 
     ZEN::SkyboxComp skyboxComp{};
     skyboxComp.shaderID = renderer->getResourceManager()->createShader(
@@ -51,12 +53,15 @@ void Scene::createDefaultScene(const std::string& resourceRoot, Renderer* render
     m_Registry.emplace<ZEN::SkyboxComp>(skyboxEntity, skyboxComp);
     m_Registry.emplace<ZEN::MeshComp>(skyboxEntity, skyboxMesh);
 
-    MeshLibrary::load("test", resourceRoot + "/models/Survival_BackPack_2/Survival_BackPack_2.fbx");
+    ModelLibrary::load("test", resourceRoot + "/models/survival_guitar_backpack4k.glb");
     entt::entity backpack = createEntity();
-    m_Registry.emplace<ZEN::MeshComp>(backpack, *ZEN::MeshLibrary::get("test"));
+    m_Registry.emplace<ZEN::MeshComp>(backpack, *ZEN::ModelLibrary::get("test"));
     m_Registry.emplace<ZEN::TransformComp>(backpack,
         ZEN::TransformComp{.position = {4.0f, 0.0f, -3.0f}});
-    m_Registry.emplace<ZEN::MaterialComp>(backpack, comp);
+    MaterialComp materialTest = *ZEN::ModelLibrary::getMaterial("test");
+    //todo assign shaderID in modelLibrary
+    materialTest.shaderID = defaultShaderID;
+    m_Registry.emplace<ZEN::MaterialComp>(backpack, materialTest);
     m_Registry.emplace<ZEN::TagComp>(backpack, ZEN::TagComp{.tag = "Backpack"});
 
 }

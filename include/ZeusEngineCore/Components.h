@@ -20,8 +20,8 @@ namespace ZEN {
     };
     struct MaterialComp {
         uint32_t shaderID{};
-        uint32_t textureID{};
-        uint32_t specularTexID{};
+        std::vector<uint32_t> textureIDs{};
+        std::vector<uint32_t> specularTexIDs{};
         float specular{1.0f};
         int shininess{1};
     };

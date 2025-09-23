@@ -34,9 +34,10 @@ target_compile_definitions(ZeusEngineCore PRIVATE VK_NO_PROTOTYPES)
 target_link_libraries(ZeusEngineCore
         PUBLIC
         glfw
+        assimp::assimp
         PRIVATE
         Vulkan::Vulkan
-        assimp::assimp
+
 )
 
 if(APPLE)

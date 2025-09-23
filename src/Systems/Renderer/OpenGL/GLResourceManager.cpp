@@ -170,13 +170,13 @@ uint32_t ZEN::GLResourceManager::createShader(std::string_view vertexPath, std::
     }
 
     //texture bindings
-    glUseProgram(program);
+    /*glUseProgram(program);
     for (int i{0}; i < textureBindings.size(); ++i) {
         GLint location = glGetUniformLocation(program, textureBindings[i]);
         if (location != GL_INVALID_INDEX) {
             glUniform1i(location, i);
         }
-    }
+    }*/
 
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
@@ -262,6 +262,57 @@ uint32_t ZEN::GLResourceManager::createTexture(std::string_view texturePath) {
     return nextTextureID++;
 }
 
+uint32_t ZEN::GLResourceManager::createTextureAssimp(const aiTexture& aiTex) {
+    unsigned char* imageData;
+    int width, height, channels;
+    bool compressed = false;
+    if (aiTex.mHeight == 0) {
+        // Compressed (PNG/JPG) in memory
+        imageData = stbi_load_from_memory(
+            reinterpret_cast<unsigned char*>(aiTex.pcData),
+            aiTex.mWidth,
+            &width, &height, &channels, STBI_rgb_alpha
+        );
+        compressed = true;
+        if (!imageData || width == 0 || height == 0) {
+            std::cerr << "Failed to load compressed embedded texture!\n";
+            return 0;
+        }
+    } else {
+        // Raw RGBA
+        width = aiTex.mWidth;
+        height = aiTex.mHeight;
+        channels = 4;
+        imageData = reinterpret_cast<unsigned char*>(aiTex.pcData);
+        if (!aiTex.pcData || width == 0 || height == 0) {
+            std::cerr << "Invalid raw embedded texture!\n";
+            return 0;
+        }
+    }
+
+    GLTexture texture{};
+    glGenTextures(1, &texture.textureID);
+    glBindTexture(GL_TEXTURE_2D, texture.textureID);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0,
+                 GL_RGBA, GL_UNSIGNED_BYTE, imageData);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    glGenerateMipmap(GL_TEXTURE_2D);
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+    if(compressed) {
+        stbi_image_free(imageData);
+    }
+
+    m_Textures[nextTextureID] = texture;
+    return nextTextureID++;
+}
+
 void ZEN::GLResourceManager::bindTexture(uint32_t textureID, uint32_t binding) {
     withResource(m_Textures, textureID, [binding](GLTexture &t) {
         glActiveTexture(GL_TEXTURE0 + binding);
@@ -273,6 +324,32 @@ void ZEN::GLResourceManager::deleteTexture(uint32_t textureID) {
     withResource(m_Textures, textureID, [](GLTexture &t) {
         glDeleteTextures(1, &t.textureID);
     });
+}
+
+void ZEN::GLResourceManager::bindMaterial(const MaterialComp &material) {
+    bindShader(material.shaderID);
+
+    //Bind diffuse textures first
+    for (size_t i = 0; i < material.textureIDs.size(); ++i) {
+        bindTexture(material.textureIDs[i], i);
+
+        withResource(m_Shaders, material.shaderID, [&](GLShader& s) {
+            std::string name = "u_DiffuseMap[" + std::to_string(i) + "]";
+            GLint loc = glGetUniformLocation(s.programID, name.c_str());
+            if (loc != -1) glUniform1i(loc, i);
+        });
+    }
+
+    //Bind specular textures next
+    for (size_t i = 0; i < material.specularTexIDs.size(); ++i) {
+        bindTexture(material.specularTexIDs[i], material.textureIDs.size() + i);
+
+        withResource(m_Shaders, material.shaderID, [&](GLShader& s) {
+            std::string name = "u_SpecularMap[" + std::to_string(i) + "]";
+            GLint loc = glGetUniformLocation(s.programID, name.c_str());
+            if (loc != -1) glUniform1i(loc, material.textureIDs.size() + i);
+        });
+    }
 }
 
 constexpr std::array<std::string, 6> cubeSides {
