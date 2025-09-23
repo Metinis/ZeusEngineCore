@@ -101,6 +101,20 @@ constexpr auto processTexturesEmbedded = [](std::vector<uint32_t>& textureIDs, c
         textureIDs.push_back(texID);
     }
 };
+constexpr auto processTextureType = [](std::vector<uint32_t>& textureIDs, const aiScene* scene, const aiTextureType type,
+    const aiMaterial* material) {
+    uint32_t count = material->GetTextureCount(type);
+    for(uint32_t i{0}; i < count; ++i) {
+        aiString texPath;
+        material->GetTexture(type, i, &texPath);
+        if (texPath.length > 0 && texPath.C_Str()[0] == '*') {
+            processTexturesEmbedded(textureIDs, scene, texPath);
+        }
+        else if(texPath.length > 0) {
+            //load external file
+        }
+    }
+};
 
 Mesh processMesh(aiMesh* mesh, const aiScene* scene, const glm::mat4& transform, MaterialComp& materialComp) {
     std::vector<Vertex> vertices;
@@ -130,25 +144,10 @@ Mesh processMesh(aiMesh* mesh, const aiScene* scene, const glm::mat4& transform,
     }
     if(mesh->mMaterialIndex >= 0)
     {
-        aiMaterial *material = scene->mMaterials[mesh->mMaterialIndex];
+        const aiMaterial *material = scene->mMaterials[mesh->mMaterialIndex];
 
-        unsigned int diffuseCount = material->GetTextureCount(aiTextureType_DIFFUSE);
-
-        for(uint32_t i{0}; i < diffuseCount; ++i) {
-            aiString texPath;
-            material->GetTexture(aiTextureType_DIFFUSE, i, &texPath);
-            if (texPath.length > 0 && texPath.C_Str()[0] == '*') {
-                processTexturesEmbedded(materialComp.textureIDs, scene, texPath);
-            }
-            material->GetTexture(aiTextureType_SPECULAR, i, &texPath);
-            if (texPath.length > 0 && texPath.C_Str()[0] == '*') {
-                processTexturesEmbedded(materialComp.specularTexIDs, scene, texPath);
-            }
-
-            else if(texPath.length > 0) {
-                //load external file
-            }
-        }
+        processTextureType(materialComp.textureIDs, scene, aiTextureType_DIFFUSE, material);
+        processTextureType(materialComp.specularTexIDs, scene, aiTextureType_SPECULAR, material);
     }
 
     return Mesh(indices, vertices);
@@ -184,24 +183,6 @@ void ModelLibrary::load(const std::string &name, const std::string& path) {
         std::cout << "ERROR::ASSIMP::" << import.GetErrorString() << std::endl;
         return;
     }
-    /*std::cout << "Scene textures: " << scene->mNumTextures << "\n";
-    for (unsigned int i = 0; i < scene->mNumTextures; ++i) {
-        const aiTexture* tex = scene->mTextures[i];
-        std::cout << "Embedded texture " << i
-                  << " width: " << tex->mWidth
-                  << " height: " << tex->mHeight
-                  << " compressed: " << (tex->mHeight == 0) << "\n";
-    }
-    for (unsigned int m = 0; m < scene->mNumMaterials; ++m) {
-        aiMaterial* mat = scene->mMaterials[m];
-        unsigned int texCount = mat->GetTextureCount(aiTextureType_DIFFUSE);
-        std::cout << "Material " << m << " diffuse count: " << texCount << "\n";
-        for (unsigned int i = 0; i < texCount; ++i) {
-            aiString path;
-            mat->GetTexture(aiTextureType_DIFFUSE, i, &path);
-            std::cout << "  path: " << path.C_Str() << "\n";
-        }
-    }*/
 
 
     std::vector<Mesh> meshes;
@@ -221,10 +202,8 @@ void ModelLibrary::load(const std::string &name, const std::string& path) {
     }
 
 
-    s_Meshes[name] = std::make_shared<MeshComp>(meshes);
+    s_Meshes[name] = std::make_shared<MeshComp>(meshes, name);
     s_Materials[name] = std::make_shared<MaterialComp>(material);
-    std::cout << "Loaded model '" << name << "' with " << meshes.size() << " meshes "
-    << material.textureIDs.size()<<" Texture IDs" << "\n";
 }
 
 
@@ -283,7 +262,7 @@ std::shared_ptr<MeshComp> ModelLibrary::createCube() {
         // Bottom
        20,21,22,22,23,20
     };
-    return std::make_shared<MeshComp>(std::vector<Mesh>{mesh});
+    return std::make_shared<MeshComp>(std::vector<Mesh>{mesh},  "Cube");
 }
 
 std::shared_ptr<MeshComp> ModelLibrary::createSkybox() {
@@ -306,7 +285,7 @@ std::shared_ptr<MeshComp> ModelLibrary::createSkybox() {
         20,22,21, 22,20,23
     };
 
-    return std::make_shared<MeshComp>(std::vector<Mesh>{skyboxMesh});
+    return std::make_shared<MeshComp>(std::vector<Mesh>{skyboxMesh}, "Skybox");
 }
 
 
@@ -356,7 +335,7 @@ std::shared_ptr<MeshComp> ModelLibrary::createSphere(float radius, unsigned int 
         }
     }
 
-    return std::make_shared<MeshComp>(std::vector<Mesh>{sphere});
+    return std::make_shared<MeshComp>(std::vector<Mesh>{sphere}, "Sphere");
 }
 
 void ModelLibrary::shutdown() {

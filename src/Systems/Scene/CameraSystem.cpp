@@ -42,7 +42,11 @@ void CameraSystem::onUpdate(entt::registry &registry, float deltaTime) {
             if (m_KeysDown.contains(GLFW_KEY_LEFT_SHIFT)) moveVec -= up;
 
             if (glm::length(moveVec) > 0.0f) {
-                transform->position += glm::normalize(moveVec) * deltaTime * m_MoveSpeed;
+                glm::vec3 toMove = glm::normalize(moveVec) * deltaTime * m_MoveSpeed;
+                if(m_KeysDown.contains(GLFW_KEY_LEFT_CONTROL)) {
+                    toMove /= 4;
+                }
+                transform->position += toMove;
             }
             if(m_CursorLocked) {
                 constexpr float sensitivity = 0.1f;
@@ -50,7 +54,10 @@ void CameraSystem::onUpdate(entt::registry &registry, float deltaTime) {
                 double yOffset = m_CursorPosLastY - m_CursorPosY;
 
                 transform->rotation.y += xOffset * sensitivity;
-                transform->rotation.x += yOffset * sensitivity;
+
+                float rotationX = transform->rotation.x + yOffset * sensitivity;
+                rotationX = glm::clamp(rotationX, -89.0f, 89.0f);
+                transform->rotation.x = rotationX;
 
                 m_CursorPosLastX = m_CursorPosX;
                 m_CursorPosLastY = m_CursorPosY;

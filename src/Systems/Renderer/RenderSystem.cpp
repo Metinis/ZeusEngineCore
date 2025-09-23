@@ -17,7 +17,7 @@ void RenderSystem::onUpdate(entt::registry &registry) {
         } else {
             // Fallback shader if none exists
             shaderID = m_Renderer->getDefaultShader().shaderID;
-            registry.emplace<MaterialComp>(entity, MaterialComp{ shaderID });
+            registry.emplace<MaterialComp>(entity, MaterialComp{ shaderID, {0}, {0} });
         }
 
         auto &mesh = meshView.get<MeshComp>(entity);

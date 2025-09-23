@@ -9,6 +9,7 @@ namespace ZEN {
     };
     struct MeshComp {
         std::vector<Mesh> meshes{};
+        std::string name{};
     };
     struct MeshDrawable {
         size_t indexCount{};
@@ -22,7 +23,7 @@ namespace ZEN {
         uint32_t shaderID{};
         std::vector<uint32_t> textureIDs{};
         std::vector<uint32_t> specularTexIDs{};
-        float specular{1.0f};
+        float specular{0.0f};
         int shininess{1};
     };
     struct SkyboxComp {
