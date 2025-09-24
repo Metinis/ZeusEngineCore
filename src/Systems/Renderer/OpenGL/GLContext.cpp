@@ -14,17 +14,15 @@ GLContext::GLContext(GLFWwindow* window)
         throw std::runtime_error("Failed to initialize GLAD");
     }
     glEnable(GL_DEPTH_TEST);
-    glEnable(GL_CULL_FACE);
+    //glEnable(GL_CULL_FACE);
     glCullFace(GL_FRONT);
 }
-void GLContext::drawMesh(IResourceManager& resourceManager, const MeshDrawableComp& meshRenderable) {
+void GLContext::drawMesh(IResourceManager& resourceManager, const MeshDrawable& drawable) {
     //retrieve GLDrawable by meshID from resource manager
-    for(auto& drawable : meshRenderable.drawables) {
-        resourceManager.bindMeshDrawable(drawable.meshID);
-        glDrawElementsInstanced(GL_TRIANGLES, drawable.indexCount, GL_UNSIGNED_INT,
-            nullptr, drawable.instanceCount);
-        glBindVertexArray(0);
-    }
+    resourceManager.bindMeshDrawable(drawable.meshID);
+    glDrawElementsInstanced(GL_TRIANGLES, drawable.indexCount, GL_UNSIGNED_INT,
+        nullptr, drawable.instanceCount);
+    glBindVertexArray(0);
 }
 
 void GLContext::clear(bool shouldClearColor, bool shouldClearDepth) {

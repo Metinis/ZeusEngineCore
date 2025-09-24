@@ -54,6 +54,8 @@ void Scene::createDefaultScene(const std::string& resourceRoot, Renderer* render
     m_Registry.emplace<ZEN::MeshComp>(skyboxEntity, skyboxMesh);
 
     ModelLibrary::load("test", resourceRoot + "/models/survival_guitar_backpack4k.glb");
+    ModelLibrary::load("room", resourceRoot + "/models/vr_art_gallery_room.glb");
+
     entt::entity backpack = createEntity();
     m_Registry.emplace<ZEN::MeshComp>(backpack, *ZEN::ModelLibrary::get("test"));
     m_Registry.emplace<ZEN::TransformComp>(backpack,
@@ -63,6 +65,16 @@ void Scene::createDefaultScene(const std::string& resourceRoot, Renderer* render
     materialTest.shaderID = defaultShaderID;
     m_Registry.emplace<ZEN::MaterialComp>(backpack, materialTest);
     m_Registry.emplace<ZEN::TagComp>(backpack, ZEN::TagComp{.tag = "Backpack"});
+
+    entt::entity roomEntity = createEntity();
+    m_Registry.emplace<ZEN::MeshComp>(roomEntity, *ZEN::ModelLibrary::get("room"));
+    m_Registry.emplace<ZEN::TransformComp>(roomEntity,
+        ZEN::TransformComp{.position = {4.0f, 0.0f, -3.0f}});
+    MaterialComp materialRoom = *ZEN::ModelLibrary::getMaterial("room");
+    //todo assign shaderID in modelLibrary
+    materialRoom.shaderID = defaultShaderID;
+    m_Registry.emplace<ZEN::MaterialComp>(roomEntity, materialRoom);
+    m_Registry.emplace<ZEN::TagComp>(roomEntity, ZEN::TagComp{.tag = "Room"});
 
 }
 

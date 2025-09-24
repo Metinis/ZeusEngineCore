@@ -98,8 +98,8 @@ constexpr auto processTexturesEmbedded = [](std::vector<uint32_t>& textureIDs, c
     } else {
         texID = ModelLibrary::s_ResourceManager->createTextureAssimp(*tex);
         s_EmbeddedTextureCache[tex] = texID; // cache
-        textureIDs.push_back(texID);
     }
+    textureIDs.push_back(texID);
 };
 constexpr auto processTextureType = [](std::vector<uint32_t>& textureIDs, const aiScene* scene, const aiTextureType type,
     const aiMaterial* material) {
@@ -204,6 +204,9 @@ void ModelLibrary::load(const std::string &name, const std::string& path) {
 
     s_Meshes[name] = std::make_shared<MeshComp>(meshes, name);
     s_Materials[name] = std::make_shared<MaterialComp>(material);
+
+    std::cout<<"Loaded model: "<< name << " With: " << material.textureIDs.size()
+        << " Diffuse Textures" << " and " << meshes.size() << " Meshes\n";
 }
 
 

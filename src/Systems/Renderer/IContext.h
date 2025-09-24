@@ -12,7 +12,7 @@ namespace ZEN {
     class IContext {
     public:
         virtual ~IContext() = default;
-        virtual void drawMesh(IResourceManager& resourceManager, const MeshDrawableComp& meshRenderable) = 0;
+        virtual void drawMesh(IResourceManager& resourceManager, const MeshDrawable& drawable) = 0;
         virtual void clear(bool shouldClearColor, bool shouldClearDepth) = 0;
         virtual void depthMask(bool val) = 0;
         virtual void setDepthMode(eDepthModes depthMode) = 0;
