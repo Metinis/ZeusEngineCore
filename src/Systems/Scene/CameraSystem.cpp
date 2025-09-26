@@ -46,18 +46,18 @@ void CameraSystem::onUpdate(entt::registry &registry, float deltaTime) {
                 if(m_KeysDown.contains(GLFW_KEY_LEFT_CONTROL)) {
                     toMove /= 4;
                 }
-                transform->position += toMove;
+                transform->localPosition += toMove;
             }
             if(m_CursorLocked) {
                 constexpr float sensitivity = 0.1f;
                 double xOffset = m_CursorPosLastX - m_CursorPosX;
                 double yOffset = m_CursorPosLastY - m_CursorPosY;
 
-                transform->rotation.y += xOffset * sensitivity;
+                transform->localRotation.y += xOffset * sensitivity;
 
-                float rotationX = transform->rotation.x + yOffset * sensitivity;
+                float rotationX = transform->localRotation.x + yOffset * sensitivity;
                 rotationX = glm::clamp(rotationX, -89.0f, 89.0f);
-                transform->rotation.x = rotationX;
+                transform->localRotation.x = rotationX;
 
                 m_CursorPosLastX = m_CursorPosX;
                 m_CursorPosLastY = m_CursorPosY;

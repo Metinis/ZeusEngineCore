@@ -7,7 +7,27 @@ RenderSystem::RenderSystem(Renderer *renderer, Scene *scene) :
 m_Renderer(renderer), m_Scene(scene){
 
 }
+void updateWorldTransforms(entt::registry& registry) {
+    auto view = registry.view<TransformComp>();
+
+    for (auto e : view) {
+        auto &tc = view.get<TransformComp>(e);
+        glm::mat4 local = tc.getLocalMatrix();
+
+
+        if (auto parentComp = registry.try_get<ParentComp>(e)) {
+            if(auto tranformComp = registry.try_get<TransformComp>(parentComp->parent)) {
+                tc.worldMatrix = tranformComp->worldMatrix * local;
+            }
+        }
+        else {
+            tc.worldMatrix = local;
+        }
+    }
+}
+
 void RenderSystem::onUpdate(entt::registry &registry) {
+    updateWorldTransforms(registry);
     //create buffers for all meshes without drawable comps
     auto meshView = registry.view<MeshComp>(entt::exclude<MeshDrawableComp>);
     for (auto entity : meshView) {
@@ -22,15 +42,9 @@ void RenderSystem::onUpdate(entt::registry &registry) {
 
         auto &mesh = meshView.get<MeshComp>(entity);
 
-        std::vector<MeshDrawable> drawables{};
-        drawables.reserve(mesh.meshes.size());
-        for(auto& m : mesh.meshes) {
-            MeshDrawable drawable{};
-            drawable.indexCount = m.indices.size();
-            drawable.meshID = m_Renderer->getResourceManager()->createMeshDrawable(m);
-            drawables.push_back(drawable);
-        }
-        MeshDrawableComp drawableComp{.drawables = drawables};
+        MeshDrawableComp drawableComp{};
+        drawableComp.indexCount = mesh.indices.size();
+        drawableComp.meshID = m_Renderer->getResourceManager()->createMeshDrawable(mesh);
         registry.emplace<MeshDrawableComp>(entity, drawableComp);
     }
 }
@@ -50,7 +64,7 @@ void RenderSystem::writeCameraData(const entt::registry& registry, glm::mat4& vi
             //update global ubo, todo maybe use a light component
             GlobalUBO globalUBO {
                 .lightDir = m_Scene->getLightDir(),
-                .cameraPos = transform.position,
+                .cameraPos = transform.localPosition,
                 //.time = glfwGetTime(),
                 .ambientColor = m_Scene->getAmbientColor(),
             };
@@ -77,21 +91,16 @@ void RenderSystem::renderDrawables(const entt::registry &registry) {
         m_Renderer->getResourceManager()->writeToUBO(m_Renderer->getMaterialUBO().uboID, materialBytes);
 
         //bind material texture
-        //m_Renderer->getResourceManager()->bindTexture(material.textureID, 0);
-        //m_Renderer->getResourceManager()->bindTexture(material.specularTexID, 1);
         m_Renderer->getResourceManager()->bindMaterial(material);
         //write to instance ubo (todo check if last mesh is same for instancing)
         auto transform = viewDraw.get<TransformComp>(entity);
         auto const bytes = std::bit_cast<std::array<std::byte,
-            sizeof(transform.getModelMatrix())>>(transform.getModelMatrix());
+            sizeof(transform.worldMatrix)>>(transform.worldMatrix);
         m_Renderer->getResourceManager()->writeToUBO(m_Renderer->getInstanceUBO().uboID, bytes);
 
         //todo submit mesh to renderer
-        MeshDrawableComp drawables = viewDraw.get<MeshDrawableComp>(entity);
-        for(uint32_t i{0}; i < drawables.drawables.size(); ++i) {
-            m_Renderer->getResourceManager()->bindTexture(material.textureIDs[i], 0);
-            m_Renderer->getContext()->drawMesh(*m_Renderer->getResourceManager(), drawables.drawables[i]);
-        }
+        MeshDrawableComp drawable = viewDraw.get<MeshDrawableComp>(entity);
+        m_Renderer->getContext()->drawMesh(*m_Renderer->getResourceManager(), drawable);
 
     }
 }
@@ -113,10 +122,8 @@ void RenderSystem::renderSkybox(const entt::registry &registry, const glm::mat4&
         //bind cubemap texture
         m_Renderer->getResourceManager()->bindCubeMapTexture(skyboxComp.textureID);
 
-        auto& drawables = skyboxView.get<MeshDrawableComp>(entity);
-        for(uint32_t i{0}; i < drawables.drawables.size(); ++i) {
-            m_Renderer->getContext()->drawMesh(*m_Renderer->getResourceManager(), drawables.drawables[i]);
-        }
+        auto& drawable = skyboxView.get<MeshDrawableComp>(entity);
+        m_Renderer->getContext()->drawMesh(*m_Renderer->getResourceManager(), drawable);
 
         m_Renderer->getContext()->depthMask(true);
         m_Renderer->getContext()->setDepthMode(LESS);

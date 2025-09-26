@@ -17,7 +17,7 @@ GLContext::GLContext(GLFWwindow* window)
     //glEnable(GL_CULL_FACE);
     glCullFace(GL_FRONT);
 }
-void GLContext::drawMesh(IResourceManager& resourceManager, const MeshDrawable& drawable) {
+void GLContext::drawMesh(IResourceManager& resourceManager, const MeshDrawableComp& drawable) {
     //retrieve GLDrawable by meshID from resource manager
     resourceManager.bindMeshDrawable(drawable.meshID);
     glDrawElementsInstanced(GL_TRIANGLES, drawable.indexCount, GL_UNSIGNED_INT,

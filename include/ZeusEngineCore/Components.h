@@ -1,23 +1,23 @@
 #pragma once
+#include <entt.hpp>
+
 #include "ZeusEngineCore/Vertex.h"
 #include "ZeusEngineCore/Util.h"
 
+namespace entt {
+    enum class entity : std::uint32_t;
+}
+
 namespace ZEN {
-    struct Mesh {
+    struct MeshComp {
         std::vector<uint32_t> indices{};
         std::vector<Vertex> vertices{};
-    };
-    struct MeshComp {
-        std::vector<Mesh> meshes{};
         std::string name{};
     };
-    struct MeshDrawable {
+    struct MeshDrawableComp {
         size_t indexCount{};
         uint32_t meshID{};
         int instanceCount{1};
-    };
-    struct MeshDrawableComp {
-        std::vector<MeshDrawable> drawables{};
     };
     struct MaterialComp {
         uint32_t shaderID{};
@@ -37,33 +37,37 @@ namespace ZEN {
         std::string tag;
     };
     struct TransformComp {
-        glm::vec3 position{0.0f, 0.0f, 3.0f};
-        glm::vec3 rotation{0.0f, 0.0f, 0.0f};
-        glm::vec3 scale{1.0f, 1.0f, 1.0f};
+        glm::vec3 localPosition{0.0f, 0.0f, 0.0f};
+        glm::vec3 localRotation{0.0f, 0.0f, 0.0f};
+        glm::vec3 localScale{1.0f, 1.0f, 1.0f};
 
-        [[nodiscard]] glm::mat4 getModelMatrix() const {
-            auto const [t, r, s] = toMatrices(position, rotation, scale);
+        glm::mat4 worldMatrix{1.0f}; //needs to be computed each frame in a render system
+        //because it relies on parent
+
+        [[nodiscard]] glm::mat4 getLocalMatrix() const {
+            auto const [t, r, s] = toMatrices(localPosition, localRotation, localScale);
             return t * r * s;
         }
 
+        //world position
         [[nodiscard]] glm::mat4 getViewMatrix() const {
-            auto const [t, r, s] = toMatrices(-position, -rotation, scale);
+            auto const [t, r, s] = toMatrices(-glm::vec3(worldMatrix[3]), -localRotation, localScale);
             return r * t * s;
         }
 
         [[nodiscard]] glm::vec3 getFront() const {
-            // rotation.x = pitch, rotation.y = yaw, rotation.z = roll
-            float pitch = glm::radians(rotation.x);
-            float yaw   = glm::radians(rotation.y);
+            float pitch = glm::radians(localRotation.x);
+            float yaw   = glm::radians(localRotation.y);
 
             glm::vec3 front;
-            front.x = sin(yaw) * cos(pitch);   // swapped sin/cos
+            front.x = sin(yaw) * cos(pitch);
             front.y = -sin(pitch);
-            front.z = cos(yaw) * cos(pitch);   // positive Z is forward
+            front.z = cos(yaw) * cos(pitch);
 
             return -glm::normalize(front);
         }
     };
+
     struct DirectionalLightComp {
         glm::vec3 lightDir{};
         glm::vec3 ambient{};
@@ -87,6 +91,9 @@ namespace ZEN {
         float far = 100.0f;
 
         bool isPrimary = true;
+    };
+    struct ParentComp {
+        entt::entity parent;
     };
 
 }

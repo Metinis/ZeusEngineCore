@@ -43,7 +43,7 @@ ZEN::GLResourceManager::~GLResourceManager() {
 }
 
 
-uint32_t ZEN::GLResourceManager::createMeshDrawable(const Mesh &meshComp) {
+uint32_t ZEN::GLResourceManager::createMeshDrawable(const MeshComp &meshComp) {
     GLDrawable drawable{};
     glGenVertexArrays(1, &drawable.vao);
     glGenBuffers(1, &drawable.vbo);

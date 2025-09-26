@@ -1,9 +1,7 @@
 #include <utility>
-
 #include "ZeusEngineCore/ModelLibrary.h"
 #include "IResourceManager.h"
 #include <iostream>
-
 #include "ZeusEngineCore/Components.h"
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
@@ -48,21 +46,6 @@ glm::mat4 aiMat4ToGlm(const aiMatrix4x4& aiMat) {
         aiMat.a4, aiMat.b4, aiMat.c4, aiMat.d4
     );
 }
-struct BoundingBox {
-    glm::vec3 min = glm::vec3(FLT_MAX);
-    glm::vec3 max = glm::vec3(-FLT_MAX);
-
-    void expand(const glm::vec3& point) {
-        min = glm::min(min, point);
-        max = glm::max(max, point);
-    }
-
-    [[nodiscard]] glm::vec3 size() const { return max - min; }
-    [[nodiscard]] float maxDimension() const {
-        glm::vec3 s = size();
-        return glm::max(s.x, glm::max(s.y, s.z));
-    }
-};
 constexpr auto processMeshPos = [](const aiVector3D& verts, const glm::mat4& transform) {
     glm::vec3 pos = {
         verts.x,
@@ -116,9 +99,10 @@ constexpr auto processTextureType = [](std::vector<uint32_t>& textureIDs, const 
     }
 };
 
-Mesh processMesh(aiMesh* mesh, const aiScene* scene, const glm::mat4& transform, MaterialComp& materialComp) {
-    std::vector<Vertex> vertices;
-    std::vector<uint32_t> indices;
+entt::entity processMesh(entt::entity entity, aiMesh* mesh, const aiScene* scene, const glm::mat4& transform,
+    entt::registry& registry) {
+    MeshComp meshComp{};
+    MaterialComp materialComp{.shaderID = 1};
 
     for (uint32_t i{0}; i < mesh->mNumVertices; ++i)
     {
@@ -134,48 +118,54 @@ Mesh processMesh(aiMesh* mesh, const aiScene* scene, const glm::mat4& transform,
             vertex.TexCoords = processMeshUVs(mesh->mTextureCoords[0][i]);
         }
 
-        vertices.push_back(vertex);
+        meshComp.vertices.push_back(vertex);
     }
 
     for (uint32_t i{0}; i < mesh->mNumFaces; ++i) {
         aiFace face = mesh->mFaces[i];
         for (uint32_t j{0}; j < face.mNumIndices; ++j)
-            indices.push_back(face.mIndices[j]);
+            meshComp.indices.push_back(face.mIndices[j]);
     }
     if(mesh->mMaterialIndex >= 0)
     {
         const aiMaterial *material = scene->mMaterials[mesh->mMaterialIndex];
-
         processTextureType(materialComp.textureIDs, scene, aiTextureType_DIFFUSE, material);
         processTextureType(materialComp.specularTexIDs, scene, aiTextureType_SPECULAR, material);
     }
 
-    return Mesh(indices, vertices);
+
+    //add new entity to registry, add mesh component and material component,
+    //return it to assign trannsform and parent in processNode
+    registry.emplace<MeshComp>(entity, meshComp);
+    registry.emplace<MaterialComp>(entity, materialComp);
+    return entity;
+
 }
 
-void processNode(aiNode* node, const aiScene* scene, std::vector<Mesh>& meshes,
-                 const glm::mat4& parentTransform, BoundingBox& bbox, MaterialComp& materialComp) {
+void processNode(aiNode* node, const aiScene* scene, glm::mat4& parentTransform, entt::entity parent,
+    entt::registry& registry) {
     glm::mat4 nodeTransform = aiMat4ToGlm(node->mTransformation);
     glm::mat4 globalTransform = parentTransform * nodeTransform;
 
     for (unsigned int i = 0; i < node->mNumMeshes; i++) {
         aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
-        Mesh processed = processMesh(mesh, scene, globalTransform, materialComp);
+        entt::entity entity = registry.create();
+        processMesh(entity, mesh, scene, globalTransform, registry);
+        //set parent
+        if(parent != entt::null)
+            registry.emplace<ParentComp>(entity, ParentComp{.parent = parent});
 
-        for (auto& v : processed.vertices) {
-            bbox.expand(v.Position);
-        }
-
-        meshes.push_back(std::move(processed));
+        registry.emplace<TransformComp>(entity, TransformComp{});
+        registry.emplace<TagComp>(entity, TagComp{.tag = mesh->mName.data});
     }
 
     for (unsigned int i = 0; i < node->mNumChildren; i++) {
-        processNode(node->mChildren[i], scene, meshes, globalTransform, bbox, materialComp);
+        processNode(node->mChildren[i], scene, globalTransform, parent, registry);
     }
 }
 
 
-void ModelLibrary::load(const std::string &name, const std::string& path) {
+void ModelLibrary::load(const std::string &name, const std::string& path, entt::registry& registry) {
     Assimp::Importer import;
     const aiScene* scene = import.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_EmbedTextures);
 
@@ -184,34 +174,16 @@ void ModelLibrary::load(const std::string &name, const std::string& path) {
         return;
     }
 
-
-    std::vector<Mesh> meshes;
-    MaterialComp material{};
-    BoundingBox bbox;
-    processNode(scene->mRootNode, scene, meshes, glm::mat4(1.0f), bbox, material);
-
-    float scaleFactor = 1.0f / bbox.maxDimension();
-    glm::mat4 scaleMat = glm::scale(glm::mat4(1.0f), glm::vec3(scaleFactor));
-
-    //Apply scaling to all meshes
-    for (auto& mesh : meshes) {
-        for (auto& v : mesh.vertices) {
-            v.Position = glm::vec3(scaleMat * glm::vec4(v.Position, 1.0f));
-            v.Normal = glm::normalize(glm::mat3(scaleMat) * v.Normal);
-        }
-    }
-
-
-    s_Meshes[name] = std::make_shared<MeshComp>(meshes, name);
-    s_Materials[name] = std::make_shared<MaterialComp>(material);
-
-    std::cout<<"Loaded model: "<< name << " With: " << material.textureIDs.size()
-        << " Diffuse Textures" << " and " << meshes.size() << " Meshes\n";
+    glm::mat4 parentTransform(1.0f);
+    entt::entity parent = registry.create();
+    registry.emplace<TransformComp>(parent);
+    registry.emplace<TagComp>(parent, TagComp{.tag = name});
+    processNode(scene->mRootNode, scene, parentTransform, parent, registry);
 }
 
 
 std::shared_ptr<MeshComp> ModelLibrary::createCube() {
-    Mesh mesh;
+    MeshComp mesh;
 
     mesh.vertices = {
         // Front face (z = +0.5)
@@ -265,11 +237,12 @@ std::shared_ptr<MeshComp> ModelLibrary::createCube() {
         // Bottom
        20,21,22,22,23,20
     };
-    return std::make_shared<MeshComp>(std::vector<Mesh>{mesh},  "Cube");
+    mesh.name = "Cube";
+    return std::make_shared<MeshComp>(mesh);
 }
 
 std::shared_ptr<MeshComp> ModelLibrary::createSkybox() {
-    Mesh skyboxMesh{};
+    MeshComp skyboxMesh{};
     skyboxMesh.vertices = {
         {{-1.0f,  1.0f, -1.0f}}, {{-1.0f, -1.0f, -1.0f}}, {{ 1.0f, -1.0f, -1.0f}}, {{ 1.0f,  1.0f, -1.0f}}, // Back
         {{-1.0f, -1.0f,  1.0f}}, {{-1.0f,  1.0f,  1.0f}}, {{ 1.0f,  1.0f,  1.0f}}, {{ 1.0f, -1.0f,  1.0f}}, // Front
@@ -287,13 +260,14 @@ std::shared_ptr<MeshComp> ModelLibrary::createSkybox() {
         16,18,17, 18,16,19,
         20,22,21, 22,20,23
     };
+    skyboxMesh.name = "Skybox";
 
-    return std::make_shared<MeshComp>(std::vector<Mesh>{skyboxMesh}, "Skybox");
+    return std::make_shared<MeshComp>(skyboxMesh);
 }
 
 
 std::shared_ptr<MeshComp> ModelLibrary::createSphere(float radius, unsigned int sectorCount, unsigned int stackCount) {
-    Mesh sphere{};
+    MeshComp sphere{};
 
     const float PI = 3.14159265359f;
 
@@ -337,8 +311,9 @@ std::shared_ptr<MeshComp> ModelLibrary::createSphere(float radius, unsigned int 
             }
         }
     }
+    sphere.name = "Sphere";
 
-    return std::make_shared<MeshComp>(std::vector<Mesh>{sphere}, "Sphere");
+    return std::make_shared<MeshComp>(sphere);
 }
 
 void ModelLibrary::shutdown() {

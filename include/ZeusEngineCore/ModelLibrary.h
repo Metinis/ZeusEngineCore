@@ -1,4 +1,5 @@
 #pragma once
+#include <entt.hpp>
 #include <memory>
 #include <unordered_map>
 #include <string>
@@ -20,7 +21,7 @@ namespace ZEN {
         }
         static std::shared_ptr<MaterialComp> getMaterial(const std::string& name);
         static void add(const std::string& name, std::shared_ptr<MeshComp> mesh);
-        static void load(const std::string& name, const std::string& path);
+        static void load(const std::string& name, const std::string& path, entt::registry& registry);
         static IResourceManager* s_ResourceManager;
 
     private:
@@ -31,7 +32,6 @@ namespace ZEN {
         static std::shared_ptr<MeshComp> createSkybox();
         //static std::shared_ptr<MeshComp> createPlane();
         static std::shared_ptr<MeshComp> createSphere(float radius, unsigned int sectorCount, unsigned int stackCount);
-
 
     };
 }
