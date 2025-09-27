@@ -1,32 +1,13 @@
-#include <utility>
 #include "ZeusEngineCore/ModelLibrary.h"
-#include "IResourceManager.h"
-#include <iostream>
 #include "ZeusEngineCore/Components.h"
-#include <assimp/Importer.hpp>
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
-
 
 using namespace ZEN;
 
-namespace ZEN {
-    std::unordered_map<std::string, std::shared_ptr<MeshComp>> ModelLibrary::s_Meshes;
-    std::unordered_map<std::string, std::shared_ptr<MaterialComp>> ModelLibrary::s_Materials;
-    IResourceManager* ModelLibrary::s_ResourceManager;
-}
-
-
-void ModelLibrary::init(IResourceManager* resourceManager) {
+ModelLibrary::ModelLibrary(IResourceManager *resourceManager)
+: m_ResourceManager(resourceManager) {
     s_Meshes["Cube"]  = createCube();
     s_Meshes["Skybox"] = createSkybox();
     s_Meshes["Sphere"] = createSphere(1.0f, 32, 16);
-    s_ResourceManager = resourceManager;
-}
-std::shared_ptr<MeshComp> ModelLibrary::get(const std::string &name) {
-    auto it = s_Meshes.find(name);
-    if (it != s_Meshes.end()) return it->second;
-    return nullptr;
 }
 
 std::shared_ptr<MaterialComp> ModelLibrary::getMaterial(const std::string &name) {
@@ -34,151 +15,13 @@ std::shared_ptr<MaterialComp> ModelLibrary::getMaterial(const std::string &name)
     if (it != s_Materials.end()) return it->second;
     return nullptr;
 }
-
-void ModelLibrary::add(const std::string& name, std::shared_ptr<MeshComp> mesh) {
+std::shared_ptr<MeshComp> ModelLibrary::getMesh(const std::string &name) {
+    auto it = s_Meshes.find(name);
+    if (it != s_Meshes.end()) return it->second;
+    return nullptr;
+}
+void ModelLibrary::addMesh(const std::string& name, std::shared_ptr<MeshComp> mesh) {
     s_Meshes[name] = std::move(mesh);
-}
-glm::mat4 aiMat4ToGlm(const aiMatrix4x4& aiMat) {
-    return glm::mat4(
-        aiMat.a1, aiMat.b1, aiMat.c1, aiMat.d1,
-        aiMat.a2, aiMat.b2, aiMat.c2, aiMat.d2,
-        aiMat.a3, aiMat.b3, aiMat.c3, aiMat.d3,
-        aiMat.a4, aiMat.b4, aiMat.c4, aiMat.d4
-    );
-}
-constexpr auto processMeshPos = [](const aiVector3D& verts, const glm::mat4& transform) {
-    glm::vec3 pos = {
-        verts.x,
-        verts.y,
-        verts.z
-    };
-    return glm::vec3(transform * glm::vec4(pos, 1.0f)); //transformed pos
-};
-constexpr auto processMeshNormals = [](const aiVector3D& normals, const glm::mat4& transform) {
-    glm::vec3 normal = {
-        normals.x,
-        normals.y,
-        normals.z
-    };
-    return glm::normalize(glm::mat3(transform) * normal);
-};
-constexpr auto processMeshUVs = [](const aiVector3D& uvs) {
-    glm::vec2 uv = {
-        uvs.x,
-        uvs.y,
-    };
-    return uv;
-};
-std::unordered_map<const aiTexture*, uint32_t> s_EmbeddedTextureCache;
-constexpr auto processTexturesEmbedded = [](std::vector<uint32_t>& textureIDs, const aiScene* scene,
-    const aiString& texPath) {
-    unsigned int texIndex = atoi(texPath.C_Str() + 1);
-    const aiTexture* tex = scene->mTextures[texIndex];
-    auto it = s_EmbeddedTextureCache.find(tex);
-    uint32_t texID;
-    if (it != s_EmbeddedTextureCache.end()) {
-        texID = it->second; // reuse
-    } else {
-        texID = ModelLibrary::s_ResourceManager->createTextureAssimp(*tex);
-        s_EmbeddedTextureCache[tex] = texID; // cache
-    }
-    textureIDs.push_back(texID);
-};
-constexpr auto processTextureType = [](std::vector<uint32_t>& textureIDs, const aiScene* scene, const aiTextureType type,
-    const aiMaterial* material) {
-    uint32_t count = material->GetTextureCount(type);
-    for(uint32_t i{0}; i < count; ++i) {
-        aiString texPath;
-        material->GetTexture(type, i, &texPath);
-        if (texPath.length > 0 && texPath.C_Str()[0] == '*') {
-            processTexturesEmbedded(textureIDs, scene, texPath);
-        }
-        else if(texPath.length > 0) {
-            //load external file
-        }
-    }
-};
-
-entt::entity processMesh(entt::entity entity, aiMesh* mesh, const aiScene* scene, const glm::mat4& transform,
-    entt::registry& registry) {
-    MeshComp meshComp{};
-    MaterialComp materialComp{.shaderID = 1};
-
-    for (uint32_t i{0}; i < mesh->mNumVertices; ++i)
-    {
-        Vertex vertex{};
-        vertex.Position = processMeshPos(mesh->mVertices[i], transform);
-        vertex.Normal = glm::vec3(0.0f);
-        vertex.TexCoords = glm::vec2(0.0f, 0.0f);
-        if(mesh->HasNormals()) {
-            vertex.Normal = processMeshNormals(mesh->mNormals[i], transform);
-        }
-
-        if(mesh->mTextureCoords[0]) {
-            vertex.TexCoords = processMeshUVs(mesh->mTextureCoords[0][i]);
-        }
-
-        meshComp.vertices.push_back(vertex);
-    }
-
-    for (uint32_t i{0}; i < mesh->mNumFaces; ++i) {
-        aiFace face = mesh->mFaces[i];
-        for (uint32_t j{0}; j < face.mNumIndices; ++j)
-            meshComp.indices.push_back(face.mIndices[j]);
-    }
-    if(mesh->mMaterialIndex >= 0)
-    {
-        const aiMaterial *material = scene->mMaterials[mesh->mMaterialIndex];
-        processTextureType(materialComp.textureIDs, scene, aiTextureType_DIFFUSE, material);
-        processTextureType(materialComp.specularTexIDs, scene, aiTextureType_SPECULAR, material);
-    }
-
-
-    //add new entity to registry, add mesh component and material component,
-    //return it to assign trannsform and parent in processNode
-    registry.emplace<MeshComp>(entity, meshComp);
-    registry.emplace<MaterialComp>(entity, materialComp);
-    return entity;
-
-}
-
-void processNode(aiNode* node, const aiScene* scene, glm::mat4& parentTransform, entt::entity parent,
-    entt::registry& registry) {
-    glm::mat4 nodeTransform = aiMat4ToGlm(node->mTransformation);
-    glm::mat4 globalTransform = parentTransform * nodeTransform;
-
-    for (unsigned int i = 0; i < node->mNumMeshes; i++) {
-        aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
-        entt::entity entity = registry.create();
-        processMesh(entity, mesh, scene, globalTransform, registry);
-        //set parent
-        if(parent != entt::null)
-            registry.emplace<ParentComp>(entity, ParentComp{.parent = parent});
-
-        registry.emplace<TransformComp>(entity, TransformComp{});
-        registry.emplace<TagComp>(entity, TagComp{.tag = mesh->mName.data});
-    }
-
-    for (unsigned int i = 0; i < node->mNumChildren; i++) {
-        processNode(node->mChildren[i], scene, globalTransform, parent, registry);
-    }
-}
-
-
-void ModelLibrary::load(const std::string &name, const std::string& path, entt::registry& registry) {
-    Assimp::Importer import;
-    const aiScene* scene = import.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_EmbedTextures);
-
-    if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
-        std::cout << "ERROR::ASSIMP::" << import.GetErrorString() << std::endl;
-        return;
-    }
-
-    glm::mat4 parentTransform(1.0f);
-    entt::entity parent = registry.create();
-    registry.emplace<TransformComp>(parent);
-    registry.emplace<TagComp>(parent, TagComp{.tag = name});
-    processNode(scene->mRootNode, scene, parentTransform, parent, registry);
 }
 
 
@@ -314,10 +157,6 @@ std::shared_ptr<MeshComp> ModelLibrary::createSphere(float radius, unsigned int 
     sphere.name = "Sphere";
 
     return std::make_shared<MeshComp>(sphere);
-}
-
-void ModelLibrary::shutdown() {
-    s_Meshes.clear();
 }
 
 

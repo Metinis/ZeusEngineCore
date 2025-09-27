@@ -12,10 +12,13 @@ namespace ZEN {
     struct MouseButtonReleaseEvent;
     struct PanelFocusEvent;
     struct MouseMoveEvent;
+
+    class Scene;
+
     class CameraSystem {
     public:
-        explicit CameraSystem(entt::dispatcher& dispatcher);
-        void onUpdate(entt::registry &registry, float deltaTime);
+        explicit CameraSystem(Scene* scene);
+        void onUpdate(float deltaTime);
     private:
         void onResize(const SceneViewResizeEvent& e);
         void onKeyPressed(const KeyPressedEvent& e);
@@ -39,7 +42,7 @@ namespace ZEN {
         bool m_PanelSelected{};
         bool m_CursorLocked{};
 
-        entt::dispatcher& m_Dispatcher;
+        Scene* m_Scene{};
 
         std::unordered_set<int> m_KeysDown{};
         std::unordered_set<int> m_MouseButtonsDown{};

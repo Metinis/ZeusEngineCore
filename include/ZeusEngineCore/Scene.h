@@ -2,13 +2,17 @@
 #include <entt/entt.hpp>
 #include "ZeusEngineCore/RenderSystem.h"
 
+
 namespace ZEN {
+	class ModelLibrary;
+	class ModelImporter;
 
 	class Scene {
 
 	public:
 		Scene();
-		void createDefaultScene(const std::string& resourceRoot, Renderer* renderer);
+		void createDefaultScene(const std::string& resourceRoot, Renderer* renderer,
+			ModelLibrary* modelLibrary, ModelImporter* modelImporter);
 		entt::entity createEntity();
 		entt::registry& getRegistry();
 		entt::dispatcher& getDispatcher();

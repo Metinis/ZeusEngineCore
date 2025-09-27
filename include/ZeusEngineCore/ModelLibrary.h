@@ -12,26 +12,26 @@ namespace ZEN {
 
     class ModelLibrary {
     public:
-        static void init(IResourceManager* resourceManager);
-        static void shutdown();
+        explicit ModelLibrary(IResourceManager* resourceManager);
 
-        static std::shared_ptr<MeshComp> get(const std::string& name);
-        static const std::unordered_map<std::string, std::shared_ptr<MeshComp>>& getAll() {
+        std::shared_ptr<MeshComp> getMesh(const std::string& name);
+        const std::unordered_map<std::string, std::shared_ptr<MeshComp>>& getAllMeshes() {
             return s_Meshes;
         }
-        static std::shared_ptr<MaterialComp> getMaterial(const std::string& name);
-        static void add(const std::string& name, std::shared_ptr<MeshComp> mesh);
-        static void load(const std::string& name, const std::string& path, entt::registry& registry);
-        static IResourceManager* s_ResourceManager;
+        std::shared_ptr<MaterialComp> getMaterial(const std::string& name);
+        void addMesh(const std::string& name, std::shared_ptr<MeshComp> mesh);
+        void loadModel(const std::string& name, const std::string& path, entt::registry& registry);
+
 
     private:
-        static std::unordered_map<std::string, std::shared_ptr<MeshComp>> s_Meshes;
-        static std::unordered_map<std::string, std::shared_ptr<MaterialComp>> s_Materials;
+        std::unordered_map<std::string, std::shared_ptr<MeshComp>> s_Meshes;
+        std::unordered_map<std::string, std::shared_ptr<MaterialComp>> s_Materials;
         // Internal generators
-        static std::shared_ptr<MeshComp> createCube();
-        static std::shared_ptr<MeshComp> createSkybox();
+        std::shared_ptr<MeshComp> createCube();
+        std::shared_ptr<MeshComp> createSkybox();
         //static std::shared_ptr<MeshComp> createPlane();
-        static std::shared_ptr<MeshComp> createSphere(float radius, unsigned int sectorCount, unsigned int stackCount);
+        std::shared_ptr<MeshComp> createSphere(float radius, unsigned int sectorCount, unsigned int stackCount);
+        IResourceManager* m_ResourceManager;
 
     };
 }

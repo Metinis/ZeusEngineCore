@@ -26,18 +26,18 @@ void updateWorldTransforms(entt::registry& registry) {
     }
 }
 
-void RenderSystem::onUpdate(entt::registry &registry) {
-    updateWorldTransforms(registry);
+void RenderSystem::onUpdate() {
+    updateWorldTransforms(m_Scene->getRegistry());
     //create buffers for all meshes without drawable comps
-    auto meshView = registry.view<MeshComp>(entt::exclude<MeshDrawableComp>);
+    auto meshView = m_Scene->getRegistry().view<MeshComp>(entt::exclude<MeshDrawableComp>);
     for (auto entity : meshView) {
         uint32_t shaderID = 0;
-        if (registry.all_of<MaterialComp>(entity)) {
-            shaderID = registry.get<MaterialComp>(entity).shaderID;
+        if (m_Scene->getRegistry().all_of<MaterialComp>(entity)) {
+            shaderID = m_Scene->getRegistry().get<MaterialComp>(entity).shaderID;
         } else {
             // Fallback shader if none exists
             shaderID = m_Renderer->getDefaultShader().shaderID;
-            registry.emplace<MaterialComp>(entity, MaterialComp{ shaderID, {0}, {0} });
+            m_Scene->getRegistry().emplace<MaterialComp>(entity, MaterialComp{ shaderID, {0}, {0} });
         }
 
         auto &mesh = meshView.get<MeshComp>(entity);
@@ -45,15 +45,14 @@ void RenderSystem::onUpdate(entt::registry &registry) {
         MeshDrawableComp drawableComp{};
         drawableComp.indexCount = mesh.indices.size();
         drawableComp.meshID = m_Renderer->getResourceManager()->createMeshDrawable(mesh);
-        registry.emplace<MeshDrawableComp>(entity, drawableComp);
+        m_Scene->getRegistry().emplace<MeshDrawableComp>(entity, drawableComp);
     }
 }
-void RenderSystem::writeCameraData(const entt::registry& registry, glm::mat4& view,
-            glm::mat4& projection) {
-    auto cameraView = registry.view<CameraComp, TransformComp>();
+void RenderSystem::writeCameraData(glm::mat4& view, glm::mat4& projection) {
+    auto cameraView = m_Scene->getRegistry().view<CameraComp, TransformComp>();
     for (auto entity: cameraView) {
-        auto& camera = registry.get<CameraComp>(entity);
-        auto& transform = registry.get<TransformComp>(entity);
+        auto& camera = m_Scene->getRegistry().get<CameraComp>(entity);
+        auto& transform = m_Scene->getRegistry().get<TransformComp>(entity);
         if(camera.isPrimary) {
             //update view ubo
             view = transform.getViewMatrix();
@@ -74,9 +73,9 @@ void RenderSystem::writeCameraData(const entt::registry& registry, glm::mat4& vi
         }
     }
 }
-void RenderSystem::renderDrawables(const entt::registry &registry) {
+void RenderSystem::renderDrawables() {
     //todo sort by material
-    auto viewDraw = registry.view<MeshDrawableComp, MaterialComp, TransformComp>();
+    auto viewDraw = m_Scene->getRegistry().view<MeshDrawableComp, MaterialComp, TransformComp>();
     for(auto& entity : viewDraw) {
         //bind shader
         auto& material = viewDraw.get<MaterialComp>(entity);
@@ -105,9 +104,8 @@ void RenderSystem::renderDrawables(const entt::registry &registry) {
     }
 }
 
-void RenderSystem::renderSkybox(const entt::registry &registry, const glm::mat4& view,
-    const glm::mat4& projection) {
-    auto skyboxView = registry.view<SkyboxComp, MeshDrawableComp>();
+void RenderSystem::renderSkybox(const glm::mat4& view, const glm::mat4& projection) {
+    auto skyboxView = m_Scene->getRegistry().view<SkyboxComp, MeshDrawableComp>();
     for (auto entity: skyboxView) {
         m_Renderer->getContext()->depthMask(false);
         m_Renderer->getContext()->setDepthMode(LEQUAL);
@@ -142,17 +140,17 @@ void RenderSystem::bindSceneUBOs() {
 }
 
 
-void RenderSystem::onRender(const entt::registry& registry) {
+void RenderSystem::onRender() {
     //write camera data
     glm::mat4 view;
     glm::mat4 projection;
-    writeCameraData(registry, view, projection);
+    writeCameraData(view, projection);
 
     bindSceneUBOs();
 
     //render all meshes with drawable comps
-    renderDrawables(registry);
+    renderDrawables();
 
     //draw skybox
-    renderSkybox(registry, view, projection);
+    renderSkybox(view, projection);
 }

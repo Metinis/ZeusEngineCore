@@ -1,6 +1,7 @@
 #include "ZeusEngineCore/Scene.h"
 
 #include <ZeusEngineCore/ModelLibrary.h>
+#include <ZeusEngineCore/ModelImporter.h>
 
 using namespace ZEN;
 
@@ -8,7 +9,8 @@ Scene::Scene() {
 
 }
 
-void Scene::createDefaultScene(const std::string& resourceRoot, Renderer* renderer) {
+void Scene::createDefaultScene(const std::string& resourceRoot, Renderer* renderer,
+            ModelLibrary* modelLibrary, ModelImporter* modelImporter) {
 	uint32_t textureID = renderer->getResourceManager()->createTexture(
         resourceRoot + "/textures/container2.png");
     uint32_t textureID2 = renderer->getResourceManager()->createTexture(
@@ -23,16 +25,15 @@ void Scene::createDefaultScene(const std::string& resourceRoot, Renderer* render
         .specular = 0.5f,
         .shininess = 32,
     };
-
     entt::entity entity = createEntity();
-    m_Registry.emplace<ZEN::MeshComp>(entity, *ZEN::ModelLibrary::get("Cube"));
+    m_Registry.emplace<ZEN::MeshComp>(entity, *modelLibrary->getMesh("Cube"));
     m_Registry.emplace<ZEN::TransformComp>(entity,
         ZEN::TransformComp{.localPosition = {0.0f, 0.0f, -3.0f}});
     m_Registry.emplace<ZEN::MaterialComp>(entity, comp);
     m_Registry.emplace<ZEN::TagComp>(entity, ZEN::TagComp{.tag = "Cube 1"});
 
     entt::entity entity2 = createEntity();
-    m_Registry.emplace<ZEN::MeshComp>(entity2, *ZEN::ModelLibrary::get("Cube"));
+    m_Registry.emplace<ZEN::MeshComp>(entity2, *modelLibrary->getMesh("Cube"));
     m_Registry.emplace<ZEN::TransformComp>(entity2,
         ZEN::TransformComp{.localPosition = {2.0f, 0.0f, -3.0f}});
     m_Registry.emplace<ZEN::MaterialComp>(entity2, comp);
@@ -45,7 +46,7 @@ void Scene::createDefaultScene(const std::string& resourceRoot, Renderer* render
     m_Registry.emplace<ZEN::TagComp>(cameraEntity, ZEN::TagComp{.tag = "Scene Camera"});
 
     entt::entity skyboxEntity = createEntity();
-    ZEN::MeshComp skyboxMesh = *ZEN::ModelLibrary::get("Skybox");
+    ZEN::MeshComp skyboxMesh = *modelLibrary->getMesh("Skybox");
 
     ZEN::SkyboxComp skyboxComp{};
     skyboxComp.shaderID = renderer->getResourceManager()->createShader(
@@ -54,8 +55,8 @@ void Scene::createDefaultScene(const std::string& resourceRoot, Renderer* render
     m_Registry.emplace<ZEN::SkyboxComp>(skyboxEntity, skyboxComp);
     m_Registry.emplace<ZEN::MeshComp>(skyboxEntity, skyboxMesh);
 
-    ModelLibrary::load("room", resourceRoot + "/models/vr_art_gallery_room.glb", m_Registry);
-    ModelLibrary::load("backpack", resourceRoot + "/models/survival_guitar_backpack4k.glb", m_Registry);
+    modelImporter->loadModel("room", resourceRoot + "/models/vr_art_gallery_room.glb");
+    modelImporter->loadModel("backpack", resourceRoot + "/models/survival_guitar_backpack4k.glb");
 
 }
 

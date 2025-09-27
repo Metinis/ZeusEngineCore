@@ -1,5 +1,6 @@
 #include "ZeusEngineCore/CameraSystem.h"
 #include "ZeusEngineCore/Components.h"
+#include "ZeusEngineCore/Scene.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include "ZeusEngineCore/InputEvents.h"
 #include <iostream>
@@ -8,25 +9,25 @@
 
 using namespace ZEN;
 
-CameraSystem::CameraSystem(entt::dispatcher &dispatcher) : m_Dispatcher(dispatcher){
-    dispatcher.sink<SceneViewResizeEvent>().connect<&CameraSystem::onResize>(*this);
-    dispatcher.sink<KeyPressedEvent>().connect<&CameraSystem::onKeyPressed>(*this);
-    dispatcher.sink<KeyRepeatEvent>().connect<&CameraSystem::onKeyRepeat>(*this);
-    dispatcher.sink<KeyReleaseEvent>().connect<&CameraSystem::onKeyReleased>(*this);
-    dispatcher.sink<MouseButtonPressEvent>().connect<&CameraSystem::onMouseButtonPressed>(*this);
-    dispatcher.sink<MouseButtonReleaseEvent>().connect<&CameraSystem::onMouseButtonReleased>(*this);
-    dispatcher.sink<PanelFocusEvent>().connect<&CameraSystem::onPanelFocusEvent>(*this);
-    dispatcher.sink<MouseMoveEvent>().connect<&CameraSystem::onMouseMove>(*this);
+CameraSystem::CameraSystem(Scene* scene) : m_Scene(scene) {
+    m_Scene->getDispatcher().sink<SceneViewResizeEvent>().connect<&CameraSystem::onResize>(*this);
+    m_Scene->getDispatcher().sink<KeyPressedEvent>().connect<&CameraSystem::onKeyPressed>(*this);
+    m_Scene->getDispatcher().sink<KeyRepeatEvent>().connect<&CameraSystem::onKeyRepeat>(*this);
+    m_Scene->getDispatcher().sink<KeyReleaseEvent>().connect<&CameraSystem::onKeyReleased>(*this);
+    m_Scene->getDispatcher().sink<MouseButtonPressEvent>().connect<&CameraSystem::onMouseButtonPressed>(*this);
+    m_Scene->getDispatcher().sink<MouseButtonReleaseEvent>().connect<&CameraSystem::onMouseButtonReleased>(*this);
+    m_Scene->getDispatcher().sink<PanelFocusEvent>().connect<&CameraSystem::onPanelFocusEvent>(*this);
+    m_Scene->getDispatcher().sink<MouseMoveEvent>().connect<&CameraSystem::onMouseMove>(*this);
 }
 
-void CameraSystem::onUpdate(entt::registry &registry, float deltaTime) {
-    auto view = registry.view<CameraComp>();
+void CameraSystem::onUpdate(float deltaTime) {
+    auto view = m_Scene->getRegistry().view<CameraComp>();
 
     for (auto entity : view) {
         auto &camera = view.get<CameraComp>(entity);
 
         //update position if has transform
-        if (auto *transform = registry.try_get<TransformComp>(entity)) {
+        if (auto *transform = m_Scene->getRegistry().try_get<TransformComp>(entity)) {
             glm::vec3 worldUp = glm::vec3(0.0f, 1.0f, 0.0f);
             glm::vec3 front = transform->getFront();
             glm::vec3 flatFront = glm::normalize(glm::vec3(front.x, 0.0f, front.z));
@@ -98,7 +99,7 @@ void CameraSystem::onKeyReleased(const KeyReleaseEvent &e) {
 void CameraSystem::onMouseButtonPressed(const MouseButtonPressEvent &e) {
     //m_MouseButtonsDown.insert(e.button);
     if(e.button == GLFW_MOUSE_BUTTON_RIGHT && m_PanelSelected) {
-        m_Dispatcher.trigger<CursorLockEvent>(CursorLockEvent{true});
+        m_Scene->getDispatcher().trigger<CursorLockEvent>(CursorLockEvent{true});
         m_CursorLocked = true;
 
         //m_CursorPosLastX = m_CursorPosX;
@@ -109,7 +110,7 @@ void CameraSystem::onMouseButtonPressed(const MouseButtonPressEvent &e) {
 void CameraSystem::onMouseButtonReleased(const MouseButtonReleaseEvent &e) {
     //m_MouseButtonsDown.erase(e.button);
     if(e.button == GLFW_MOUSE_BUTTON_RIGHT) {
-        m_Dispatcher.trigger<CursorLockEvent>(CursorLockEvent{false});
+        m_Scene->getDispatcher().trigger<CursorLockEvent>(CursorLockEvent{false});
         m_CursorLocked = false;
     }
 }

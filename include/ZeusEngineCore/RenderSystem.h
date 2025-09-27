@@ -7,15 +7,13 @@ namespace ZEN {
 	class RenderSystem {
 	public:
 		explicit RenderSystem(Renderer *renderer, Scene *scene);
-		void onUpdate(entt::registry& registry);
-		void onRender(const entt::registry& registry);
+		void onUpdate();
+		void onRender();
 	private:
-		void writeCameraData(const entt::registry& registry, glm::mat4& view,
-			glm::mat4& projection);
+		void writeCameraData(glm::mat4& view, glm::mat4& projection);
 		void bindSceneUBOs();
-		void renderDrawables(const entt::registry& registry);
-		void renderSkybox(const entt::registry &registry, const glm::mat4& view,
-			const glm::mat4& projection);
+		void renderDrawables();
+		void renderSkybox(const glm::mat4& view, const glm::mat4& projection);
 		Renderer* m_Renderer{};
 		Scene* m_Scene{};
 	};
