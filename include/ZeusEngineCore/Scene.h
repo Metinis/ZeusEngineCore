@@ -6,13 +6,13 @@
 namespace ZEN {
 	class ModelLibrary;
 	class ModelImporter;
+	class ZEngine;
 
 	class Scene {
 
 	public:
 		Scene();
-		void createDefaultScene(const std::string& resourceRoot, Renderer* renderer,
-			ModelLibrary* modelLibrary, ModelImporter* modelImporter);
+		void createDefaultScene(const std::string& resourceRoot, ZEngine* engine);
 		entt::entity createEntity();
 		entt::registry& getRegistry();
 		entt::dispatcher& getDispatcher();

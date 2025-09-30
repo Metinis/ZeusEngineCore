@@ -41,6 +41,8 @@ namespace ZEN {
     };
     struct CursorLockEvent {
         bool lock;
+        double xPos;
+        double yPos;
     };
     struct MouseMoveEvent {
         double xPos;

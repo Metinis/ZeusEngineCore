@@ -8,8 +8,7 @@
 using namespace ZEN;
 
 
-Window::Window(int width, int height, std::string title, ZEN::eRendererAPI api,
-    entt::dispatcher& dispatcher)
+Window::Window(int width, int height, std::string title, ZEN::eRendererAPI api)
     : m_Width(width), m_Height(height), m_Title(std::move(title)) {
     if (!glfwInit())
         throw std::runtime_error("Failed to initialize GLFW");
@@ -35,6 +34,10 @@ Window::Window(int width, int height, std::string title, ZEN::eRendererAPI api,
 
     m_LastTime = static_cast<float>(glfwGetTime());
 
+
+}
+
+void Window::attachDispatcher(entt::dispatcher &dispatcher) {
     glfwSetWindowUserPointer(m_Window, &dispatcher);
 
     dispatcher.sink<CursorLockEvent>().connect<&Window::onCursorLockChange>(*this);
@@ -82,6 +85,7 @@ Window::Window(int width, int height, std::string title, ZEN::eRendererAPI api,
         disp->trigger<MouseMoveEvent>({xPos, yPos});
     });
 }
+
 Window::~Window() {
     if(m_Window) {
         glfwDestroyWindow(m_Window);
@@ -103,10 +107,12 @@ void Window::pollEvents() {
 
 void Window::onCursorLockChange(CursorLockEvent &e) {
     if (e.lock) {
+        glfwSetCursorPos(m_Window, e.xPos, e.yPos);
         glfwSetInputMode(m_Window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     } else {
         glfwSetInputMode(m_Window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
     }
+
 }
 
 void Window::calculateDeltaTime() {

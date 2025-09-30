@@ -1,11 +1,11 @@
 #pragma once
 #include <entt.hpp>
-
 #include "../src/Systems/Renderer/OpenGL/GLContext.h"
-
+struct GLFWwindow;
 namespace ZEN {
 	struct SceneViewResizeEvent;
 	struct WindowResizeEvent;
+
 }
 
 namespace ZEN {

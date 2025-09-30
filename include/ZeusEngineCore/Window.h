@@ -7,9 +7,9 @@ namespace ZEN {
     struct CursorLockEvent;
     class Window {
     public:
-        Window(int width, int height, std::string title, ZEN::eRendererAPI api,
-            entt::dispatcher& dispatcher);
+        Window(int width, int height, std::string title, ZEN::eRendererAPI api);
 
+        void attachDispatcher(entt::dispatcher& dispatcher);
         ~Window();
 
         void pollEvents();

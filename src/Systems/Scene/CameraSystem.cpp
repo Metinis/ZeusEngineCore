@@ -97,20 +97,25 @@ void CameraSystem::onKeyReleased(const KeyReleaseEvent &e) {
 }
 
 void CameraSystem::onMouseButtonPressed(const MouseButtonPressEvent &e) {
-    //m_MouseButtonsDown.insert(e.button);
     if(e.button == GLFW_MOUSE_BUTTON_RIGHT && m_PanelSelected) {
-        m_Scene->getDispatcher().trigger<CursorLockEvent>(CursorLockEvent{true});
+        m_Scene->getDispatcher().trigger<CursorLockEvent>(CursorLockEvent{
+            .lock = true,
+            .xPos = m_CursorPosX,
+            .yPos = m_CursorPosY
+        });
         m_CursorLocked = true;
-
-        //m_CursorPosLastX = m_CursorPosX;
-        //m_CursorPosLastY = m_CursorPosY;
+        m_CursorPosLastX = m_CursorPosX;
+        m_CursorPosLastY = m_CursorPosY;
     }
 }
 
 void CameraSystem::onMouseButtonReleased(const MouseButtonReleaseEvent &e) {
-    //m_MouseButtonsDown.erase(e.button);
     if(e.button == GLFW_MOUSE_BUTTON_RIGHT) {
-        m_Scene->getDispatcher().trigger<CursorLockEvent>(CursorLockEvent{false});
+        m_Scene->getDispatcher().trigger<CursorLockEvent>(CursorLockEvent{
+            .lock = false,
+            .xPos = m_CursorPosX,
+            .yPos = m_CursorPosY
+        });
         m_CursorLocked = false;
     }
 }
@@ -118,10 +123,6 @@ void CameraSystem::onMouseButtonReleased(const MouseButtonReleaseEvent &e) {
 void CameraSystem::onMouseMove(const MouseMoveEvent &e) {
     m_CursorPosX = e.xPos;
     m_CursorPosY = e.yPos;
-    if(!m_CursorLocked) {
-        m_CursorPosLastX = m_CursorPosX;
-        m_CursorPosLastY = m_CursorPosY;
-    }
 }
 
 void CameraSystem::onPanelFocusEvent(const PanelFocusEvent &e) {
