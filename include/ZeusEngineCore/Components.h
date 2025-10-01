@@ -3,12 +3,15 @@
 
 #include "ZeusEngineCore/Vertex.h"
 #include "ZeusEngineCore/Util.h"
+#include "ZeusEngineCore/Entity.h"
 
 namespace entt {
     enum class entity : std::uint32_t;
 }
 
 namespace ZEN {
+    class Entity;
+
     struct MeshComp {
         std::vector<uint32_t> indices{};
         std::vector<Vertex> vertices{};
@@ -93,7 +96,7 @@ namespace ZEN {
         bool isPrimary = true;
     };
     struct ParentComp {
-        entt::entity parent;
+        Entity parent;
     };
 
 }

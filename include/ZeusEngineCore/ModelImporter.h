@@ -1,14 +1,15 @@
 #pragma once
-#include <string>
-#include <entt/entt.hpp>
+#include <unordered_map>
 #include <glm/fwd.hpp>
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
+#include <vector>
 
 namespace ZEN {
     class Scene;
     class IResourceManager;
+    class Entity;
 
     class ModelImporter {
     public:
@@ -22,11 +23,11 @@ namespace ZEN {
                                 const aiScene* scene, aiTextureType type,
                                 const aiMaterial* material);
 
-        void processAiMesh(entt::entity entity, aiMesh* mesh,
+        void processAiMesh(Entity& entity, aiMesh* mesh,
                            const aiScene* scene, const glm::mat4& transform);
 
         void processNode(aiNode* node, const aiScene* scene,
-                         const glm::mat4& parentTransform, entt::entity parent);
+                         const glm::mat4& parentTransform, Entity& parent);
 
         Scene* m_Scene{};
         IResourceManager* m_ResourceManager{};

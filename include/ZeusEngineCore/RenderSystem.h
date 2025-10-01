@@ -14,6 +14,7 @@ namespace ZEN {
 		void bindSceneUBOs();
 		void renderDrawables();
 		void renderSkybox(const glm::mat4& view, const glm::mat4& projection);
+		void updateWorldTransforms();
 		Renderer* m_Renderer{};
 		Scene* m_Scene{};
 	};

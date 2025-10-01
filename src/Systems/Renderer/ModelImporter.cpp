@@ -1,7 +1,7 @@
 #include "ZeusEngineCore/ModelImporter.h"
 
 #include <iostream>
-
+#include <ZeusEngineCore/Entity.h>
 #include <ZeusEngineCore/Components.h>
 #include <ZeusEngineCore/Scene.h>
 
@@ -76,7 +76,7 @@ void ModelImporter::processTextureType(std::vector<uint32_t>& textureIDs,
     }
 }
 
-void ModelImporter::processAiMesh(entt::entity entity, aiMesh* mesh,
+void ModelImporter::processAiMesh(Entity& entity, aiMesh* mesh,
                                   const aiScene* scene, const glm::mat4& transform) {
     MeshComp meshComp{};
     MaterialComp materialComp{.shaderID = 1};
@@ -108,25 +108,22 @@ void ModelImporter::processAiMesh(entt::entity entity, aiMesh* mesh,
         processTextureType(materialComp.specularTexIDs, scene, aiTextureType_SPECULAR, material);
     }
 
-    m_Scene->getRegistry().emplace<MeshComp>(entity, meshComp);
-    m_Scene->getRegistry().emplace<MaterialComp>(entity, materialComp);
+    entity.addComponent<MeshComp>(meshComp);
+    entity.addComponent<MaterialComp>(materialComp);
 }
 
 void ModelImporter::processNode(aiNode* node, const aiScene* scene,
-                                const glm::mat4& parentTransform, entt::entity parent) {
+                                const glm::mat4& parentTransform, Entity& parent) {
     glm::mat4 nodeTransform = aiMat4ToGlm(node->mTransformation);
     glm::mat4 globalTransform = parentTransform * nodeTransform;
 
     for (unsigned int i = 0; i < node->mNumMeshes; i++) {
         aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
-        entt::entity entity = m_Scene->getRegistry().create();
+        Entity entity = m_Scene->createEntity(mesh->mName.C_Str());
         processAiMesh(entity, mesh, scene, globalTransform);
 
-        if (parent != entt::null)
-            m_Scene->getRegistry().emplace<ParentComp>(entity, ParentComp{.parent = parent});
+        entity.addComponent<ParentComp>(parent);
 
-        m_Scene->getRegistry().emplace<TransformComp>(entity, TransformComp{});
-        m_Scene->getRegistry().emplace<TagComp>(entity, TagComp{.tag = mesh->mName.C_Str()});
     }
 
     for (unsigned int i = 0; i < node->mNumChildren; i++) {
@@ -145,8 +142,6 @@ void ModelImporter::loadModel(const std::string &name, const std::string &path) 
     }
 
     glm::mat4 parentTransform(1.0f);
-    entt::entity parent = m_Scene->createEntity();
-    m_Scene->getRegistry().emplace<TransformComp>(parent);
-    m_Scene->getRegistry().emplace<TagComp>(parent, TagComp{.tag = name});
+    Entity parent = m_Scene->createEntity(name);
     processNode(scene->mRootNode, scene, parentTransform, parent);
 }

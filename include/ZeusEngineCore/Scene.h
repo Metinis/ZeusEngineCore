@@ -1,6 +1,7 @@
 #pragma once
 #include <entt/entt.hpp>
 #include "ZeusEngineCore/RenderSystem.h"
+#include "ZeusEngineCore/Entity.h"
 
 
 namespace ZEN {
@@ -13,17 +14,30 @@ namespace ZEN {
 	public:
 		Scene();
 		void createDefaultScene(const std::string& resourceRoot, ZEngine* engine);
-		entt::entity createEntity();
-		entt::registry& getRegistry();
+		Entity createEntity(const std::string& name = "");
+
+		template<typename ...Args>
+		auto getEntities() {
+			auto view = m_Registry.view<Args...>();
+
+			return view | std::views::transform(
+				[this](entt::entity entity) { return makeEntity(entity); }
+			);
+		}
+
 		entt::dispatcher& getDispatcher();
 		glm::vec3 getLightPos() {return lightPos;}
 		glm::vec3 getLightDir() {return lightDir;}
 		glm::vec3 getAmbientColor() {return ambientColor;}
 	private:
 		entt::registry m_Registry{};
-		entt::dispatcher m_Dispather{};
+		entt::dispatcher m_Dispatcher{};
 		glm::vec3 lightPos{1.0f, 5.0f, 1.0f};
 		glm::vec3 lightDir{-0.2f, -1.0f, 0.3f};
 		glm::vec3 ambientColor{0.5f, 0.5f, 0.5f};
+
+		Entity makeEntity(entt::entity entity);
+
+		friend class Entity;
 	};
 }

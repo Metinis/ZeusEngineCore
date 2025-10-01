@@ -7,16 +7,16 @@ RenderSystem::RenderSystem(Renderer *renderer, Scene *scene) :
 m_Renderer(renderer), m_Scene(scene){
 
 }
-void updateWorldTransforms(entt::registry& registry) {
-    auto view = registry.view<TransformComp>();
+void RenderSystem::updateWorldTransforms() {
+    auto view = m_Scene->getEntities<TransformComp>();
 
     for (auto e : view) {
-        auto &tc = view.get<TransformComp>(e);
+        auto &tc = e.getComponent<TransformComp>();
         glm::mat4 local = tc.getLocalMatrix();
 
 
-        if (auto parentComp = registry.try_get<ParentComp>(e)) {
-            if(auto tranformComp = registry.try_get<TransformComp>(parentComp->parent)) {
+        if (auto parentComp = e.tryGetComponent<ParentComp>()) {
+            if(auto tranformComp = parentComp->parent.tryGetComponent<TransformComp>()) {
                 tc.worldMatrix = tranformComp->worldMatrix * local;
             }
         }
@@ -27,32 +27,30 @@ void updateWorldTransforms(entt::registry& registry) {
 }
 
 void RenderSystem::onUpdate() {
-    updateWorldTransforms(m_Scene->getRegistry());
+    updateWorldTransforms();
     //create buffers for all meshes without drawable comps
-    auto meshView = m_Scene->getRegistry().view<MeshComp>(entt::exclude<MeshDrawableComp>);
+    auto meshView = m_Scene->getEntities<MeshComp>();
     for (auto entity : meshView) {
-        uint32_t shaderID = 0;
-        if (m_Scene->getRegistry().all_of<MaterialComp>(entity)) {
-            shaderID = m_Scene->getRegistry().get<MaterialComp>(entity).shaderID;
-        } else {
-            // Fallback shader if none exists
-            shaderID = m_Renderer->getDefaultShader().shaderID;
-            m_Scene->getRegistry().emplace<MaterialComp>(entity, MaterialComp{ shaderID, {0}, {0} });
+        if(entity.hasComponent<MeshDrawableComp>()) continue;
+
+        if(!entity.hasComponent<MaterialComp>() && !entity.hasComponent<SkyboxComp>()) {
+            entity.addComponent<MaterialComp>(MaterialComp{ m_Renderer->getDefaultShader().shaderID,
+                {0}, {0} });
         }
 
-        auto &mesh = meshView.get<MeshComp>(entity);
+        auto &mesh = entity.getComponent<MeshComp>();
 
         MeshDrawableComp drawableComp{};
         drawableComp.indexCount = mesh.indices.size();
         drawableComp.meshID = m_Renderer->getResourceManager()->createMeshDrawable(mesh);
-        m_Scene->getRegistry().emplace<MeshDrawableComp>(entity, drawableComp);
+        entity.addComponent<MeshDrawableComp>(drawableComp);
     }
 }
 void RenderSystem::writeCameraData(glm::mat4& view, glm::mat4& projection) {
-    auto cameraView = m_Scene->getRegistry().view<CameraComp, TransformComp>();
+    auto cameraView = m_Scene->getEntities<CameraComp, TransformComp>();
     for (auto entity: cameraView) {
-        auto& camera = m_Scene->getRegistry().get<CameraComp>(entity);
-        auto& transform = m_Scene->getRegistry().get<TransformComp>(entity);
+        auto& camera = entity.getComponent<CameraComp>();
+        auto& transform = entity.getComponent<TransformComp>();
         if(camera.isPrimary) {
             //update view ubo
             view = transform.getViewMatrix();
@@ -75,10 +73,10 @@ void RenderSystem::writeCameraData(glm::mat4& view, glm::mat4& projection) {
 }
 void RenderSystem::renderDrawables() {
     //todo sort by material
-    auto viewDraw = m_Scene->getRegistry().view<MeshDrawableComp, MaterialComp, TransformComp>();
-    for(auto& entity : viewDraw) {
+    auto viewDraw = m_Scene->getEntities<MeshDrawableComp, MaterialComp, TransformComp>();
+    for(auto entity : viewDraw) {
         //bind shader
-        auto& material = viewDraw.get<MaterialComp>(entity);
+        auto& material = entity.getComponent<MaterialComp>();
         m_Renderer->getResourceManager()->bindShader(material.shaderID);
 
         //write to material ubo
@@ -92,20 +90,20 @@ void RenderSystem::renderDrawables() {
         //bind material texture
         m_Renderer->getResourceManager()->bindMaterial(material);
         //write to instance ubo (todo check if last mesh is same for instancing)
-        auto transform = viewDraw.get<TransformComp>(entity);
+        auto transform = entity.getComponent<TransformComp>();
         auto const bytes = std::bit_cast<std::array<std::byte,
             sizeof(transform.worldMatrix)>>(transform.worldMatrix);
         m_Renderer->getResourceManager()->writeToUBO(m_Renderer->getInstanceUBO().uboID, bytes);
 
         //todo submit mesh to renderer
-        MeshDrawableComp drawable = viewDraw.get<MeshDrawableComp>(entity);
+        MeshDrawableComp drawable = entity.getComponent<MeshDrawableComp>();
         m_Renderer->getContext()->drawMesh(*m_Renderer->getResourceManager(), drawable);
 
     }
 }
 
 void RenderSystem::renderSkybox(const glm::mat4& view, const glm::mat4& projection) {
-    auto skyboxView = m_Scene->getRegistry().view<SkyboxComp, MeshDrawableComp>();
+    auto skyboxView = m_Scene->getEntities<SkyboxComp, MeshDrawableComp>();
     for (auto entity: skyboxView) {
         m_Renderer->getContext()->depthMask(false);
         m_Renderer->getContext()->setDepthMode(LEQUAL);
@@ -114,13 +112,13 @@ void RenderSystem::renderSkybox(const glm::mat4& view, const glm::mat4& projecti
         auto const bytes = std::bit_cast<std::array<std::byte, sizeof(vp)>>(vp);
         m_Renderer->getResourceManager()->writeToUBO(m_Renderer->getViewUBO().uboID, bytes);
         //bind shader
-        auto& skyboxComp = skyboxView.get<SkyboxComp>(entity);
+        auto& skyboxComp = entity.getComponent<SkyboxComp>();
         m_Renderer->getResourceManager()->bindShader(skyboxComp.shaderID);
 
         //bind cubemap texture
         m_Renderer->getResourceManager()->bindCubeMapTexture(skyboxComp.textureID);
 
-        auto& drawable = skyboxView.get<MeshDrawableComp>(entity);
+        auto& drawable = entity.getComponent<MeshDrawableComp>();
         m_Renderer->getContext()->drawMesh(*m_Renderer->getResourceManager(), drawable);
 
         m_Renderer->getContext()->depthMask(true);

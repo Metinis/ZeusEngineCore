@@ -1,6 +1,8 @@
 #pragma once
+#include "ZeusEngineCore/Entity.h"
 
 namespace ZEN {
+    class Entity;
     struct KeyPressedEvent {
         int key;
         int scancode;
@@ -49,6 +51,6 @@ namespace ZEN {
         double yPos;
     };
     struct SelectEntityEvent {
-        entt::entity entity;
+        Entity entity;
     };
 }

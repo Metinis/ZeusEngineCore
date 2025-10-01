@@ -21,13 +21,13 @@ CameraSystem::CameraSystem(Scene* scene) : m_Scene(scene) {
 }
 
 void CameraSystem::onUpdate(float deltaTime) {
-    auto view = m_Scene->getRegistry().view<CameraComp>();
+    auto view = m_Scene->getEntities<CameraComp>();
 
     for (auto entity : view) {
-        auto &camera = view.get<CameraComp>(entity);
+        auto &camera = entity.getComponent<CameraComp>();
 
         //update position if has transform
-        if (auto *transform = m_Scene->getRegistry().try_get<TransformComp>(entity)) {
+        if (auto *transform = entity.tryGetComponent<TransformComp>()) {
             glm::vec3 worldUp = glm::vec3(0.0f, 1.0f, 0.0f);
             glm::vec3 front = transform->getFront();
             glm::vec3 flatFront = glm::normalize(glm::vec3(front.x, 0.0f, front.z));
