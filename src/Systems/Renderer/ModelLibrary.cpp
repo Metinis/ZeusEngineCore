@@ -5,23 +5,35 @@ using namespace ZEN;
 
 ModelLibrary::ModelLibrary(IResourceManager *resourceManager)
 : m_ResourceManager(resourceManager) {
-    s_Meshes["Cube"]  = createCube();
-    s_Meshes["Skybox"] = createSkybox();
-    s_Meshes["Sphere"] = createSphere(1.0f, 32, 16);
+    m_Meshes["Cube"]  = createCube();
+    m_Meshes["Skybox"] = createSkybox();
+    m_Meshes["Sphere"] = createSphere(1.0f, 32, 16);
+}
+
+void ModelLibrary::addMaterial(const std::string &name, std::shared_ptr<MaterialComp> material) {
+    m_Materials[name] = std::move(material);
 }
 
 std::shared_ptr<MaterialComp> ModelLibrary::getMaterial(const std::string &name) {
-    auto it = s_Materials.find(name);
-    if (it != s_Materials.end()) return it->second;
+    auto it = m_Materials.find(name);
+    if (it != m_Materials.end()) return it->second;
     return nullptr;
 }
 std::shared_ptr<MeshComp> ModelLibrary::getMesh(const std::string &name) {
-    auto it = s_Meshes.find(name);
-    if (it != s_Meshes.end()) return it->second;
+    auto it = m_Meshes.find(name);
+    if (it != m_Meshes.end()) return it->second;
     return nullptr;
 }
 void ModelLibrary::addMesh(const std::string& name, std::shared_ptr<MeshComp> mesh) {
-    s_Meshes[name] = std::move(mesh);
+    m_Meshes[name] = std::move(mesh);
+}
+
+void ModelLibrary::addMesh(const std::string &name, const MeshComp &mesh) {
+    m_Meshes[name] = std::make_shared<MeshComp>(mesh);
+}
+
+void ModelLibrary::addMaterial(const std::string &name, const MaterialComp &material) {
+    m_Materials[name] = std::make_shared<MaterialComp>(material);
 }
 
 

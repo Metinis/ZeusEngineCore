@@ -10,10 +10,11 @@ namespace ZEN {
     class Scene;
     class IResourceManager;
     class Entity;
+    class ModelLibrary;
 
     class ModelImporter {
     public:
-        explicit ModelImporter(Scene* scene, IResourceManager* resourceManager);
+        explicit ModelImporter(Scene* scene, IResourceManager* resourceManager, ModelLibrary* modelLibrary);
         void loadModel(const std::string &name, const std::string& path);
     private:
         void processTexturesEmbedded(std::vector<uint32_t>& textureIDs,
@@ -30,6 +31,7 @@ namespace ZEN {
                          const glm::mat4& parentTransform, Entity& parent);
 
         Scene* m_Scene{};
+        ModelLibrary* m_ModelLibrary{};
         IResourceManager* m_ResourceManager{};
         std::unordered_map<const aiTexture*, uint32_t> m_EmbeddedTextureCache{};
     };

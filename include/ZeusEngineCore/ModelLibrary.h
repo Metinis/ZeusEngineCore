@@ -1,5 +1,4 @@
 #pragma once
-#include <entt.hpp>
 #include <memory>
 #include <unordered_map>
 #include <string>
@@ -14,18 +13,24 @@ namespace ZEN {
     public:
         explicit ModelLibrary(IResourceManager* resourceManager);
 
+        void addMesh(const std::string& name, std::shared_ptr<MeshComp> mesh);
+        void addMesh(const std::string& name, const MeshComp& mesh);
         std::shared_ptr<MeshComp> getMesh(const std::string& name);
         const std::unordered_map<std::string, std::shared_ptr<MeshComp>>& getAllMeshes() {
-            return s_Meshes;
+            return m_Meshes;
         }
+
+        void addMaterial(const std::string& name, std::shared_ptr<MaterialComp> material);
+        void addMaterial(const std::string& name, const MaterialComp& material);
         std::shared_ptr<MaterialComp> getMaterial(const std::string& name);
-        void addMesh(const std::string& name, std::shared_ptr<MeshComp> mesh);
-        void loadModel(const std::string& name, const std::string& path, entt::registry& registry);
+        const std::unordered_map<std::string, std::shared_ptr<MaterialComp>>& getAllMaterials() {
+            return m_Materials;
+        }
 
 
     private:
-        std::unordered_map<std::string, std::shared_ptr<MeshComp>> s_Meshes;
-        std::unordered_map<std::string, std::shared_ptr<MaterialComp>> s_Materials;
+        std::unordered_map<std::string, std::shared_ptr<MeshComp>> m_Meshes;
+        std::unordered_map<std::string, std::shared_ptr<MaterialComp>> m_Materials;
         // Internal generators
         std::shared_ptr<MeshComp> createCube();
         std::shared_ptr<MeshComp> createSkybox();

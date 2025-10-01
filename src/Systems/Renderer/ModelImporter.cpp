@@ -2,13 +2,14 @@
 #include <iostream>
 #include <ZeusEngineCore/Entity.h>
 #include <ZeusEngineCore/Components.h>
+#include <ZeusEngineCore/ModelLibrary.h>
 #include <ZeusEngineCore/Scene.h>
 
 
 using namespace ZEN;
 
-ModelImporter::ModelImporter(Scene *scene, IResourceManager* resourceManager) : m_Scene(scene),
-m_ResourceManager(resourceManager){
+ModelImporter::ModelImporter(Scene* scene, IResourceManager* resourceManager, ModelLibrary* modelLibrary) : m_Scene(scene),
+m_ResourceManager(resourceManager), m_ModelLibrary(modelLibrary){
 
 }
 
@@ -109,6 +110,8 @@ void ModelImporter::processAiMesh(Entity& entity, aiMesh* mesh,
 
     entity.addComponent<MeshComp>(meshComp);
     entity.addComponent<MaterialComp>(materialComp);
+    m_ModelLibrary->addMesh(mesh->mName.C_Str(), meshComp);
+    m_ModelLibrary->addMaterial(scene->mMaterials[mesh->mMaterialIndex]->GetName().C_Str(), materialComp);
 }
 
 void ModelImporter::processNode(aiNode* node, const aiScene* scene,
@@ -143,4 +146,5 @@ void ModelImporter::loadModel(const std::string &name, const std::string &path) 
     glm::mat4 parentTransform(1.0f);
     Entity parent = m_Scene->createEntity(name);
     processNode(scene->mRootNode, scene, parentTransform, parent);
+    //todo add all loaded meshes and materials to library
 }
