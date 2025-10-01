@@ -10,7 +10,8 @@ find_package(assimp REQUIRED)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/include/glfw glfw)
 
 add_library(ZeusEngineCore STATIC
-        include/ZeusEngineCore/ModelImporter.h)
+        include/ZeusEngineCore/ModelImporter.h
+        include/ZeusEngineCore/EventDispatcher.h)
 
 target_compile_features(ZeusEngineCore PUBLIC cxx_std_23)
 

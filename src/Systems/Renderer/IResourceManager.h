@@ -3,11 +3,8 @@
 #include <ZeusEngineCore/API.h>
 #include "ZeusEngineCore/Components.h"
 #include <memory>
-#include <unordered_map>
 #include <iostream>
-#include <assimp/Importer.hpp>
 #include <assimp/scene.h>
-#include <assimp/postprocess.h>
 
 namespace ZEN {
     class IResourceManager {

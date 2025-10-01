@@ -1,15 +1,15 @@
 #pragma once
-#include <entt.hpp>
 #include <string>
 #include <ZeusEngineCore/API.h>
 struct GLFWwindow;
 namespace ZEN {
     struct CursorLockEvent;
+    class EventDispatcher;
     class Window {
     public:
         Window(int width, int height, std::string title, ZEN::eRendererAPI api);
 
-        void attachDispatcher(entt::dispatcher& dispatcher);
+        void attachDispatcher(EventDispatcher& dispatcher);
         ~Window();
 
         void pollEvents();
@@ -24,7 +24,7 @@ namespace ZEN {
 
         float getHeight(){return m_Height;}
 
-        void onCursorLockChange(CursorLockEvent& e);
+        void onCursorLockChange(CursorLockEvent &e);
 
     private:
         void calculateDeltaTime();

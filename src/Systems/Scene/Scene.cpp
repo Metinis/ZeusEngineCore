@@ -41,10 +41,6 @@ Entity Scene::createEntity(const std::string& name) {
 }
 
 
-entt::dispatcher & Scene::getDispatcher() {
-	return m_Dispatcher;
-}
-
 Entity Scene::makeEntity(entt::entity entity) {
     return Entity{this, entity};
 }

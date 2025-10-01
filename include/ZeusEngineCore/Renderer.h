@@ -1,14 +1,11 @@
 #pragma once
-#include <entt.hpp>
 #include "../src/Systems/Renderer/OpenGL/GLContext.h"
 struct GLFWwindow;
 namespace ZEN {
 	struct SceneViewResizeEvent;
 	struct WindowResizeEvent;
+	class EventDispatcher;
 
-}
-
-namespace ZEN {
 	struct GlobalUBO {
 		glm::vec3 lightDir; float _pad0;
 		glm::vec3 cameraPos; float _pad1;
@@ -29,13 +26,13 @@ namespace ZEN {
 
 	class Renderer {
 	public:
-		explicit Renderer(eRendererAPI api, GLFWwindow* window, entt::dispatcher& dispatcher);
+		explicit Renderer(eRendererAPI api, GLFWwindow* window, EventDispatcher& dispatcher);
 		void beginFrame();
 		void bindDefaultFBO();
 		void endFrame();
 		uint32_t createDefaultShader(const std::string& vertPath, const std::string& fragPath,
 			const std::string& resourceRoot);
-		void onResize(const WindowResizeEvent& e);
+		void onResize(WindowResizeEvent& e);
 		IContext* getContext() {return m_Context.get();}
 		IResourceManager* getResourceManager() {return m_ResourceManager.get();}
 		UniformComp& getViewUBO() {return m_ViewUBO;}

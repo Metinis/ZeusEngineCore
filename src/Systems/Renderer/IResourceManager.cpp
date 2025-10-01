@@ -1,4 +1,3 @@
-
 #include "IResourceManager.h"
 #include "OpenGL/GLResourceManager.h"
 

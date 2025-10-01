@@ -1,7 +1,7 @@
 
 #pragma once
-#include <entt.hpp>
 #include <glm/vec3.hpp>
+#include <unordered_set>
 
 namespace ZEN {
     struct SceneViewResizeEvent;
@@ -14,10 +14,11 @@ namespace ZEN {
     struct MouseMoveEvent;
 
     class Scene;
+    class EventDispatcher;
 
     class CameraSystem {
     public:
-        explicit CameraSystem(Scene* scene);
+        explicit CameraSystem(Scene* scene, EventDispatcher* dispatcher);
         void onUpdate(float deltaTime);
     private:
         void onResize(const SceneViewResizeEvent& e);
@@ -43,6 +44,7 @@ namespace ZEN {
         bool m_CursorLocked{};
 
         Scene* m_Scene{};
+        EventDispatcher* m_Dispatcher{};
 
         std::unordered_set<int> m_KeysDown{};
         std::unordered_set<int> m_MouseButtonsDown{};

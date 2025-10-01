@@ -1,6 +1,4 @@
 #pragma once
-#include <entt.hpp>
-
 #include "ZeusEngineCore/Vertex.h"
 #include "ZeusEngineCore/Util.h"
 #include "ZeusEngineCore/Entity.h"

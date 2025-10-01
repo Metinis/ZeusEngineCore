@@ -3,15 +3,16 @@
 #include <memory>
 #include "API.h"
 #include "ZeusEngineCore/Renderer.h"
+
 struct GLFWwindow;
 namespace ZEN {
-
     class Scene;
     class Renderer;
     class ModelImporter;
     class ModelLibrary;
     class RenderSystem;
     class CameraSystem;
+    class EventDispatcher;
     class ZEngine {
     public:
         explicit ZEngine(eRendererAPI api, GLFWwindow* nativeWindow, const std::string& resourceRoot);
@@ -23,11 +24,13 @@ namespace ZEN {
         ModelLibrary& getModelLibrary(){return *m_ModelLibrary;}
         RenderSystem& getRenderSystem(){return *m_RenderSystem;}
         CameraSystem& getCameraSystem(){return *m_CameraSystem;}
+        EventDispatcher& getDispatcher(){return *m_Dispatcher;}
         Scene& getScene(){return *m_Scene;}
     private:
         //Core
         std::unique_ptr<Scene> m_Scene{};
         std::unique_ptr<Renderer> m_Renderer{};
+        std::unique_ptr<EventDispatcher> m_Dispatcher{};
 
         //Libraries/Loaders
         std::unique_ptr<ModelImporter> m_ModelImporter{};

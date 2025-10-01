@@ -1,5 +1,4 @@
 #pragma once
-#include <entt/entt.hpp>
 #include "Renderer.h"
 
 namespace ZEN {

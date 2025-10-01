@@ -4,6 +4,7 @@
 #include "GLFW/glfw3.h"
 #include <ZeusEngineCore/API.h>
 #include <ZeusEngineCore/InputEvents.h>
+#include "ZeusEngineCore/EventDispatcher.h"
 
 using namespace ZEN;
 
@@ -37,10 +38,11 @@ Window::Window(int width, int height, std::string title, ZEN::eRendererAPI api)
 
 }
 
-void Window::attachDispatcher(entt::dispatcher &dispatcher) {
+void Window::attachDispatcher(EventDispatcher& dispatcher) {
     glfwSetWindowUserPointer(m_Window, &dispatcher);
+    //m_Dispatcher->attach<SceneViewResizeEvent>(this, &CameraSystem::onResize);
 
-    dispatcher.sink<CursorLockEvent>().connect<&Window::onCursorLockChange>(*this);
+    dispatcher.attach<CursorLockEvent, Window, &Window::onCursorLockChange>(this);
 
     glfwSetFramebufferSizeCallback(m_Window, [](GLFWwindow* window, int width, int height) {
         auto* disp = static_cast<entt::dispatcher*>(

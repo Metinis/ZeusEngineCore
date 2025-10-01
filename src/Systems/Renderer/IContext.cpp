@@ -1,6 +1,4 @@
-
 #include "IContext.h"
-
 #include "OpenGL/GLContext.h"
 
 std::unique_ptr<ZEN::IContext> ZEN::IContext::create(eRendererAPI api,
