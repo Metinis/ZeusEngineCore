@@ -7,11 +7,11 @@
 namespace ZEN {
     struct MeshComp;
     struct MaterialComp;
-    class IResourceManager;
+    class Renderer;
 
     class ModelLibrary {
     public:
-        explicit ModelLibrary(IResourceManager* resourceManager);
+        explicit ModelLibrary(Renderer* renderer, const std::string& resourceRoot);
 
         void addMesh(const std::string& name, std::shared_ptr<MeshComp> mesh);
         void addMesh(const std::string& name, const MeshComp& mesh);
@@ -36,7 +36,7 @@ namespace ZEN {
         std::shared_ptr<MeshComp> createSkybox();
         //static std::shared_ptr<MeshComp> createPlane();
         std::shared_ptr<MeshComp> createSphere(float radius, unsigned int sectorCount, unsigned int stackCount);
-        IResourceManager* m_ResourceManager;
+        Renderer* m_Renderer{};
 
     };
 }

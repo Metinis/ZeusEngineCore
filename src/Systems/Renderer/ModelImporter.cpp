@@ -72,6 +72,10 @@ void ModelImporter::processTextureType(std::vector<uint32_t>& textureIDs,
             processTexturesEmbedded(textureIDs, scene, texPath);
         } else if (texPath.length > 0) {
             // TODO: load external file
+            std::cout<<"Trying to load external file!\n";
+        }
+        else {
+            std::cout<<"Warning! No texture path found!\n";
         }
     }
 }
@@ -105,6 +109,9 @@ void ModelImporter::processAiMesh(Entity& entity, aiMesh* mesh,
     if (mesh->mMaterialIndex >= 0) {
         const aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
         processTextureType(materialComp.textureIDs, scene, aiTextureType_DIFFUSE, material);
+        if(materialComp.textureIDs.empty()) {
+            std::cout<<"Warning! No Textures found for mesh: "<< mesh->mName.C_Str() << "\n";
+        }
         processTextureType(materialComp.specularTexIDs, scene, aiTextureType_SPECULAR, material);
     }
 

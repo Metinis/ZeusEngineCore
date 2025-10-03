@@ -1,13 +1,32 @@
 #include "ZeusEngineCore/ModelLibrary.h"
+
+#include <ZeusEngineCore/Renderer.h>
+
+#include "IResourceManager.h"
 #include "ZeusEngineCore/Components.h"
 
 using namespace ZEN;
 
-ModelLibrary::ModelLibrary(IResourceManager *resourceManager)
-: m_ResourceManager(resourceManager) {
+ModelLibrary::ModelLibrary(Renderer* renderer, const std::string& resourceRoot)
+: m_Renderer(renderer) {
     m_Meshes["Cube"]  = createCube();
     m_Meshes["Skybox"] = createSkybox();
     m_Meshes["Sphere"] = createSphere(1.0f, 32, 16);
+
+    MaterialComp wallMaterial{
+        .shaderID = m_Renderer->getDefaultShader().shaderID,
+        .textureIDs = {m_Renderer->getResourceManager()->createTexture(resourceRoot + "/textures/wall.jpg")},
+    };
+
+    m_Materials["Wall"] = std::make_shared<MaterialComp>(wallMaterial);
+
+    MaterialComp containerMaterial{
+        .shaderID = m_Renderer->getDefaultShader().shaderID,
+        .textureIDs = {m_Renderer->getResourceManager()->createTexture(resourceRoot + "/textures/container2.png")},
+        .specularTexIDs = {m_Renderer->getResourceManager()->createTexture(resourceRoot + "/textures/container2_specular.png")},
+    };
+
+    m_Materials["Container"] = std::make_shared<MaterialComp>(containerMaterial);
 }
 
 void ModelLibrary::addMaterial(const std::string &name, std::shared_ptr<MaterialComp> material) {

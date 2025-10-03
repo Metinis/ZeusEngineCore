@@ -15,7 +15,7 @@ ZEngine::ZEngine(eRendererAPI api, GLFWwindow* nativeWindow, const std::string& 
     m_Scene = std::make_unique<Scene>();
     m_Renderer = std::make_unique<Renderer>(m_API, nativeWindow, *m_Dispatcher);
     m_Renderer->createDefaultShader("/shaders/glbasic4.1.vert", "/shaders/glbasic4.1.frag", resourceRoot);
-    m_ModelLibrary = std::make_unique<ModelLibrary>(m_Renderer->getResourceManager());
+    m_ModelLibrary = std::make_unique<ModelLibrary>(m_Renderer.get(), resourceRoot);
     m_ModelImporter = std::make_unique<ModelImporter>(m_Scene.get(), m_Renderer->getResourceManager(), m_ModelLibrary.get());
     m_RenderSystem = std::make_unique<RenderSystem>(m_Renderer.get(), m_Scene.get());
     m_CameraSystem = std::make_unique<CameraSystem>(m_Scene.get(), m_Dispatcher.get());

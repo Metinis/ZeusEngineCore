@@ -19,6 +19,7 @@ target_compile_features(ZeusEngineCore PUBLIC cxx_std_23)
 file(GLOB_RECURSE ZEUSENGINECORE_SOURCES
         src/*.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/include/glad/src/glad.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/tinyfiledialogs/tinyfiledialogs.c
 )
 
 target_sources(ZeusEngineCore PRIVATE ${ZEUSENGINECORE_SOURCES} )
@@ -29,6 +30,7 @@ target_include_directories(ZeusEngineCore
         ${CMAKE_CURRENT_SOURCE_DIR}/include/entt
         ${CMAKE_CURRENT_SOURCE_DIR}/include/glad/include
         ${CMAKE_CURRENT_SOURCE_DIR}/include/glm
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/tinyfiledialogs
 )
 
 target_compile_definitions(ZeusEngineCore PRIVATE VK_NO_PROTOTYPES)
