@@ -2,40 +2,60 @@
 #include <memory>
 #include <unordered_map>
 #include <string>
+#include "Vertex.h"
 
 
 namespace ZEN {
-    struct MeshComp;
-    struct MaterialComp;
+
+    struct Material {
+        uint32_t shaderID{};
+        std::vector<uint32_t> textureIDs{};
+        std::vector<uint32_t> specularTexIDs{};
+        float specular{0.0f};
+        int shininess{1};
+    };
+    struct Mesh {
+        std::vector<uint32_t> indices{};
+        std::vector<Vertex> vertices{};
+    };
     class Renderer;
 
     class ModelLibrary {
     public:
         explicit ModelLibrary(Renderer* renderer, const std::string& resourceRoot);
 
-        void addMesh(const std::string& name, std::shared_ptr<MeshComp> mesh);
-        void addMesh(const std::string& name, const MeshComp& mesh);
-        std::shared_ptr<MeshComp> getMesh(const std::string& name);
-        const std::unordered_map<std::string, std::shared_ptr<MeshComp>>& getAllMeshes() {
+        void addMesh(const std::string& name, std::unique_ptr<Mesh> mesh);
+        void addMesh(const std::string& name, const Mesh& mesh);
+        Mesh* getMesh(const std::string& name);
+        const std::unordered_map<std::string, std::unique_ptr<Mesh>>& getAllMeshes() {
             return m_Meshes;
         }
 
-        void addMaterial(const std::string& name, std::shared_ptr<MaterialComp> material);
-        void addMaterial(const std::string& name, const MaterialComp& material);
-        std::shared_ptr<MaterialComp> getMaterial(const std::string& name);
-        const std::unordered_map<std::string, std::shared_ptr<MaterialComp>>& getAllMaterials() {
+        void addMaterial(const std::string& name, std::unique_ptr<Material> material);
+        void addMaterial(const std::string& name, const Material& material);
+        Material* getMaterial(const std::string& name);
+        const std::unordered_map<std::string, std::unique_ptr<Material>>& getAllMaterials() {
             return m_Materials;
+        }
+
+        void addTexture(const std::string& name, uint32_t texID);
+        uint32_t getTexture(const std::string& name);
+        const std::unordered_map<std::string, uint32_t>& getAllTextures() {
+            return m_Textures;
         }
 
 
     private:
-        std::unordered_map<std::string, std::shared_ptr<MeshComp>> m_Meshes;
-        std::unordered_map<std::string, std::shared_ptr<MaterialComp>> m_Materials;
+        std::unordered_map<std::string, std::unique_ptr<Mesh>> m_Meshes;
+        std::unordered_map<std::string, std::unique_ptr<Material>> m_Materials;
+        std::unordered_map<std::string, uint32_t> m_Textures; //texture IDs from resource manager
         // Internal generators
-        std::shared_ptr<MeshComp> createCube();
-        std::shared_ptr<MeshComp> createSkybox();
+        std::unique_ptr<Mesh> createCube();
+        std::unique_ptr<Mesh> createSkybox();
+        std::unique_ptr<Material> createDefaultMaterial(const std::string& resourceRoot, const std::string& vertPath,
+            const std::string& fragPath);
         //static std::shared_ptr<MeshComp> createPlane();
-        std::shared_ptr<MeshComp> createSphere(float radius, unsigned int sectorCount, unsigned int stackCount);
+        std::unique_ptr<Mesh> createSphere(float radius, unsigned int sectorCount, unsigned int stackCount);
         Renderer* m_Renderer{};
 
     };

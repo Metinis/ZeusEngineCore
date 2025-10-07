@@ -9,55 +9,75 @@ using namespace ZEN;
 
 ModelLibrary::ModelLibrary(Renderer* renderer, const std::string& resourceRoot)
 : m_Renderer(renderer) {
+    m_Materials["Default"] = createDefaultMaterial(resourceRoot, "/shaders/glbasic4.1.vert", "/shaders/glbasic4.1.frag");
     m_Meshes["Cube"]  = createCube();
     m_Meshes["Skybox"] = createSkybox();
     m_Meshes["Sphere"] = createSphere(1.0f, 32, 16);
 
-    MaterialComp wallMaterial{
-        .shaderID = m_Renderer->getDefaultShader().shaderID,
-        .textureIDs = {m_Renderer->getResourceManager()->createTexture(resourceRoot + "/textures/wall.jpg")},
+    m_Textures["Wall"] = m_Renderer->getResourceManager()->createTexture(resourceRoot + "/textures/wall.jpg");
+    m_Textures["Container"] = m_Renderer->getResourceManager()->createTexture(resourceRoot + "/textures/container2.png");
+    m_Textures["ContainerSpec"] = m_Renderer->getResourceManager()->createTexture(resourceRoot + "/textures/container2_specular.png");
+
+    uint32_t defaultShaderID = m_Materials["Default"]->shaderID;
+    Material wallMaterial{
+        .shaderID = defaultShaderID,
+        .textureIDs = {m_Textures["Wall"]},
     };
 
-    m_Materials["Wall"] = std::make_shared<MaterialComp>(wallMaterial);
+    m_Materials["Wall"] = std::make_unique<Material>(wallMaterial);
 
-    MaterialComp containerMaterial{
-        .shaderID = m_Renderer->getDefaultShader().shaderID,
-        .textureIDs = {m_Renderer->getResourceManager()->createTexture(resourceRoot + "/textures/container2.png")},
-        .specularTexIDs = {m_Renderer->getResourceManager()->createTexture(resourceRoot + "/textures/container2_specular.png")},
+    Material containerMaterial{
+        .shaderID = defaultShaderID,
+        .textureIDs = {m_Textures["Container"]},
+        .specularTexIDs = {m_Textures["ContainerSpec"]},
     };
 
-    m_Materials["Container"] = std::make_shared<MaterialComp>(containerMaterial);
+    m_Materials["Container"] = std::make_unique<Material>(containerMaterial);
 }
 
-void ModelLibrary::addMaterial(const std::string &name, std::shared_ptr<MaterialComp> material) {
+void ModelLibrary::addMaterial(const std::string &name, std::unique_ptr<Material> material) {
     m_Materials[name] = std::move(material);
 }
 
-std::shared_ptr<MaterialComp> ModelLibrary::getMaterial(const std::string &name) {
+Material* ModelLibrary::getMaterial(const std::string &name) {
     auto it = m_Materials.find(name);
-    if (it != m_Materials.end()) return it->second;
+    if (it != m_Materials.end()) return it->second.get();
+    std::cout<<"Material not found: "<<name<<"\n";
     return nullptr;
 }
-std::shared_ptr<MeshComp> ModelLibrary::getMesh(const std::string &name) {
+
+void ModelLibrary::addTexture(const std::string &name, uint32_t texID) {
+    m_Textures[name] = texID; //user is responsible for manually deleting a texture from resource manager
+}
+
+uint32_t ModelLibrary::getTexture(const std::string &name) {
+    auto it = m_Textures.find(name);
+    if (it != m_Textures.end()) return it->second;
+    std::cout<<"Texture not found: "<<name<<"\n";
+    return 0;
+}
+
+Mesh* ModelLibrary::getMesh(const std::string &name) {
     auto it = m_Meshes.find(name);
-    if (it != m_Meshes.end()) return it->second;
+    if (it != m_Meshes.end()) return it->second.get();
+    std::cout<<"Mesh not found: "<<name<<"\n";
     return nullptr;
 }
-void ModelLibrary::addMesh(const std::string& name, std::shared_ptr<MeshComp> mesh) {
+void ModelLibrary::addMesh(const std::string& name, std::unique_ptr<Mesh> mesh) {
     m_Meshes[name] = std::move(mesh);
 }
 
-void ModelLibrary::addMesh(const std::string &name, const MeshComp &mesh) {
-    m_Meshes[name] = std::make_shared<MeshComp>(mesh);
+void ModelLibrary::addMesh(const std::string &name, const Mesh &mesh) {
+    m_Meshes[name] = std::make_unique<Mesh>(mesh);
 }
 
-void ModelLibrary::addMaterial(const std::string &name, const MaterialComp &material) {
-    m_Materials[name] = std::make_shared<MaterialComp>(material);
+void ModelLibrary::addMaterial(const std::string &name, const Material &material) {
+    m_Materials[name] = std::make_unique<Material>(material);
 }
 
 
-std::shared_ptr<MeshComp> ModelLibrary::createCube() {
-    MeshComp mesh;
+std::unique_ptr<Mesh> ModelLibrary::createCube() {
+    Mesh mesh;
 
     mesh.vertices = {
         // Front face (z = +0.5)
@@ -111,12 +131,11 @@ std::shared_ptr<MeshComp> ModelLibrary::createCube() {
         // Bottom
        20,21,22,22,23,20
     };
-    mesh.name = "Cube";
-    return std::make_shared<MeshComp>(mesh);
+    return std::make_unique<Mesh>(mesh);
 }
 
-std::shared_ptr<MeshComp> ModelLibrary::createSkybox() {
-    MeshComp skyboxMesh{};
+std::unique_ptr<Mesh> ModelLibrary::createSkybox() {
+    Mesh skyboxMesh{};
     skyboxMesh.vertices = {
         {{-1.0f,  1.0f, -1.0f}}, {{-1.0f, -1.0f, -1.0f}}, {{ 1.0f, -1.0f, -1.0f}}, {{ 1.0f,  1.0f, -1.0f}}, // Back
         {{-1.0f, -1.0f,  1.0f}}, {{-1.0f,  1.0f,  1.0f}}, {{ 1.0f,  1.0f,  1.0f}}, {{ 1.0f, -1.0f,  1.0f}}, // Front
@@ -134,14 +153,21 @@ std::shared_ptr<MeshComp> ModelLibrary::createSkybox() {
         16,18,17, 18,16,19,
         20,22,21, 22,20,23
     };
-    skyboxMesh.name = "Skybox";
 
-    return std::make_shared<MeshComp>(skyboxMesh);
+    return std::make_unique<Mesh>(skyboxMesh);
+}
+
+std::unique_ptr<Material> ModelLibrary::createDefaultMaterial(const std::string& resourceRoot, const std::string& vertPath,
+            const std::string& fragPath) {
+    uint32_t defaultShaderID = m_Renderer->getResourceManager()->createShader(std::string(resourceRoot) + vertPath,
+        resourceRoot + fragPath);
+    Material defaultMat {.shaderID = defaultShaderID, .textureIDs = {0}};
+    return std::make_unique<Material>(defaultMat);
 }
 
 
-std::shared_ptr<MeshComp> ModelLibrary::createSphere(float radius, unsigned int sectorCount, unsigned int stackCount) {
-    MeshComp sphere{};
+std::unique_ptr<Mesh> ModelLibrary::createSphere(float radius, unsigned int sectorCount, unsigned int stackCount) {
+    Mesh sphere{};
 
     const float PI = 3.14159265359f;
 
@@ -185,9 +211,7 @@ std::shared_ptr<MeshComp> ModelLibrary::createSphere(float radius, unsigned int 
             }
         }
     }
-    sphere.name = "Sphere";
-
-    return std::make_shared<MeshComp>(sphere);
+    return std::make_unique<Mesh>(sphere);
 }
 
 

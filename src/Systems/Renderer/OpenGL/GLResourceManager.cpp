@@ -7,6 +7,7 @@
 #include <glad/glad.h>
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image/stb_image.h>
+#include <ZeusEngineCore/ModelLibrary.h>
 
 constexpr std::array uboBindings{
     "View",
@@ -43,7 +44,7 @@ ZEN::GLResourceManager::~GLResourceManager() {
 }
 
 
-uint32_t ZEN::GLResourceManager::createMeshDrawable(const MeshComp &meshComp) {
+uint32_t ZEN::GLResourceManager::createMeshDrawable(const Mesh &mesh) {
     GLDrawable drawable{};
     glGenVertexArrays(1, &drawable.vao);
     glGenBuffers(1, &drawable.vbo);
@@ -52,10 +53,10 @@ uint32_t ZEN::GLResourceManager::createMeshDrawable(const MeshComp &meshComp) {
     glBindVertexArray(drawable.vao);
 
     glBindBuffer(GL_ARRAY_BUFFER, drawable.vbo);
-    glBufferData(GL_ARRAY_BUFFER, meshComp.vertices.size() * sizeof(Vertex), meshComp.vertices.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, mesh.vertices.size() * sizeof(Vertex), mesh.vertices.data(), GL_STATIC_DRAW);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, drawable.ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, meshComp.indices.size() * sizeof(uint32_t), meshComp.indices.data(),
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh.indices.size() * sizeof(uint32_t), mesh.indices.data(),
                  GL_STATIC_DRAW);
 
     glEnableVertexAttribArray(0);
@@ -239,7 +240,8 @@ uint32_t ZEN::GLResourceManager::createTexture(std::string_view texturePath) {
     stbi_uc *pixels = stbi_load(texturePath.data(), &texWidth,
                                 &texHeight, &texChannels, STBI_rgb_alpha);
     if (!pixels) {
-        throw std::runtime_error("Invalid image!");
+        std::cout<<"Invalid Image! Assigning default texture.."<<"\n";
+        return 0;
     }
 
     GLTexture texture{};
@@ -326,7 +328,7 @@ void ZEN::GLResourceManager::deleteTexture(uint32_t textureID) {
     });
 }
 
-void ZEN::GLResourceManager::bindMaterial(const MaterialComp &material) {
+void ZEN::GLResourceManager::bindMaterial(const Material &material) {
     bindShader(material.shaderID);
 
     //Bind diffuse textures first

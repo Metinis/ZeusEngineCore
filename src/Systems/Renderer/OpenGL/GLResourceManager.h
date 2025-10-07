@@ -25,12 +25,13 @@ namespace ZEN {
     struct GLDepthBuffer {
         uint32_t handle;
     };
+
     class GLResourceManager : public IResourceManager{
     public:
         GLResourceManager();
         ~GLResourceManager() override;
 
-        uint32_t createMeshDrawable(const MeshComp& meshComp) override;
+        uint32_t createMeshDrawable(const Mesh& mesh) override;
         void bindMeshDrawable(uint32_t drawableID) override;
         void deleteMeshDrawable(uint32_t drawableID) override;
 
@@ -48,7 +49,7 @@ namespace ZEN {
         void bindTexture(uint32_t textureID, uint32_t binding) override;
         void deleteTexture(uint32_t textureID) override;
 
-        void bindMaterial(const MaterialComp& material) override;
+        void bindMaterial(const Material& material) override;
 
         uint32_t createCubeMapTexture(const std::string& texturePath)  override;
         void bindCubeMapTexture(uint32_t textureID) override;

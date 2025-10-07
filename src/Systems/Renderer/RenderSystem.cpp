@@ -1,10 +1,13 @@
 #include "ZeusEngineCore/RenderSystem.h"
+
+#include "ZeusEngineCore/ModelLibrary.h"
+
 #include "ZeusEngineCore/Scene.h"
 
 using namespace ZEN;
 
-RenderSystem::RenderSystem(Renderer *renderer, Scene *scene) :
-m_Renderer(renderer), m_Scene(scene){
+RenderSystem::RenderSystem(Renderer *renderer, Scene *scene, ModelLibrary* library) :
+m_Renderer(renderer), m_Scene(scene), m_Library(library){
 
 }
 void RenderSystem::updateWorldTransforms() {
@@ -34,15 +37,15 @@ void RenderSystem::onUpdate() {
         if(entity.hasComponent<MeshDrawableComp>()) continue;
 
         if(!entity.hasComponent<MaterialComp>() && !entity.hasComponent<SkyboxComp>()) {
-            entity.addComponent<MaterialComp>(MaterialComp{ m_Renderer->getDefaultShader().shaderID,
-                {0}, {0} });
+            entity.addComponent<MaterialComp>(MaterialComp{ .name = "Default"}); //default needs to exist in model library
         }
 
-        auto &mesh = entity.getComponent<MeshComp>();
+        auto& meshComp = entity.getComponent<MeshComp>();
+        auto mesh = m_Library->getMesh(meshComp.name);
 
         MeshDrawableComp drawableComp{};
-        drawableComp.indexCount = mesh.indices.size();
-        drawableComp.meshID = m_Renderer->getResourceManager()->createMeshDrawable(mesh);
+        drawableComp.indexCount = mesh->indices.size();
+        drawableComp.meshID = m_Renderer->getResourceManager()->createMeshDrawable(*mesh);
         entity.addComponent<MeshDrawableComp>(drawableComp);
     }
 }
@@ -76,19 +79,20 @@ void RenderSystem::renderDrawables() {
     auto viewDraw = m_Scene->getEntities<MeshDrawableComp, MaterialComp, TransformComp>();
     for(auto entity : viewDraw) {
         //bind shader
-        auto& material = entity.getComponent<MaterialComp>();
-        m_Renderer->getResourceManager()->bindShader(material.shaderID);
+        auto& materialComp = entity.getComponent<MaterialComp>();
+        auto material = m_Library->getMaterial(materialComp.name);
+        m_Renderer->getResourceManager()->bindShader(material->shaderID);
 
         //write to material ubo
         MaterialUBO materialUBO {
-            .specularAndShininess = {material.specular, float(material.shininess)}
+            .specularAndShininess = {material->specular, float(material->shininess)}
         };
         auto const materialBytes = std::bit_cast<std::array<std::byte,
             sizeof(materialUBO)>>(materialUBO);
         m_Renderer->getResourceManager()->writeToUBO(m_Renderer->getMaterialUBO().uboID, materialBytes);
 
         //bind material texture
-        m_Renderer->getResourceManager()->bindMaterial(material);
+        m_Renderer->getResourceManager()->bindMaterial(*material);
         //write to instance ubo (todo check if last mesh is same for instancing)
         auto transform = entity.getComponent<TransformComp>();
         auto const bytes = std::bit_cast<std::array<std::byte,

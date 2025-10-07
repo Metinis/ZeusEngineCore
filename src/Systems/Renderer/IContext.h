@@ -8,6 +8,7 @@ namespace ZEN {
         LESS,
         LEQUAL
     };
+    struct MeshDrawableComp;
     class IContext {
     public:
         virtual ~IContext() = default;

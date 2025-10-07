@@ -15,7 +15,6 @@ void Scene::createDefaultScene(const std::string& resourceRoot, ZEngine* engine)
     cameraEntity.addComponent<CameraComp>();
 
     auto skyboxEntity = createEntity("Skybox");
-    MeshComp skyboxMesh = *engine->getModelLibrary().getMesh("Skybox");
     SkyboxComp skyboxComp{
         .shaderID = engine->getRenderer().getResourceManager()->createShader(
                 resourceRoot + "/shaders/glskybox.vert", resourceRoot + "/shaders/glskybox.frag"),
@@ -24,9 +23,9 @@ void Scene::createDefaultScene(const std::string& resourceRoot, ZEngine* engine)
     };
 
     skyboxEntity.addComponent<SkyboxComp>(skyboxComp);
-    skyboxEntity.addComponent<MeshComp>(skyboxMesh);
+    skyboxEntity.addComponent<MeshComp>(MeshComp{.name = "Skybox"});
 
-    engine->getModelImporter().loadModel("room", resourceRoot + "/models/vr_art_gallery_room.glb");
+
 }
 
 Entity Scene::createEntity(const std::string& name) {

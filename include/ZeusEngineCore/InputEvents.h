@@ -3,6 +3,7 @@
 
 namespace ZEN {
     class Entity;
+    struct MaterialComp;
     struct KeyPressedEvent {
         int key;
         int scancode;
@@ -52,5 +53,8 @@ namespace ZEN {
     };
     struct SelectEntityEvent {
         Entity entity;
+    };
+    struct SelectMaterialEvent {
+        std::string materialName;
     };
 }

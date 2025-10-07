@@ -1,12 +1,15 @@
 #pragma once
 #include <cstdint>
 #include <ZeusEngineCore/API.h>
-#include "ZeusEngineCore/Components.h"
 #include <memory>
 #include <iostream>
 #include <assimp/scene.h>
+#include <unordered_map>
+#include <span>
 
 namespace ZEN {
+    struct Mesh;
+    struct Material;
     class IResourceManager {
     public:
         template<typename T, typename F>
@@ -21,7 +24,7 @@ namespace ZEN {
 
         virtual ~IResourceManager() = default;
 
-        virtual uint32_t createMeshDrawable(const MeshComp& meshComp) = 0;
+        virtual uint32_t createMeshDrawable(const Mesh& mesh) = 0;
         virtual void bindMeshDrawable(uint32_t drawableID) = 0;
         virtual void deleteMeshDrawable(uint32_t drawableID) = 0;
 
@@ -39,7 +42,7 @@ namespace ZEN {
         virtual void bindTexture(uint32_t textureID, uint32_t binding) = 0;
         virtual void deleteTexture(uint32_t textureID) = 0;
 
-        virtual void bindMaterial(const MaterialComp& material) = 0;
+        virtual void bindMaterial(const Material& material) = 0;
 
         virtual uint32_t createCubeMapTexture(const std::string& texturePath) = 0;
         virtual void bindCubeMapTexture(uint32_t textureID) = 0;

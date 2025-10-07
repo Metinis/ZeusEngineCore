@@ -1,5 +1,7 @@
 #pragma once
 #include "../src/Systems/Renderer/OpenGL/GLContext.h"
+#include "ZeusEngineCore/Components.h"
+
 struct GLFWwindow;
 namespace ZEN {
 	struct SceneViewResizeEvent;
@@ -30,8 +32,6 @@ namespace ZEN {
 		void beginFrame();
 		void bindDefaultFBO();
 		void endFrame();
-		uint32_t createDefaultShader(const std::string& vertPath, const std::string& fragPath,
-			const std::string& resourceRoot);
 		void onResize(WindowResizeEvent& e);
 		IContext* getContext() {return m_Context.get();}
 		IResourceManager* getResourceManager() {return m_ResourceManager.get();}
@@ -39,7 +39,6 @@ namespace ZEN {
 		UniformComp& getInstanceUBO() {return m_InstanceUBO;}
 		UniformComp& getGlobalUBO() {return m_GlobalUBO;}
 		UniformComp& getMaterialUBO() {return m_MaterialUBO;}
-		MaterialComp& getDefaultShader() {return m_DefaultShader;}
 		Texture& getColorTexture() {return m_ColorTex;}
 		void* getColorTextureHandle();
 	private:

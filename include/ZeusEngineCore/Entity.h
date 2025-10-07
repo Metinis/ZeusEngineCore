@@ -39,10 +39,6 @@ namespace ZEN {
             m_Registry->remove<T>(m_Handle);
         }
 
-        //uint32_t getHandle() {
-        //    return (uint32_t)m_Handle;
-        //}
-
         bool isValid() {
             if(m_Registry)
                 return m_Registry->valid(m_Handle);

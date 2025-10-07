@@ -3,9 +3,10 @@
 
 namespace ZEN {
 	class Scene;
+	class ModelLibrary;
 	class RenderSystem {
 	public:
-		explicit RenderSystem(Renderer *renderer, Scene *scene);
+		explicit RenderSystem(Renderer *renderer, Scene *scene, ModelLibrary* library);
 		void onUpdate();
 		void onRender();
 	private:
@@ -15,6 +16,7 @@ namespace ZEN {
 		void renderSkybox(const glm::mat4& view, const glm::mat4& projection);
 		void updateWorldTransforms();
 		Renderer* m_Renderer{};
+		ModelLibrary* m_Library{};
 		Scene* m_Scene{};
 	};
 }
