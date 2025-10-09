@@ -8,11 +8,14 @@ namespace ZEN {
 	class ModelLibrary;
 	class ModelImporter;
 	class ZEngine;
+	struct RemoveMeshEvent;
+	struct RemoveMaterialEvent;
+	struct RemoveTextureEvent;
 
 	class Scene {
 
 	public:
-		Scene();
+		Scene(EventDispatcher& dispatcher);
 		void createDefaultScene(const std::string& resourceRoot, ZEngine* engine);
 		Entity createEntity(const std::string& name = "");
 
@@ -34,6 +37,10 @@ namespace ZEN {
 		glm::vec3 ambientColor{0.5f, 0.5f, 0.5f};
 
 		Entity makeEntity(entt::entity entity);
+
+		void onRemoveMesh(RemoveMeshEvent& e);
+		void onRemoveMaterial(RemoveMaterialEvent& e);
+		void onRemoveTexture(RemoveTextureEvent& e);
 
 		friend class Entity;
 	};

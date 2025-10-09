@@ -1,14 +1,16 @@
 #include "ZeusEngineCore/ModelLibrary.h"
 
+#include <ZeusEngineCore/InputEvents.h>
 #include <ZeusEngineCore/Renderer.h>
 
 #include "IResourceManager.h"
 #include "ZeusEngineCore/Components.h"
+#include "ZeusEngineCore/EventDispatcher.h"
 
 using namespace ZEN;
 
-ModelLibrary::ModelLibrary(Renderer* renderer, const std::string& resourceRoot)
-: m_Renderer(renderer) {
+ModelLibrary::ModelLibrary(Renderer* renderer, EventDispatcher* dispatcher, const std::string& resourceRoot)
+: m_Renderer(renderer), m_Dispatcher(dispatcher) {
     m_Materials["Default"] = createDefaultMaterial(resourceRoot, "/shaders/glbasic4.1.vert", "/shaders/glbasic4.1.frag");
     m_Meshes["Cube"]  = createCube();
     m_Meshes["Skybox"] = createSkybox();
@@ -33,6 +35,37 @@ ModelLibrary::ModelLibrary(Renderer* renderer, const std::string& resourceRoot)
     };
 
     m_Materials["Container"] = std::make_unique<Material>(containerMaterial);
+}
+
+void ModelLibrary::removeMesh(const std::string &name) {
+    auto it = m_Meshes.find(name);
+    if (it != m_Meshes.end()) {
+        m_Meshes.erase(name);
+        m_Dispatcher->trigger<RemoveMeshEvent>(RemoveMeshEvent{name});
+        return;
+    }
+    std::cout<<"Mesh not found: "<<name<<"\n";
+}
+
+void ModelLibrary::removeMaterial(const std::string &name) {
+    auto it = m_Materials.find(name);
+    if (it != m_Materials.end()) {
+        m_Materials.erase(name);
+        m_Dispatcher->trigger<RemoveMaterialEvent>(RemoveMaterialEvent{name});
+        return;
+    }
+    std::cout<<"Material not found: "<<name<<"\n";
+}
+
+void ModelLibrary::removeTexture(const std::string &name) {
+    auto it = m_Textures.find(name);
+    if (it != m_Textures.end()) {
+        m_Textures.erase(name);
+        m_Dispatcher->trigger<RemoveTextureEvent>(RemoveTextureEvent{name});
+        m_Renderer->getResourceManager()->deleteTexture(it->second);
+        return;
+    }
+    std::cout<<"Texture not found: "<<name<<"\n";
 }
 
 void ModelLibrary::addMaterial(const std::string &name, std::unique_ptr<Material> material) {
@@ -63,6 +96,7 @@ Mesh* ModelLibrary::getMesh(const std::string &name) {
     std::cout<<"Mesh not found: "<<name<<"\n";
     return nullptr;
 }
+//TODO template this
 void ModelLibrary::addMesh(const std::string& name, std::unique_ptr<Mesh> mesh) {
     m_Meshes[name] = std::move(mesh);
 }
@@ -80,37 +114,31 @@ std::unique_ptr<Mesh> ModelLibrary::createCube() {
     Mesh mesh;
 
     mesh.vertices = {
-        // Front face (z = +0.5)
-        {{-0.5f,  0.5f,  0.5f}, {0,0,1}, {0.0f, 1.0f}}, // Top-left
-        {{ 0.5f,  0.5f,  0.5f}, {0,0,1}, {1.0f, 1.0f}}, // Top-right
-        {{ 0.5f, -0.5f,  0.5f}, {0,0,1}, {1.0f, 0.0f}}, // Bottom-right
-        {{-0.5f, -0.5f,  0.5f}, {0,0,1}, {0.0f, 0.0f}}, // Bottom-left
+        {{-0.5f,  0.5f,  0.5f}, {0,0,1}, {0.0f, 1.0f}}, // Front
+        {{ 0.5f,  0.5f,  0.5f}, {0,0,1}, {1.0f, 1.0f}},
+        {{ 0.5f, -0.5f,  0.5f}, {0,0,1}, {1.0f, 0.0f}},
+        {{-0.5f, -0.5f,  0.5f}, {0,0,1}, {0.0f, 0.0f}},
 
-        // Back face (z = -0.5)
-        {{ 0.5f,  0.5f, -0.5f}, {0,0,-1}, {0.0f, 1.0f}}, // Top-left
-        {{-0.5f,  0.5f, -0.5f}, {0,0,-1}, {1.0f, 1.0f}}, // Top-right
-        {{-0.5f, -0.5f, -0.5f}, {0,0,-1}, {1.0f, 0.0f}}, // Bottom-right
-        {{ 0.5f, -0.5f, -0.5f}, {0,0,-1}, {0.0f, 0.0f}}, // Bottom-left
+        {{ 0.5f,  0.5f, -0.5f}, {0,0,-1}, {0.0f, 1.0f}},
+        {{-0.5f,  0.5f, -0.5f}, {0,0,-1}, {1.0f, 1.0f}},
+        {{-0.5f, -0.5f, -0.5f}, {0,0,-1}, {1.0f, 0.0f}},
+        {{ 0.5f, -0.5f, -0.5f}, {0,0,0},  {0.0f, 0.0f}},
 
-        // Left face (x = -0.5)
         {{-0.5f,  0.5f, -0.5f}, {-1,0,0}, {0.0f, 1.0f}},
         {{-0.5f,  0.5f,  0.5f}, {-1,0,0}, {1.0f, 1.0f}},
         {{-0.5f, -0.5f,  0.5f}, {-1,0,0}, {1.0f, 0.0f}},
         {{-0.5f, -0.5f, -0.5f}, {-1,0,0}, {0.0f, 0.0f}},
 
-        // Right face (x = +0.5)
         {{ 0.5f,  0.5f,  0.5f}, {1,0,0}, {0.0f, 1.0f}},
         {{ 0.5f,  0.5f, -0.5f}, {1,0,0}, {1.0f, 1.0f}},
         {{ 0.5f, -0.5f, -0.5f}, {1,0,0}, {1.0f, 0.0f}},
         {{ 0.5f, -0.5f,  0.5f}, {1,0,0}, {0.0f, 0.0f}},
 
-        // Top face (y = +0.5)
         {{-0.5f,  0.5f, -0.5f}, {0,1,0}, {0.0f, 1.0f}},
         {{ 0.5f,  0.5f, -0.5f}, {0,1,0}, {1.0f, 1.0f}},
         {{ 0.5f,  0.5f,  0.5f}, {0,1,0}, {1.0f, 0.0f}},
         {{-0.5f,  0.5f,  0.5f}, {0,1,0}, {0.0f, 0.0f}},
 
-        // Bottom face (y = -0.5)
         {{-0.5f, -0.5f,  0.5f}, {0,-1,0}, {0.0f, 1.0f}},
         {{ 0.5f, -0.5f,  0.5f}, {0,-1,0}, {1.0f, 1.0f}},
         {{ 0.5f, -0.5f, -0.5f}, {0,-1,0}, {1.0f, 0.0f}},
@@ -118,21 +146,16 @@ std::unique_ptr<Mesh> ModelLibrary::createCube() {
     };
 
     mesh.indices = {
-        // Front
-        0, 1, 2, 2, 3, 0,
-        // Back
-        4, 5, 6, 6, 7, 4,
-        // Left
-        8, 9,10,10,11, 8,
-        // Right
-       12,13,14,14,15,12,
-        // Top
-       16,17,18,18,19,16,
-        // Bottom
-       20,21,22,22,23,20
+        0,2,1, 3,2,0,       // Front
+        4,6,5, 7,6,4,       // Back
+        8,10,9, 11,10,8,    // Left
+        12,14,13, 15,14,12, // Right
+        16,18,17, 19,18,16, // Top
+        20,22,21, 23,22,20  // Bottom
     };
     return std::make_unique<Mesh>(mesh);
 }
+
 
 std::unique_ptr<Mesh> ModelLibrary::createSkybox() {
     Mesh skyboxMesh{};
@@ -146,12 +169,12 @@ std::unique_ptr<Mesh> ModelLibrary::createSkybox() {
     };
 
     skyboxMesh.indices = {
-        0,2,1,  2,0,3,
-        4,6,5,  6,4,7,
-        8,10,9, 10,8,11,
-        12,14,13, 14,12,15,
-        16,18,17, 18,16,19,
-        20,22,21, 22,20,23
+        0,1,2, 0,2,3,   // Back (flipped)
+        4,5,6, 4,6,7,   // Front
+        8,9,10, 8,10,11,// Left
+        12,13,14, 12,14,15,// Right
+        16,17,18, 16,18,19,// Top
+        20,21,22, 20,22,23 // Bottom
     };
 
     return std::make_unique<Mesh>(skyboxMesh);
@@ -199,16 +222,17 @@ std::unique_ptr<Mesh> ModelLibrary::createSphere(float radius, unsigned int sect
 
         for (unsigned int j = 0; j < sectorCount; ++j, ++k1, ++k2) {
             if (i != 0) {
+                sphere.indices.push_back(k1 + 1);
+                sphere.indices.push_back(k2);
                 sphere.indices.push_back(k1);
+            }
+
+            if (i != (stackCount - 1)) {
+                sphere.indices.push_back(k2 + 1);
                 sphere.indices.push_back(k2);
                 sphere.indices.push_back(k1 + 1);
             }
 
-            if (i != (stackCount - 1)) {
-                sphere.indices.push_back(k1 + 1);
-                sphere.indices.push_back(k2);
-                sphere.indices.push_back(k2 + 1);
-            }
         }
     }
     return std::make_unique<Mesh>(sphere);

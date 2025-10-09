@@ -57,4 +57,13 @@ namespace ZEN {
     struct SelectMaterialEvent {
         std::string materialName;
     };
+    struct RemoveMeshEvent {
+        std::string meshName;
+    };
+    struct RemoveMaterialEvent {
+        std::string materialName;
+    };
+    struct RemoveTextureEvent {
+        std::string textureName;
+    };
 }

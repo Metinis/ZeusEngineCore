@@ -58,7 +58,10 @@ void ModelImporter::processTexturesEmbedded(std::vector<uint32_t>& textureIDs,
         texID = m_ResourceManager->createTextureAssimp(*tex);
         m_EmbeddedTextureCache[tex] = texID; // cache
     }
-    textureIDs.push_back(texID);
+    if(textureIDs[0] != 0)
+        textureIDs.push_back(texID);
+    else
+        textureIDs[0] = texID;
 }
 
 void ModelImporter::processTextureType(std::vector<uint32_t>& textureIDs,
@@ -80,7 +83,10 @@ void ModelImporter::processTextureType(std::vector<uint32_t>& textureIDs,
                 texID = m_ResourceManager->createTexture(texPath.C_Str());
                 m_ExternalTextureCache[texPath.C_Str()] = texID;
             }
-            textureIDs.push_back(texID);
+            if(textureIDs[0] != 0)
+                textureIDs.push_back(texID);
+            else
+                textureIDs[0] = texID;
         }
         else {
             std::cout<<"Warning! No texture path found!\n";

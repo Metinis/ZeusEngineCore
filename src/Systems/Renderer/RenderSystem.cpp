@@ -48,6 +48,7 @@ void RenderSystem::onUpdate() {
         drawableComp.meshID = m_Renderer->getResourceManager()->createMeshDrawable(*mesh);
         entity.addComponent<MeshDrawableComp>(drawableComp);
     }
+
 }
 void RenderSystem::writeCameraData(glm::mat4& view, glm::mat4& projection) {
     auto cameraView = m_Scene->getEntities<CameraComp, TransformComp>();

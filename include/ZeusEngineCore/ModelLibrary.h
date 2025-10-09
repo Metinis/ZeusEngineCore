@@ -9,8 +9,8 @@ namespace ZEN {
 
     struct Material {
         uint32_t shaderID{};
-        std::vector<uint32_t> textureIDs{};
-        std::vector<uint32_t> specularTexIDs{};
+        std::vector<uint32_t> textureIDs{0}; //use default textures
+        std::vector<uint32_t> specularTexIDs{0}; //use default textures
         float specular{0.0f};
         int shininess{1};
     };
@@ -19,10 +19,11 @@ namespace ZEN {
         std::vector<Vertex> vertices{};
     };
     class Renderer;
+    class EventDispatcher;
 
     class ModelLibrary {
     public:
-        explicit ModelLibrary(Renderer* renderer, const std::string& resourceRoot);
+        explicit ModelLibrary(Renderer* renderer, EventDispatcher* dispatcher, const std::string& resourceRoot);
 
         void addMesh(const std::string& name, std::unique_ptr<Mesh> mesh);
         void addMesh(const std::string& name, const Mesh& mesh);
@@ -30,6 +31,7 @@ namespace ZEN {
         const std::unordered_map<std::string, std::unique_ptr<Mesh>>& getAllMeshes() {
             return m_Meshes;
         }
+        void removeMesh(const std::string& name);
 
         void addMaterial(const std::string& name, std::unique_ptr<Material> material);
         void addMaterial(const std::string& name, const Material& material);
@@ -37,12 +39,14 @@ namespace ZEN {
         const std::unordered_map<std::string, std::unique_ptr<Material>>& getAllMaterials() {
             return m_Materials;
         }
+        void removeMaterial(const std::string& name);
 
         void addTexture(const std::string& name, uint32_t texID);
         uint32_t getTexture(const std::string& name);
         const std::unordered_map<std::string, uint32_t>& getAllTextures() {
             return m_Textures;
         }
+        void removeTexture(const std::string& name);
 
 
     private:
@@ -57,6 +61,7 @@ namespace ZEN {
         //static std::shared_ptr<MeshComp> createPlane();
         std::unique_ptr<Mesh> createSphere(float radius, unsigned int sectorCount, unsigned int stackCount);
         Renderer* m_Renderer{};
+        EventDispatcher* m_Dispatcher{};
 
     };
 }
