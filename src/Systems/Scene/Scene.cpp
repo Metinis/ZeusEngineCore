@@ -63,9 +63,10 @@ void Scene::onRemoveMesh(RemoveMeshEvent& e) {
             continue;
         }
         entity.removeComponent<MeshComp>();
-        if(entity.hasComponent<MeshDrawableComp>()) {
-            entity.removeComponent<MeshDrawableComp>();
-        }
+        //delete the drawable comp in rendersystem
+        //if(entity.hasComponent<MeshDrawableComp>()) {
+        //    entity.removeComponent<MeshDrawableComp>();
+        //}
     }
 
 }

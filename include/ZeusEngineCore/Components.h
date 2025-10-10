@@ -14,6 +14,7 @@ namespace ZEN {
         std::string name{};
     };
     struct MeshDrawableComp {
+        std::string name{};
         size_t indexCount{};
         uint32_t meshID{};
         int instanceCount{1};

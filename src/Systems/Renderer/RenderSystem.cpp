@@ -1,5 +1,7 @@
 #include "ZeusEngineCore/RenderSystem.h"
 
+#include <ZeusEngineCore/InputEvents.h>
+
 #include "ZeusEngineCore/ModelLibrary.h"
 
 #include "ZeusEngineCore/Scene.h"
@@ -9,7 +11,7 @@ using namespace ZEN;
 RenderSystem::RenderSystem(Renderer *renderer, Scene *scene, ModelLibrary* library,
             EventDispatcher* dispatcher) :
 m_Renderer(renderer), m_Scene(scene), m_Library(library), m_Dispatcher(dispatcher){
-
+    m_Dispatcher->attach<RemoveMeshEvent, RenderSystem, &RenderSystem::onMeshRemove>(this);
 }
 void RenderSystem::updateWorldTransforms() {
     auto view = m_Scene->getEntities<TransformComp>();
@@ -18,7 +20,6 @@ void RenderSystem::updateWorldTransforms() {
         auto &tc = e.getComponent<TransformComp>();
         glm::mat4 local = tc.getLocalMatrix();
 
-
         if (auto parentComp = e.tryGetComponent<ParentComp>()) {
             if(auto tranformComp = parentComp->parent.tryGetComponent<TransformComp>()) {
                 tc.worldMatrix = tranformComp->worldMatrix * local;
@@ -26,6 +27,16 @@ void RenderSystem::updateWorldTransforms() {
         }
         else {
             tc.worldMatrix = local;
+        }
+    }
+}
+
+void RenderSystem::onMeshRemove(RemoveMeshEvent &e) {
+    //remove the drawable comp here
+    auto view = m_Scene->getEntities<MeshDrawableComp>();
+    for(auto entity : view) {
+        if(entity.getComponent<MeshDrawableComp>().name == e.meshName) {
+            entity.removeComponent<MeshDrawableComp>();
         }
     }
 }
@@ -45,6 +56,7 @@ void RenderSystem::onUpdate() {
         auto mesh = m_Library->getMesh(meshComp.name);
 
         MeshDrawableComp drawableComp{};
+        drawableComp.name = meshComp.name;
         drawableComp.indexCount = mesh->indices.size();
         drawableComp.meshID = m_Renderer->m_ResourceManager->createMeshDrawable(*mesh);
         entity.addComponent<MeshDrawableComp>(drawableComp);
