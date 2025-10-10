@@ -8,7 +8,7 @@
 
 using namespace ZEN;
 
-Scene::Scene(EventDispatcher& dispatcher) {
+Scene::Scene(EventDispatcher& dispatcher){
     dispatcher.attach<RemoveMeshEvent, Scene, &Scene::onRemoveMesh>(this);
     dispatcher.attach<RemoveMaterialEvent, Scene, &Scene::onRemoveMaterial>(this);
     dispatcher.attach<RemoveTextureEvent, Scene, &Scene::onRemoveTexture>(this);
@@ -81,8 +81,7 @@ void Scene::onRemoveMaterial(RemoveMaterialEvent& e) {
 }
 
 void Scene::onRemoveTexture(RemoveTextureEvent& e) {
-    auto view = getEntities<MaterialComp>();
+    /*auto view = getEntities<MaterialComp>();
     for (auto entity : view) {
-
-    }
+    }*/
 }

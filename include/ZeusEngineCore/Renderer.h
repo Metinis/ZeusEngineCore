@@ -33,15 +33,11 @@ namespace ZEN {
 		void bindDefaultFBO();
 		void endFrame();
 		void onResize(WindowResizeEvent& e);
-		IContext* getContext() {return m_Context.get();}
-		IResourceManager* getResourceManager() {return m_ResourceManager.get();}
-		UniformComp& getViewUBO() {return m_ViewUBO;}
-		UniformComp& getInstanceUBO() {return m_InstanceUBO;}
-		UniformComp& getGlobalUBO() {return m_GlobalUBO;}
-		UniformComp& getMaterialUBO() {return m_MaterialUBO;}
 		Texture& getColorTexture() {return m_ColorTex;}
 		void* getColorTextureHandle();
+		IResourceManager* getResourceManager() {return m_ResourceManager.get();}
 	private:
+		friend class RenderSystem;
 		std::unique_ptr<IContext> m_Context{};
 		std::unique_ptr<IResourceManager> m_ResourceManager{};
 		UniformComp m_ViewUBO{};

@@ -1,7 +1,6 @@
 #include "ZeusEngineCore/ModelLibrary.h"
 
 #include <ZeusEngineCore/InputEvents.h>
-#include <ZeusEngineCore/Renderer.h>
 
 #include "IResourceManager.h"
 #include "ZeusEngineCore/Components.h"
@@ -9,16 +8,17 @@
 
 using namespace ZEN;
 
-ModelLibrary::ModelLibrary(Renderer* renderer, EventDispatcher* dispatcher, const std::string& resourceRoot)
-: m_Renderer(renderer), m_Dispatcher(dispatcher) {
+ModelLibrary::ModelLibrary(EventDispatcher* dispatcher, IResourceManager* resourceManager,
+    const std::string& resourceRoot)
+: m_Dispatcher(dispatcher), m_ResourceManager(resourceManager) {
     m_Materials["Default"] = createDefaultMaterial(resourceRoot, "/shaders/glbasic4.1.vert", "/shaders/glbasic4.1.frag");
     m_Meshes["Cube"]  = createCube();
     m_Meshes["Skybox"] = createSkybox();
     m_Meshes["Sphere"] = createSphere(1.0f, 32, 16);
 
-    m_Textures["Wall"] = m_Renderer->getResourceManager()->createTexture(resourceRoot + "/textures/wall.jpg");
-    m_Textures["Container"] = m_Renderer->getResourceManager()->createTexture(resourceRoot + "/textures/container2.png");
-    m_Textures["ContainerSpec"] = m_Renderer->getResourceManager()->createTexture(resourceRoot + "/textures/container2_specular.png");
+    m_Textures["Wall"] = m_ResourceManager->createTexture(resourceRoot + "/textures/wall.jpg");
+    m_Textures["Container"] = m_ResourceManager->createTexture(resourceRoot + "/textures/container2.png");
+    m_Textures["ContainerSpec"] = m_ResourceManager->createTexture(resourceRoot + "/textures/container2_specular.png");
 
     uint32_t defaultShaderID = m_Materials["Default"]->shaderID;
     Material wallMaterial{
@@ -60,9 +60,23 @@ void ModelLibrary::removeMaterial(const std::string &name) {
 void ModelLibrary::removeTexture(const std::string &name) {
     auto it = m_Textures.find(name);
     if (it != m_Textures.end()) {
+        auto textureID = m_Textures[name];
+        //find every material with this texture and set the textureID to 0
+        for(auto& [matName, material] : m_Materials) {
+            for(auto& id : material->textureIDs) {
+                if(id == textureID) {
+                    id = 0;
+                }
+            }
+            for(auto& id : material->specularTexIDs) {
+                if(id == textureID) {
+                    id = 0;
+                }
+            }
+        }
         m_Textures.erase(name);
+        m_ResourceManager->deleteTexture(textureID);
         m_Dispatcher->trigger<RemoveTextureEvent>(RemoveTextureEvent{name});
-        m_Renderer->getResourceManager()->deleteTexture(it->second);
         return;
     }
     std::cout<<"Texture not found: "<<name<<"\n";
@@ -182,7 +196,7 @@ std::unique_ptr<Mesh> ModelLibrary::createSkybox() {
 
 std::unique_ptr<Material> ModelLibrary::createDefaultMaterial(const std::string& resourceRoot, const std::string& vertPath,
             const std::string& fragPath) {
-    uint32_t defaultShaderID = m_Renderer->getResourceManager()->createShader(std::string(resourceRoot) + vertPath,
+    uint32_t defaultShaderID = m_ResourceManager->createShader(std::string(resourceRoot) + vertPath,
         resourceRoot + fragPath);
     Material defaultMat {.shaderID = defaultShaderID, .textureIDs = {0}};
     return std::make_unique<Material>(defaultMat);

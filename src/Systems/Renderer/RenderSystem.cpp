@@ -6,8 +6,9 @@
 
 using namespace ZEN;
 
-RenderSystem::RenderSystem(Renderer *renderer, Scene *scene, ModelLibrary* library) :
-m_Renderer(renderer), m_Scene(scene), m_Library(library){
+RenderSystem::RenderSystem(Renderer *renderer, Scene *scene, ModelLibrary* library,
+            EventDispatcher* dispatcher) :
+m_Renderer(renderer), m_Scene(scene), m_Library(library), m_Dispatcher(dispatcher){
 
 }
 void RenderSystem::updateWorldTransforms() {
@@ -45,7 +46,7 @@ void RenderSystem::onUpdate() {
 
         MeshDrawableComp drawableComp{};
         drawableComp.indexCount = mesh->indices.size();
-        drawableComp.meshID = m_Renderer->getResourceManager()->createMeshDrawable(*mesh);
+        drawableComp.meshID = m_Renderer->m_ResourceManager->createMeshDrawable(*mesh);
         entity.addComponent<MeshDrawableComp>(drawableComp);
     }
 
@@ -61,7 +62,7 @@ void RenderSystem::writeCameraData(glm::mat4& view, glm::mat4& projection) {
             projection = camera.projection;
             glm::mat4 vpMat = projection * view;
             auto const bytes = std::bit_cast<std::array<std::byte, sizeof(vpMat)>>(vpMat);
-            m_Renderer->getResourceManager()->writeToUBO(m_Renderer->getViewUBO().uboID, bytes);
+            m_Renderer->m_ResourceManager->writeToUBO(m_Renderer->m_ViewUBO.uboID, bytes);
             //update global ubo, todo maybe use a light component
             GlobalUBO globalUBO {
                 .lightDir = m_Scene->getLightDir(),
@@ -71,7 +72,7 @@ void RenderSystem::writeCameraData(glm::mat4& view, glm::mat4& projection) {
             };
             auto const globalBytes = std::bit_cast<std::array<std::byte,
                 sizeof(globalUBO)>>(globalUBO);
-            m_Renderer->getResourceManager()->writeToUBO(m_Renderer->getGlobalUBO().uboID, globalBytes);
+            m_Renderer->m_ResourceManager->writeToUBO(m_Renderer->m_GlobalUBO.uboID, globalBytes);
         }
     }
 }
@@ -82,7 +83,7 @@ void RenderSystem::renderDrawables() {
         //bind shader
         auto& materialComp = entity.getComponent<MaterialComp>();
         auto material = m_Library->getMaterial(materialComp.name);
-        m_Renderer->getResourceManager()->bindShader(material->shaderID);
+        m_Renderer->m_ResourceManager->bindShader(material->shaderID);
 
         //write to material ubo
         MaterialUBO materialUBO {
@@ -90,19 +91,19 @@ void RenderSystem::renderDrawables() {
         };
         auto const materialBytes = std::bit_cast<std::array<std::byte,
             sizeof(materialUBO)>>(materialUBO);
-        m_Renderer->getResourceManager()->writeToUBO(m_Renderer->getMaterialUBO().uboID, materialBytes);
+        m_Renderer->m_ResourceManager->writeToUBO(m_Renderer->m_MaterialUBO.uboID, materialBytes);
 
         //bind material texture
-        m_Renderer->getResourceManager()->bindMaterial(*material);
+        m_Renderer->m_ResourceManager->bindMaterial(*material);
         //write to instance ubo (todo check if last mesh is same for instancing)
         auto transform = entity.getComponent<TransformComp>();
         auto const bytes = std::bit_cast<std::array<std::byte,
             sizeof(transform.worldMatrix)>>(transform.worldMatrix);
-        m_Renderer->getResourceManager()->writeToUBO(m_Renderer->getInstanceUBO().uboID, bytes);
+        m_Renderer->m_ResourceManager->writeToUBO(m_Renderer->m_InstanceUBO.uboID, bytes);
 
         //todo submit mesh to renderer
         MeshDrawableComp drawable = entity.getComponent<MeshDrawableComp>();
-        m_Renderer->getContext()->drawMesh(*m_Renderer->getResourceManager(), drawable);
+        m_Renderer->m_Context->drawMesh(*m_Renderer->m_ResourceManager, drawable);
 
     }
 }
@@ -110,36 +111,36 @@ void RenderSystem::renderDrawables() {
 void RenderSystem::renderSkybox(const glm::mat4& view, const glm::mat4& projection) {
     auto skyboxView = m_Scene->getEntities<SkyboxComp, MeshDrawableComp>();
     for (auto entity: skyboxView) {
-        m_Renderer->getContext()->depthMask(false);
-        m_Renderer->getContext()->setDepthMode(LEQUAL);
+        m_Renderer->m_Context->depthMask(false);
+        m_Renderer->m_Context->setDepthMode(LEQUAL);
         glm::mat4 viewCube = glm::mat4(glm::mat3(view));
         glm::mat4 vp = projection * viewCube;
         auto const bytes = std::bit_cast<std::array<std::byte, sizeof(vp)>>(vp);
-        m_Renderer->getResourceManager()->writeToUBO(m_Renderer->getViewUBO().uboID, bytes);
+        m_Renderer->m_ResourceManager->writeToUBO(m_Renderer->m_ViewUBO.uboID, bytes);
         //bind shader
         auto& skyboxComp = entity.getComponent<SkyboxComp>();
-        m_Renderer->getResourceManager()->bindShader(skyboxComp.shaderID);
+        m_Renderer->m_ResourceManager->bindShader(skyboxComp.shaderID);
 
         //bind cubemap texture
-        m_Renderer->getResourceManager()->bindCubeMapTexture(skyboxComp.textureID);
+        m_Renderer->m_ResourceManager->bindCubeMapTexture(skyboxComp.textureID);
 
         auto& drawable = entity.getComponent<MeshDrawableComp>();
-        m_Renderer->getContext()->drawMesh(*m_Renderer->getResourceManager(), drawable);
+        m_Renderer->m_Context->drawMesh(*m_Renderer->m_ResourceManager, drawable);
 
-        m_Renderer->getContext()->depthMask(true);
-        m_Renderer->getContext()->setDepthMode(LESS);
+        m_Renderer->m_Context->depthMask(true);
+        m_Renderer->m_Context->setDepthMode(LESS);
     }
 }
 
 void RenderSystem::bindSceneUBOs() {
     //bind uniform vp matrix
-    m_Renderer->getResourceManager()->bindUBO(m_Renderer->getViewUBO().uboID);
+    m_Renderer->m_ResourceManager->bindUBO(m_Renderer->m_ViewUBO.uboID);
     //bind instance ubo (different binding so its ok)
-    m_Renderer->getResourceManager()->bindUBO(m_Renderer->getInstanceUBO().uboID);
+    m_Renderer->m_ResourceManager->bindUBO(m_Renderer->m_InstanceUBO.uboID);
     //bind global ubo (different binding so its ok)
-    m_Renderer->getResourceManager()->bindUBO(m_Renderer->getGlobalUBO().uboID);
+    m_Renderer->m_ResourceManager->bindUBO(m_Renderer->m_GlobalUBO.uboID);
     //bind material ubo (different binding so its ok)
-    m_Renderer->getResourceManager()->bindUBO(m_Renderer->getMaterialUBO().uboID);
+    m_Renderer->m_ResourceManager->bindUBO(m_Renderer->m_MaterialUBO.uboID);
 }
 
 

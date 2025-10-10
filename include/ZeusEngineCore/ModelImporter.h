@@ -32,8 +32,8 @@ namespace ZEN {
                          const glm::mat4& parentTransform, Entity& parent);
 
         Scene* m_Scene{};
-        ModelLibrary* m_ModelLibrary{};
         IResourceManager* m_ResourceManager{};
+        ModelLibrary* m_ModelLibrary{};
         std::unordered_map<const aiTexture*, uint32_t> m_EmbeddedTextureCache{};
         std::unordered_map<const char*, uint32_t> m_ExternalTextureCache{};
     };

@@ -3,10 +3,16 @@
 #include <unordered_map>
 #include <string>
 #include "Vertex.h"
-
+#include <unordered_set>
 
 namespace ZEN {
-
+    //cant remove these
+    const std::unordered_set<std::string> defaultMeshes = {
+        "Cube", "Sphere", "Capsule"
+    };
+    const std::unordered_set<std::string> defaultMaterials = {
+        "Default"
+    };
     struct Material {
         uint32_t shaderID{};
         std::vector<uint32_t> textureIDs{0}; //use default textures
@@ -18,12 +24,13 @@ namespace ZEN {
         std::vector<uint32_t> indices{};
         std::vector<Vertex> vertices{};
     };
-    class Renderer;
+    class IResourceManager;
     class EventDispatcher;
 
     class ModelLibrary {
     public:
-        explicit ModelLibrary(Renderer* renderer, EventDispatcher* dispatcher, const std::string& resourceRoot);
+        explicit ModelLibrary(EventDispatcher* dispatcher, IResourceManager* resourceManager,
+            const std::string& resourceRoot);
 
         void addMesh(const std::string& name, std::unique_ptr<Mesh> mesh);
         void addMesh(const std::string& name, const Mesh& mesh);
@@ -60,8 +67,8 @@ namespace ZEN {
             const std::string& fragPath);
         //static std::shared_ptr<MeshComp> createPlane();
         std::unique_ptr<Mesh> createSphere(float radius, unsigned int sectorCount, unsigned int stackCount);
-        Renderer* m_Renderer{};
         EventDispatcher* m_Dispatcher{};
+        IResourceManager* m_ResourceManager{};
 
     };
 }

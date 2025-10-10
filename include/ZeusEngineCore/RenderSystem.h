@@ -1,4 +1,5 @@
 #pragma once
+#include "EventDispatcher.h"
 #include "Renderer.h"
 
 namespace ZEN {
@@ -6,7 +7,8 @@ namespace ZEN {
 	class ModelLibrary;
 	class RenderSystem {
 	public:
-		explicit RenderSystem(Renderer *renderer, Scene *scene, ModelLibrary* library);
+		explicit RenderSystem(Renderer *renderer, Scene *scene, ModelLibrary* library,
+			EventDispatcher* dispatcher);
 		void onUpdate();
 		void onRender();
 	private:
@@ -18,5 +20,6 @@ namespace ZEN {
 		Renderer* m_Renderer{};
 		ModelLibrary* m_Library{};
 		Scene* m_Scene{};
+		EventDispatcher* m_Dispatcher{};
 	};
 }
