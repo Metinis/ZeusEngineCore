@@ -26,6 +26,8 @@ namespace ZEN {
 
         void onCursorLockChange(CursorLockEvent &e);
 
+        void updateWindowTitleWithFPS();
+
     private:
         void calculateDeltaTime();
 
@@ -34,6 +36,8 @@ namespace ZEN {
         int m_Height = 720;
         float m_LastTime;
         float m_DeltaTime;
+        float m_SmoothFPS = 0.0f;
+        float m_FPSAlpha = 0.1f;
         std::string m_Title;
     };
 }

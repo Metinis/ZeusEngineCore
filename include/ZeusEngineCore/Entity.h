@@ -6,6 +6,7 @@ namespace ZEN {
     class Entity {
     public:
         explicit Entity(Scene* scene, entt::entity handle);
+        explicit Entity(entt::registry* registry, entt::entity handle);
         explicit Entity() = default;
 
         template<typename T>
@@ -50,6 +51,9 @@ namespace ZEN {
         }
         explicit operator intptr_t() const {
             return static_cast<intptr_t>(m_Handle);
+        }
+        explicit operator entt::entity() const {
+            return m_Handle;
         }
 
     private:

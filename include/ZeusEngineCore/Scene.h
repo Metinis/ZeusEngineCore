@@ -15,9 +15,10 @@ namespace ZEN {
 	class Scene {
 
 	public:
-		Scene(EventDispatcher& dispatcher);
+		Scene(EventDispatcher* dispatcher);
 		void createDefaultScene(const std::string& resourceRoot, ZEngine* engine);
 		Entity createEntity(const std::string& name = "");
+		void removeEntity(Entity entity);
 
 		template<typename ...Args>
 		auto getEntities() {
@@ -27,11 +28,14 @@ namespace ZEN {
 				[this](entt::entity entity) { return makeEntity(entity); }
 			);
 		}
+
+
 		glm::vec3 getLightPos() {return lightPos;}
 		glm::vec3 getLightDir() {return lightDir;}
 		glm::vec3 getAmbientColor() {return ambientColor;}
 	private:
 		entt::registry m_Registry{};
+		EventDispatcher* m_Dispatcher{};
 		ModelLibrary* m_ModelLibrary{};
 		glm::vec3 lightPos{1.0f, 5.0f, 1.0f};
 		glm::vec3 lightDir{-0.2f, -1.0f, 0.3f};
@@ -42,6 +46,9 @@ namespace ZEN {
 		void onRemoveMesh(RemoveMeshEvent& e);
 		void onRemoveMaterial(RemoveMaterialEvent& e);
 		void onRemoveTexture(RemoveTextureEvent& e);
+
+		void onMeshCompRemove(entt::registry& registry, entt::entity entity);
+		void onMeshDrawableRemove(entt::registry& registry, entt::entity entity);
 
 		friend class Entity;
 	};

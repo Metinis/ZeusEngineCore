@@ -11,7 +11,7 @@
 using namespace ZEN;
 ZEngine::ZEngine(eRendererAPI api, GLFWwindow* nativeWindow, const std::string& resourceRoot) : m_API(api){
     m_Dispatcher = std::make_unique<EventDispatcher>();
-    m_Scene = std::make_unique<Scene>(*m_Dispatcher);
+    m_Scene = std::make_unique<Scene>(m_Dispatcher.get());
     m_Renderer = std::make_unique<Renderer>(m_API, nativeWindow, *m_Dispatcher);
     m_ModelLibrary = std::make_unique<ModelLibrary>(m_Dispatcher.get(), m_Renderer->getResourceManager(), resourceRoot);
     m_ModelImporter = std::make_unique<ModelImporter>(m_Scene.get(), m_Renderer->getResourceManager(), m_ModelLibrary.get());

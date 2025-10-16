@@ -95,6 +95,21 @@ Window::~Window() {
     }
 }
 
+void Window::updateWindowTitleWithFPS() {
+    float currentFPS = 1.0f / m_DeltaTime;
+
+    if (m_SmoothFPS == 0.0f)
+        m_SmoothFPS = currentFPS;
+    else
+        m_SmoothFPS = m_SmoothFPS + m_FPSAlpha * (currentFPS - m_SmoothFPS);
+
+    char titleBuffer[128];
+    snprintf(titleBuffer, sizeof(titleBuffer), "%s - FPS: %.1f", m_Title.c_str(), m_SmoothFPS);
+
+    glfwSetWindowTitle(m_Window, titleBuffer);
+}
+
+
 void Window::pollEvents() {
     glfwPollEvents();
     calculateDeltaTime();
@@ -105,6 +120,7 @@ void Window::pollEvents() {
         m_Width = width;
         m_Height = height;
     }
+    updateWindowTitleWithFPS();
 }
 
 void Window::onCursorLockChange(CursorLockEvent &e) {

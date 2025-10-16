@@ -3,15 +3,25 @@
 #include <ZeusEngineCore/InputEvents.h>
 #include <ZeusEngineCore/ModelLibrary.h>
 #include <ZeusEngineCore/ZEngine.h>
-
 #include "ZeusEngineCore/EventDispatcher.h"
 
 using namespace ZEN;
 
-Scene::Scene(EventDispatcher& dispatcher){
-    dispatcher.attach<RemoveMeshEvent, Scene, &Scene::onRemoveMesh>(this);
-    dispatcher.attach<RemoveMaterialEvent, Scene, &Scene::onRemoveMaterial>(this);
-    dispatcher.attach<RemoveTextureEvent, Scene, &Scene::onRemoveTexture>(this);
+Scene::Scene(EventDispatcher* dispatcher) : m_Dispatcher(dispatcher){
+    m_Dispatcher->attach<RemoveMeshEvent, Scene, &Scene::onRemoveMesh>(this);
+    m_Dispatcher->attach<RemoveMaterialEvent, Scene, &Scene::onRemoveMaterial>(this);
+    m_Dispatcher->attach<RemoveTextureEvent, Scene, &Scene::onRemoveTexture>(this);
+
+    m_Registry.on_destroy<MeshComp>().connect<&Scene::onMeshCompRemove>(this);
+    m_Registry.on_destroy<MeshDrawableComp>().connect<&Scene::onMeshDrawableRemove>(this);
+}
+
+void Scene::onMeshCompRemove(entt::registry& registry, entt::entity entity) {
+    m_Dispatcher->trigger<RemoveMeshCompEvent>(RemoveMeshCompEvent{Entity(&m_Registry, entity)});
+}
+
+void Scene::onMeshDrawableRemove(entt::registry& registry, entt::entity entity) {
+    m_Dispatcher->trigger<RemoveMeshDrawableEvent>(RemoveMeshDrawableEvent{Entity(&m_Registry, entity)});
 }
 
 void Scene::createDefaultScene(const std::string& resourceRoot, ZEngine* engine) {
@@ -51,24 +61,25 @@ Entity Scene::createEntity(const std::string& name) {
     return ret;
 }
 
+void Scene::removeEntity(Entity entity) {
+    //todo remove unused meshes from resource manager
+    m_Registry.destroy((entt::entity)entity);
+}
+
 
 Entity Scene::makeEntity(entt::entity entity) {
     return Entity{this, entity};
 }
 
 void Scene::onRemoveMesh(RemoveMeshEvent& e) {
+    //todo remove unused meshes from resource manager
     auto view = getEntities<MeshComp>();
     for (auto entity : view) {
         if(entity.getComponent<MeshComp>().name != e.meshName) {
             continue;
         }
         entity.removeComponent<MeshComp>();
-        //delete the drawable comp in rendersystem
-        //if(entity.hasComponent<MeshDrawableComp>()) {
-        //    entity.removeComponent<MeshDrawableComp>();
-        //}
     }
-
 }
 
 void Scene::onRemoveMaterial(RemoveMaterialEvent& e) {
@@ -86,3 +97,5 @@ void Scene::onRemoveTexture(RemoveTextureEvent& e) {
     for (auto entity : view) {
     }*/
 }
+
+

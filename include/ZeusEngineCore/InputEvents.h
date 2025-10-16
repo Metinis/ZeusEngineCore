@@ -66,4 +66,10 @@ namespace ZEN {
     struct RemoveTextureEvent {
         std::string textureName;
     };
+    struct RemoveMeshCompEvent {
+        Entity entity;
+    };
+    struct RemoveMeshDrawableEvent {
+        Entity entity;
+    };
 }

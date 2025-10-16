@@ -6,6 +6,8 @@ namespace ZEN {
 	class Scene;
 	class ModelLibrary;
 	struct RemoveMeshEvent;
+	struct RemoveMeshCompEvent;
+	struct RemoveMeshDrawableEvent;
 	class RenderSystem {
 	public:
 		explicit RenderSystem(Renderer *renderer, Scene *scene, ModelLibrary* library,
@@ -19,6 +21,8 @@ namespace ZEN {
 		void renderSkybox(const glm::mat4& view, const glm::mat4& projection);
 		void updateWorldTransforms();
 		void onMeshRemove(RemoveMeshEvent& e);
+		void onMeshCompRemove(RemoveMeshCompEvent& e);
+		void onMeshDrawableRemove(RemoveMeshDrawableEvent& e);
 		Renderer* m_Renderer{};
 		ModelLibrary* m_Library{};
 		Scene* m_Scene{};

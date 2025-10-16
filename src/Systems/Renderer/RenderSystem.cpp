@@ -12,6 +12,9 @@ RenderSystem::RenderSystem(Renderer *renderer, Scene *scene, ModelLibrary* libra
             EventDispatcher* dispatcher) :
 m_Renderer(renderer), m_Scene(scene), m_Library(library), m_Dispatcher(dispatcher){
     m_Dispatcher->attach<RemoveMeshEvent, RenderSystem, &RenderSystem::onMeshRemove>(this);
+    m_Dispatcher->attach<RemoveMeshCompEvent, RenderSystem, &RenderSystem::onMeshCompRemove>(this);
+    m_Dispatcher->attach<RemoveMeshDrawableEvent, RenderSystem, &RenderSystem::onMeshDrawableRemove>(this);
+
 }
 void RenderSystem::updateWorldTransforms() {
     auto view = m_Scene->getEntities<TransformComp>();
@@ -41,6 +44,18 @@ void RenderSystem::onMeshRemove(RemoveMeshEvent &e) {
     }
 }
 
+void RenderSystem::onMeshCompRemove(RemoveMeshCompEvent &e) {
+    if(e.entity.hasComponent<MeshDrawableComp>()) {
+        e.entity.removeComponent<MeshDrawableComp>();
+    }
+
+}
+
+void RenderSystem::onMeshDrawableRemove(RemoveMeshDrawableEvent &e) {
+    m_Renderer->getResourceManager()->deleteMeshDrawable(
+            e.entity.getComponent<MeshDrawableComp>().meshID);
+}
+
 void RenderSystem::onUpdate() {
     updateWorldTransforms();
     //create buffers for all meshes without drawable comps
@@ -48,12 +63,14 @@ void RenderSystem::onUpdate() {
     for (auto entity : meshView) {
         if(entity.hasComponent<MeshDrawableComp>()) continue;
 
+        auto& meshComp = entity.getComponent<MeshComp>();
+        if(meshComp.name.empty()) continue;
+        auto mesh = m_Library->getMesh(meshComp.name);
+        if(!mesh) continue;
+
         if(!entity.hasComponent<MaterialComp>() && !entity.hasComponent<SkyboxComp>()) {
             entity.addComponent<MaterialComp>(MaterialComp{ .name = "Default"}); //default needs to exist in model library
         }
-
-        auto& meshComp = entity.getComponent<MeshComp>();
-        auto mesh = m_Library->getMesh(meshComp.name);
 
         MeshDrawableComp drawableComp{};
         drawableComp.name = meshComp.name;
@@ -61,6 +78,7 @@ void RenderSystem::onUpdate() {
         drawableComp.meshID = m_Renderer->m_ResourceManager->createMeshDrawable(*mesh);
         entity.addComponent<MeshDrawableComp>(drawableComp);
     }
+
 
 }
 void RenderSystem::writeCameraData(glm::mat4& view, glm::mat4& projection) {
