@@ -331,27 +331,29 @@ void ZEN::GLResourceManager::deleteTexture(uint32_t textureID) {
 void ZEN::GLResourceManager::bindMaterial(const Material &material) {
     bindShader(material.shaderID);
 
-    //Bind diffuse textures first
-    for (size_t i = 0; i < material.textureIDs.size(); ++i) {
-        bindTexture(material.textureIDs[i], i);
+    bindTexture(material.textureID, 0);
+    withResource(m_Shaders, material.shaderID, [&](GLShader& s) {
+        GLint loc = glGetUniformLocation(s.programID, "u_AlbedoMap");
+        if (loc != -1) glUniform1i(loc, 0);
+    });
 
-        withResource(m_Shaders, material.shaderID, [&](GLShader& s) {
-            std::string name = "u_DiffuseMap[" + std::to_string(i) + "]";
-            GLint loc = glGetUniformLocation(s.programID, name.c_str());
-            if (loc != -1) glUniform1i(loc, i);
-        });
-    }
+    bindTexture(material.metallicTexID, 1);
+    withResource(m_Shaders, material.shaderID, [&](GLShader& s) {
+        GLint loc = glGetUniformLocation(s.programID, "u_MetallicMap");
+        if (loc != -1) glUniform1i(loc, 1);
+    });
 
-    //Bind specular textures next
-    for (size_t i = 0; i < material.specularTexIDs.size(); ++i) {
-        bindTexture(material.specularTexIDs[i], material.textureIDs.size() + i);
+    bindTexture(material.roughnessTexID, 2);
+    withResource(m_Shaders, material.shaderID, [&](GLShader& s) {
+        GLint loc = glGetUniformLocation(s.programID, "u_RoughnessMap");
+        if (loc != -1) glUniform1i(loc, 2);
+    });
+    bindTexture(material.normalTexID, 3);
+    withResource(m_Shaders, material.shaderID, [&](GLShader& s) {
+        GLint loc = glGetUniformLocation(s.programID, "u_NormalMap");
+        if (loc != -1) glUniform1i(loc, 3);
+    });
 
-        withResource(m_Shaders, material.shaderID, [&](GLShader& s) {
-            std::string name = "u_SpecularMap[" + std::to_string(i) + "]";
-            GLint loc = glGetUniformLocation(s.programID, name.c_str());
-            if (loc != -1) glUniform1i(loc, material.textureIDs.size() + i);
-        });
-    }
 }
 
 constexpr std::array<std::string, 6> cubeSides {

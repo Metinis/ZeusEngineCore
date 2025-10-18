@@ -116,8 +116,25 @@ void RenderSystem::renderDrawables() {
         m_Renderer->m_ResourceManager->bindShader(material->shaderID);
 
         //write to material ubo
+        /*MaterialUBO materialUBO {
+            .albedo = glm::vec4(0.5f, 0.0f, 0.0f, 1.0f),
+            .params = glm::vec4(0.5f, 0.5f, 1.0f, 1.0f)
+        };*/
+
+        //convert to UBO format
+        glm::vec4 alb;
+        alb.x = material->albedo.x;
+        alb.y = material->albedo.y;
+        alb.z = material->albedo.z;
+
+        glm::vec4 props;
+        props.x = material->metallic;
+        props.y = material->roughness;
+        props.z = material->ao;
+        props.w = material->metal;
         MaterialUBO materialUBO {
-            .specularAndShininess = {material->specular, float(material->shininess)}
+            .albedo = alb,
+            .params = props
         };
         auto const materialBytes = std::bit_cast<std::array<std::byte,
             sizeof(materialUBO)>>(materialUBO);

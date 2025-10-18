@@ -45,7 +45,7 @@ constexpr auto processMeshUVs = [](const aiVector3D& uvs) {
     return uv;
 };
 
-void ModelImporter::processTexturesEmbedded(std::vector<uint32_t>& textureIDs,
+void ModelImporter::processTexturesEmbedded(uint32_t& textureID,
                                             const aiScene* aiscene, const aiString& texPath) {
     unsigned int texIndex = std::atoi(texPath.C_Str() + 1);
     const aiTexture* tex = aiscene->mTextures[texIndex];
@@ -58,13 +58,10 @@ void ModelImporter::processTexturesEmbedded(std::vector<uint32_t>& textureIDs,
         texID = m_ResourceManager->createTextureAssimp(*tex);
         m_EmbeddedTextureCache[tex] = texID; // cache
     }
-    if(textureIDs[0] != 0)
-        textureIDs.push_back(texID);
-    else
-        textureIDs[0] = texID;
+    textureID = texID;
 }
 
-void ModelImporter::processTextureType(std::vector<uint32_t>& textureIDs,
+void ModelImporter::processTextureType(uint32_t& textureID,
                                        const aiScene* aiscene, aiTextureType type,
                                        const aiMaterial* aimaterial) {
     uint32_t count = aimaterial->GetTextureCount(type);
@@ -72,7 +69,7 @@ void ModelImporter::processTextureType(std::vector<uint32_t>& textureIDs,
         aiString texPath;
         aimaterial->GetTexture(type, i, &texPath);
         if (texPath.length > 0 && texPath.C_Str()[0] == '*') {
-            processTexturesEmbedded(textureIDs, aiscene, texPath);
+            processTexturesEmbedded(textureID, aiscene, texPath);
         } else if (texPath.length > 0) {
             std::cout<<"Trying to load external file!\n";
             uint32_t texID;
@@ -83,10 +80,7 @@ void ModelImporter::processTextureType(std::vector<uint32_t>& textureIDs,
                 texID = m_ResourceManager->createTexture(texPath.C_Str());
                 m_ExternalTextureCache[texPath.C_Str()] = texID;
             }
-            if(textureIDs[0] != 0)
-                textureIDs.push_back(texID);
-            else
-                textureIDs[0] = texID;
+            textureID = texID;
         }
         else {
             std::cout<<"Warning! No texture path found!\n";
@@ -122,11 +116,8 @@ void ModelImporter::processAiMesh(Entity& entity, aiMesh* aimesh,
 
     if (aimesh->mMaterialIndex >= 0) {
         const aiMaterial* aiMaterial = aiscene->mMaterials[aimesh->mMaterialIndex];
-        processTextureType(material.textureIDs, aiscene, aiTextureType_DIFFUSE, aiMaterial);
-        if(material.textureIDs.empty()) {
-            std::cout<<"Warning! No Textures found for mesh: "<< aimesh->mName.C_Str() << "\n";
-        }
-        processTextureType(material.specularTexIDs, aiscene, aiTextureType_SPECULAR, aiMaterial);
+        processTextureType(material.textureID, aiscene, aiTextureType_DIFFUSE, aiMaterial);
+        //processTextureType(material.specularTexIDs, aiscene, aiTextureType_SPECULAR, aiMaterial);
     }
     m_ModelLibrary->addMesh(aimesh->mName.C_Str(), mesh);
     m_ModelLibrary->addMaterial(aiscene->mMaterials[aimesh->mMaterialIndex]->GetName().C_Str(), material);

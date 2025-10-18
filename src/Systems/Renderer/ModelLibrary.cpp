@@ -20,21 +20,36 @@ ModelLibrary::ModelLibrary(EventDispatcher* dispatcher, IResourceManager* resour
     m_Textures["Container"] = m_ResourceManager->createTexture(resourceRoot + "/textures/container2.png");
     m_Textures["ContainerSpec"] = m_ResourceManager->createTexture(resourceRoot + "/textures/container2_specular.png");
 
+    m_Textures["RustedIron_Albedo"] = m_ResourceManager->createTexture(resourceRoot + "/textures/rusted_iron/rustediron2_basecolor.png");
+    m_Textures["RustedIron_Metallic"] = m_ResourceManager->createTexture(resourceRoot + "/textures/rusted_iron/rustediron2_metallic.png");
+    m_Textures["RustedIron_Normal"] = m_ResourceManager->createTexture(resourceRoot + "/textures/rusted_iron/rustediron2_normal.png");
+    m_Textures["RustedIron_Roughness"] = m_ResourceManager->createTexture(resourceRoot + "/textures/rusted_iron/rustediron2_roughness.png");
+
     uint32_t defaultShaderID = m_Materials["Default"]->shaderID;
     Material wallMaterial{
         .shaderID = defaultShaderID,
-        .textureIDs = {m_Textures["Wall"]},
+        .textureID = m_Textures["Wall"],
     };
 
     m_Materials["Wall"] = std::make_unique<Material>(wallMaterial);
 
     Material containerMaterial{
         .shaderID = defaultShaderID,
-        .textureIDs = {m_Textures["Container"]},
-        .specularTexIDs = {m_Textures["ContainerSpec"]},
+        .textureID = m_Textures["Container"],
     };
 
     m_Materials["Container"] = std::make_unique<Material>(containerMaterial);
+
+    Material rustedMaterial{
+        .shaderID = defaultShaderID,
+        .textureID = m_Textures["RustedIron_Albedo"],
+        .metallicTexID = m_Textures["RustedIron_Metallic"],
+        .normalTexID = m_Textures["RustedIron_Normal"],
+        .roughnessTexID = m_Textures["RustedIron_Roughness"],
+
+    };
+
+    m_Materials["RustedMaterial"] = std::make_unique<Material>(rustedMaterial);
 }
 
 void ModelLibrary::removeMesh(const std::string &name) {
@@ -63,15 +78,8 @@ void ModelLibrary::removeTexture(const std::string &name) {
         auto textureID = m_Textures[name];
         //find every material with this texture and set the textureID to 0
         for(auto& [matName, material] : m_Materials) {
-            for(auto& id : material->textureIDs) {
-                if(id == textureID) {
-                    id = 0;
-                }
-            }
-            for(auto& id : material->specularTexIDs) {
-                if(id == textureID) {
-                    id = 0;
-                }
+            if( material->textureID == textureID) {
+                material->textureID = 0;
             }
         }
         m_Textures.erase(name);
@@ -198,7 +206,7 @@ std::unique_ptr<Material> ModelLibrary::createDefaultMaterial(const std::string&
             const std::string& fragPath) {
     uint32_t defaultShaderID = m_ResourceManager->createShader(std::string(resourceRoot) + vertPath,
         resourceRoot + fragPath);
-    Material defaultMat {.shaderID = defaultShaderID, .textureIDs = {0}};
+    Material defaultMat {.shaderID = defaultShaderID, .textureID = 0};
     return std::make_unique<Material>(defaultMat);
 }
 
