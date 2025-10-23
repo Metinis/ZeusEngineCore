@@ -16,7 +16,8 @@ namespace ZEN {
 	};
 
 	struct MaterialUBO {
-		glm::vec2 specularAndShininess{0.5f, 32}; float _pad[2];
+		glm::vec4 albedo{1.0f};        // RGB color, w unused
+		glm::vec4 params{0.0f};        // x = metallic, y = roughness, z = ao, w = metalFlag
 	};
 
 	struct Texture {

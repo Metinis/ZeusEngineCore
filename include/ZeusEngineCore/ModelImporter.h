@@ -18,10 +18,10 @@ namespace ZEN {
         void loadModel(const std::string &name, const std::string& path);
         void loadTexture(const std::string &name, const std::string& path);
     private:
-        void processTexturesEmbedded(std::vector<uint32_t>& textureIDs,
+        void processTexturesEmbedded(uint32_t& textureID,
                                  const aiScene* aiscene, const aiString& texPath);
 
-        void processTextureType(std::vector<uint32_t>& textureIDs,
+        void processTextureType(uint32_t& textureIDs,
                                 const aiScene* aiscene, aiTextureType type,
                                 const aiMaterial* aimaterial);
 

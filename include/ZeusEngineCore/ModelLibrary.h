@@ -14,11 +14,17 @@ namespace ZEN {
         "Default"
     };
     struct Material {
-        uint32_t shaderID{};
-        std::vector<uint32_t> textureIDs{0}; //use default textures
-        std::vector<uint32_t> specularTexIDs{0}; //use default textures
-        float specular{0.0f};
-        int shininess{1};
+        uint32_t shaderID{0};
+        uint32_t textureID{0};
+        uint32_t metallicTexID{0};
+        uint32_t roughnessTexID{0};
+        uint32_t normalTexID{0};
+        uint32_t AOTexID{0};
+        glm::vec3 albedo{1.0f, 1.0f, 1.0f};
+        float metallic{1.0f};
+        float roughness{1.0f};
+        float ao{1.0f};
+        bool metal{};
     };
     struct Mesh {
         std::vector<uint32_t> indices{};

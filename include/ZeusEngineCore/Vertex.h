@@ -4,7 +4,6 @@
 #include <glm/vec4.hpp>
 #include <glm/glm.hpp>
 #include <array>
-#include <vulkan/vulkan.hpp>
 
 namespace ZEN {
     struct Vertex {
