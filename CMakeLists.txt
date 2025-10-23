@@ -5,7 +5,6 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-find_package(Vulkan REQUIRED)
 find_package(assimp REQUIRED)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/include/glfw glfw)
 
@@ -33,15 +32,10 @@ target_include_directories(ZeusEngineCore
         ${CMAKE_CURRENT_SOURCE_DIR}/include/tinyfiledialogs
 )
 
-target_compile_definitions(ZeusEngineCore PRIVATE VK_NO_PROTOTYPES)
-
 target_link_libraries(ZeusEngineCore
         PUBLIC
         glfw
         assimp::assimp
-        PRIVATE
-        Vulkan::Vulkan
-
 )
 
 if(APPLE)
