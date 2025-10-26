@@ -14,6 +14,10 @@ m_Renderer(renderer), m_Scene(scene), m_Library(library), m_Dispatcher(dispatche
     m_Dispatcher->attach<RemoveMeshEvent, RenderSystem, &RenderSystem::onMeshRemove>(this);
     m_Dispatcher->attach<RemoveMeshCompEvent, RenderSystem, &RenderSystem::onMeshCompRemove>(this);
     m_Dispatcher->attach<RemoveMeshDrawableEvent, RenderSystem, &RenderSystem::onMeshDrawableRemove>(this);
+    Mesh* mesh = m_Library->getMesh("Cube");
+    m_CubeDrawable.name = "Cube";
+    m_CubeDrawable.indexCount = mesh->indices.size();
+    m_CubeDrawable.meshID = m_Renderer->m_ResourceManager->createMeshDrawable(*mesh);
 
 }
 void RenderSystem::updateWorldTransforms() {
@@ -156,8 +160,19 @@ void RenderSystem::renderDrawables() {
 }
 
 void RenderSystem::renderSkybox(const glm::mat4& view, const glm::mat4& projection) {
+
     auto skyboxView = m_Scene->getEntities<SkyboxComp, MeshDrawableComp>();
     for (auto entity: skyboxView) {
+        auto& skyboxComp = entity.getComponent<SkyboxComp>();
+        auto& drawable = entity.getComponent<MeshDrawableComp>();
+
+        if(!skyboxComp.envGenerated) {
+            m_Renderer->renderToCubeMapHDR(skyboxComp.textureID, m_Library->getMaterial("EqMap")->shaderID,
+            m_Library->getMaterial("EqMap")->textureID, m_CubeDrawable);
+            skyboxComp.envGenerated = true;
+        }
+
+
         m_Renderer->m_Context->depthMask(false);
         m_Renderer->m_Context->setDepthMode(LEQUAL);
         glm::mat4 viewCube = glm::mat4(glm::mat3(view));
@@ -165,13 +180,13 @@ void RenderSystem::renderSkybox(const glm::mat4& view, const glm::mat4& projecti
         auto const bytes = std::bit_cast<std::array<std::byte, sizeof(vp)>>(vp);
         m_Renderer->m_ResourceManager->writeToUBO(m_Renderer->m_ViewUBO.uboID, bytes);
         //bind shader
-        auto& skyboxComp = entity.getComponent<SkyboxComp>();
+
         m_Renderer->m_ResourceManager->bindShader(skyboxComp.shaderID);
 
         //bind cubemap texture
         m_Renderer->m_ResourceManager->bindCubeMapTexture(skyboxComp.textureID);
 
-        auto& drawable = entity.getComponent<MeshDrawableComp>();
+
         m_Renderer->m_Context->drawMesh(*m_Renderer->m_ResourceManager, drawable);
 
         m_Renderer->m_Context->depthMask(true);

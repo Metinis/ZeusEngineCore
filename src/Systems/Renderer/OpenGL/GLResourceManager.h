@@ -28,14 +28,14 @@ namespace ZEN {
 
     class GLResourceManager : public IResourceManager{
     public:
-        GLResourceManager();
+        GLResourceManager(const std::string& resourceRoot);
         ~GLResourceManager() override;
 
         uint32_t createMeshDrawable(const Mesh& mesh) override;
         void bindMeshDrawable(uint32_t drawableID) override;
         void deleteMeshDrawable(uint32_t drawableID) override;
 
-        uint32_t createShader(std::string_view vertexPath, std::string_view fragPath) override;
+        uint32_t createShader(const std::string& vertexPath, const std::string& fragPath) override;
         void bindShader(uint32_t shaderID) override;
         void deleteShader(uint32_t shaderID) override;
 
@@ -44,14 +44,17 @@ namespace ZEN {
         void bindUBO(uint32_t uboID) override;
         void deleteUBO(uint32_t uboID) override;
 
-        uint32_t createTexture(std::string_view texturePath) override;
+        uint32_t createTexture(const std::string& texturePath) override;
+        uint32_t createHDRTexture(const std::string& texturePath) override;
         uint32_t createTextureAssimp(const aiTexture& aiTex) override;
         void bindTexture(uint32_t textureID, uint32_t binding) override;
         void deleteTexture(uint32_t textureID) override;
 
         void bindMaterial(const Material& material) override;
 
-        uint32_t createCubeMapTexture(const std::string& texturePath)  override;
+        uint32_t createCubeMapTexture(const std::string& texturePath) override;
+        uint32_t createCubeMapTextureHDR() override;
+        void setFBOCubeMapTexture(uint32_t binding, uint32_t textureID) override;
         void bindCubeMapTexture(uint32_t textureID) override;
 
         uint32_t createFBO() override;
@@ -59,7 +62,9 @@ namespace ZEN {
 
         uint32_t createColorTex(int width, int height) override;
         uint32_t getTexture(uint32_t textureID) override;
+        uint32_t createDepthStencilBuffer(int width, int height) override;
         uint32_t createDepthBuffer(int width, int height) override;
+        void bindDepthBuffer(uint32_t bufferID) override;
         void deleteDepthBuffer(uint32_t bufferID) override;
 
     private:

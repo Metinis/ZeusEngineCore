@@ -11,19 +11,22 @@ using namespace ZEN;
 ModelLibrary::ModelLibrary(EventDispatcher* dispatcher, IResourceManager* resourceManager,
     const std::string& resourceRoot)
 : m_Dispatcher(dispatcher), m_ResourceManager(resourceManager) {
-    m_Materials["Default"] = createDefaultMaterial(resourceRoot, "/shaders/glbasic4.1.vert", "/shaders/glbasic4.1.frag");
+    m_Materials["Default"] = createDefaultMaterial("/shaders/glbasic4.1.vert", "/shaders/glbasic4.1.frag");
     m_Meshes["Cube"]  = createCube();
     m_Meshes["Skybox"] = createSkybox();
     m_Meshes["Sphere"] = createSphere(1.0f, 32, 16);
 
-    m_Textures["Wall"] = m_ResourceManager->createTexture(resourceRoot + "/textures/wall.jpg");
-    m_Textures["Container"] = m_ResourceManager->createTexture(resourceRoot + "/textures/container2.png");
-    m_Textures["ContainerSpec"] = m_ResourceManager->createTexture(resourceRoot + "/textures/container2_specular.png");
+    m_Textures["Wall"] = m_ResourceManager->createTexture("/textures/wall.jpg");
+    m_Textures["Container"] = m_ResourceManager->createTexture("/textures/container2.png");
+    m_Textures["ContainerSpec"] = m_ResourceManager->createTexture("/textures/container2_specular.png");
 
-    m_Textures["RustedIron_Albedo"] = m_ResourceManager->createTexture(resourceRoot + "/textures/rusted_iron/rustediron2_basecolor.png");
-    m_Textures["RustedIron_Metallic"] = m_ResourceManager->createTexture(resourceRoot + "/textures/rusted_iron/rustediron2_metallic.png");
-    m_Textures["RustedIron_Normal"] = m_ResourceManager->createTexture(resourceRoot + "/textures/rusted_iron/rustediron2_normal.png");
-    m_Textures["RustedIron_Roughness"] = m_ResourceManager->createTexture(resourceRoot + "/textures/rusted_iron/rustediron2_roughness.png");
+    m_Textures["RustedIron_Albedo"] = m_ResourceManager->createTexture("/textures/rusted_iron/rustediron2_basecolor.png");
+    m_Textures["RustedIron_Metallic"] = m_ResourceManager->createTexture("/textures/rusted_iron/rustediron2_metallic.png");
+    m_Textures["RustedIron_Normal"] = m_ResourceManager->createTexture("/textures/rusted_iron/rustediron2_normal.png");
+    m_Textures["RustedIron_Roughness"] = m_ResourceManager->createTexture("/textures/rusted_iron/rustediron2_roughness.png");
+
+    //load env map
+    m_Textures["EqMap"] = m_ResourceManager->createHDRTexture("/env-maps/HDR_111_Parking_Lot_2_Ref.hdr");
 
     uint32_t defaultShaderID = m_Materials["Default"]->shaderID;
     Material wallMaterial{
@@ -50,6 +53,13 @@ ModelLibrary::ModelLibrary(EventDispatcher* dispatcher, IResourceManager* resour
     };
 
     m_Materials["RustedMaterial"] = std::make_unique<Material>(rustedMaterial);
+
+    Material eqMap{
+        .shaderID = m_ResourceManager->createShader("/shaders/eq-to-cubemap.vert", "/shaders/eq-to-cubemap.frag"),
+        .textureID = m_Textures["EqMap"],
+
+    };
+    m_Materials["EqMap"] = std::make_unique<Material>(eqMap);
 }
 
 void ModelLibrary::removeMesh(const std::string &name) {
@@ -202,10 +212,9 @@ std::unique_ptr<Mesh> ModelLibrary::createSkybox() {
     return std::make_unique<Mesh>(skyboxMesh);
 }
 
-std::unique_ptr<Material> ModelLibrary::createDefaultMaterial(const std::string& resourceRoot, const std::string& vertPath,
+std::unique_ptr<Material> ModelLibrary::createDefaultMaterial(const std::string& vertPath,
             const std::string& fragPath) {
-    uint32_t defaultShaderID = m_ResourceManager->createShader(std::string(resourceRoot) + vertPath,
-        resourceRoot + fragPath);
+    uint32_t defaultShaderID = m_ResourceManager->createShader(vertPath, fragPath);
     Material defaultMat {.shaderID = defaultShaderID, .textureID = 0};
     return std::make_unique<Material>(defaultMat);
 }

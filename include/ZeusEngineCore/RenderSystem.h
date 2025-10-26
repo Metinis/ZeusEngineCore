@@ -23,6 +23,7 @@ namespace ZEN {
 		void onMeshRemove(RemoveMeshEvent& e);
 		void onMeshCompRemove(RemoveMeshCompEvent& e);
 		void onMeshDrawableRemove(RemoveMeshDrawableEvent& e);
+		MeshDrawableComp m_CubeDrawable{};
 		Renderer* m_Renderer{};
 		ModelLibrary* m_Library{};
 		Scene* m_Scene{};

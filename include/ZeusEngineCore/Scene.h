@@ -16,7 +16,7 @@ namespace ZEN {
 
 	public:
 		Scene(EventDispatcher* dispatcher);
-		void createDefaultScene(const std::string& resourceRoot, ZEngine* engine);
+		void createDefaultScene(ZEngine* engine);
 		Entity createEntity(const std::string& name = "");
 		void removeEntity(Entity entity);
 
