@@ -53,9 +53,9 @@ namespace ZEN {
         void bindMaterial(const Material& material) override;
 
         uint32_t createCubeMapTexture(const std::string& texturePath) override;
-        uint32_t createCubeMapTextureHDR() override;
+        uint32_t createCubeMapTextureHDR(uint32_t width, uint32_t height) override;
         void setFBOCubeMapTexture(uint32_t binding, uint32_t textureID) override;
-        void bindCubeMapTexture(uint32_t textureID) override;
+        void bindCubeMapTexture(uint32_t textureID, uint32_t binding) override;
 
         uint32_t createFBO() override;
         void bindFBO(uint32_t fboID) override;
@@ -64,6 +64,7 @@ namespace ZEN {
         uint32_t getTexture(uint32_t textureID) override;
         uint32_t createDepthStencilBuffer(int width, int height) override;
         uint32_t createDepthBuffer(int width, int height) override;
+        void updateDepthBufferDimensions(int width, int height) override;
         void bindDepthBuffer(uint32_t bufferID) override;
         void deleteDepthBuffer(uint32_t bufferID) override;
 

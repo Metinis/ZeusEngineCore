@@ -146,6 +146,7 @@ void RenderSystem::renderDrawables() {
 
         //bind material texture
         m_Renderer->m_ResourceManager->bindMaterial(*material);
+        m_Renderer->m_ResourceManager->bindCubeMapTexture(m_IrradianceMapID, 5);
         //write to instance ubo (todo check if last mesh is same for instancing)
         auto transform = entity.getComponent<TransformComp>();
         auto const bytes = std::bit_cast<std::array<std::byte,
@@ -167,8 +168,13 @@ void RenderSystem::renderSkybox(const glm::mat4& view, const glm::mat4& projecti
         auto& drawable = entity.getComponent<MeshDrawableComp>();
 
         if(!skyboxComp.envGenerated) {
+            m_Renderer->m_ResourceManager->bindCubeMapTexture(skyboxComp.textureID, 0);
             m_Renderer->renderToCubeMapHDR(skyboxComp.textureID, m_Library->getMaterial("EqMap")->shaderID,
             m_Library->getMaterial("EqMap")->textureID, m_CubeDrawable);
+
+            //generate irradiance map
+            m_Renderer->renderToIrradianceMap(skyboxComp.textureID, skyboxComp.covTextureID,skyboxComp.conShaderID, m_CubeDrawable);
+            m_IrradianceMapID = skyboxComp.covTextureID;
             skyboxComp.envGenerated = true;
         }
 
@@ -184,7 +190,7 @@ void RenderSystem::renderSkybox(const glm::mat4& view, const glm::mat4& projecti
         m_Renderer->m_ResourceManager->bindShader(skyboxComp.shaderID);
 
         //bind cubemap texture
-        m_Renderer->m_ResourceManager->bindCubeMapTexture(skyboxComp.textureID);
+        m_Renderer->m_ResourceManager->bindCubeMapTexture(skyboxComp.textureID, 0);
 
 
         m_Renderer->m_Context->drawMesh(*m_Renderer->m_ResourceManager, drawable);
@@ -215,8 +221,10 @@ void RenderSystem::onRender() {
     bindSceneUBOs();
 
     //render all meshes with drawable comps
+
     renderDrawables();
 
     //draw skybox
     renderSkybox(view, projection);
+
 }

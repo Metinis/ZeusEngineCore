@@ -36,6 +36,7 @@ namespace ZEN {
 		void beginFrame();
 		void bindDefaultFBO();
 		void renderToCubeMapHDR(uint32_t cubemapTexID, uint32_t eqToCubeMapShader, uint32_t hdrTexID, const MeshDrawableComp& drawable);
+		void renderToIrradianceMap(uint32_t cubemapTexID, uint32_t irradianceTexID, uint32_t irradianceShader,const MeshDrawableComp &drawable);
 		void endFrame();
 		void onResize(WindowResizeEvent& e);
 		Texture& getColorTexture() {return m_ColorTex;}

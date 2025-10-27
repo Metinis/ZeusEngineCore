@@ -47,8 +47,8 @@ namespace ZEN {
         virtual void bindMaterial(const Material& material) = 0;
 
         virtual uint32_t createCubeMapTexture(const std::string& texturePath) = 0;
-        virtual uint32_t createCubeMapTextureHDR() = 0;
-        virtual void bindCubeMapTexture(uint32_t textureID) = 0;
+        virtual uint32_t createCubeMapTextureHDR(uint32_t width, uint32_t height) = 0;
+        virtual void bindCubeMapTexture(uint32_t textureID, uint32_t binding) = 0;
 
         virtual uint32_t createFBO() = 0;
         virtual void bindFBO(uint32_t fboID) = 0;
@@ -57,6 +57,7 @@ namespace ZEN {
         virtual uint32_t getTexture(uint32_t textureID) = 0;
         virtual uint32_t createDepthStencilBuffer(int width, int height) = 0;
         virtual uint32_t createDepthBuffer(int width, int height) = 0;
+        virtual void updateDepthBufferDimensions(int width, int height) = 0;
         virtual void bindDepthBuffer(uint32_t bufferID) = 0;
         virtual void deleteDepthBuffer(uint32_t bufferID) = 0;
 
