@@ -40,14 +40,19 @@ namespace ZEN {
         virtual uint32_t createTexture(const std::string& texturePath) = 0;
         virtual uint32_t createHDRTexture(const std::string& texturePath) = 0;
         virtual uint32_t createTextureAssimp(const aiTexture& aiTex) = 0;
-        virtual void setFBOCubeMapTexture(uint32_t binding, uint32_t textureID) = 0;
+        virtual uint32_t createBRDFLUTTexture(uint32_t width, uint32_t height) = 0;
+        virtual void genMipMapCubeMap(uint32_t textureID) = 0;
+        virtual void setFBOCubeMapTexture(uint32_t binding, uint32_t textureID, unsigned int mip) = 0;
+        virtual void setFBOTexture2D(uint32_t binding, uint32_t textureID, unsigned int mip) = 0;
         virtual void bindTexture(uint32_t textureID, uint32_t binding) = 0;
         virtual void deleteTexture(uint32_t textureID) = 0;
 
         virtual void bindMaterial(const Material& material) = 0;
 
         virtual uint32_t createCubeMapTexture(const std::string& texturePath) = 0;
+        virtual uint32_t createCubeMapTextureHDRMip(uint32_t width, uint32_t height) = 0;
         virtual uint32_t createCubeMapTextureHDR(uint32_t width, uint32_t height) = 0;
+        virtual uint32_t createPrefilterMap(uint32_t width, uint32_t height) = 0;
         virtual void bindCubeMapTexture(uint32_t textureID, uint32_t binding) = 0;
 
         virtual uint32_t createFBO() = 0;
@@ -60,6 +65,8 @@ namespace ZEN {
         virtual void updateDepthBufferDimensions(int width, int height) = 0;
         virtual void bindDepthBuffer(uint32_t bufferID) = 0;
         virtual void deleteDepthBuffer(uint32_t bufferID) = 0;
+
+        virtual void pushFloat(uint32_t shaderID, const std::string& name, float value) = 0;
 
         std::string fullPath(const std::string& path) {
             return m_ResourceRoot + path;

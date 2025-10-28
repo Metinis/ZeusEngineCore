@@ -249,6 +249,7 @@ uint32_t ZEN::GLResourceManager::createTexture(const std::string& texturePath) {
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texWidth, texHeight, 0,
                  GL_RGBA, GL_UNSIGNED_BYTE, pixels);
     glGenerateMipmap(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, 0);
 
     stbi_image_free(pixels);
 
@@ -277,6 +278,7 @@ uint32_t ZEN::GLResourceManager::createHDRTexture(const std::string& texturePath
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, texWidth, texHeight, 0,
                  GL_RGB, GL_FLOAT, data);
     glGenerateMipmap(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, 0);
 
     stbi_image_free(data);
 
@@ -337,6 +339,31 @@ uint32_t ZEN::GLResourceManager::createTextureAssimp(const aiTexture& aiTex) {
     return nextTextureID++;
 }
 
+uint32_t ZEN::GLResourceManager::createBRDFLUTTexture(uint32_t width, uint32_t height) {
+
+    GLTexture texture{};
+    glGenTextures(1, &texture.textureID);
+    glBindTexture(GL_TEXTURE_2D, texture.textureID);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RG16F, width, height, 0, GL_RG, GL_FLOAT, 0);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    m_Textures[nextTextureID] = texture;
+
+    return nextTextureID++;
+}
+
+void ZEN::GLResourceManager::genMipMapCubeMap(uint32_t textureID) {
+    withResource(m_Textures, textureID, [](GLTexture &t) {
+        glBindTexture(GL_TEXTURE_CUBE_MAP, t.textureID);
+        glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+    });
+}
+
 void ZEN::GLResourceManager::bindTexture(uint32_t textureID, uint32_t binding) {
     withResource(m_Textures, textureID, [binding](GLTexture &t) {
         glActiveTexture(GL_TEXTURE0 + binding);
@@ -368,7 +395,13 @@ void ZEN::GLResourceManager::bindMaterial(const Material &material) {
         if (loc4 != -1) glUniform1i(loc4, 3);
 
         GLint loc5 = glGetUniformLocation(s.programID, "u_IrradianceMap");
-        if (loc5 != -1) glUniform1i(loc5, 5);
+        if (loc5 != -1) glUniform1i(loc5, 4);
+
+        GLint loc6 = glGetUniformLocation(s.programID, "u_PrefilterMap");
+        if (loc6 != -1) glUniform1i(loc6, 5);
+
+        GLint loc7 = glGetUniformLocation(s.programID, "u_BRDFLUT");
+        if (loc7 != -1) glUniform1i(loc7, 6);
     });
 
     // Now bind textures to their respective units
@@ -421,10 +454,29 @@ uint32_t ZEN::GLResourceManager::createCubeMapTexture(const std::string& texture
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-
-
-
+    glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
     //return the id in resources
+    return nextTextureID++;
+}
+uint32_t ZEN::GLResourceManager::createCubeMapTextureHDRMip(uint32_t width, uint32_t height) {
+    GLTexture texture{};
+    glGenTextures(1, &texture.textureID);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, texture.textureID);
+
+
+    for (unsigned int i = 0; i < cubeSides.size(); i++) {
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F,
+                width, height, 0, GL_RGB, GL_FLOAT, nullptr);
+
+    }
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+
+    m_Textures[nextTextureID] = texture;
     return nextTextureID++;
 }
 uint32_t ZEN::GLResourceManager::createCubeMapTextureHDR(uint32_t width, uint32_t height) {
@@ -439,21 +491,51 @@ uint32_t ZEN::GLResourceManager::createCubeMapTextureHDR(uint32_t width, uint32_
 
     }
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 
     m_Textures[nextTextureID] = texture;
     return nextTextureID++;
 }
 
-void ZEN::GLResourceManager::setFBOCubeMapTexture(uint32_t binding, uint32_t textureID) {
-    withResource(m_Textures, textureID, [binding](GLTexture &t) {
+uint32_t ZEN::GLResourceManager::createPrefilterMap(uint32_t width, uint32_t height) {
+    GLTexture texture{};
+    glGenTextures(1, &texture.textureID);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, texture.textureID);
+
+
+    for (unsigned int i = 0; i < cubeSides.size(); i++) {
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F,
+                width, height, 0, GL_RGB, GL_FLOAT, nullptr);
+
+    }
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+    glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+
+    m_Textures[nextTextureID] = texture;
+    return nextTextureID++;
+}
+
+void ZEN::GLResourceManager::setFBOCubeMapTexture(uint32_t binding, uint32_t textureID, unsigned int mip) {
+    withResource(m_Textures, textureID, [binding, mip](GLTexture &t) {
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-                           GL_TEXTURE_CUBE_MAP_POSITIVE_X + binding, t.textureID, 0);
+                           GL_TEXTURE_CUBE_MAP_POSITIVE_X + binding, t.textureID, mip);
     });
 
+}
+
+void ZEN::GLResourceManager::setFBOTexture2D(uint32_t binding, uint32_t textureID, unsigned int mip) {
+    withResource(m_Textures, textureID, [](GLTexture &t) {
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, t.textureID, 0);
+    });
 }
 
 
@@ -540,3 +622,12 @@ void ZEN::GLResourceManager::deleteDepthBuffer(uint32_t bufferID) {
     });
 
 }
+void ZEN::GLResourceManager::pushFloat(uint32_t shaderID, const std::string &name, float value) {
+    withResource(m_Shaders, shaderID, [&](GLShader& s) {
+        glUseProgram(s.programID);
+        GLint loc = glGetUniformLocation(s.programID, name.c_str());
+        if (loc != -1)
+            glUniform1f(loc, value);
+    });
+}
+

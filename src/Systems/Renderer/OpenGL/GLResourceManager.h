@@ -47,14 +47,19 @@ namespace ZEN {
         uint32_t createTexture(const std::string& texturePath) override;
         uint32_t createHDRTexture(const std::string& texturePath) override;
         uint32_t createTextureAssimp(const aiTexture& aiTex) override;
+        uint32_t createBRDFLUTTexture(uint32_t width, uint32_t height) override;
+        void genMipMapCubeMap(uint32_t textureID) override;
         void bindTexture(uint32_t textureID, uint32_t binding) override;
         void deleteTexture(uint32_t textureID) override;
 
         void bindMaterial(const Material& material) override;
 
         uint32_t createCubeMapTexture(const std::string& texturePath) override;
+        uint32_t createCubeMapTextureHDRMip(uint32_t width, uint32_t height) override;
         uint32_t createCubeMapTextureHDR(uint32_t width, uint32_t height) override;
-        void setFBOCubeMapTexture(uint32_t binding, uint32_t textureID) override;
+        uint32_t createPrefilterMap(uint32_t width, uint32_t height) override;
+        void setFBOCubeMapTexture(uint32_t binding, uint32_t textureID, unsigned int mip) override;
+        void setFBOTexture2D(uint32_t binding, uint32_t textureID, unsigned int mip) override;
         void bindCubeMapTexture(uint32_t textureID, uint32_t binding) override;
 
         uint32_t createFBO() override;
@@ -67,6 +72,9 @@ namespace ZEN {
         void updateDepthBufferDimensions(int width, int height) override;
         void bindDepthBuffer(uint32_t bufferID) override;
         void deleteDepthBuffer(uint32_t bufferID) override;
+
+        void pushFloat(uint32_t shaderID, const std::string& name, float value) override;
+
 
     private:
         std::unordered_map<uint32_t, GLShader> m_Shaders{};
@@ -87,5 +95,6 @@ namespace ZEN {
         std::unordered_map<uint32_t, GLDepthBuffer> m_DepthBuffers{};
         uint32_t nextDepthBufferID{1};
     };
+
 };
 

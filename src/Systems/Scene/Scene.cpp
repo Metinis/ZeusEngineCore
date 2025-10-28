@@ -34,8 +34,12 @@ void Scene::createDefaultScene(ZEngine* engine) {
                 "/shaders/glskyboxHDR.vert", "/shaders/glskyboxHDR.frag"),
         .conShaderID = engine->getRenderer().getResourceManager()->createShader("/shaders/irradiance-con.vert",
             "/shaders/irradiance-con.frag"),
-        .textureID = engine->getRenderer().getResourceManager()->createCubeMapTextureHDR(1024, 1024),
-        .covTextureID = engine->getRenderer().getResourceManager()->createCubeMapTextureHDR(32, 32)
+        .textureID = engine->getRenderer().getResourceManager()->createCubeMapTextureHDRMip(1024, 1024),
+        .covTextureID = engine->getRenderer().getResourceManager()->createCubeMapTextureHDR(32, 32),
+        .prefilterShaderID = engine->getRenderer().getResourceManager()->createShader(
+                "/shaders/prefilter.vert", "/shaders/prefilter.frag"),
+        .brdfConShaderID = engine->getRenderer().getResourceManager()->createShader(
+                "/shaders/brdf-con.vert", "/shaders/brdf-con.frag")
 
     };
     //engine->getRenderer().renderToCubeMapHDR(skyboxComp.textureID, engine->getModelLibrary().getMaterial("EqMap")->shaderID,

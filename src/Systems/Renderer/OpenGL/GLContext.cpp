@@ -17,6 +17,7 @@ GLContext::GLContext(GLFWwindow* window)
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
+    glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 }
 void GLContext::drawMesh(IResourceManager& resourceManager, const MeshDrawableComp& drawable) {
     //retrieve GLDrawable by meshID from resource manager

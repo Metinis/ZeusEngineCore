@@ -14,10 +14,15 @@ m_Renderer(renderer), m_Scene(scene), m_Library(library), m_Dispatcher(dispatche
     m_Dispatcher->attach<RemoveMeshEvent, RenderSystem, &RenderSystem::onMeshRemove>(this);
     m_Dispatcher->attach<RemoveMeshCompEvent, RenderSystem, &RenderSystem::onMeshCompRemove>(this);
     m_Dispatcher->attach<RemoveMeshDrawableEvent, RenderSystem, &RenderSystem::onMeshDrawableRemove>(this);
-    Mesh* mesh = m_Library->getMesh("Cube");
+    Mesh* cubeMesh = m_Library->getMesh("Cube");
     m_CubeDrawable.name = "Cube";
-    m_CubeDrawable.indexCount = mesh->indices.size();
-    m_CubeDrawable.meshID = m_Renderer->m_ResourceManager->createMeshDrawable(*mesh);
+    m_CubeDrawable.indexCount = cubeMesh->indices.size();
+    m_CubeDrawable.meshID = m_Renderer->m_ResourceManager->createMeshDrawable(*cubeMesh);
+
+    Mesh* quadMesh = m_Library->getMesh("Quad");
+    m_QuadDrawable.name = "Quad";
+    m_QuadDrawable.indexCount = quadMesh->indices.size();
+    m_QuadDrawable.meshID = m_Renderer->m_ResourceManager->createMeshDrawable(*quadMesh);
 
 }
 void RenderSystem::updateWorldTransforms() {
@@ -146,7 +151,9 @@ void RenderSystem::renderDrawables() {
 
         //bind material texture
         m_Renderer->m_ResourceManager->bindMaterial(*material);
-        m_Renderer->m_ResourceManager->bindCubeMapTexture(m_IrradianceMapID, 5);
+        m_Renderer->m_ResourceManager->bindCubeMapTexture(m_IrradianceMapID, 4);
+        m_Renderer->m_ResourceManager->bindCubeMapTexture(m_PrefilterMapID, 5);
+        m_Renderer->m_ResourceManager->bindTexture(m_BRDFLUTID, 6);
         //write to instance ubo (todo check if last mesh is same for instancing)
         auto transform = entity.getComponent<TransformComp>();
         auto const bytes = std::bit_cast<std::array<std::byte,
@@ -175,6 +182,15 @@ void RenderSystem::renderSkybox(const glm::mat4& view, const glm::mat4& projecti
             //generate irradiance map
             m_Renderer->renderToIrradianceMap(skyboxComp.textureID, skyboxComp.covTextureID,skyboxComp.conShaderID, m_CubeDrawable);
             m_IrradianceMapID = skyboxComp.covTextureID;
+
+            m_Renderer->renderToPrefilterMap(skyboxComp.textureID,
+                m_Library->getTexture("PrefilterMap"), skyboxComp.prefilterShaderID, m_CubeDrawable);
+            m_PrefilterMapID = m_Library->getTexture("PrefilterMap");
+
+            m_Renderer->renderToBRDFLUT(m_Library->getTexture("brdfLUT"),
+                m_Library->getMaterial("brdfLUT")->shaderID, m_QuadDrawable);
+            m_BRDFLUTID = m_Library->getTexture("brdfLUT");
+
             skyboxComp.envGenerated = true;
         }
 
@@ -191,6 +207,8 @@ void RenderSystem::renderSkybox(const glm::mat4& view, const glm::mat4& projecti
 
         //bind cubemap texture
         m_Renderer->m_ResourceManager->bindCubeMapTexture(skyboxComp.textureID, 0);
+        //m_Renderer->m_ResourceManager->bindCubeMapTexture(skyboxComp.covTextureID, 0);
+        //m_Renderer->m_ResourceManager->bindCubeMapTexture(m_IrradianceMapID, 0);
 
 
         m_Renderer->m_Context->drawMesh(*m_Renderer->m_ResourceManager, drawable);

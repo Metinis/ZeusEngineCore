@@ -14,6 +14,7 @@ ModelLibrary::ModelLibrary(EventDispatcher* dispatcher, IResourceManager* resour
     m_Materials["Default"] = createDefaultMaterial("/shaders/glbasic4.1.vert", "/shaders/glbasic4.1.frag");
     m_Meshes["Cube"]  = createCube();
     m_Meshes["Skybox"] = createSkybox();
+    m_Meshes["Quad"] = createQuad();
     m_Meshes["Sphere"] = createSphere(1.0f, 32, 16);
 
     m_Textures["Wall"] = m_ResourceManager->createTexture("/textures/wall.jpg");
@@ -27,6 +28,10 @@ ModelLibrary::ModelLibrary(EventDispatcher* dispatcher, IResourceManager* resour
 
     //load env map
     m_Textures["EqMap"] = m_ResourceManager->createHDRTexture("/env-maps/HDR_111_Parking_Lot_2_Ref.hdr");
+
+    m_Textures["PrefilterMap"] = m_ResourceManager->createPrefilterMap(128, 128);
+
+    m_Textures["brdfLUT"] = m_ResourceManager->createBRDFLUTTexture(1024, 1024);
 
     uint32_t defaultShaderID = m_Materials["Default"]->shaderID;
     Material wallMaterial{
@@ -60,6 +65,20 @@ ModelLibrary::ModelLibrary(EventDispatcher* dispatcher, IResourceManager* resour
 
     };
     m_Materials["EqMap"] = std::make_unique<Material>(eqMap);
+
+    Material prefilterMap{
+        .shaderID = m_ResourceManager->createShader("/shaders/prefilter.vert", "/shaders/prefilter.frag"),
+        .textureID = m_Textures["PrefilterMap"],
+
+    };
+    m_Materials["PrefilterMap"] = std::make_unique<Material>(prefilterMap);
+
+    Material brdfLUT{
+        .shaderID = m_ResourceManager->createShader("/shaders/brdf-con.vert", "/shaders/brdf-con.frag"),
+        .textureID = m_Textures["brdfLUT"],
+
+    };
+    m_Materials["brdfLUT"] = std::make_unique<Material>(brdfLUT);
 }
 
 void ModelLibrary::removeMesh(const std::string &name) {
@@ -185,6 +204,24 @@ std::unique_ptr<Mesh> ModelLibrary::createCube() {
         16,18,17, 19,18,16, // Top
         20,22,21, 23,22,20  // Bottom
     };
+    return std::make_unique<Mesh>(mesh);
+}
+
+std::unique_ptr<Mesh> ModelLibrary::createQuad() {
+    Mesh mesh;
+
+    mesh.vertices = {
+        {{-1.0f, -1.0f, 0.0f}, {0, 0, 1}, {0.0f, 0.0f}}, // Bottom-left
+        {{ 1.0f, -1.0f, 0.0f}, {0, 0, 1}, {1.0f, 0.0f}}, // Bottom-right
+        {{ 1.0f,  1.0f, 0.0f}, {0, 0, 1}, {1.0f, 1.0f}}, // Top-right
+        {{-1.0f,  1.0f, 0.0f}, {0, 0, 1}, {0.0f, 1.0f}}  // Top-left
+    };
+
+    mesh.indices = {
+        0, 1, 2,
+        2, 3, 0
+    };
+
     return std::make_unique<Mesh>(mesh);
 }
 
