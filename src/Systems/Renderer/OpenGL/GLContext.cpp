@@ -17,6 +17,7 @@ GLContext::GLContext(GLFWwindow* window)
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
+    glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 }
 void GLContext::drawMesh(IResourceManager& resourceManager, const MeshDrawableComp& drawable) {
     //retrieve GLDrawable by meshID from resource manager
@@ -43,6 +44,14 @@ void GLContext::depthMask(bool val) {
 
 }
 
+void GLContext::enableCullFace() {
+    glEnable(GL_CULL_FACE);
+}
+
+void GLContext::disableCullFace() {
+    glDisable(GL_CULL_FACE);
+}
+
 void GLContext::setDepthMode(eDepthModes depthMode) {
     switch (depthMode) {
         case LEQUAL:
@@ -55,6 +64,10 @@ void GLContext::setDepthMode(eDepthModes depthMode) {
             return;
     }
 }
+void GLContext::setViewport(uint32_t width, uint32_t height) {
+    glViewport(0, 0, width, height);
+}
+
 
 
 void GLContext::swapBuffers() {

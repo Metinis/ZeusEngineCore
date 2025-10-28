@@ -11,19 +11,27 @@ using namespace ZEN;
 ModelLibrary::ModelLibrary(EventDispatcher* dispatcher, IResourceManager* resourceManager,
     const std::string& resourceRoot)
 : m_Dispatcher(dispatcher), m_ResourceManager(resourceManager) {
-    m_Materials["Default"] = createDefaultMaterial(resourceRoot, "/shaders/glbasic4.1.vert", "/shaders/glbasic4.1.frag");
+    m_Materials["Default"] = createDefaultMaterial("/shaders/glbasic4.1.vert", "/shaders/glbasic4.1.frag");
     m_Meshes["Cube"]  = createCube();
     m_Meshes["Skybox"] = createSkybox();
+    m_Meshes["Quad"] = createQuad();
     m_Meshes["Sphere"] = createSphere(1.0f, 32, 16);
 
-    m_Textures["Wall"] = m_ResourceManager->createTexture(resourceRoot + "/textures/wall.jpg");
-    m_Textures["Container"] = m_ResourceManager->createTexture(resourceRoot + "/textures/container2.png");
-    m_Textures["ContainerSpec"] = m_ResourceManager->createTexture(resourceRoot + "/textures/container2_specular.png");
+    m_Textures["Wall"] = m_ResourceManager->createTexture("/textures/wall.jpg");
+    m_Textures["Container"] = m_ResourceManager->createTexture("/textures/container2.png");
+    m_Textures["ContainerSpec"] = m_ResourceManager->createTexture("/textures/container2_specular.png");
 
-    m_Textures["RustedIron_Albedo"] = m_ResourceManager->createTexture(resourceRoot + "/textures/rusted_iron/rustediron2_basecolor.png");
-    m_Textures["RustedIron_Metallic"] = m_ResourceManager->createTexture(resourceRoot + "/textures/rusted_iron/rustediron2_metallic.png");
-    m_Textures["RustedIron_Normal"] = m_ResourceManager->createTexture(resourceRoot + "/textures/rusted_iron/rustediron2_normal.png");
-    m_Textures["RustedIron_Roughness"] = m_ResourceManager->createTexture(resourceRoot + "/textures/rusted_iron/rustediron2_roughness.png");
+    m_Textures["RustedIron_Albedo"] = m_ResourceManager->createTexture("/textures/rusted_iron/rustediron2_basecolor.png");
+    m_Textures["RustedIron_Metallic"] = m_ResourceManager->createTexture("/textures/rusted_iron/rustediron2_metallic.png");
+    m_Textures["RustedIron_Normal"] = m_ResourceManager->createTexture("/textures/rusted_iron/rustediron2_normal.png");
+    m_Textures["RustedIron_Roughness"] = m_ResourceManager->createTexture("/textures/rusted_iron/rustediron2_roughness.png");
+
+    //load env map
+    m_Textures["EqMap"] = m_ResourceManager->createHDRTexture("/env-maps/HDR_111_Parking_Lot_2_Ref.hdr");
+
+    m_Textures["PrefilterMap"] = m_ResourceManager->createPrefilterMap(128, 128);
+
+    m_Textures["brdfLUT"] = m_ResourceManager->createBRDFLUTTexture(1024, 1024);
 
     uint32_t defaultShaderID = m_Materials["Default"]->shaderID;
     Material wallMaterial{
@@ -50,6 +58,27 @@ ModelLibrary::ModelLibrary(EventDispatcher* dispatcher, IResourceManager* resour
     };
 
     m_Materials["RustedMaterial"] = std::make_unique<Material>(rustedMaterial);
+
+    Material eqMap{
+        .shaderID = m_ResourceManager->createShader("/shaders/eq-to-cubemap.vert", "/shaders/eq-to-cubemap.frag"),
+        .textureID = m_Textures["EqMap"],
+
+    };
+    m_Materials["EqMap"] = std::make_unique<Material>(eqMap);
+
+    Material prefilterMap{
+        .shaderID = m_ResourceManager->createShader("/shaders/prefilter.vert", "/shaders/prefilter.frag"),
+        .textureID = m_Textures["PrefilterMap"],
+
+    };
+    m_Materials["PrefilterMap"] = std::make_unique<Material>(prefilterMap);
+
+    Material brdfLUT{
+        .shaderID = m_ResourceManager->createShader("/shaders/brdf-con.vert", "/shaders/brdf-con.frag"),
+        .textureID = m_Textures["brdfLUT"],
+
+    };
+    m_Materials["brdfLUT"] = std::make_unique<Material>(brdfLUT);
 }
 
 void ModelLibrary::removeMesh(const std::string &name) {
@@ -178,6 +207,24 @@ std::unique_ptr<Mesh> ModelLibrary::createCube() {
     return std::make_unique<Mesh>(mesh);
 }
 
+std::unique_ptr<Mesh> ModelLibrary::createQuad() {
+    Mesh mesh;
+
+    mesh.vertices = {
+        {{-1.0f, -1.0f, 0.0f}, {0, 0, 1}, {0.0f, 0.0f}}, // Bottom-left
+        {{ 1.0f, -1.0f, 0.0f}, {0, 0, 1}, {1.0f, 0.0f}}, // Bottom-right
+        {{ 1.0f,  1.0f, 0.0f}, {0, 0, 1}, {1.0f, 1.0f}}, // Top-right
+        {{-1.0f,  1.0f, 0.0f}, {0, 0, 1}, {0.0f, 1.0f}}  // Top-left
+    };
+
+    mesh.indices = {
+        0, 1, 2,
+        2, 3, 0
+    };
+
+    return std::make_unique<Mesh>(mesh);
+}
+
 
 std::unique_ptr<Mesh> ModelLibrary::createSkybox() {
     Mesh skyboxMesh{};
@@ -202,10 +249,9 @@ std::unique_ptr<Mesh> ModelLibrary::createSkybox() {
     return std::make_unique<Mesh>(skyboxMesh);
 }
 
-std::unique_ptr<Material> ModelLibrary::createDefaultMaterial(const std::string& resourceRoot, const std::string& vertPath,
+std::unique_ptr<Material> ModelLibrary::createDefaultMaterial(const std::string& vertPath,
             const std::string& fragPath) {
-    uint32_t defaultShaderID = m_ResourceManager->createShader(std::string(resourceRoot) + vertPath,
-        resourceRoot + fragPath);
+    uint32_t defaultShaderID = m_ResourceManager->createShader(vertPath, fragPath);
     Material defaultMat {.shaderID = defaultShaderID, .textureID = 0};
     return std::make_unique<Material>(defaultMat);
 }

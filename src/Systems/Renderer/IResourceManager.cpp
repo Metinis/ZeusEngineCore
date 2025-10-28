@@ -2,10 +2,10 @@
 #include "OpenGL/GLResourceManager.h"
 
 using namespace ZEN;
-std::unique_ptr<IResourceManager> IResourceManager::create(eRendererAPI api) {
+std::unique_ptr<IResourceManager> IResourceManager::create(eRendererAPI api, const std::string& resourceRoot) {
     switch (api) {
         case OpenGL:
-            return std::make_unique<GLResourceManager>();
+            return std::make_unique<GLResourceManager>(resourceRoot);
 
         case Vulkan:
             return nullptr;

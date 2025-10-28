@@ -24,17 +24,26 @@ void Scene::onMeshDrawableRemove(entt::registry& registry, entt::entity entity) 
     m_Dispatcher->trigger<RemoveMeshDrawableEvent>(RemoveMeshDrawableEvent{Entity(&m_Registry, entity)});
 }
 
-void Scene::createDefaultScene(const std::string& resourceRoot, ZEngine* engine) {
+void Scene::createDefaultScene(ZEngine* engine) {
     auto cameraEntity = createEntity("Scene Camera");
     cameraEntity.addComponent<CameraComp>();
 
     auto skyboxEntity = createEntity("Skybox");
     SkyboxComp skyboxComp{
         .shaderID = engine->getRenderer().getResourceManager()->createShader(
-                resourceRoot + "/shaders/glskybox.vert", resourceRoot + "/shaders/glskybox.frag"),
-        .textureID = engine->getRenderer().getResourceManager()->createCubeMapTexture(resourceRoot + "/textures/skybox/"),
+                "/shaders/glskyboxHDR.vert", "/shaders/glskyboxHDR.frag"),
+        .conShaderID = engine->getRenderer().getResourceManager()->createShader("/shaders/irradiance-con.vert",
+            "/shaders/irradiance-con.frag"),
+        .textureID = engine->getRenderer().getResourceManager()->createCubeMapTextureHDRMip(1024, 1024),
+        .covTextureID = engine->getRenderer().getResourceManager()->createCubeMapTextureHDR(32, 32),
+        .prefilterShaderID = engine->getRenderer().getResourceManager()->createShader(
+                "/shaders/prefilter.vert", "/shaders/prefilter.frag"),
+        .brdfConShaderID = engine->getRenderer().getResourceManager()->createShader(
+                "/shaders/brdf-con.vert", "/shaders/brdf-con.frag")
 
     };
+    //engine->getRenderer().renderToCubeMapHDR(skyboxComp.textureID, engine->getModelLibrary().getMaterial("EqMap")->shaderID,
+    //    engine->getModelLibrary().getMaterial("EqMap")->textureID, engine->getModelLibrary().get)
 
     skyboxEntity.addComponent<SkyboxComp>(skyboxComp);
     skyboxEntity.addComponent<MeshComp>(MeshComp{.name = "Skybox"});
