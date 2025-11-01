@@ -14,6 +14,15 @@ m_Renderer(renderer), m_Scene(scene), m_Library(library), m_Dispatcher(dispatche
     m_Dispatcher->attach<RemoveMeshEvent, RenderSystem, &RenderSystem::onMeshRemove>(this);
     m_Dispatcher->attach<RemoveMeshCompEvent, RenderSystem, &RenderSystem::onMeshCompRemove>(this);
     m_Dispatcher->attach<RemoveMeshDrawableEvent, RenderSystem, &RenderSystem::onMeshDrawableRemove>(this);
+    Mesh* cubeMesh = m_Library->getMesh("Cube");
+    m_CubeDrawable.name = "Cube";
+    m_CubeDrawable.indexCount = cubeMesh->indices.size();
+    m_CubeDrawable.meshID = m_Renderer->m_ResourceManager->createMeshDrawable(*cubeMesh);
+
+    Mesh* quadMesh = m_Library->getMesh("Quad");
+    m_QuadDrawable.name = "Quad";
+    m_QuadDrawable.indexCount = quadMesh->indices.size();
+    m_QuadDrawable.meshID = m_Renderer->m_ResourceManager->createMeshDrawable(*quadMesh);
 
 }
 void RenderSystem::updateWorldTransforms() {
@@ -110,16 +119,10 @@ void RenderSystem::renderDrawables() {
     //todo sort by material
     auto viewDraw = m_Scene->getEntities<MeshDrawableComp, MaterialComp, TransformComp>();
     for(auto entity : viewDraw) {
-        //bind shader
+
         auto& materialComp = entity.getComponent<MaterialComp>();
         auto material = m_Library->getMaterial(materialComp.name);
-        m_Renderer->m_ResourceManager->bindShader(material->shaderID);
-
-        //write to material ubo
-        /*MaterialUBO materialUBO {
-            .albedo = glm::vec4(0.5f, 0.0f, 0.0f, 1.0f),
-            .params = glm::vec4(0.5f, 0.5f, 1.0f, 1.0f)
-        };*/
+        //m_Renderer->m_ResourceManager->bindShader(material->shaderID);
 
         //convert to UBO format
         glm::vec4 alb;
@@ -142,6 +145,9 @@ void RenderSystem::renderDrawables() {
 
         //bind material texture
         m_Renderer->m_ResourceManager->bindMaterial(*material);
+        m_Renderer->m_ResourceManager->bindCubeMapTexture(m_IrradianceMapID, 4);
+        m_Renderer->m_ResourceManager->bindCubeMapTexture(m_PrefilterMapID, 5);
+        m_Renderer->m_ResourceManager->bindTexture(m_BRDFLUTID, 6);
         //write to instance ubo (todo check if last mesh is same for instancing)
         auto transform = entity.getComponent<TransformComp>();
         auto const bytes = std::bit_cast<std::array<std::byte,
@@ -156,22 +162,51 @@ void RenderSystem::renderDrawables() {
 }
 
 void RenderSystem::renderSkybox(const glm::mat4& view, const glm::mat4& projection) {
+
     auto skyboxView = m_Scene->getEntities<SkyboxComp, MeshDrawableComp>();
     for (auto entity: skyboxView) {
+        auto& drawable = entity.getComponent<MeshDrawableComp>();
+        auto& skyboxComp = entity.getComponent<SkyboxComp>();
+
+        auto skyboxMat = m_Library->getMaterial(skyboxComp.skyboxMat.name);
+        auto eqMat = m_Library->getMaterial(skyboxComp.eqMat.name);
+        auto conMat = m_Library->getMaterial(skyboxComp.conMat.name);
+        auto prefilterMat = m_Library->getMaterial(skyboxComp.prefilterMat.name);
+        auto brdfLUTMat = m_Library->getMaterial(skyboxComp.brdfLUTMat.name);
+
+
+        if(!skyboxComp.envGenerated) {
+            m_Renderer->m_ResourceManager->bindCubeMapTexture(skyboxMat->textureID, 0);
+            m_Renderer->renderToCubeMapHDR(skyboxMat->textureID, eqMat->shaderID, eqMat->textureID, m_CubeDrawable);
+
+            m_Renderer->renderToIrradianceMap(skyboxMat->textureID, conMat->textureID,
+                conMat->shaderID, m_CubeDrawable);
+
+            m_IrradianceMapID = conMat->textureID;
+
+            m_Renderer->renderToPrefilterMap(skyboxMat->textureID, prefilterMat->textureID,
+                prefilterMat->shaderID, m_CubeDrawable);
+
+            m_PrefilterMapID = prefilterMat->textureID;
+
+            m_Renderer->renderToBRDFLUT(brdfLUTMat->textureID, brdfLUTMat->shaderID, m_QuadDrawable);
+            m_BRDFLUTID = brdfLUTMat->textureID;
+
+            skyboxComp.envGenerated = true;
+        }
+
+
         m_Renderer->m_Context->depthMask(false);
         m_Renderer->m_Context->setDepthMode(LEQUAL);
         glm::mat4 viewCube = glm::mat4(glm::mat3(view));
         glm::mat4 vp = projection * viewCube;
         auto const bytes = std::bit_cast<std::array<std::byte, sizeof(vp)>>(vp);
         m_Renderer->m_ResourceManager->writeToUBO(m_Renderer->m_ViewUBO.uboID, bytes);
-        //bind shader
-        auto& skyboxComp = entity.getComponent<SkyboxComp>();
-        m_Renderer->m_ResourceManager->bindShader(skyboxComp.shaderID);
 
-        //bind cubemap texture
-        m_Renderer->m_ResourceManager->bindCubeMapTexture(skyboxComp.textureID);
 
-        auto& drawable = entity.getComponent<MeshDrawableComp>();
+        m_Renderer->m_ResourceManager->bindShader(skyboxMat->shaderID);
+        m_Renderer->m_ResourceManager->bindCubeMapTexture(skyboxMat->textureID, 0);
+
         m_Renderer->m_Context->drawMesh(*m_Renderer->m_ResourceManager, drawable);
 
         m_Renderer->m_Context->depthMask(true);
@@ -200,8 +235,10 @@ void RenderSystem::onRender() {
     bindSceneUBOs();
 
     //render all meshes with drawable comps
+
     renderDrawables();
 
     //draw skybox
     renderSkybox(view, projection);
+
 }

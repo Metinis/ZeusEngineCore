@@ -68,9 +68,9 @@ namespace ZEN {
         std::unordered_map<std::string, uint32_t> m_Textures; //texture IDs from resource manager
         // Internal generators
         std::unique_ptr<Mesh> createCube();
+        std::unique_ptr<Mesh> createQuad();
         std::unique_ptr<Mesh> createSkybox();
-        std::unique_ptr<Material> createDefaultMaterial(const std::string& resourceRoot, const std::string& vertPath,
-            const std::string& fragPath);
+        std::unique_ptr<Material> createDefaultMaterial(const std::string& vertPath, const std::string& fragPath);
         //static std::shared_ptr<MeshComp> createPlane();
         std::unique_ptr<Mesh> createSphere(float radius, unsigned int sectorCount, unsigned int stackCount);
         EventDispatcher* m_Dispatcher{};

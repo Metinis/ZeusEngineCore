@@ -23,15 +23,22 @@ namespace ZEN {
 	struct Texture {
 		uint32_t textureID; //id inside resource manager
 	};
+	struct RBO {
+		uint32_t rboID;
+	};
 	struct FBO {
 		uint32_t fboID;
 	};
 
 	class Renderer {
 	public:
-		explicit Renderer(eRendererAPI api, GLFWwindow* window, EventDispatcher& dispatcher);
+		explicit Renderer(eRendererAPI api, const std::string& resourceRoot, GLFWwindow* window, EventDispatcher& dispatcher);
 		void beginFrame();
 		void bindDefaultFBO();
+		void renderToCubeMapHDR(uint32_t cubemapTexID, uint32_t eqToCubeMapShader, uint32_t hdrTexID, const MeshDrawableComp& drawable);
+		void renderToIrradianceMap(uint32_t cubemapTexID, uint32_t irradianceTexID, uint32_t irradianceShader,const MeshDrawableComp &drawable);
+		void renderToPrefilterMap(uint32_t cubemapTexID, uint32_t prefilterTexID, uint32_t prefilterShader,const MeshDrawableComp &drawable);
+		void renderToBRDFLUT(uint32_t brdfTexID, uint32_t brdfShader, const MeshDrawableComp& drawable);
 		void endFrame();
 		void onResize(WindowResizeEvent& e);
 		Texture& getColorTexture() {return m_ColorTex;}
@@ -39,6 +46,7 @@ namespace ZEN {
 		IResourceManager* getResourceManager() {return m_ResourceManager.get();}
 	private:
 		friend class RenderSystem;
+		GLFWwindow* m_Window{};
 		std::unique_ptr<IContext> m_Context{};
 		std::unique_ptr<IResourceManager> m_ResourceManager{};
 		UniformComp m_ViewUBO{};
@@ -48,8 +56,13 @@ namespace ZEN {
 		MaterialComp m_DefaultShader{};
 
 		FBO m_MainFBO{};
+
+		FBO m_CaptureFBO{};
+		RBO m_CaptureRBO{};
+		MeshDrawableComp m_CubeDrawable{};
+
 		Texture m_ColorTex{};
-		Texture m_DepthTex{};
+		RBO m_DepthRBO{};
 
 		bool m_Resized{};
 		float m_Width{};

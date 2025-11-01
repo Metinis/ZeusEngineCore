@@ -24,16 +24,17 @@ void Scene::onMeshDrawableRemove(entt::registry& registry, entt::entity entity) 
     m_Dispatcher->trigger<RemoveMeshDrawableEvent>(RemoveMeshDrawableEvent{Entity(&m_Registry, entity)});
 }
 
-void Scene::createDefaultScene(const std::string& resourceRoot, ZEngine* engine) {
+void Scene::createDefaultScene(ZEngine* engine) {
     auto cameraEntity = createEntity("Scene Camera");
     cameraEntity.addComponent<CameraComp>();
 
     auto skyboxEntity = createEntity("Skybox");
-    SkyboxComp skyboxComp{
-        .shaderID = engine->getRenderer().getResourceManager()->createShader(
-                resourceRoot + "/shaders/glskybox.vert", resourceRoot + "/shaders/glskybox.frag"),
-        .textureID = engine->getRenderer().getResourceManager()->createCubeMapTexture(resourceRoot + "/textures/skybox/"),
-
+    SkyboxComp skyboxComp {
+        .skyboxMat.name = "Skybox",
+        .eqMat.name = "EqMap",
+        .conMat.name = "ConMap",
+        .prefilterMat.name = "PrefilterMap",
+        .brdfLUTMat.name = "brdfLUT"
     };
 
     skyboxEntity.addComponent<SkyboxComp>(skyboxComp);
