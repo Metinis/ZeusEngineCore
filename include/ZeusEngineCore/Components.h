@@ -23,12 +23,11 @@ namespace ZEN {
         std::string name{};
     };
     struct SkyboxComp {
-        uint32_t shaderID{};
-        uint32_t conShaderID{}; //convoluted shader id
-        uint32_t prefilterShaderID{};
-        uint32_t brdfConShaderID{};
-        uint32_t textureID{};
-        uint32_t covTextureID{}; //convoluted
+        MaterialComp skyboxMat{};
+        MaterialComp eqMat{};
+        MaterialComp conMat{};
+        MaterialComp prefilterMat{};
+        MaterialComp brdfLUTMat{};
         bool envGenerated{};
     };
     struct UniformComp {

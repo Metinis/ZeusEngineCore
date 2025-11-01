@@ -17,17 +17,26 @@ ModelLibrary::ModelLibrary(EventDispatcher* dispatcher, IResourceManager* resour
     m_Meshes["Quad"] = createQuad();
     m_Meshes["Sphere"] = createSphere(1.0f, 32, 16);
 
-    m_Textures["Wall"] = m_ResourceManager->createTexture("/textures/wall.jpg");
-    m_Textures["Container"] = m_ResourceManager->createTexture("/textures/container2.png");
-    m_Textures["ContainerSpec"] = m_ResourceManager->createTexture("/textures/container2_specular.png");
+    m_Textures["Wall"] = m_ResourceManager->createTexture("/textures/wall.jpg", false);
+    m_Textures["Container"] = m_ResourceManager->createTexture("/textures/container2.png", false);
+    m_Textures["ContainerSpec"] = m_ResourceManager->createTexture("/textures/container2_specular.png", false);
 
-    m_Textures["RustedIron_Albedo"] = m_ResourceManager->createTexture("/textures/rusted_iron/rustediron2_basecolor.png");
-    m_Textures["RustedIron_Metallic"] = m_ResourceManager->createTexture("/textures/rusted_iron/rustediron2_metallic.png");
-    m_Textures["RustedIron_Normal"] = m_ResourceManager->createTexture("/textures/rusted_iron/rustediron2_normal.png");
-    m_Textures["RustedIron_Roughness"] = m_ResourceManager->createTexture("/textures/rusted_iron/rustediron2_roughness.png");
+    m_Textures["RustedIron_Albedo"] = m_ResourceManager->createTexture("/textures/rusted_iron/rustediron2_basecolor.png", false);
+    m_Textures["RustedIron_Metallic"] = m_ResourceManager->createTexture("/textures/rusted_iron/rustediron2_metallic.png", false);
+    m_Textures["RustedIron_Normal"] = m_ResourceManager->createTexture("/textures/rusted_iron/rustediron2_normal.png", false);
+    m_Textures["RustedIron_Roughness"] = m_ResourceManager->createTexture("/textures/rusted_iron/rustediron2_roughness.png", false);
+
+    m_Textures["DarkWood_Albedo"] = m_ResourceManager->createTexture("/textures/dark-wood-stain-ue/dark-wood-stain_albedo.png", false);
+    m_Textures["DarkWood_Metallic"] = m_ResourceManager->createTexture("/textures/dark-wood-stain-ue/dark-wood-stain_metallic.png", false);
+    m_Textures["DarkWood_Normal"] = m_ResourceManager->createTexture("/textures/dark-wood-stain-ue/dark-wood-stain_normal-dx.png", false);
+    m_Textures["DarkWood_Roughness"] = m_ResourceManager->createTexture("/textures/dark-wood-stain-ue/dark-wood-stain_roughness.png", false);
 
     //load env map
-    m_Textures["EqMap"] = m_ResourceManager->createHDRTexture("/env-maps/HDR_111_Parking_Lot_2_Ref.hdr");
+    m_Textures["Skybox"] = m_ResourceManager->createCubeMapTextureHDRMip(1024, 1024);
+
+    m_Textures["EqMap"] = m_ResourceManager->createHDRTexture("/env-maps/christmas_photo_studio_04_4k.hdr");
+
+    m_Textures["ConMap"] = m_ResourceManager->createCubeMapTextureHDR(32, 32);
 
     m_Textures["PrefilterMap"] = m_ResourceManager->createPrefilterMap(128, 128);
 
@@ -59,12 +68,35 @@ ModelLibrary::ModelLibrary(EventDispatcher* dispatcher, IResourceManager* resour
 
     m_Materials["RustedMaterial"] = std::make_unique<Material>(rustedMaterial);
 
+    Material darkwoodMaterial{
+        .shaderID = defaultShaderID,
+        .textureID = m_Textures["DarkWood_Albedo"],
+        .metallicTexID = m_Textures["DarkWood_Metallic"],
+        .normalTexID = m_Textures["DarkWood_Normal"],
+        .roughnessTexID = m_Textures["DarkWood_Roughness"],
+
+    };
+
+    m_Materials["DarkWoodMaterial"] = std::make_unique<Material>(darkwoodMaterial);
+
+    Material skyboxMat {
+        .shaderID = m_ResourceManager->createShader("/shaders/glskyboxHDR.vert", "/shaders/glskyboxHDR.frag"),
+        .textureID = m_Textures["Skybox"],
+    };
+    m_Materials["Skybox"] = std::make_unique<Material>(skyboxMat);
+
     Material eqMap{
         .shaderID = m_ResourceManager->createShader("/shaders/eq-to-cubemap.vert", "/shaders/eq-to-cubemap.frag"),
         .textureID = m_Textures["EqMap"],
 
     };
     m_Materials["EqMap"] = std::make_unique<Material>(eqMap);
+
+    Material conMap {
+        .shaderID = m_ResourceManager->createShader("/shaders/irradiance-con.vert", "/shaders/irradiance-con.frag"),
+        .textureID = m_Textures["ConMap"],
+    };
+    m_Materials["ConMap"] = std::make_unique<Material>(conMap);
 
     Material prefilterMap{
         .shaderID = m_ResourceManager->createShader("/shaders/prefilter.vert", "/shaders/prefilter.frag"),

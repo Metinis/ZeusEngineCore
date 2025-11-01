@@ -119,16 +119,10 @@ void RenderSystem::renderDrawables() {
     //todo sort by material
     auto viewDraw = m_Scene->getEntities<MeshDrawableComp, MaterialComp, TransformComp>();
     for(auto entity : viewDraw) {
-        //bind shader
+
         auto& materialComp = entity.getComponent<MaterialComp>();
         auto material = m_Library->getMaterial(materialComp.name);
-        m_Renderer->m_ResourceManager->bindShader(material->shaderID);
-
-        //write to material ubo
-        /*MaterialUBO materialUBO {
-            .albedo = glm::vec4(0.5f, 0.0f, 0.0f, 1.0f),
-            .params = glm::vec4(0.5f, 0.5f, 1.0f, 1.0f)
-        };*/
+        //m_Renderer->m_ResourceManager->bindShader(material->shaderID);
 
         //convert to UBO format
         glm::vec4 alb;
@@ -171,25 +165,32 @@ void RenderSystem::renderSkybox(const glm::mat4& view, const glm::mat4& projecti
 
     auto skyboxView = m_Scene->getEntities<SkyboxComp, MeshDrawableComp>();
     for (auto entity: skyboxView) {
-        auto& skyboxComp = entity.getComponent<SkyboxComp>();
         auto& drawable = entity.getComponent<MeshDrawableComp>();
+        auto& skyboxComp = entity.getComponent<SkyboxComp>();
+
+        auto skyboxMat = m_Library->getMaterial(skyboxComp.skyboxMat.name);
+        auto eqMat = m_Library->getMaterial(skyboxComp.eqMat.name);
+        auto conMat = m_Library->getMaterial(skyboxComp.conMat.name);
+        auto prefilterMat = m_Library->getMaterial(skyboxComp.prefilterMat.name);
+        auto brdfLUTMat = m_Library->getMaterial(skyboxComp.brdfLUTMat.name);
+
 
         if(!skyboxComp.envGenerated) {
-            m_Renderer->m_ResourceManager->bindCubeMapTexture(skyboxComp.textureID, 0);
-            m_Renderer->renderToCubeMapHDR(skyboxComp.textureID, m_Library->getMaterial("EqMap")->shaderID,
-            m_Library->getMaterial("EqMap")->textureID, m_CubeDrawable);
+            m_Renderer->m_ResourceManager->bindCubeMapTexture(skyboxMat->textureID, 0);
+            m_Renderer->renderToCubeMapHDR(skyboxMat->textureID, eqMat->shaderID, eqMat->textureID, m_CubeDrawable);
 
-            //generate irradiance map
-            m_Renderer->renderToIrradianceMap(skyboxComp.textureID, skyboxComp.covTextureID,skyboxComp.conShaderID, m_CubeDrawable);
-            m_IrradianceMapID = skyboxComp.covTextureID;
+            m_Renderer->renderToIrradianceMap(skyboxMat->textureID, conMat->textureID,
+                conMat->shaderID, m_CubeDrawable);
 
-            m_Renderer->renderToPrefilterMap(skyboxComp.textureID,
-                m_Library->getTexture("PrefilterMap"), skyboxComp.prefilterShaderID, m_CubeDrawable);
-            m_PrefilterMapID = m_Library->getTexture("PrefilterMap");
+            m_IrradianceMapID = conMat->textureID;
 
-            m_Renderer->renderToBRDFLUT(m_Library->getTexture("brdfLUT"),
-                m_Library->getMaterial("brdfLUT")->shaderID, m_QuadDrawable);
-            m_BRDFLUTID = m_Library->getTexture("brdfLUT");
+            m_Renderer->renderToPrefilterMap(skyboxMat->textureID, prefilterMat->textureID,
+                prefilterMat->shaderID, m_CubeDrawable);
+
+            m_PrefilterMapID = prefilterMat->textureID;
+
+            m_Renderer->renderToBRDFLUT(brdfLUTMat->textureID, brdfLUTMat->shaderID, m_QuadDrawable);
+            m_BRDFLUTID = brdfLUTMat->textureID;
 
             skyboxComp.envGenerated = true;
         }
@@ -201,15 +202,10 @@ void RenderSystem::renderSkybox(const glm::mat4& view, const glm::mat4& projecti
         glm::mat4 vp = projection * viewCube;
         auto const bytes = std::bit_cast<std::array<std::byte, sizeof(vp)>>(vp);
         m_Renderer->m_ResourceManager->writeToUBO(m_Renderer->m_ViewUBO.uboID, bytes);
-        //bind shader
 
-        m_Renderer->m_ResourceManager->bindShader(skyboxComp.shaderID);
 
-        //bind cubemap texture
-        m_Renderer->m_ResourceManager->bindCubeMapTexture(skyboxComp.textureID, 0);
-        //m_Renderer->m_ResourceManager->bindCubeMapTexture(skyboxComp.covTextureID, 0);
-        //m_Renderer->m_ResourceManager->bindCubeMapTexture(m_IrradianceMapID, 0);
-
+        m_Renderer->m_ResourceManager->bindShader(skyboxMat->shaderID);
+        m_Renderer->m_ResourceManager->bindCubeMapTexture(skyboxMat->textureID, 0);
 
         m_Renderer->m_Context->drawMesh(*m_Renderer->m_ResourceManager, drawable);
 

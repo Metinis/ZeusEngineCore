@@ -227,11 +227,19 @@ void ZEN::GLResourceManager::deleteUBO(uint32_t uboID) {
     });
 }
 
-uint32_t ZEN::GLResourceManager::createTexture(const std::string& texturePath) {
+uint32_t ZEN::GLResourceManager::createTexture(const std::string& texturePath, bool isAbsPath) {
     int texWidth, texHeight, texChannels;
     stbi_set_flip_vertically_on_load(true);
-    stbi_uc *pixels = stbi_load(fullPath(texturePath).data(), &texWidth,
+    stbi_uc *pixels;
+    if(isAbsPath) {
+        pixels = stbi_load(texturePath.data(), &texWidth,
                                 &texHeight, &texChannels, STBI_rgb_alpha);
+    }
+    else {
+        pixels = stbi_load(fullPath(texturePath).data(), &texWidth,
+                                &texHeight, &texChannels, STBI_rgb_alpha);
+    }
+
     if (!pixels) {
         std::cout<<"Invalid Image! Assigning default texture.."<<"\n";
         return 0;

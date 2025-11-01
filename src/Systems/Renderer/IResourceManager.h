@@ -37,7 +37,7 @@ namespace ZEN {
         virtual void writeToUBO(uint32_t uboID, std::span<const std::byte> bytes) = 0;
         virtual void deleteUBO(uint32_t uboID) = 0;
 
-        virtual uint32_t createTexture(const std::string& texturePath) = 0;
+        virtual uint32_t createTexture(const std::string& texturePath, bool isAbsPath) = 0;
         virtual uint32_t createHDRTexture(const std::string& texturePath) = 0;
         virtual uint32_t createTextureAssimp(const aiTexture& aiTex) = 0;
         virtual uint32_t createBRDFLUTTexture(uint32_t width, uint32_t height) = 0;

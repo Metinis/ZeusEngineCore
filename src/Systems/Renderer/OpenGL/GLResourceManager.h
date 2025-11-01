@@ -44,7 +44,7 @@ namespace ZEN {
         void bindUBO(uint32_t uboID) override;
         void deleteUBO(uint32_t uboID) override;
 
-        uint32_t createTexture(const std::string& texturePath) override;
+        uint32_t createTexture(const std::string& texturePath, bool isAbsPath) override;
         uint32_t createHDRTexture(const std::string& texturePath) override;
         uint32_t createTextureAssimp(const aiTexture& aiTex) override;
         uint32_t createBRDFLUTTexture(uint32_t width, uint32_t height) override;

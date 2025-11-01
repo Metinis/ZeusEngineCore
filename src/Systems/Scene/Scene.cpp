@@ -29,21 +29,13 @@ void Scene::createDefaultScene(ZEngine* engine) {
     cameraEntity.addComponent<CameraComp>();
 
     auto skyboxEntity = createEntity("Skybox");
-    SkyboxComp skyboxComp{
-        .shaderID = engine->getRenderer().getResourceManager()->createShader(
-                "/shaders/glskyboxHDR.vert", "/shaders/glskyboxHDR.frag"),
-        .conShaderID = engine->getRenderer().getResourceManager()->createShader("/shaders/irradiance-con.vert",
-            "/shaders/irradiance-con.frag"),
-        .textureID = engine->getRenderer().getResourceManager()->createCubeMapTextureHDRMip(1024, 1024),
-        .covTextureID = engine->getRenderer().getResourceManager()->createCubeMapTextureHDR(32, 32),
-        .prefilterShaderID = engine->getRenderer().getResourceManager()->createShader(
-                "/shaders/prefilter.vert", "/shaders/prefilter.frag"),
-        .brdfConShaderID = engine->getRenderer().getResourceManager()->createShader(
-                "/shaders/brdf-con.vert", "/shaders/brdf-con.frag")
-
+    SkyboxComp skyboxComp {
+        .skyboxMat.name = "Skybox",
+        .eqMat.name = "EqMap",
+        .conMat.name = "ConMap",
+        .prefilterMat.name = "PrefilterMap",
+        .brdfLUTMat.name = "brdfLUT"
     };
-    //engine->getRenderer().renderToCubeMapHDR(skyboxComp.textureID, engine->getModelLibrary().getMaterial("EqMap")->shaderID,
-    //    engine->getModelLibrary().getMaterial("EqMap")->textureID, engine->getModelLibrary().get)
 
     skyboxEntity.addComponent<SkyboxComp>(skyboxComp);
     skyboxEntity.addComponent<MeshComp>(MeshComp{.name = "Skybox"});
