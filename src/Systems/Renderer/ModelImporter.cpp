@@ -101,15 +101,18 @@ void ModelImporter::processAiMesh(Entity& entity, aiMesh* aimesh,
                                   const aiScene* aiscene, const glm::mat4& transform) {
     Mesh mesh{};
     Material material{.shaderID = m_ModelLibrary->getMaterial("Default")->shaderID};
-
     for (uint32_t i{0}; i < aimesh->mNumVertices; ++i) {
         Vertex vertex{};
         vertex.Position = processMeshPos(aimesh->mVertices[i], transform);
         vertex.Normal   = glm::vec3(0.0f);
         vertex.TexCoords= glm::vec2(0.0f, 0.0f);
+        vertex.Tangent.x = aimesh->mTangents[i].x;
+        vertex.Tangent.y = aimesh->mTangents[i].y;
+        vertex.Tangent.z = aimesh->mTangents[i].z;
 
         if (aimesh->HasNormals())
             vertex.Normal = processMeshNormals(aimesh->mNormals[i], transform);
+
 
         if (aimesh->mTextureCoords[0])
             vertex.TexCoords = processMeshUVs(aimesh->mTextureCoords[0][i]);
@@ -160,8 +163,9 @@ void ModelImporter::processNode(aiNode* ainode, const aiScene* aiscene,
 
 void ModelImporter::loadModel(const std::string &name, const std::string &path) {
     Assimp::Importer import;
-    import.SetPropertyFloat(AI_CONFIG_GLOBAL_SCALE_FACTOR_KEY, 0.01f); // cm → m
-    const aiScene* scene = import.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_EmbedTextures);
+    import.SetPropertyFloat(AI_CONFIG_GLOBAL_SCALE_FACTOR_KEY, 1.0f); // cm → m
+    const aiScene* scene = import.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs |
+        aiProcess_EmbedTextures | aiProcess_CalcTangentSpace | aiProcess_GlobalScale);
 
     if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
         std::cout << "ERROR::ASSIMP::" << import.GetErrorString() << std::endl;

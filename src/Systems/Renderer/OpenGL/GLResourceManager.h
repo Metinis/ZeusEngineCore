@@ -35,7 +35,8 @@ namespace ZEN {
         void bindMeshDrawable(uint32_t drawableID) override;
         void deleteMeshDrawable(uint32_t drawableID) override;
 
-        uint32_t createShader(const std::string& vertexPath, const std::string& fragPath) override;
+        uint32_t createShader(const std::string& vertexPath, const std::string& fragPath,
+            const std::string& geoPath) override;
         void bindShader(uint32_t shaderID) override;
         void deleteShader(uint32_t shaderID) override;
 

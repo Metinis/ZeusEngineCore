@@ -14,6 +14,7 @@ m_Renderer(renderer), m_Scene(scene), m_Library(library), m_Dispatcher(dispatche
     m_Dispatcher->attach<RemoveMeshEvent, RenderSystem, &RenderSystem::onMeshRemove>(this);
     m_Dispatcher->attach<RemoveMeshCompEvent, RenderSystem, &RenderSystem::onMeshCompRemove>(this);
     m_Dispatcher->attach<RemoveMeshDrawableEvent, RenderSystem, &RenderSystem::onMeshDrawableRemove>(this);
+    m_Dispatcher->attach<ToggleDrawNormalsEvent, RenderSystem, &RenderSystem::onToggleDrawNormals>(this);
     Mesh* cubeMesh = m_Library->getMesh("Cube");
     m_CubeDrawable.name = "Cube";
     m_CubeDrawable.indexCount = cubeMesh->indices.size();
@@ -65,6 +66,10 @@ void RenderSystem::onMeshDrawableRemove(RemoveMeshDrawableEvent &e) {
             e.entity.getComponent<MeshDrawableComp>().meshID);
 }
 
+void RenderSystem::onToggleDrawNormals(ToggleDrawNormalsEvent &e) {
+    m_DrawNormals = !m_DrawNormals;
+}
+
 void RenderSystem::onUpdate() {
     updateWorldTransforms();
     //create buffers for all meshes without drawable comps
@@ -104,7 +109,7 @@ void RenderSystem::writeCameraData(glm::mat4& view, glm::mat4& projection) {
             m_Renderer->m_ResourceManager->writeToUBO(m_Renderer->m_ViewUBO.uboID, bytes);
             //update global ubo, todo maybe use a light component
             GlobalUBO globalUBO {
-                .lightDir = m_Scene->getLightDir(),
+                .lightPos = m_Scene->getLightPos(),
                 .cameraPos = transform.localPosition,
                 //.time = glfwGetTime(),
                 .ambientColor = m_Scene->getAmbientColor(),
@@ -145,9 +150,26 @@ void RenderSystem::renderDrawables() {
 
         //bind material texture
         m_Renderer->m_ResourceManager->bindMaterial(*material);
-        m_Renderer->m_ResourceManager->bindCubeMapTexture(m_IrradianceMapID, 4);
-        m_Renderer->m_ResourceManager->bindCubeMapTexture(m_PrefilterMapID, 5);
-        m_Renderer->m_ResourceManager->bindTexture(m_BRDFLUTID, 6);
+        m_Renderer->m_ResourceManager->bindCubeMapTexture(m_IrradianceMapID, 5);
+        m_Renderer->m_ResourceManager->bindCubeMapTexture(m_PrefilterMapID, 6);
+        m_Renderer->m_ResourceManager->bindTexture(m_BRDFLUTID, 7);
+        //write to instance ubo (todo check if last mesh is same for instancing)
+        auto transform = entity.getComponent<TransformComp>();
+        auto const bytes = std::bit_cast<std::array<std::byte,
+            sizeof(transform.worldMatrix)>>(transform.worldMatrix);
+        m_Renderer->m_ResourceManager->writeToUBO(m_Renderer->m_InstanceUBO.uboID, bytes);
+
+        //todo submit mesh to renderer
+        MeshDrawableComp drawable = entity.getComponent<MeshDrawableComp>();
+        m_Renderer->m_Context->drawMesh(*m_Renderer->m_ResourceManager, drawable);
+
+    }
+}
+
+void RenderSystem::renderDrawablesToShader(uint32_t shaderID) {
+    auto viewDraw = m_Scene->getEntities<MeshDrawableComp, MaterialComp, TransformComp>();
+    for(auto entity : viewDraw) {
+        m_Renderer->m_ResourceManager->bindShader(shaderID);
         //write to instance ubo (todo check if last mesh is same for instancing)
         auto transform = entity.getComponent<TransformComp>();
         auto const bytes = std::bit_cast<std::array<std::byte,
@@ -237,6 +259,10 @@ void RenderSystem::onRender() {
     //render all meshes with drawable comps
 
     renderDrawables();
+
+    if(m_DrawNormals) {
+        renderDrawablesToShader(m_Library->getMaterial("NormalsMat")->shaderID);
+    }
 
     //draw skybox
     renderSkybox(view, projection);

@@ -19,12 +19,17 @@ namespace ZEN {
         uint32_t metallicTexID{0};
         uint32_t roughnessTexID{0};
         uint32_t normalTexID{0};
-        uint32_t AOTexID{0};
+        uint32_t aoTexID{0};
         glm::vec3 albedo{1.0f, 1.0f, 1.0f};
         float metallic{1.0f};
         float roughness{1.0f};
         float ao{1.0f};
         bool metal{};
+        bool useAlbedo;
+        bool useMetallic;
+        bool useRoughness;
+        bool useNormal;
+        bool useAO;
     };
     struct Mesh {
         std::vector<uint32_t> indices{};
@@ -70,7 +75,8 @@ namespace ZEN {
         std::unique_ptr<Mesh> createCube();
         std::unique_ptr<Mesh> createQuad();
         std::unique_ptr<Mesh> createSkybox();
-        std::unique_ptr<Material> createDefaultMaterial(const std::string& vertPath, const std::string& fragPath);
+        std::unique_ptr<Material> createDefaultMaterial(const std::string& vertPath, const std::string& fragPath,
+            const std::string& geoPath);
         //static std::shared_ptr<MeshComp> createPlane();
         std::unique_ptr<Mesh> createSphere(float radius, unsigned int sectorCount, unsigned int stackCount);
         EventDispatcher* m_Dispatcher{};

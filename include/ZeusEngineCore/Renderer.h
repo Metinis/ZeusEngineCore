@@ -9,7 +9,8 @@ namespace ZEN {
 	class EventDispatcher;
 
 	struct GlobalUBO {
-		glm::vec3 lightDir; float _pad0;
+		//glm::vec3 lightDir; float _pad0;
+		glm::vec3 lightPos; float _pad0;
 		glm::vec3 cameraPos; float _pad1;
 		//alignas(16) float time;
 		glm::vec3 ambientColor; float _pad2;

@@ -11,6 +11,8 @@ namespace ZEN {
         glm::vec3 Normal;
         glm::vec2 TexCoords;
         glm::vec4 Color;
+        glm::vec3 Tangent;
+        glm::vec3 Bitangent;
     };
 
 }
