@@ -150,9 +150,9 @@ void RenderSystem::renderDrawables() {
 
         //bind material texture
         m_Renderer->m_ResourceManager->bindMaterial(*material);
-        m_Renderer->m_ResourceManager->bindCubeMapTexture(m_IrradianceMapID, 4);
-        m_Renderer->m_ResourceManager->bindCubeMapTexture(m_PrefilterMapID, 5);
-        m_Renderer->m_ResourceManager->bindTexture(m_BRDFLUTID, 6);
+        m_Renderer->m_ResourceManager->bindCubeMapTexture(m_IrradianceMapID, 5);
+        m_Renderer->m_ResourceManager->bindCubeMapTexture(m_PrefilterMapID, 6);
+        m_Renderer->m_ResourceManager->bindTexture(m_BRDFLUTID, 7);
         //write to instance ubo (todo check if last mesh is same for instancing)
         auto transform = entity.getComponent<TransformComp>();
         auto const bytes = std::bit_cast<std::array<std::byte,

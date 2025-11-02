@@ -19,12 +19,17 @@ namespace ZEN {
         uint32_t metallicTexID{0};
         uint32_t roughnessTexID{0};
         uint32_t normalTexID{0};
-        uint32_t AOTexID{0};
+        uint32_t aoTexID{0};
         glm::vec3 albedo{1.0f, 1.0f, 1.0f};
         float metallic{1.0f};
         float roughness{1.0f};
         float ao{1.0f};
         bool metal{};
+        bool useAlbedo;
+        bool useMetallic;
+        bool useRoughness;
+        bool useNormal;
+        bool useAO;
     };
     struct Mesh {
         std::vector<uint32_t> indices{};

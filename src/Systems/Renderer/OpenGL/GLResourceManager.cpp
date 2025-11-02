@@ -432,7 +432,6 @@ void ZEN::GLResourceManager::deleteTexture(uint32_t textureID) {
 void ZEN::GLResourceManager::bindMaterial(const Material &material) {
     bindShader(material.shaderID);
 
-    // Set uniforms first (this doesn't require active texture)
     withResource(m_Shaders, material.shaderID, [&](GLShader& s) {
         GLint loc = glGetUniformLocation(s.programID, "u_AlbedoMap");
         if (loc != -1) glUniform1i(loc, 0);
@@ -446,24 +445,40 @@ void ZEN::GLResourceManager::bindMaterial(const Material &material) {
         GLint loc4 = glGetUniformLocation(s.programID, "u_NormalMap");
         if (loc4 != -1) glUniform1i(loc4, 3);
 
-        GLint loc5 = glGetUniformLocation(s.programID, "u_IrradianceMap");
+        GLint loc5 = glGetUniformLocation(s.programID, "u_AOMap");
         if (loc5 != -1) glUniform1i(loc5, 4);
 
-        GLint loc6 = glGetUniformLocation(s.programID, "u_PrefilterMap");
-        if (loc6 != -1) glUniform1i(loc6, 5);
+        GLint loc6 = glGetUniformLocation(s.programID, "u_IrradianceMap");
+        if (loc6!= -1) glUniform1i(loc6, 5);
 
-        GLint loc7 = glGetUniformLocation(s.programID, "u_BRDFLUT");
+        GLint loc7 = glGetUniformLocation(s.programID, "u_PrefilterMap");
         if (loc7 != -1) glUniform1i(loc7, 6);
+
+        GLint loc8 = glGetUniformLocation(s.programID, "u_BRDFLUT");
+        if (loc7 != -1) glUniform1i(loc8, 7);
+
+        loc = glGetUniformLocation(s.programID, "u_HasAlbedoMap");
+        if (loc != -1) glUniform1i(loc, material.useAlbedo);
+
+        loc = glGetUniformLocation(s.programID, "u_HasMetallicMap");
+        if (loc != -1) glUniform1i(loc, material.useMetallic);
+
+        loc = glGetUniformLocation(s.programID, "u_HasRoughnessMap");
+        if (loc != -1) glUniform1i(loc, material.useRoughness);
+
+        loc = glGetUniformLocation(s.programID, "u_HasNormalMap");
+        if (loc != -1) glUniform1i(loc, material.useNormal);
+
+        loc = glGetUniformLocation(s.programID, "u_HasAOMap");
+        if (loc != -1) glUniform1i(loc, material.useAO);
     });
 
-    // Now bind textures to their respective units
-    // Each bindTexture call will activate the appropriate texture unit
-    bindTexture(material.textureID, 0);        // Unit 0: Albedo
-    bindTexture(material.metallicTexID, 1);    // Unit 1: Metallic
-    bindTexture(material.roughnessTexID, 2);   // Unit 2: Roughness
-    bindTexture(material.normalTexID, 3);      // Unit 3: Normal
+    bindTexture(material.textureID, 0);
+    bindTexture(material.metallicTexID, 1);
+    bindTexture(material.roughnessTexID, 2);
+    bindTexture(material.normalTexID, 3);
+    bindTexture(material.aoTexID, 4);
 
-    // Reset to texture unit 0 as good practice
     glActiveTexture(GL_TEXTURE0);
 
 }

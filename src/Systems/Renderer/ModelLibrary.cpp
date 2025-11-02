@@ -38,6 +38,8 @@ ModelLibrary::ModelLibrary(EventDispatcher *dispatcher, IResourceManager *resour
         "/textures/dark-wood-stain-ue/dark-wood-stain_normal-dx.png", false);
     m_Textures["DarkWood_Roughness"] = m_ResourceManager->createTexture(
         "/textures/dark-wood-stain-ue/dark-wood-stain_roughness.png", false);
+    m_Textures["DarkWood_AO"] = m_ResourceManager->createTexture(
+    "/textures/dark-wood-stain-ue/dark-wood-stain_ao.png", false);
 
     m_Textures["Brick_Albedo"] = m_ResourceManager->createTexture(
         "/textures/dirty-red-bricks-ue/dirty-red-bricks_albedo.png", false);
@@ -101,7 +103,7 @@ ModelLibrary::ModelLibrary(EventDispatcher *dispatcher, IResourceManager *resour
         .metallicTexID = m_Textures["DarkWood_Metallic"],
         .normalTexID = m_Textures["DarkWood_Normal"],
         .roughnessTexID = m_Textures["DarkWood_Roughness"],
-
+        .aoTexID = m_Textures["DarkWood_AO"],
     };
 
     m_Materials["DarkWoodMaterial"] = std::make_unique<Material>(darkwoodMaterial);
