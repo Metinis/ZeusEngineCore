@@ -28,7 +28,8 @@ namespace ZEN {
         virtual void bindMeshDrawable(uint32_t drawableID) = 0;
         virtual void deleteMeshDrawable(uint32_t drawableID) = 0;
 
-        virtual uint32_t createShader(const std::string& vertexPath, const std::string& ragPath) = 0;
+        virtual uint32_t createShader(const std::string& vertexPath, const std::string& fragPath,
+            const std::string& geoPath) = 0;
         virtual void bindShader(uint32_t shaderID) = 0;
         virtual void deleteShader(uint32_t shaderID) = 0;
 

@@ -73,6 +73,12 @@ uint32_t ZEN::GLResourceManager::createMeshDrawable(const Mesh &mesh) {
     glEnableVertexAttribArray(3);
     glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void *) offsetof(Vertex, Color));
 
+    glEnableVertexAttribArray(4);
+    glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void *) offsetof(Vertex, Tangent));
+
+    glEnableVertexAttribArray(5);
+    glVertexAttribPointer(5, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void *) offsetof(Vertex, Bitangent));
+
     glBindVertexArray(0);
 
     m_Drawables[nextDrawableID] = drawable;
@@ -96,7 +102,8 @@ void ZEN::GLResourceManager::deleteMeshDrawable(uint32_t drawableID) {
 }
 
 
-uint32_t ZEN::GLResourceManager::createShader(const std::string& vertexPath, const std::string& fragPath) {
+uint32_t ZEN::GLResourceManager::createShader(const std::string& vertexPath, const std::string& fragPath,
+    const std::string& geoPath) {
     auto loadShaderSource = [](std::string_view path) -> std::string {
         std::ifstream file(path.data());
         if (!file.is_open()) {
@@ -110,6 +117,7 @@ uint32_t ZEN::GLResourceManager::createShader(const std::string& vertexPath, con
 
     std::string vertexSrc = loadShaderSource(fullPath(vertexPath));
     std::string fragSrc = loadShaderSource(fullPath(fragPath));
+
 
     if (vertexSrc.empty() || fragSrc.empty()) {
         return 0; // 0 = invalid shader ID
@@ -151,7 +159,46 @@ uint32_t ZEN::GLResourceManager::createShader(const std::string& vertexPath, con
     uint32_t program = glCreateProgram();
     glAttachShader(program, vertexShader);
     glAttachShader(program, fragmentShader);
+
+    //attach optional geometry shader if present
+    auto getGeoShader = [loadShaderSource, this](const std::string& geoPath) -> std::optional<GLuint> {
+        std::optional< GLuint> geoShaderProgram{};
+        if(geoPath.empty()) {
+            return geoShaderProgram;
+        }
+        GLint success;
+        std::string geoSrc = loadShaderSource(fullPath(geoPath));
+        if (geoSrc.empty()) {
+            std::cerr<<"Invalid geometry shader id!"<<"\n";
+            return geoShaderProgram;
+        }
+        GLuint geoShader = glCreateShader(GL_GEOMETRY_SHADER);
+        const char *gSrc = geoSrc.c_str();
+        glShaderSource(geoShader, 1, &gSrc, nullptr);
+        glCompileShader(geoShader);
+
+        glGetShaderiv(geoShader, GL_COMPILE_STATUS, &success);
+        if (!success) {
+            char infoLog[512];
+            glGetShaderInfoLog(geoShader, 512, nullptr, infoLog);
+            std::cerr << "Geometry shader compilation failed:\n" << infoLog << "\n";
+            glDeleteShader(geoShader);
+            return geoShaderProgram;
+        }
+        geoShaderProgram.emplace(geoShader);
+        return geoShaderProgram;
+
+    };
+    auto geoShader = getGeoShader(geoPath);
+    if(geoShader.has_value()) {
+        glAttachShader(program, geoShader.value());
+    }
     glLinkProgram(program);
+    glDeleteShader(vertexShader);
+    glDeleteShader(fragmentShader);
+    if(geoShader.has_value()) {
+        glDeleteShader(geoShader.value());
+    }
 
     glGetProgramiv(program, GL_LINK_STATUS, &success);
     if (!success) {
@@ -171,9 +218,6 @@ uint32_t ZEN::GLResourceManager::createShader(const std::string& vertexPath, con
             glUniformBlockBinding(program, blockIndex, i);
         }
     }
-
-    glDeleteShader(vertexShader);
-    glDeleteShader(fragmentShader);
 
     uint32_t id = nextShaderID++;
     m_Shaders[id] = GLShader{.programID = program};

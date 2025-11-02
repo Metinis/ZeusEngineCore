@@ -72,4 +72,7 @@ namespace ZEN {
     struct RemoveMeshDrawableEvent {
         Entity entity;
     };
+    struct ToggleDrawNormalsEvent {
+
+    };
 }
