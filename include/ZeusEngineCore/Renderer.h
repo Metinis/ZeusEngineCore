@@ -34,12 +34,20 @@ namespace ZEN {
 	class Renderer {
 	public:
 		explicit Renderer(eRendererAPI api, const std::string& resourceRoot, GLFWwindow* window, EventDispatcher& dispatcher);
+
+		template<typename T>
+		void writeToUBO(uint32_t uboID, T ubo) {
+			auto const bytes = std::bit_cast<std::array<std::byte, sizeof(ubo)>>(ubo);
+			m_ResourceManager->writeToUBO(uboID, bytes);
+		}
 		void beginFrame();
 		void bindDefaultFBO();
+
 		void renderToCubeMapHDR(uint32_t cubemapTexID, uint32_t eqToCubeMapShader, uint32_t hdrTexID, const MeshDrawableComp& drawable);
 		void renderToIrradianceMap(uint32_t cubemapTexID, uint32_t irradianceTexID, uint32_t irradianceShader,const MeshDrawableComp &drawable);
 		void renderToPrefilterMap(uint32_t cubemapTexID, uint32_t prefilterTexID, uint32_t prefilterShader,const MeshDrawableComp &drawable);
 		void renderToBRDFLUT(uint32_t brdfTexID, uint32_t brdfShader, const MeshDrawableComp& drawable);
+
 		void endFrame();
 		void onResize(WindowResizeEvent& e);
 		Texture& getColorTexture() {return m_ColorTex;}

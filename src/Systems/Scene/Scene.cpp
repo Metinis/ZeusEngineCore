@@ -25,6 +25,13 @@ void Scene::onMeshDrawableRemove(entt::registry& registry, entt::entity entity) 
 }
 
 void Scene::createDefaultScene(ZEngine* engine) {
+    auto dirLightEntity = createEntity("Directional Light");
+    DirectionalLightComp comp {
+        .ambient = m_AmbientColor,
+        .isPrimary = true,
+    };
+    dirLightEntity.addComponent<DirectionalLightComp>(comp);
+
     auto cameraEntity = createEntity("Scene Camera");
     cameraEntity.addComponent<CameraComp>();
 

@@ -30,16 +30,16 @@ namespace ZEN {
 		}
 
 
-		glm::vec3 getLightPos() {return lightPos;}
-		glm::vec3 getLightDir() {return lightDir;}
-		glm::vec3 getAmbientColor() {return ambientColor;}
+		glm::vec3 getLightPos() {return m_LightPos;}
+		glm::vec3 getLightDir() {return m_LightDir;}
+		glm::vec3 getAmbientColor() {return m_AmbientColor;}
 	private:
 		entt::registry m_Registry{};
 		EventDispatcher* m_Dispatcher{};
 		ModelLibrary* m_ModelLibrary{};
-		glm::vec3 lightPos{1.0f, 5.0f, 1.0f};
-		glm::vec3 lightDir{-0.2f, -1.0f, 0.3f};
-		glm::vec3 ambientColor{0.01f, 0.01f, 0.01f};
+		glm::vec3 m_LightPos{1.0f, 5.0f, 1.0f};
+		glm::vec3 m_LightDir{-0.2f, -1.0f, 0.3f};
+		glm::vec3 m_AmbientColor{0.01f, 0.01f, 0.01f};
 
 		Entity makeEntity(entt::entity entity);
 

@@ -74,8 +74,9 @@ void Renderer::renderToCubeMapHDR(uint32_t cubemapTexID, uint32_t eqToCubeMapSha
     m_Context->disableCullFace();
     for (unsigned int i = 0; i < 6; ++i) {
         glm::mat4 vp = captureProjection * captureViews[i];
-        auto const bytes = std::bit_cast<std::array<std::byte, sizeof(vp)>>(vp);
-        m_ResourceManager->writeToUBO(m_ViewUBO.uboID, bytes);
+
+        writeToUBO(m_ViewUBO.uboID, vp);
+
         m_ResourceManager->setFBOCubeMapTexture(i, cubemapTexID, 0);
 
         m_Context->clear(true, true);
@@ -108,8 +109,9 @@ void Renderer::renderToIrradianceMap(uint32_t cubemapTexID, uint32_t irradianceT
     m_Context->disableCullFace();
     for (unsigned int i = 0; i < 6; ++i) {
         glm::mat4 vp = captureProjection * captureViews[i];
-        auto const bytes = std::bit_cast<std::array<std::byte, sizeof(vp)>>(vp);
-        m_ResourceManager->writeToUBO(m_ViewUBO.uboID, bytes);
+
+        writeToUBO(m_ViewUBO.uboID, vp);
+
         m_ResourceManager->setFBOCubeMapTexture(i, irradianceTexID, 0);
 
         m_Context->clear(true, true);
@@ -149,8 +151,9 @@ void Renderer::renderToPrefilterMap(uint32_t cubemapTexID, uint32_t prefilterTex
 
         for (unsigned int i = 0; i < 6; ++i) {
             glm::mat4 vp = captureProjection * captureViews[i];
-            auto const bytes = std::bit_cast<std::array<std::byte, sizeof(vp)>>(vp);
-            m_ResourceManager->writeToUBO(m_ViewUBO.uboID, bytes);
+
+            writeToUBO(m_ViewUBO.uboID, vp);
+
             m_ResourceManager->setFBOCubeMapTexture(i, prefilterTexID, mip);
 
             m_Context->clear(true, true);

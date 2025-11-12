@@ -17,15 +17,20 @@ namespace ZEN {
 		void onRender();
 	private:
 		void writeCameraData(glm::mat4& view, glm::mat4& projection);
+		void setLightData(glm::vec3 cameraPos);
 		void bindSceneUBOs();
+
 		void renderDrawables();
 		void renderDrawablesToShader(uint32_t shaderID);
 		void renderSkybox(const glm::mat4& view, const glm::mat4& projection);
+
 		void updateWorldTransforms();
+
 		void onMeshRemove(RemoveMeshEvent& e);
 		void onMeshCompRemove(RemoveMeshCompEvent& e);
 		void onMeshDrawableRemove(RemoveMeshDrawableEvent& e);
 		void onToggleDrawNormals(ToggleDrawNormalsEvent& e);
+
 		uint32_t m_IrradianceMapID{};
 		uint32_t m_PrefilterMapID{};
 		uint32_t m_BRDFLUTID{};

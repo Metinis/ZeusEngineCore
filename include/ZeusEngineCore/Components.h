@@ -69,7 +69,6 @@ namespace ZEN {
     };
 
     struct DirectionalLightComp {
-        glm::vec3 lightDir{};
         glm::vec3 ambient{};
         bool isPrimary{true};
     };

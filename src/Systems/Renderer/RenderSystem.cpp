@@ -105,21 +105,31 @@ void RenderSystem::writeCameraData(glm::mat4& view, glm::mat4& projection) {
             view = transform.getViewMatrix();
             projection = camera.projection;
             glm::mat4 vpMat = projection * view;
-            auto const bytes = std::bit_cast<std::array<std::byte, sizeof(vpMat)>>(vpMat);
-            m_Renderer->m_ResourceManager->writeToUBO(m_Renderer->m_ViewUBO.uboID, bytes);
-            //update global ubo, todo maybe use a light component
-            GlobalUBO globalUBO {
-                .lightPos = m_Scene->getLightPos(),
-                .cameraPos = transform.localPosition,
-                //.time = glfwGetTime(),
-                .ambientColor = m_Scene->getAmbientColor(),
-            };
-            auto const globalBytes = std::bit_cast<std::array<std::byte,
-                sizeof(globalUBO)>>(globalUBO);
-            m_Renderer->m_ResourceManager->writeToUBO(m_Renderer->m_GlobalUBO.uboID, globalBytes);
+
+            m_Renderer->writeToUBO(m_Renderer->m_ViewUBO.uboID, vpMat);
+
+            setLightData(transform.localPosition);
+
         }
     }
 }
+
+void RenderSystem::setLightData(glm::vec3 cameraPos) {
+    auto lightView = m_Scene->getEntities<DirectionalLightComp, TransformComp>();
+
+    for(auto entity : lightView) {
+        auto& dirLight = entity.getComponent<DirectionalLightComp>();
+        auto& transform = entity.getComponent<TransformComp>();
+        GlobalUBO globalUBO {
+            .lightPos = transform.localPosition,
+            .cameraPos = cameraPos,
+            .ambientColor = dirLight.ambient,
+        };
+        m_Renderer->writeToUBO(m_Renderer->m_GlobalUBO.uboID, globalUBO);
+    }
+
+}
+
 void RenderSystem::renderDrawables() {
     //todo sort by material
     auto viewDraw = m_Scene->getEntities<MeshDrawableComp, MaterialComp, TransformComp>();
@@ -144,9 +154,8 @@ void RenderSystem::renderDrawables() {
             .albedo = alb,
             .params = props
         };
-        auto const materialBytes = std::bit_cast<std::array<std::byte,
-            sizeof(materialUBO)>>(materialUBO);
-        m_Renderer->m_ResourceManager->writeToUBO(m_Renderer->m_MaterialUBO.uboID, materialBytes);
+
+        m_Renderer->writeToUBO(m_Renderer->m_MaterialUBO.uboID, materialUBO);
 
         //bind material texture
         m_Renderer->m_ResourceManager->bindMaterial(*material);
@@ -154,10 +163,10 @@ void RenderSystem::renderDrawables() {
         m_Renderer->m_ResourceManager->bindCubeMapTexture(m_PrefilterMapID, 6);
         m_Renderer->m_ResourceManager->bindTexture(m_BRDFLUTID, 7);
         //write to instance ubo (todo check if last mesh is same for instancing)
+
         auto transform = entity.getComponent<TransformComp>();
-        auto const bytes = std::bit_cast<std::array<std::byte,
-            sizeof(transform.worldMatrix)>>(transform.worldMatrix);
-        m_Renderer->m_ResourceManager->writeToUBO(m_Renderer->m_InstanceUBO.uboID, bytes);
+
+        m_Renderer->writeToUBO(m_Renderer->m_InstanceUBO.uboID, transform.worldMatrix);
 
         //todo submit mesh to renderer
         MeshDrawableComp drawable = entity.getComponent<MeshDrawableComp>();
@@ -167,14 +176,13 @@ void RenderSystem::renderDrawables() {
 }
 
 void RenderSystem::renderDrawablesToShader(uint32_t shaderID) {
+    m_Renderer->m_ResourceManager->bindShader(shaderID);
     auto viewDraw = m_Scene->getEntities<MeshDrawableComp, MaterialComp, TransformComp>();
     for(auto entity : viewDraw) {
-        m_Renderer->m_ResourceManager->bindShader(shaderID);
         //write to instance ubo (todo check if last mesh is same for instancing)
         auto transform = entity.getComponent<TransformComp>();
-        auto const bytes = std::bit_cast<std::array<std::byte,
-            sizeof(transform.worldMatrix)>>(transform.worldMatrix);
-        m_Renderer->m_ResourceManager->writeToUBO(m_Renderer->m_InstanceUBO.uboID, bytes);
+
+        m_Renderer->writeToUBO(m_Renderer->m_InstanceUBO.uboID, transform.worldMatrix);
 
         //todo submit mesh to renderer
         MeshDrawableComp drawable = entity.getComponent<MeshDrawableComp>();
@@ -222,9 +230,8 @@ void RenderSystem::renderSkybox(const glm::mat4& view, const glm::mat4& projecti
         m_Renderer->m_Context->setDepthMode(LEQUAL);
         glm::mat4 viewCube = glm::mat4(glm::mat3(view));
         glm::mat4 vp = projection * viewCube;
-        auto const bytes = std::bit_cast<std::array<std::byte, sizeof(vp)>>(vp);
-        m_Renderer->m_ResourceManager->writeToUBO(m_Renderer->m_ViewUBO.uboID, bytes);
 
+        m_Renderer->writeToUBO(m_Renderer->m_ViewUBO.uboID, vp);
 
         m_Renderer->m_ResourceManager->bindShader(skyboxMat->shaderID);
         m_Renderer->m_ResourceManager->bindCubeMapTexture(skyboxMat->textureID, 0);
@@ -252,6 +259,7 @@ void RenderSystem::onRender() {
     //write camera data
     glm::mat4 view;
     glm::mat4 projection;
+
     writeCameraData(view, projection);
 
     bindSceneUBOs();
