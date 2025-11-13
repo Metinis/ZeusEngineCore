@@ -79,7 +79,6 @@ void CameraSystem::onUpdate(float deltaTime) {
 }
 
 void CameraSystem::onResize(const SceneViewResizeEvent &e) {
-    std::cout<<"Camera resized! "<<e.width<<"x "<<e.height<<"y \n";
     m_Width = e.width;
     m_Height = e.height;
     m_Resized = true;

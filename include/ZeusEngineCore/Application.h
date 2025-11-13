@@ -10,8 +10,9 @@ namespace ZEN {
     class Application {
     public:
         Application();
-        ~Application();
+        virtual ~Application();
 
+        void init();
         void pushLayer(Layer* layer);
         void pushOverlay(Layer* layer);
 
