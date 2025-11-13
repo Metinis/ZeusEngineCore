@@ -1,7 +1,9 @@
 #pragma once
 #include <memory>
+#include "ZeusEngineCore/ZEngine.h"
 #include "ZeusEngineCore/Window.h"
-#include "LayerStack.h"
+#include "../../src/Engine/LayerStack.h"
+#include "../../src/ImGUILayers/ImGUILayer.h"
 
 namespace ZEN {
 
@@ -17,9 +19,14 @@ namespace ZEN {
 
         void run();
 
-    private:
+    protected:
         std::unique_ptr<Window> m_Window{};
+        std::unique_ptr<ImGUILayer> m_ImGUILayer{};
         std::unique_ptr<LayerStack> m_LayerStack{};
+        std::unique_ptr<ZEngine> m_Engine{};
+
+        std::string m_ResourceRoot{};
+        eRendererAPI m_API{OpenGL};
         bool m_Running { false };
 
     };
