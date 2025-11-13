@@ -19,13 +19,19 @@ void Application::pushOverlay(Layer* layer) {
     layer->onAttach();
 }
 
+void Application::close() {
+    m_Running = false;
+}
+
 void Application::run() {
-    for(Layer* layer : m_LayerStack) {
-        layer->onUpdate();
-    }
-    for(Layer* layer : m_LayerStack) {
-        //begin imgui frame
-        layer->onUIRender();
-        //end imgui frame
+    while(m_Running && !m_Window->shouldClose()) {
+        for(Layer* layer : *m_LayerStack) {
+            layer->onUpdate();
+        }
+        for(Layer* layer : *m_LayerStack) {
+            //begin imgui frame
+            layer->onUIRender();
+            //end imgui frame
+        }
     }
 }

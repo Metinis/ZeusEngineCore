@@ -14,5 +14,6 @@ namespace ZEN {
         virtual void onUIRender() {}
 
         virtual void onEvent() {}
+
     };
 }
