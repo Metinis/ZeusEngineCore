@@ -1,6 +1,9 @@
 #pragma once
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/constants.hpp>
+#include <random>
+#include <sstream>
+#include <iomanip>
 
 namespace ZEN {
     struct Matrices {
@@ -22,12 +25,26 @@ namespace ZEN {
         orientation = glm::rotate(orientation, rotation.x, axis_x);
         orientation = glm::rotate(orientation, rotation.y, axis_y);
 
-        return Matrices{
+        return Matrices {
             .translation = glm::translate(mat_v, position),
             .orientation = orientation,
             .scale = glm::scale(mat_v, scale),
         };
     }
+
+    struct UUID {
+        uint64_t high;
+        uint64_t low;
+    };
+
+
+    static UUID generateUUID() {
+        static std::random_device rd;
+        static std::mt19937_64 gen(rd());
+        static std::uniform_int_distribution<uint64_t> dist;
+        return { dist(gen), dist(gen) };
+    }
+
 }
 
 

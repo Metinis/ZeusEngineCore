@@ -1,9 +1,6 @@
 #include "ZeusEngineCore/RenderSystem.h"
-
 #include <ZeusEngineCore/InputEvents.h>
-
 #include "ZeusEngineCore/ModelLibrary.h"
-
 #include "ZeusEngineCore/Scene.h"
 
 using namespace ZEN;
@@ -11,10 +8,12 @@ using namespace ZEN;
 RenderSystem::RenderSystem(Renderer *renderer, Scene *scene, ModelLibrary* library,
             EventDispatcher* dispatcher) :
 m_Renderer(renderer), m_Scene(scene), m_Library(library), m_Dispatcher(dispatcher){
+
     m_Dispatcher->attach<RemoveMeshEvent, RenderSystem, &RenderSystem::onMeshRemove>(this);
     m_Dispatcher->attach<RemoveMeshCompEvent, RenderSystem, &RenderSystem::onMeshCompRemove>(this);
     m_Dispatcher->attach<RemoveMeshDrawableEvent, RenderSystem, &RenderSystem::onMeshDrawableRemove>(this);
     m_Dispatcher->attach<ToggleDrawNormalsEvent, RenderSystem, &RenderSystem::onToggleDrawNormals>(this);
+
     Mesh* cubeMesh = m_Library->getMesh("Cube");
     m_CubeDrawable.name = "Cube";
     m_CubeDrawable.indexCount = cubeMesh->indices.size();
@@ -119,6 +118,11 @@ void RenderSystem::setLightData(glm::vec3 cameraPos) {
 
     for(auto entity : lightView) {
         auto& dirLight = entity.getComponent<DirectionalLightComp>();
+
+        if(!dirLight.isPrimary) {
+            continue;
+        }
+
         auto& transform = entity.getComponent<TransformComp>();
         GlobalUBO globalUBO {
             .lightPos = transform.localPosition,
