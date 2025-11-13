@@ -9,9 +9,10 @@ namespace ZEN {
         virtual void onAttach() {}
         virtual void onDettach() {}
 
-        virtual void onUpdate() {}
+        virtual void onUpdate(float dt) {}
 
         virtual void onUIRender() {}
+        virtual void onRender() {}
 
         virtual void onEvent() {}
 

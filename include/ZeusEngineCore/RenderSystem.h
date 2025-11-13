@@ -1,5 +1,6 @@
 #pragma once
 #include "EventDispatcher.h"
+#include "Layer.h"
 #include "Renderer.h"
 
 namespace ZEN {
@@ -9,12 +10,12 @@ namespace ZEN {
 	struct RemoveMeshCompEvent;
 	struct RemoveMeshDrawableEvent;
 	struct ToggleDrawNormalsEvent;
-	class RenderSystem {
+	class RenderSystem : public Layer {
 	public:
 		explicit RenderSystem(Renderer *renderer, Scene *scene, ModelLibrary* library,
 			EventDispatcher* dispatcher);
-		void onUpdate();
-		void onRender();
+		void onUpdate(float deltaTime) override;
+		void onRender() override;
 	private:
 		void writeCameraData(glm::mat4& view, glm::mat4& projection);
 		void setLightData(glm::vec3 cameraPos);

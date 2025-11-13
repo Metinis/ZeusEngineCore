@@ -69,7 +69,7 @@ void RenderSystem::onToggleDrawNormals(ToggleDrawNormalsEvent &e) {
     m_DrawNormals = !m_DrawNormals;
 }
 
-void RenderSystem::onUpdate() {
+void RenderSystem::onUpdate(float deltaTime) {
     updateWorldTransforms();
     //create buffers for all meshes without drawable comps
     auto meshView = m_Scene->getEntities<MeshComp>();

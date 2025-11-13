@@ -15,12 +15,15 @@ namespace ZEN {
         void init();
         void pushLayer(Layer* layer);
         void pushOverlay(Layer* layer);
+        static Application& get() { return *s_Instance; }
 
         void close();
 
         void run();
 
     protected:
+        static Application* s_Instance;
+
         std::unique_ptr<Window> m_Window{};
         std::unique_ptr<ImGUILayer> m_ImGUILayer{};
         std::unique_ptr<LayerStack> m_LayerStack{};

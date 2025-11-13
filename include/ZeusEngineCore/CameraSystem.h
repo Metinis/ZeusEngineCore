@@ -3,6 +3,8 @@
 #include <glm/vec3.hpp>
 #include <unordered_set>
 
+#include "Layer.h"
+
 namespace ZEN {
     struct SceneViewResizeEvent;
     struct KeyPressedEvent;
@@ -16,10 +18,10 @@ namespace ZEN {
     class Scene;
     class EventDispatcher;
 
-    class CameraSystem {
+    class CameraSystem : public Layer {
     public:
         explicit CameraSystem(Scene* scene, EventDispatcher* dispatcher);
-        void onUpdate(float deltaTime);
+        void onUpdate(float deltaTime) override;
     private:
         void onResize(const SceneViewResizeEvent& e);
         void onKeyPressed(const KeyPressedEvent& e);

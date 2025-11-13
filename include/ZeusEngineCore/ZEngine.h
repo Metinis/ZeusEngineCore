@@ -2,6 +2,7 @@
 #include <functional>
 #include <memory>
 #include "API.h"
+#include "Layer.h"
 #include "ZeusEngineCore/Renderer.h"
 
 struct GLFWwindow;
@@ -17,8 +18,6 @@ namespace ZEN {
     public:
         explicit ZEngine(eRendererAPI api, GLFWwindow* nativeWindow, const std::string& resourceRoot);
         ~ZEngine();
-        void onUpdate(float deltaTime);
-        void onRender(const std::function<void()>& uiRender = nullptr);
         Renderer& getRenderer(){return *m_Renderer;}
         ModelImporter& getModelImporter(){return *m_ModelImporter;}
         ModelLibrary& getModelLibrary(){return *m_ModelLibrary;}
@@ -37,8 +36,8 @@ namespace ZEN {
         std::unique_ptr<ModelLibrary> m_ModelLibrary{};
 
         //Systems
-        std::unique_ptr<RenderSystem> m_RenderSystem{};
-        std::unique_ptr<CameraSystem> m_CameraSystem{};
+        RenderSystem* m_RenderSystem{};
+        CameraSystem* m_CameraSystem{};
 
         eRendererAPI m_API{};
 
