@@ -12,6 +12,7 @@ add_library(ZeusEngineCore STATIC)
 
 target_compile_features(ZeusEngineCore PUBLIC cxx_std_23)
 
+
 add_library(imgui STATIC)
 
 target_include_directories(imgui PUBLIC
@@ -42,6 +43,11 @@ file(GLOB_RECURSE ZEUSENGINECORE_SOURCES
 )
 
 target_sources(ZeusEngineCore PRIVATE ${ZEUSENGINECORE_SOURCES} )
+
+target_precompile_headers(ZeusEngineCore
+        PUBLIC
+        "$<$<COMPILE_LANGUAGE:CXX>:${CMAKE_CURRENT_SOURCE_DIR}/include/ZeusEngineCore/ZENPCH.h>"
+)
 
 target_include_directories(ZeusEngineCore
         PUBLIC

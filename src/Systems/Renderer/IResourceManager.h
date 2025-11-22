@@ -1,11 +1,6 @@
 #pragma once
-#include <cstdint>
 #include <ZeusEngineCore/API.h>
-#include <memory>
-#include <iostream>
 #include <assimp/scene.h>
-#include <unordered_map>
-#include <span>
 
 namespace ZEN {
     struct Mesh;

@@ -1,9 +1,6 @@
 #pragma once
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/constants.hpp>
-#include <random>
-#include <sstream>
-#include <iomanip>
 
 namespace ZEN {
     struct Matrices {

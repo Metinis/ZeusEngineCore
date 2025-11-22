@@ -3,7 +3,6 @@
 #include "ZeusEngineCore/Scene.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include "ZeusEngineCore/InputEvents.h"
-#include <iostream>
 #include "GLFW/glfw3.h"
 #include "ZeusEngineCore/EventDispatcher.h"
 

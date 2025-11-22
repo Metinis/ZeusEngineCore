@@ -1,7 +1,6 @@
-
 #include "ZeusEngineCore/Application.h"
-#include "ZeusEngineCore/Scene.h"
 #include "LayerStack.h"
+#include "ZeusEngineCore/Scene.h"
 
 using namespace ZEN;
 
@@ -39,7 +38,7 @@ void Application::pushOverlay(Layer* layer) {
 void Application::close() {
     m_Running = false;
 }
-
+//todo propogate events
 void Application::run() {
     while(m_Running && !m_Window->shouldClose()) {
 
@@ -50,7 +49,7 @@ void Application::run() {
         for(Layer* layer : *m_LayerStack) {
             layer->onUpdate(dt);
         }
-        //-----------------------------------------------
+        //----------------------------------------------
 
 
         //---------------RENDER LOGIC-------------------
@@ -69,7 +68,7 @@ void Application::run() {
         m_ImGUILayer->endFrame(nullptr);
 
         m_Engine->getRenderer().endFrame();
-        //-----------------------------------------------
+        //----------------------------------------------
 
     }
 }

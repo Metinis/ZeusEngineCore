@@ -1,5 +1,4 @@
 #pragma once
-#include <memory>
 #include "ZeusEngineCore/ZEngine.h"
 #include "ZeusEngineCore/Window.h"
 #include "../../src/Engine/LayerStack.h"

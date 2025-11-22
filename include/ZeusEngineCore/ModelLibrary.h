@@ -1,9 +1,5 @@
 #pragma once
-#include <memory>
-#include <unordered_map>
-#include <string>
 #include "Vertex.h"
-#include <unordered_set>
 
 namespace ZEN {
     //cant remove these

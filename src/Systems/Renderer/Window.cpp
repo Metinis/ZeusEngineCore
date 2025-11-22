@@ -1,6 +1,4 @@
 #include "ZeusEngineCore/Window.h"
-#include <stdexcept>
-#include <utility>
 #include "GLFW/glfw3.h"
 #include <ZeusEngineCore/API.h>
 #include <ZeusEngineCore/InputEvents.h>

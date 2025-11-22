@@ -1,6 +1,4 @@
 #pragma once
-#include <functional>
-#include <memory>
 #include "API.h"
 #include "Layer.h"
 #include "ZeusEngineCore/Renderer.h"

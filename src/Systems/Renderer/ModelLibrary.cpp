@@ -1,7 +1,5 @@
 #include "ZeusEngineCore/ModelLibrary.h"
-
 #include <ZeusEngineCore/InputEvents.h>
-
 #include "IResourceManager.h"
 #include "ZeusEngineCore/Components.h"
 #include "ZeusEngineCore/EventDispatcher.h"

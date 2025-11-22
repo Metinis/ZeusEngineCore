@@ -1,8 +1,4 @@
-
 #pragma once
-#include <glm/vec3.hpp>
-#include <unordered_set>
-
 #include "Layer.h"
 
 namespace ZEN {

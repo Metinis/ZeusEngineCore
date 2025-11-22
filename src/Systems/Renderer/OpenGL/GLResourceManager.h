@@ -1,5 +1,4 @@
 #pragma once
-#include <unordered_map>
 #include "../IResourceManager.h"
 
 namespace ZEN {

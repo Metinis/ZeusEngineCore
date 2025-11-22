@@ -1,5 +1,4 @@
 #include "ZeusEngineCore/ModelImporter.h"
-#include <iostream>
 #include <ZeusEngineCore/Entity.h>
 #include <ZeusEngineCore/Components.h>
 #include <ZeusEngineCore/ModelLibrary.h>

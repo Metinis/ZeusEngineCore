@@ -1,7 +1,5 @@
 #pragma once
 #include <imgui_impl_glfw.h>
-#include <memory>
-#include <functional>
 #include <ZeusEngineCore/API.h>
 
 namespace ZEN {

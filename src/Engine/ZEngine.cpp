@@ -7,8 +7,6 @@
 #include "ZeusEngineCore/EventDispatcher.h"
 #include "ZeusEngineCore/Application.h"
 
-#include <memory>
-
 using namespace ZEN;
 ZEngine::ZEngine(eRendererAPI api, GLFWwindow* nativeWindow, const std::string& resourceRoot) : m_API(api) {
     m_Dispatcher = std::make_unique<EventDispatcher>();

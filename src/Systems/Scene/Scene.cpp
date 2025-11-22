@@ -70,7 +70,6 @@ Entity Scene::createEntity(const std::string& name) {
 }
 
 void Scene::removeEntity(Entity entity) {
-    //todo remove unused meshes from resource manager
     m_Registry.destroy((entt::entity)entity);
 }
 
@@ -80,7 +79,6 @@ Entity Scene::makeEntity(entt::entity entity) {
 }
 
 void Scene::onRemoveMesh(RemoveMeshEvent& e) {
-    //todo remove unused meshes from resource manager
     auto view = getEntities<MeshComp>();
     for (auto entity : view) {
         if(entity.getComponent<MeshComp>().name != e.meshName) {
