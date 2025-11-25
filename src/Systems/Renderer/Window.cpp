@@ -133,9 +133,9 @@ void Window::pollEvents() {
     updateWindowTitleWithFPS();
 }
 
-void Window::setCursorLock(bool isLocked) {
+void Window::setCursorLock(bool isLocked, int xPos, int yPos) {
     if (isLocked) {
-        //glfwSetCursorPos(m_Window, e.xPos, e.yPos);
+        glfwSetCursorPos(m_Window, xPos, yPos);
         glfwSetInputMode(m_Window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     } else {
         glfwSetInputMode(m_Window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);

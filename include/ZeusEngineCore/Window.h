@@ -27,7 +27,7 @@ namespace ZEN {
 
         float getHeight(){return m_Height;}
 
-        void setCursorLock(bool isLocked);
+        void setCursorLock(bool isLocked, int xPos, int yPos);
 
         void updateWindowTitleWithFPS();
 

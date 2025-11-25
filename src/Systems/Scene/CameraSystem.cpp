@@ -2,6 +2,8 @@
 #include "ZeusEngineCore/Components.h"
 #include "ZeusEngineCore/Scene.h"
 #include <glm/gtc/matrix_transform.hpp>
+#include <ZeusEngineCore/Application.h>
+
 #include "ZeusEngineCore/InputEvents.h"
 #include "GLFW/glfw3.h"
 
@@ -116,12 +118,13 @@ bool CameraSystem::onKeyReleased(const KeyReleasedEvent &e) {
 }
 
 bool CameraSystem::onMouseButtonPressed(const MouseButtonPressedEvent &e) {
-    if(e.getKeyCode() == GLFW_MOUSE_BUTTON_RIGHT && m_PanelSelected) {
+    if(e.getKeyCode() == GLFW_MOUSE_BUTTON_RIGHT) {
        /* m_Dispatcher->trigger<CursorLockEvent>(CursorLockEvent{
             .lock = true,
             .xPos = m_CursorPosX,
             .yPos = m_CursorPosY
         });*/
+        Application::get().getWindow()->setCursorLock(true, m_CursorPosX, m_CursorPosY);
         m_CursorLocked = true;
         m_CursorPosLastX = m_CursorPosX;
         m_CursorPosLastY = m_CursorPosY;
@@ -131,6 +134,7 @@ bool CameraSystem::onMouseButtonPressed(const MouseButtonPressedEvent &e) {
 
 bool CameraSystem::onMouseButtonReleased(const MouseButtonReleasedEvent &e) {
     if(e.getKeyCode() == GLFW_MOUSE_BUTTON_RIGHT) {
+        Application::get().getWindow()->setCursorLock(false, m_CursorPosX, m_CursorPosY);
         /*m_Dispatcher->trigger<CursorLockEvent>(CursorLockEvent{
             .lock = false,
             .xPos = m_CursorPosX,

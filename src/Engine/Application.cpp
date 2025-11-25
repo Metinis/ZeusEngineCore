@@ -75,12 +75,10 @@ bool Application::onWindowResize(const WindowResizeEvent &event) {
 void Application::close() {
     m_Running = false;
 }
-//todo propogate events
 void Application::run() {
     while(m_Running && !m_Window->shouldClose()) {
 
         //---------------UPDATE LOGIC-------------------
-        //m_Engine->getCameraSystem().setSize(m_ViewportSize.x, m_ViewportSize.y);
         m_Window->pollEvents();
         const float dt = m_Window->getDeltaTime();
 
