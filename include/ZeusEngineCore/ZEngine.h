@@ -21,13 +21,11 @@ namespace ZEN {
         ModelLibrary& getModelLibrary(){return *m_ModelLibrary;}
         RenderSystem& getRenderSystem(){return *m_RenderSystem;}
         CameraSystem& getCameraSystem(){return *m_CameraSystem;}
-        EventDispatcher& getDispatcher(){return *m_Dispatcher;}
         Scene& getScene(){return *m_Scene;}
     private:
         //Core
         std::unique_ptr<Scene> m_Scene{};
-        std::unique_ptr<Renderer> m_Renderer{};
-        std::unique_ptr<EventDispatcher> m_Dispatcher{};
+        Renderer* m_Renderer{};
 
         //Libraries/Loaders
         std::unique_ptr<ModelImporter> m_ModelImporter{};

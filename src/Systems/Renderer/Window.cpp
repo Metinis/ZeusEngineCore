@@ -1,8 +1,9 @@
 #include "ZeusEngineCore/Window.h"
 #include "GLFW/glfw3.h"
 #include <ZeusEngineCore/API.h>
+#include <ZeusEngineCore/Application.h>
 #include <ZeusEngineCore/InputEvents.h>
-#include "ZeusEngineCore/EventDispatcher.h"
+#include <ZeusEngineCore/Event.h>
 
 using namespace ZEN;
 
@@ -33,56 +34,67 @@ Window::Window(int width, int height, std::string title, ZEN::eRendererAPI api)
 
     m_LastTime = static_cast<float>(glfwGetTime());
 
-
+    m_SubmitEventFn = [](Event& event) {
+        Application::get().callEvent(event);
+    };
 }
 
-void Window::attachDispatcher(EventDispatcher& dispatcher) {
-    glfwSetWindowUserPointer(m_Window, &dispatcher);
+void Window::attachDispatcher() {
+    glfwSetWindowUserPointer(m_Window, &m_SubmitEventFn);
     //m_Dispatcher->attach<SceneViewResizeEvent>(this, &CameraSystem::onResize);
 
-    dispatcher.attach<CursorLockEvent, Window, &Window::onCursorLockChange>(this);
+    //dispatcher.attach<CursorLockEvent, Window, &Window::onCursorLockChange>(this);
 
     glfwSetFramebufferSizeCallback(m_Window, [](GLFWwindow* window, int width, int height) {
-        auto* disp = static_cast<entt::dispatcher*>(
+        auto* submitEventFn = static_cast<std::function<void(Event&)>*>(
             glfwGetWindowUserPointer(window)
         );
-        disp->trigger<WindowResizeEvent>({width, height});
+        WindowResizeEvent event(width, height);
+        (*submitEventFn)(event);
+
     });
 
     glfwSetKeyCallback(m_Window, [](GLFWwindow* window, int key, int scan,
         int action, int mods) {
-        auto* disp = static_cast<entt::dispatcher*>(
-            glfwGetWindowUserPointer(window)
-        );
+            auto* submitEventFn = static_cast<std::function<void(Event&)>*>(
+                glfwGetWindowUserPointer(window)
+            );
         if(action == GLFW_PRESS) {
-            disp->trigger<KeyPressedEvent>({key, scan, mods});
+            KeyPressedEvent event(key, false);
+            (*submitEventFn)(event);
         }
         if(action == GLFW_REPEAT) {
-            disp->trigger<KeyRepeatEvent>({key, scan, mods});
+            KeyPressedEvent event(key, true);
+            (*submitEventFn)(event);
         }
         if(action == GLFW_RELEASE) {
-            disp->trigger<KeyReleaseEvent>({key, scan, mods});
+            KeyReleasedEvent event(key);
+            (*submitEventFn)(event);
         }
     });
     glfwSetMouseButtonCallback(m_Window, [](GLFWwindow* window, int button, int action, int mods) {
-        auto* disp = static_cast<entt::dispatcher*>(
+        auto* submitEventFn = static_cast<std::function<void(Event&)>*>(
             glfwGetWindowUserPointer(window)
         );
         if(action == GLFW_PRESS) {
-            disp->trigger<MouseButtonPressEvent>({button, mods});
+            MouseButtonPressedEvent event(button, false);
+            (*submitEventFn)(event);
         }
         if(action == GLFW_REPEAT) {
-            disp->trigger<MouseButtonRepeatEvent>({button, mods});
+            MouseButtonPressedEvent event(button, true);
+            (*submitEventFn)(event);
         }
         if(action == GLFW_RELEASE) {
-            disp->trigger<MouseButtonReleaseEvent>({button, mods});
+            MouseButtonReleasedEvent event(button);
+            (*submitEventFn)(event);
         }
     });
     glfwSetCursorPosCallback(m_Window, [](GLFWwindow* window, double xPos, double yPos) {
-        auto* disp = static_cast<entt::dispatcher*>(
+        auto* submitEventFn = static_cast<std::function<void(Event&)>*>(
             glfwGetWindowUserPointer(window)
         );
-        disp->trigger<MouseMoveEvent>({xPos, yPos});
+        MouseMovedEvent event(xPos, yPos);
+        (*submitEventFn)(event);
     });
 }
 
@@ -121,9 +133,9 @@ void Window::pollEvents() {
     updateWindowTitleWithFPS();
 }
 
-void Window::onCursorLockChange(CursorLockEvent &e) {
-    if (e.lock) {
-        glfwSetCursorPos(m_Window, e.xPos, e.yPos);
+void Window::setCursorLock(bool isLocked) {
+    if (isLocked) {
+        //glfwSetCursorPos(m_Window, e.xPos, e.yPos);
         glfwSetInputMode(m_Window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     } else {
         glfwSetInputMode(m_Window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);

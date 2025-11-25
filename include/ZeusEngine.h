@@ -5,7 +5,7 @@
 #include "ZeusEngineCore/CameraSystem.h"
 #include "ZeusEngineCore/Components.h"
 #include "ZeusEngineCore/Entity.h"
-#include "ZeusEngineCore/EventDispatcher.h"
+#include "ZeusEngineCore/Event.h"
 #include "ZeusEngineCore/InputEvents.h"
 #include "ZeusEngineCore/Layer.h"
 #include "ZeusEngineCore/ModelImporter.h"

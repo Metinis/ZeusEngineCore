@@ -1,12 +1,11 @@
 #include "ZeusEngineCore/Renderer.h"
 #define GLFW_INCLUDE_NONE
 #include "GLFW/glfw3.h"
-#include "ZeusEngineCore/EventDispatcher.h"
 #include "ZeusEngineCore/InputEvents.h"
 
 using namespace ZEN;
 
-Renderer::Renderer(eRendererAPI api, const std::string& resourceRoot, GLFWwindow* window, EventDispatcher& dispatcher) : m_Window(window){
+Renderer::Renderer(eRendererAPI api, const std::string& resourceRoot, GLFWwindow* window) : m_Window(window){
     m_Context = IContext::create(api, window);
     m_ResourceManager = IResourceManager::create(api, resourceRoot);
     m_ViewUBO.uboID = m_ResourceManager->createUBO(0);
@@ -24,8 +23,11 @@ Renderer::Renderer(eRendererAPI api, const std::string& resourceRoot, GLFWwindow
     m_CaptureFBO.fboID = m_ResourceManager->createFBO();
     m_ResourceManager->bindFBO(m_CaptureFBO.fboID);
     m_CaptureRBO.rboID = m_ResourceManager->createDepthBuffer(512, 512);
+}
 
-    dispatcher.attach<WindowResizeEvent, Renderer, &Renderer::onResize>(this);
+void Renderer::onEvent(Event &event) {
+    //EventDispatcher dispatcher(event);
+    //dispatcher.dispatch<WindowResizeEvent>([this](WindowResizeEvent& e) {return onResize(e); });
 }
 
 void Renderer::beginFrame() {
@@ -199,12 +201,11 @@ void Renderer::endFrame() {
     m_Context->swapBuffers();
 }
 
-
-void Renderer::onResize(WindowResizeEvent &e) {
-    std::cout<<"Renderer resized! "<<e.width<<"x "<<e.height<<"y \n";
+void Renderer::setSize(int width, int height) {
+    m_Width = width;
+    m_Height = height;
+    std::cout<<"Renderer resized! "<<width<<"x "<<height<<"y \n";
     m_Resized = true;
-    m_Width = e.width;
-    m_Height = e.height;
 }
 
 void* Renderer::getColorTextureHandle() {

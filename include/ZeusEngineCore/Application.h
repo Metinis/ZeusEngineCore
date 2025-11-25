@@ -14,6 +14,15 @@ namespace ZEN {
         void init();
         void pushLayer(Layer* layer);
         void pushOverlay(Layer* layer);
+        void popLayer(Layer* layer);
+        void popOverlay(Layer* layer);
+        void callEvent(Event& event);
+
+        void setViewportSize(glm::vec2 size);
+
+        bool onWindowResize(const WindowResizeEvent& event);
+
+        Window* getWindow() const { return m_Window.get(); }
         static Application& get() { return *s_Instance; }
 
         void close();
@@ -31,6 +40,7 @@ namespace ZEN {
         std::string m_ResourceRoot{};
         eRendererAPI m_API{OpenGL};
         bool m_Running { false };
+        glm::vec2 m_ViewportSize{1.0f, 1.0f};
 
     };
 

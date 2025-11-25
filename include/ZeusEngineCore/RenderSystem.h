@@ -1,5 +1,4 @@
 #pragma once
-#include "EventDispatcher.h"
 #include "Layer.h"
 #include "Renderer.h"
 
@@ -12,8 +11,7 @@ namespace ZEN {
 	struct ToggleDrawNormalsEvent;
 	class RenderSystem : public Layer {
 	public:
-		explicit RenderSystem(Renderer *renderer, Scene *scene, ModelLibrary* library,
-			EventDispatcher* dispatcher);
+		explicit RenderSystem(Renderer *renderer, Scene *scene, ModelLibrary* library);
 		void onUpdate(float deltaTime) override;
 		void onRender() override;
 	private:
@@ -27,10 +25,10 @@ namespace ZEN {
 
 		void updateWorldTransforms();
 
-		void onMeshRemove(RemoveMeshEvent& e);
+		/*void onMeshRemove(RemoveMeshEvent& e);
 		void onMeshCompRemove(RemoveMeshCompEvent& e);
 		void onMeshDrawableRemove(RemoveMeshDrawableEvent& e);
-		void onToggleDrawNormals(ToggleDrawNormalsEvent& e);
+		void onToggleDrawNormals(ToggleDrawNormalsEvent& e);*/
 
 		uint32_t m_IrradianceMapID{};
 		uint32_t m_PrefilterMapID{};
@@ -40,7 +38,6 @@ namespace ZEN {
 		Renderer* m_Renderer{};
 		ModelLibrary* m_Library{};
 		Scene* m_Scene{};
-		EventDispatcher* m_Dispatcher{};
 		bool m_DrawNormals{};
 	};
 }

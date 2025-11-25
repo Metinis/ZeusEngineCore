@@ -36,8 +36,7 @@ namespace ZEN {
 
     class ModelLibrary {
     public:
-        explicit ModelLibrary(EventDispatcher* dispatcher, IResourceManager* resourceManager,
-            const std::string& resourceRoot);
+        explicit ModelLibrary(IResourceManager* resourceManager, const std::string& resourceRoot);
 
         void addMesh(const std::string& name, std::unique_ptr<Mesh> mesh);
         void addMesh(const std::string& name, const Mesh& mesh);
@@ -75,7 +74,6 @@ namespace ZEN {
             const std::string& geoPath);
         //static std::shared_ptr<MeshComp> createPlane();
         std::unique_ptr<Mesh> createSphere(float radius, unsigned int sectorCount, unsigned int stackCount);
-        EventDispatcher* m_Dispatcher{};
         IResourceManager* m_ResourceManager{};
 
     };

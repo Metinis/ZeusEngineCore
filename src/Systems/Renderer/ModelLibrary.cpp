@@ -1,14 +1,10 @@
 #include "ZeusEngineCore/ModelLibrary.h"
-#include <ZeusEngineCore/InputEvents.h>
 #include "IResourceManager.h"
 #include "ZeusEngineCore/Components.h"
-#include "ZeusEngineCore/EventDispatcher.h"
 
 using namespace ZEN;
 
-ModelLibrary::ModelLibrary(EventDispatcher *dispatcher, IResourceManager *resourceManager,
-                           const std::string &resourceRoot)
-    : m_Dispatcher(dispatcher), m_ResourceManager(resourceManager) {
+ModelLibrary::ModelLibrary(IResourceManager *resourceManager, const std::string &resourceRoot) : m_ResourceManager(resourceManager) {
     m_Materials["Default"] = createDefaultMaterial("/shaders/pbr.vert", "/shaders/pbr.frag", "");
     m_Meshes["Cube"] = createCube();
     m_Meshes["Skybox"] = createSkybox();
@@ -155,7 +151,7 @@ void ModelLibrary::removeMesh(const std::string &name) {
     auto it = m_Meshes.find(name);
     if (it != m_Meshes.end()) {
         m_Meshes.erase(name);
-        m_Dispatcher->trigger<RemoveMeshEvent>(RemoveMeshEvent{name});
+        //m_Dispatcher->trigger<RemoveMeshEvent>(RemoveMeshEvent{name});
         return;
     }
     std::cout << "Mesh not found: " << name << "\n";
@@ -165,7 +161,7 @@ void ModelLibrary::removeMaterial(const std::string &name) {
     auto it = m_Materials.find(name);
     if (it != m_Materials.end()) {
         m_Materials.erase(name);
-        m_Dispatcher->trigger<RemoveMaterialEvent>(RemoveMaterialEvent{name});
+        //m_Dispatcher->trigger<RemoveMaterialEvent>(RemoveMaterialEvent{name});
         return;
     }
     std::cout << "Material not found: " << name << "\n";
@@ -183,7 +179,7 @@ void ModelLibrary::removeTexture(const std::string &name) {
         }
         m_Textures.erase(name);
         m_ResourceManager->deleteTexture(textureID);
-        m_Dispatcher->trigger<RemoveTextureEvent>(RemoveTextureEvent{name});
+        //m_Dispatcher->trigger<RemoveTextureEvent>(RemoveTextureEvent{name});
         return;
     }
     std::cout << "Texture not found: " << name << "\n";

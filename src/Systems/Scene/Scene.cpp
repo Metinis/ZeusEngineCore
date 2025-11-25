@@ -3,26 +3,25 @@
 #include <ZeusEngineCore/InputEvents.h>
 #include <ZeusEngineCore/ModelLibrary.h>
 #include <ZeusEngineCore/ZEngine.h>
-#include "ZeusEngineCore/EventDispatcher.h"
 
 using namespace ZEN;
 
-Scene::Scene(EventDispatcher* dispatcher) : m_Dispatcher(dispatcher){
-    m_Dispatcher->attach<RemoveMeshEvent, Scene, &Scene::onRemoveMesh>(this);
-    m_Dispatcher->attach<RemoveMaterialEvent, Scene, &Scene::onRemoveMaterial>(this);
-    m_Dispatcher->attach<RemoveTextureEvent, Scene, &Scene::onRemoveTexture>(this);
+Scene::Scene(){
+    //m_Dispatcher->attach<RemoveMeshEvent, Scene, &Scene::onRemoveMesh>(this);
+    //m_Dispatcher->attach<RemoveMaterialEvent, Scene, &Scene::onRemoveMaterial>(this);
+    //m_Dispatcher->attach<RemoveTextureEvent, Scene, &Scene::onRemoveTexture>(this);
 
-    m_Registry.on_destroy<MeshComp>().connect<&Scene::onMeshCompRemove>(this);
-    m_Registry.on_destroy<MeshDrawableComp>().connect<&Scene::onMeshDrawableRemove>(this);
+    //m_Registry.on_destroy<MeshComp>().connect<&Scene::onMeshCompRemove>(this);
+    //m_Registry.on_destroy<MeshDrawableComp>().connect<&Scene::onMeshDrawableRemove>(this);
 }
 
-void Scene::onMeshCompRemove(entt::registry& registry, entt::entity entity) {
-    m_Dispatcher->trigger<RemoveMeshCompEvent>(RemoveMeshCompEvent{Entity(&m_Registry, entity)});
-}
+//void Scene::onMeshCompRemove(entt::registry& registry, entt::entity entity) {
+    //m_Dispatcher->trigger<RemoveMeshCompEvent>(RemoveMeshCompEvent{Entity(&m_Registry, entity)});
+//}
 
-void Scene::onMeshDrawableRemove(entt::registry& registry, entt::entity entity) {
-    m_Dispatcher->trigger<RemoveMeshDrawableEvent>(RemoveMeshDrawableEvent{Entity(&m_Registry, entity)});
-}
+//void Scene::onMeshDrawableRemove(entt::registry& registry, entt::entity entity) {
+    //m_Dispatcher->trigger<RemoveMeshDrawableEvent>(RemoveMeshDrawableEvent{Entity(&m_Registry, entity)});
+//}
 
 void Scene::createDefaultScene(ZEngine* engine) {
     auto dirLightEntity = createEntity("Directional Light");
@@ -78,7 +77,7 @@ Entity Scene::makeEntity(entt::entity entity) {
     return Entity{this, entity};
 }
 
-void Scene::onRemoveMesh(RemoveMeshEvent& e) {
+/*void Scene::onRemoveMesh(RemoveMeshEvent& e) {
     auto view = getEntities<MeshComp>();
     for (auto entity : view) {
         if(entity.getComponent<MeshComp>().name != e.meshName) {
@@ -101,7 +100,7 @@ void Scene::onRemoveMaterial(RemoveMaterialEvent& e) {
 void Scene::onRemoveTexture(RemoveTextureEvent& e) {
     /*auto view = getEntities<MaterialComp>();
     for (auto entity : view) {
-    }*/
-}
+    }
+}*/
 
 

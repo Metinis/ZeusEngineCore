@@ -5,14 +5,13 @@
 
 using namespace ZEN;
 
-RenderSystem::RenderSystem(Renderer *renderer, Scene *scene, ModelLibrary* library,
-            EventDispatcher* dispatcher) :
-m_Renderer(renderer), m_Scene(scene), m_Library(library), m_Dispatcher(dispatcher){
+RenderSystem::RenderSystem(Renderer *renderer, Scene *scene, ModelLibrary* library) :
+m_Renderer(renderer), m_Scene(scene), m_Library(library){
 
-    m_Dispatcher->attach<RemoveMeshEvent, RenderSystem, &RenderSystem::onMeshRemove>(this);
-    m_Dispatcher->attach<RemoveMeshCompEvent, RenderSystem, &RenderSystem::onMeshCompRemove>(this);
-    m_Dispatcher->attach<RemoveMeshDrawableEvent, RenderSystem, &RenderSystem::onMeshDrawableRemove>(this);
-    m_Dispatcher->attach<ToggleDrawNormalsEvent, RenderSystem, &RenderSystem::onToggleDrawNormals>(this);
+    //m_Dispatcher->attach<RemoveMeshEvent, RenderSystem, &RenderSystem::onMeshRemove>(this);
+    //m_Dispatcher->attach<RemoveMeshCompEvent, RenderSystem, &RenderSystem::onMeshCompRemove>(this);
+    //m_Dispatcher->attach<RemoveMeshDrawableEvent, RenderSystem, &RenderSystem::onMeshDrawableRemove>(this);
+    //m_Dispatcher->attach<ToggleDrawNormalsEvent, RenderSystem, &RenderSystem::onToggleDrawNormals>(this);
 
     Mesh* cubeMesh = m_Library->getMesh("Cube");
     m_CubeDrawable.name = "Cube";
@@ -43,7 +42,7 @@ void RenderSystem::updateWorldTransforms() {
     }
 }
 
-void RenderSystem::onMeshRemove(RemoveMeshEvent &e) {
+/*void RenderSystem::onMeshRemove(RemoveMeshEvent &e) {
     //remove the drawable comp here
     auto view = m_Scene->getEntities<MeshDrawableComp>();
     for(auto entity : view) {
@@ -67,7 +66,7 @@ void RenderSystem::onMeshDrawableRemove(RemoveMeshDrawableEvent &e) {
 
 void RenderSystem::onToggleDrawNormals(ToggleDrawNormalsEvent &e) {
     m_DrawNormals = !m_DrawNormals;
-}
+}*/
 
 void RenderSystem::onUpdate(float deltaTime) {
     updateWorldTransforms();

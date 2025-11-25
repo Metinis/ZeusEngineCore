@@ -1,4 +1,5 @@
 #pragma once
+#include "Event.h"
 
 namespace ZEN {
     class Layer {
@@ -14,7 +15,7 @@ namespace ZEN {
         virtual void onUIRender() {}
         virtual void onRender() {}
 
-        virtual void onEvent() {}
+        virtual void onEvent(Event& event) {}
 
     };
 }

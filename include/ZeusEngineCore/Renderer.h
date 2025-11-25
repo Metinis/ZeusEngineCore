@@ -1,4 +1,5 @@
 #pragma once
+#include "Layer.h"
 #include "../src/Systems/Renderer/OpenGL/GLContext.h"
 #include "ZeusEngineCore/Components.h"
 
@@ -31,9 +32,11 @@ namespace ZEN {
 		uint32_t fboID;
 	};
 
-	class Renderer {
+	class Renderer : public Layer {
 	public:
-		explicit Renderer(eRendererAPI api, const std::string& resourceRoot, GLFWwindow* window, EventDispatcher& dispatcher);
+		explicit Renderer(eRendererAPI api, const std::string& resourceRoot, GLFWwindow* window);
+
+		void onEvent(Event& event) override;
 
 		template<typename T>
 		void writeToUBO(uint32_t uboID, T ubo) {
@@ -49,7 +52,8 @@ namespace ZEN {
 		void renderToBRDFLUT(uint32_t brdfTexID, uint32_t brdfShader, const MeshDrawableComp& drawable);
 
 		void endFrame();
-		void onResize(WindowResizeEvent& e);
+		bool onResize(WindowResizeEvent& e);
+		void setSize(int width, int height);
 		Texture& getColorTexture() {return m_ColorTex;}
 		void* getColorTextureHandle();
 		IResourceManager* getResourceManager() {return m_ResourceManager.get();}
