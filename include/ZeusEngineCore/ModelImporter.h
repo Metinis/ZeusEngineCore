@@ -1,10 +1,8 @@
 #pragma once
-#include <unordered_map>
 #include <glm/fwd.hpp>
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
-#include <vector>
 
 namespace ZEN {
     class Scene;

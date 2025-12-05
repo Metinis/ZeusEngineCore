@@ -15,9 +15,6 @@ namespace ZEN {
     };
     struct MeshDrawableComp {
         std::string name{};
-        size_t indexCount{};
-        uint32_t meshID{};
-        int instanceCount{1};
     };
     struct MaterialComp {
         std::string name{};

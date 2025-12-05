@@ -2,8 +2,7 @@
 #define GLFW_INCLUDE_NONE
 #include "GLFW/glfw3.h"
 #include <glad/glad.h>
-#include <stdexcept>
-#include "ZeusEngineCore/Components.h"
+#include "ZeusEngineCore/ModelLibrary.h"
 
 using namespace ZEN;
 
@@ -19,9 +18,9 @@ GLContext::GLContext(GLFWwindow* window)
     glCullFace(GL_BACK);
     glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 }
-void GLContext::drawMesh(IResourceManager& resourceManager, const MeshDrawableComp& drawable) {
+void GLContext::drawMesh(IResourceManager& resourceManager, const MeshDrawable& drawable) {
     //retrieve GLDrawable by meshID from resource manager
-    resourceManager.bindMeshDrawable(drawable.meshID);
+    resourceManager.bindMeshDrawable(drawable.drawableID);
     glDrawElementsInstanced(GL_TRIANGLES, drawable.indexCount, GL_UNSIGNED_INT,
         nullptr, drawable.instanceCount);
     glBindVertexArray(0);

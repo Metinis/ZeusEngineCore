@@ -1,14 +1,9 @@
 #pragma once
-#include <cstdint>
 #include <ZeusEngineCore/API.h>
-#include <memory>
-#include <iostream>
 #include <assimp/scene.h>
-#include <unordered_map>
-#include <span>
 
 namespace ZEN {
-    struct Mesh;
+    struct MeshData;
     struct Material;
     class IResourceManager {
     public:
@@ -24,7 +19,7 @@ namespace ZEN {
 
         virtual ~IResourceManager() = default;
 
-        virtual uint32_t createMeshDrawable(const Mesh& mesh) = 0;
+        virtual uint32_t createMeshDrawable(const MeshData& mesh) = 0;
         virtual void bindMeshDrawable(uint32_t drawableID) = 0;
         virtual void deleteMeshDrawable(uint32_t drawableID) = 0;
 

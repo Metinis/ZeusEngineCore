@@ -1,12 +1,11 @@
 #include "ZeusEngineCore/Renderer.h"
 #define GLFW_INCLUDE_NONE
 #include "GLFW/glfw3.h"
-#include "ZeusEngineCore/EventDispatcher.h"
 #include "ZeusEngineCore/InputEvents.h"
 
 using namespace ZEN;
 
-Renderer::Renderer(eRendererAPI api, const std::string& resourceRoot, GLFWwindow* window, EventDispatcher& dispatcher) : m_Window(window){
+Renderer::Renderer(eRendererAPI api, const std::string& resourceRoot, GLFWwindow* window) : m_Window(window){
     m_Context = IContext::create(api, window);
     m_ResourceManager = IResourceManager::create(api, resourceRoot);
     m_ViewUBO.uboID = m_ResourceManager->createUBO(0);
@@ -24,9 +23,13 @@ Renderer::Renderer(eRendererAPI api, const std::string& resourceRoot, GLFWwindow
     m_CaptureFBO.fboID = m_ResourceManager->createFBO();
     m_ResourceManager->bindFBO(m_CaptureFBO.fboID);
     m_CaptureRBO.rboID = m_ResourceManager->createDepthBuffer(512, 512);
-
-    dispatcher.attach<WindowResizeEvent, Renderer, &Renderer::onResize>(this);
 }
+
+void Renderer::onEvent(Event &event) {
+
+}
+
+
 
 void Renderer::beginFrame() {
     m_ResourceManager->bindFBO(m_MainFBO.fboID);
@@ -60,7 +63,7 @@ const glm::mat4 captureViews[] =
     glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 0.0f,  0.0f,  1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
     glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f))
  };
-void Renderer::renderToCubeMapHDR(uint32_t cubemapTexID, uint32_t eqToCubeMapShader, uint32_t hdrTexID, const MeshDrawableComp& drawable) {
+void Renderer::renderToCubeMapHDR(uint32_t cubemapTexID, uint32_t eqToCubeMapShader, uint32_t hdrTexID, const MeshDrawable& drawable) {
 
     // convert HDR equirectangular environment map to cubemap equivalent
     m_ResourceManager->bindShader(eqToCubeMapShader);
@@ -96,7 +99,7 @@ void Renderer::renderToCubeMapHDR(uint32_t cubemapTexID, uint32_t eqToCubeMapSha
 }
 
 void Renderer::renderToIrradianceMap(uint32_t cubemapTexID, uint32_t irradianceTexID, uint32_t irradianceShader,
-    const MeshDrawableComp &drawable) {
+    const MeshDrawable &drawable) {
     // convert HDR equirectangular environment map to cubemap equivalent
     m_ResourceManager->bindShader(irradianceShader);
     m_ResourceManager->bindCubeMapTexture(cubemapTexID, 0);
@@ -129,7 +132,7 @@ void Renderer::renderToIrradianceMap(uint32_t cubemapTexID, uint32_t irradianceT
 }
 
 void Renderer::renderToPrefilterMap(uint32_t cubemapTexID, uint32_t prefilterTexID, uint32_t prefilterShader,
-    const MeshDrawableComp &drawable) {
+    const MeshDrawable &drawable) {
     // convert HDR equirectangular environment map to cubemap equivalent
     m_ResourceManager->bindShader(prefilterShader);
     m_ResourceManager->bindCubeMapTexture(cubemapTexID, 0);
@@ -171,7 +174,7 @@ void Renderer::renderToPrefilterMap(uint32_t cubemapTexID, uint32_t prefilterTex
     m_Context->setViewport(fbWidth, fbHeight);
 }
 
-void Renderer::renderToBRDFLUT(uint32_t brdfTexID, uint32_t brdfShader, const MeshDrawableComp& drawable) {
+void Renderer::renderToBRDFLUT(uint32_t brdfTexID, uint32_t brdfShader, const MeshDrawable& drawable) {
     m_Context->disableCullFace();
 
     m_ResourceManager->bindFBO(m_CaptureFBO.fboID);
@@ -195,16 +198,30 @@ void Renderer::renderToBRDFLUT(uint32_t brdfTexID, uint32_t brdfShader, const Me
 
 }
 
+void Renderer::renderToScreenQuad(uint32_t quadShader, const MeshDrawable &drawable) {
+    m_Context->disableCullFace();
+    bindDefaultFBO();
+    m_ResourceManager->bindShader(quadShader);
+    m_ResourceManager->bindTexture(m_ColorTex.textureID, 0);
+    m_ResourceManager->bindDepthBuffer(m_DepthRBO.rboID);
+    m_Context->clear(true, true);
+    m_Context->drawMesh(*m_ResourceManager, drawable); //quad
+    m_Context->enableCullFace();
+}
+
 void Renderer::endFrame() {
     m_Context->swapBuffers();
 }
 
+bool Renderer::onResize(WindowResizeEvent &e) {
 
-void Renderer::onResize(WindowResizeEvent &e) {
-    std::cout<<"Renderer resized! "<<e.width<<"x "<<e.height<<"y \n";
+}
+
+void Renderer::setSize(int width, int height) {
+    m_Width = width;
+    m_Height = height;
+    std::cout<<"Renderer resized! "<<width<<"x "<<height<<"y \n";
     m_Resized = true;
-    m_Width = e.width;
-    m_Height = e.height;
 }
 
 void* Renderer::getColorTextureHandle() {

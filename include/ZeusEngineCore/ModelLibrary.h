@@ -1,9 +1,5 @@
 #pragma once
-#include <memory>
-#include <unordered_map>
-#include <string>
 #include "Vertex.h"
-#include <unordered_set>
 
 namespace ZEN {
     //cant remove these
@@ -24,32 +20,48 @@ namespace ZEN {
         float metallic{1.0f};
         float roughness{1.0f};
         float ao{1.0f};
-        bool metal{};
-        bool useAlbedo;
-        bool useMetallic;
-        bool useRoughness;
-        bool useNormal;
-        bool useAO;
+        bool metal{false};
+        bool useAlbedo{false};
+        bool useMetallic{false};
+        bool useRoughness{false};
+        bool useNormal{false};
+        bool useAO{false};
     };
-    struct Mesh {
+    struct MeshData {
         std::vector<uint32_t> indices{};
         std::vector<Vertex> vertices{};
+    };
+    struct MeshDrawable {
+        uint32_t drawableID{}; //id from resource manager
+        size_t indexCount{};
+        int instanceCount{1};
     };
     class IResourceManager;
     class EventDispatcher;
 
     class ModelLibrary {
     public:
-        explicit ModelLibrary(EventDispatcher* dispatcher, IResourceManager* resourceManager,
-            const std::string& resourceRoot);
+        explicit ModelLibrary(IResourceManager* resourceManager, const std::string& resourceRoot);
 
-        void addMesh(const std::string& name, std::unique_ptr<Mesh> mesh);
-        void addMesh(const std::string& name, const Mesh& mesh);
-        Mesh* getMesh(const std::string& name);
-        const std::unordered_map<std::string, std::unique_ptr<Mesh>>& getAllMeshes() {
-            return m_Meshes;
+        void addMeshData(const std::string& name, std::unique_ptr<MeshData> mesh);
+        void addMeshData(const std::string& name, const MeshData& mesh);
+        MeshData* getMeshData(const std::string& name);
+        const std::unordered_map<std::string, std::unique_ptr<MeshData>>& getAllMeshData() {
+            return m_MeshData;
         }
-        void removeMesh(const std::string& name);
+        MeshDrawable* getMeshDrawable(const std::string& name);
+        const std::unordered_map<std::string, std::unique_ptr<MeshDrawable>>& getAllMeshDrawables() {
+            return m_MeshDrawables;
+        }
+        void addMeshDrawable(const std::string &name, const MeshDrawable& drawable);
+        void addMeshDrawable(const std::string &name, std::unique_ptr<MeshDrawable> drawable);
+
+        bool hasDrawable(const std::string &name) const { return m_MeshDrawables.contains(name); }
+
+        void createAndAddDrawable(const std::string &name, const MeshData& data);
+
+        void removeMeshData(const std::string& name);
+        void removeMeshDrawable(const std::string& name);
 
         void addMaterial(const std::string& name, std::unique_ptr<Material> material);
         void addMaterial(const std::string& name, const Material& material);
@@ -68,18 +80,18 @@ namespace ZEN {
 
 
     private:
-        std::unordered_map<std::string, std::unique_ptr<Mesh>> m_Meshes;
+        std::unordered_map<std::string, std::unique_ptr<MeshData>> m_MeshData;
+        std::unordered_map<std::string, std::unique_ptr<MeshDrawable>> m_MeshDrawables;
         std::unordered_map<std::string, std::unique_ptr<Material>> m_Materials;
         std::unordered_map<std::string, uint32_t> m_Textures; //texture IDs from resource manager
         // Internal generators
-        std::unique_ptr<Mesh> createCube();
-        std::unique_ptr<Mesh> createQuad();
-        std::unique_ptr<Mesh> createSkybox();
+        std::unique_ptr<MeshData> createCube();
+        std::unique_ptr<MeshData> createQuad();
+        std::unique_ptr<MeshData> createSkybox();
         std::unique_ptr<Material> createDefaultMaterial(const std::string& vertPath, const std::string& fragPath,
             const std::string& geoPath);
         //static std::shared_ptr<MeshComp> createPlane();
-        std::unique_ptr<Mesh> createSphere(float radius, unsigned int sectorCount, unsigned int stackCount);
-        EventDispatcher* m_Dispatcher{};
+        std::unique_ptr<MeshData> createSphere(float radius, unsigned int sectorCount, unsigned int stackCount);
         IResourceManager* m_ResourceManager{};
 
     };

@@ -1,8 +1,5 @@
 #include "GLResourceManager.h"
 #define GLFW_INCLUDE_NONE
-#include <iostream>
-#include <fstream>
-#include <sstream>
 #include "GLFW/glfw3.h"
 #include <glad/glad.h>
 #define STB_IMAGE_IMPLEMENTATION
@@ -46,7 +43,7 @@ ZEN::GLResourceManager::~GLResourceManager() {
 }
 
 
-uint32_t ZEN::GLResourceManager::createMeshDrawable(const Mesh &mesh) {
+uint32_t ZEN::GLResourceManager::createMeshDrawable(const MeshData &mesh) {
     GLDrawable drawable{};
     glGenVertexArrays(1, &drawable.vao);
     glGenBuffers(1, &drawable.vbo);

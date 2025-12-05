@@ -1,4 +1,6 @@
 #pragma once
+#include "InputEvents.h"
+#include "Layer.h"
 #include "../src/Systems/Renderer/OpenGL/GLContext.h"
 #include "ZeusEngineCore/Components.h"
 
@@ -31,9 +33,11 @@ namespace ZEN {
 		uint32_t fboID;
 	};
 
-	class Renderer {
+	class Renderer : public Layer {
 	public:
-		explicit Renderer(eRendererAPI api, const std::string& resourceRoot, GLFWwindow* window, EventDispatcher& dispatcher);
+		explicit Renderer(eRendererAPI api, const std::string& resourceRoot, GLFWwindow* window);
+
+		void onEvent(Event& event) override;
 
 		template<typename T>
 		void writeToUBO(uint32_t uboID, T ubo) {
@@ -43,13 +47,15 @@ namespace ZEN {
 		void beginFrame();
 		void bindDefaultFBO();
 
-		void renderToCubeMapHDR(uint32_t cubemapTexID, uint32_t eqToCubeMapShader, uint32_t hdrTexID, const MeshDrawableComp& drawable);
-		void renderToIrradianceMap(uint32_t cubemapTexID, uint32_t irradianceTexID, uint32_t irradianceShader,const MeshDrawableComp &drawable);
-		void renderToPrefilterMap(uint32_t cubemapTexID, uint32_t prefilterTexID, uint32_t prefilterShader,const MeshDrawableComp &drawable);
-		void renderToBRDFLUT(uint32_t brdfTexID, uint32_t brdfShader, const MeshDrawableComp& drawable);
+		void renderToCubeMapHDR(uint32_t cubemapTexID, uint32_t eqToCubeMapShader, uint32_t hdrTexID, const MeshDrawable& drawable);
+		void renderToIrradianceMap(uint32_t cubemapTexID, uint32_t irradianceTexID, uint32_t irradianceShader,const MeshDrawable &drawable);
+		void renderToPrefilterMap(uint32_t cubemapTexID, uint32_t prefilterTexID, uint32_t prefilterShader,const MeshDrawable &drawable);
+		void renderToBRDFLUT(uint32_t brdfTexID, uint32_t brdfShader, const MeshDrawable& drawable);
+		void renderToScreenQuad(uint32_t quadShader, const MeshDrawable& drawable);
 
 		void endFrame();
-		void onResize(WindowResizeEvent& e);
+		bool onResize(WindowResizeEvent& e);
+		void setSize(int width, int height);
 		Texture& getColorTexture() {return m_ColorTex;}
 		void* getColorTextureHandle();
 		IResourceManager* getResourceManager() {return m_ResourceManager.get();}
@@ -68,7 +74,6 @@ namespace ZEN {
 
 		FBO m_CaptureFBO{};
 		RBO m_CaptureRBO{};
-		MeshDrawableComp m_CubeDrawable{};
 
 		Texture m_ColorTex{};
 		RBO m_DepthRBO{};
