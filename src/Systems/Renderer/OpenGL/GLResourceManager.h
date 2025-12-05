@@ -30,7 +30,7 @@ namespace ZEN {
         GLResourceManager(const std::string& resourceRoot);
         ~GLResourceManager() override;
 
-        uint32_t createMeshDrawable(const Mesh& mesh) override;
+        uint32_t createMeshDrawable(const MeshData& mesh) override;
         void bindMeshDrawable(uint32_t drawableID) override;
         void deleteMeshDrawable(uint32_t drawableID) override;
 

@@ -98,7 +98,7 @@ void ModelImporter::processTextureType(uint32_t& textureID,
 }*/
 void ModelImporter::processAiMesh(Entity& entity, aiMesh* aimesh,
                                   const aiScene* aiscene, const glm::mat4& transform) {
-    Mesh mesh{};
+    MeshData mesh{};
     Material material{.shaderID = m_ModelLibrary->getMaterial("Default")->shaderID};
     for (uint32_t i{0}; i < aimesh->mNumVertices; ++i) {
         Vertex vertex{};
@@ -133,7 +133,7 @@ void ModelImporter::processAiMesh(Entity& entity, aiMesh* aimesh,
         processTextureType(material.metallicTexID, aiscene, aiTextureType_METALNESS, aiMaterial);
         processTextureType(material.normalTexID, aiscene, aiTextureType_NORMALS, aiMaterial);
     }
-    m_ModelLibrary->addMesh(aimesh->mName.C_Str(), mesh);
+    m_ModelLibrary->addMeshData(aimesh->mName.C_Str(), mesh);
     m_ModelLibrary->addMaterial(aiscene->mMaterials[aimesh->mMaterialIndex]->GetName().C_Str(), material);
 
     entity.addComponent<MeshComp>(MeshComp{.name = aimesh->mName.C_Str()});

@@ -8,11 +8,11 @@ namespace ZEN {
         LESS,
         LEQUAL
     };
-    struct MeshDrawableComp;
+    struct MeshDrawable;
     class IContext {
     public:
         virtual ~IContext() = default;
-        virtual void drawMesh(IResourceManager& resourceManager, const MeshDrawableComp& drawable) = 0;
+        virtual void drawMesh(IResourceManager& resourceManager, const MeshDrawable& drawable) = 0;
         virtual void clear(bool shouldClearColor, bool shouldClearDepth) = 0;
         virtual void depthMask(bool val) = 0;
         virtual void enableCullFace() = 0;

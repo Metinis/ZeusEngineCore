@@ -5,81 +5,13 @@
 namespace ZEN {
     class Entity;
     struct MaterialComp;
-    /*struct KeyPressedEvent {
-        int key;
-        int scancode;
-        int mods;
+    enum class Resources {
+        None = 0,
+        Material,
+        MeshData,
+        MeshDrawable,
+        Texture,
     };
-    struct KeyRepeatEvent {
-        int key;
-        int scancode;
-        int mods;
-    };
-    struct KeyReleaseEvent {
-        int key;
-        int scancode;
-        int mods;
-    };
-    struct WindowResizeEvent {
-        int width;
-        int height;
-    };
-    struct SceneViewResizeEvent {
-        float width;
-        float height;
-    };
-    struct MouseButtonPressEvent {
-        int button;
-        int mods;
-    };
-    struct MouseButtonReleaseEvent {
-        int button;
-        int mods;
-    };
-    struct MouseButtonRepeatEvent {
-        int button;
-        int mods;
-    };
-    struct PanelFocusEvent {
-        std::string panel;
-    };
-    struct CursorLockEvent {
-        bool lock;
-        double xPos;
-        double yPos;
-    };
-    struct MouseMoveEvent {
-        double xPos;
-        double yPos;
-    };
-    struct SelectEntityEvent {
-        Entity entity;
-    };
-    struct SelectMaterialEvent {
-        std::string materialName;
-    };
-    struct RemoveMeshEvent {
-        std::string meshName;
-    };
-    struct RemoveMaterialEvent {
-        std::string materialName;
-    };
-    struct RemoveTextureEvent {
-        std::string textureName;
-    };
-    struct RemoveMeshCompEvent {
-        Entity entity;
-    };
-    struct RemoveMeshDrawableEvent {
-        Entity entity;
-    };
-    struct ToggleDrawNormalsEvent {
-
-    };
-    struct ToggleEditorEvent {
-
-    };*/
-
     //-----------------------Key Events---------------------------
     class KeyEvent : public Event {
     public:
@@ -195,7 +127,9 @@ namespace ZEN {
     //-----------------------Resource Events----------------------
     class RemoveResourceEvent : public Event {
     public:
-        RemoveResourceEvent(std::string resourceName) : m_ResourceName(resourceName) {}
+        RemoveResourceEvent(std::string resourceName, Resources res) : m_ResourceName(resourceName), m_ResourceType(res) {}
+        Resources getResourceType() const { return m_ResourceType; }
+        std::string getResourceName() const {return m_ResourceName; }
         std::string toString() const override {
             return std::format("Resource Remove Event: {}", m_ResourceName);
         }
@@ -203,6 +137,21 @@ namespace ZEN {
         EVENT_CLASS_TYPE(RemoveResource)
     private:
         std::string m_ResourceName{};
+        Resources m_ResourceType{};
+    };
+    //------------------------------------------------------------
+
+    //-----------------------Misc Events--------------------------
+    class RunPlayModeEvent : public Event {
+    public:
+        RunPlayModeEvent(bool playing) : m_Playing(playing) {}
+        bool getPlaying() const { return m_Playing; }
+        std::string toString() const override {
+            return std::format("Play Mode Event: {}", m_Playing);
+        }
+        EVENT_CLASS_TYPE(RunPlayMode)
+    private:
+        bool m_Playing{};
     };
     //------------------------------------------------------------
 

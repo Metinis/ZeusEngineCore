@@ -24,7 +24,7 @@ namespace ZEN {
         Scene& getScene(){return *m_Scene;}
     private:
         //Core
-        std::unique_ptr<Scene> m_Scene{};
+        Scene* m_Scene{};
         Renderer* m_Renderer{};
 
         //Libraries/Loaders

@@ -1,4 +1,5 @@
 #pragma once
+#include "InputEvents.h"
 #include "Layer.h"
 #include "../src/Systems/Renderer/OpenGL/GLContext.h"
 #include "ZeusEngineCore/Components.h"
@@ -46,10 +47,11 @@ namespace ZEN {
 		void beginFrame();
 		void bindDefaultFBO();
 
-		void renderToCubeMapHDR(uint32_t cubemapTexID, uint32_t eqToCubeMapShader, uint32_t hdrTexID, const MeshDrawableComp& drawable);
-		void renderToIrradianceMap(uint32_t cubemapTexID, uint32_t irradianceTexID, uint32_t irradianceShader,const MeshDrawableComp &drawable);
-		void renderToPrefilterMap(uint32_t cubemapTexID, uint32_t prefilterTexID, uint32_t prefilterShader,const MeshDrawableComp &drawable);
-		void renderToBRDFLUT(uint32_t brdfTexID, uint32_t brdfShader, const MeshDrawableComp& drawable);
+		void renderToCubeMapHDR(uint32_t cubemapTexID, uint32_t eqToCubeMapShader, uint32_t hdrTexID, const MeshDrawable& drawable);
+		void renderToIrradianceMap(uint32_t cubemapTexID, uint32_t irradianceTexID, uint32_t irradianceShader,const MeshDrawable &drawable);
+		void renderToPrefilterMap(uint32_t cubemapTexID, uint32_t prefilterTexID, uint32_t prefilterShader,const MeshDrawable &drawable);
+		void renderToBRDFLUT(uint32_t brdfTexID, uint32_t brdfShader, const MeshDrawable& drawable);
+		void renderToScreenQuad(uint32_t quadShader, const MeshDrawable& drawable);
 
 		void endFrame();
 		bool onResize(WindowResizeEvent& e);
@@ -72,7 +74,6 @@ namespace ZEN {
 
 		FBO m_CaptureFBO{};
 		RBO m_CaptureRBO{};
-		MeshDrawableComp m_CubeDrawable{};
 
 		Texture m_ColorTex{};
 		RBO m_DepthRBO{};

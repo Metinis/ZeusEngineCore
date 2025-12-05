@@ -1,4 +1,6 @@
 #include "ZeusEngineCore/Scene.h"
+
+#include <ZeusEngineCore/Application.h>
 #include <ZeusEngineCore/Entity.h>
 #include <ZeusEngineCore/InputEvents.h>
 #include <ZeusEngineCore/ModelLibrary.h>
@@ -15,13 +17,17 @@ Scene::Scene(){
     //m_Registry.on_destroy<MeshDrawableComp>().connect<&Scene::onMeshDrawableRemove>(this);
 }
 
-//void Scene::onMeshCompRemove(entt::registry& registry, entt::entity entity) {
+void Scene::onMeshCompRemove(entt::registry& registry, entt::entity entity) {
+    //need to call render systems remove mesh comp somehow
+    //Application::get()
     //m_Dispatcher->trigger<RemoveMeshCompEvent>(RemoveMeshCompEvent{Entity(&m_Registry, entity)});
-//}
+}
 
-//void Scene::onMeshDrawableRemove(entt::registry& registry, entt::entity entity) {
+void Scene::onMeshDrawableRemove(entt::registry& registry, entt::entity entity) {
+
+    //need to call render systems remove mesh drawable somehow
     //m_Dispatcher->trigger<RemoveMeshDrawableEvent>(RemoveMeshDrawableEvent{Entity(&m_Registry, entity)});
-//}
+}
 
 void Scene::createDefaultScene(ZEngine* engine) {
     auto dirLightEntity = createEntity("Directional Light");
@@ -72,35 +78,44 @@ void Scene::removeEntity(Entity entity) {
     m_Registry.destroy((entt::entity)entity);
 }
 
+void Scene::onEvent(Event &event) {
+    EventDispatcher dispatcher(event);
+
+    dispatcher.dispatch<RemoveResourceEvent>([this](RemoveResourceEvent& e) {return onRemoveResource(e); });
+}
+
 
 Entity Scene::makeEntity(entt::entity entity) {
     return Entity{this, entity};
 }
 
-/*void Scene::onRemoveMesh(RemoveMeshEvent& e) {
-    auto view = getEntities<MeshComp>();
-    for (auto entity : view) {
-        if(entity.getComponent<MeshComp>().name != e.meshName) {
-            continue;
+bool Scene::onRemoveResource(RemoveResourceEvent &e) {
+    switch(e.getResourceType()) {
+        case Resources::MeshDrawable: {
+            //todo cleanup gpu resource
+            removeResource<MeshDrawableComp>(e.getResourceName());
+            return true;
         }
-        entity.removeComponent<MeshComp>();
-    }
-}
 
-void Scene::onRemoveMaterial(RemoveMaterialEvent& e) {
-    auto view = getEntities<MaterialComp>();
-    for (auto entity : view) {
-        if(entity.getComponent<MaterialComp>().name != e.materialName) {
-            continue;
+        case Resources::MeshData: {
+            removeResource<MeshComp>(e.getResourceName());
+            return true;
         }
-        entity.removeComponent<MaterialComp>();
+
+        case Resources::Material: {
+            //todo cleanup shader resources
+            removeResource<MaterialComp>(e.getResourceName());
+            return true;
+        }
+
+        case Resources::Texture: {
+            //todo cleanup textures
+            break;
+        }
+        default: {
+            std::cout<<"Resource type undefined!"<<"\n";
+            return false;
+        }
     }
+    return false;
 }
-
-void Scene::onRemoveTexture(RemoveTextureEvent& e) {
-    /*auto view = getEntities<MaterialComp>();
-    for (auto entity : view) {
-    }
-}*/
-
-

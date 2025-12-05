@@ -1,5 +1,7 @@
 #pragma once
 #include <entt/entt.hpp>
+
+#include "InputEvents.h"
 #include "ZeusEngineCore/RenderSystem.h"
 #include "ZeusEngineCore/Entity.h"
 
@@ -12,7 +14,7 @@ namespace ZEN {
 	struct RemoveMaterialEvent;
 	struct RemoveTextureEvent;
 
-	class Scene {
+	class Scene : public Layer{
 
 	public:
 		Scene();
@@ -28,7 +30,7 @@ namespace ZEN {
 				[this](entt::entity entity) { return makeEntity(entity); }
 			);
 		}
-
+		void onEvent(Event& event) override;
 
 		glm::vec3 getLightPos() {return m_LightPos;}
 		glm::vec3 getLightDir() {return m_LightDir;}
@@ -42,12 +44,20 @@ namespace ZEN {
 
 		Entity makeEntity(entt::entity entity);
 
-		//void onRemoveMesh(RemoveMeshEvent& e);
-		//void onRemoveMaterial(RemoveMaterialEvent& e);
-		//void onRemoveTexture(RemoveTextureEvent& e);
+		template<typename T>
+		void removeResource(const std::string& resourceName) {
+			auto view = getEntities<T>();
+            for (auto entity : view) {
+                if(entity.template getComponent<T>().name != resourceName) {
+                    continue;
+                }
+                entity.template removeComponent<T>();
+            }
+		}
 
-		//void onMeshCompRemove(entt::registry& registry, entt::entity entity);
-		//void onMeshDrawableRemove(entt::registry& registry, entt::entity entity);
+		bool onRemoveResource(RemoveResourceEvent& e);
+		void onMeshCompRemove(entt::registry& registry, entt::entity entity);
+		void onMeshDrawableRemove(entt::registry& registry, entt::entity entity);
 
 		friend class Entity;
 	};

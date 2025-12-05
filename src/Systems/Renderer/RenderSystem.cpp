@@ -13,15 +13,9 @@ m_Renderer(renderer), m_Scene(scene), m_Library(library){
     //m_Dispatcher->attach<RemoveMeshDrawableEvent, RenderSystem, &RenderSystem::onMeshDrawableRemove>(this);
     //m_Dispatcher->attach<ToggleDrawNormalsEvent, RenderSystem, &RenderSystem::onToggleDrawNormals>(this);
 
-    Mesh* cubeMesh = m_Library->getMesh("Cube");
-    m_CubeDrawable.name = "Cube";
-    m_CubeDrawable.indexCount = cubeMesh->indices.size();
-    m_CubeDrawable.meshID = m_Renderer->m_ResourceManager->createMeshDrawable(*cubeMesh);
-
-    Mesh* quadMesh = m_Library->getMesh("Quad");
-    m_QuadDrawable.name = "Quad";
-    m_QuadDrawable.indexCount = quadMesh->indices.size();
-    m_QuadDrawable.meshID = m_Renderer->m_ResourceManager->createMeshDrawable(*quadMesh);
+    m_CubeDrawable = *m_Library->getMeshDrawable("Cube");
+    m_QuadDrawable = *m_Library->getMeshDrawable("Quad");
+    m_QuadShaderID = m_Library->getMaterial("ScreenQuad")->shaderID;
 
 }
 void RenderSystem::updateWorldTransforms() {
@@ -77,18 +71,20 @@ void RenderSystem::onUpdate(float deltaTime) {
 
         auto& meshComp = entity.getComponent<MeshComp>();
         if(meshComp.name.empty()) continue;
-        auto mesh = m_Library->getMesh(meshComp.name);
+        auto mesh = m_Library->getMeshData(meshComp.name);
         if(!mesh) continue;
 
         if(!entity.hasComponent<MaterialComp>() && !entity.hasComponent<SkyboxComp>()) {
             entity.addComponent<MaterialComp>(MaterialComp{ .name = "Default"}); //default needs to exist in model library
         }
+        MeshDrawableComp comp{};
 
-        MeshDrawableComp drawableComp{};
-        drawableComp.name = meshComp.name;
-        drawableComp.indexCount = mesh->indices.size();
-        drawableComp.meshID = m_Renderer->m_ResourceManager->createMeshDrawable(*mesh);
-        entity.addComponent<MeshDrawableComp>(drawableComp);
+        if(!m_Library->hasDrawable(meshComp.name)) {
+            m_Library->createAndAddDrawable(meshComp.name, *m_Library->getMeshData(meshComp.name)); //todo create a overload for just name
+        }
+        comp.name = meshComp.name;
+        entity.addComponent<MeshDrawableComp>(comp);
+        //todo have the drawable in the modellibrary to avoid creating the same drawable
     }
 
 
@@ -173,7 +169,7 @@ void RenderSystem::renderDrawables() {
 
         //todo submit mesh to renderer
         MeshDrawableComp drawable = entity.getComponent<MeshDrawableComp>();
-        m_Renderer->m_Context->drawMesh(*m_Renderer->m_ResourceManager, drawable);
+        m_Renderer->m_Context->drawMesh(*m_Renderer->m_ResourceManager, *m_Library->getMeshDrawable(drawable.name));
 
     }
 }
@@ -189,7 +185,7 @@ void RenderSystem::renderDrawablesToShader(uint32_t shaderID) {
 
         //todo submit mesh to renderer
         MeshDrawableComp drawable = entity.getComponent<MeshDrawableComp>();
-        m_Renderer->m_Context->drawMesh(*m_Renderer->m_ResourceManager, drawable);
+        m_Renderer->m_Context->drawMesh(*m_Renderer->m_ResourceManager, *m_Library->getMeshDrawable(drawable.name));
 
     }
 }
@@ -210,7 +206,8 @@ void RenderSystem::renderSkybox(const glm::mat4& view, const glm::mat4& projecti
 
         if(!skyboxComp.envGenerated) {
             m_Renderer->m_ResourceManager->bindCubeMapTexture(skyboxMat->textureID, 0);
-            m_Renderer->renderToCubeMapHDR(skyboxMat->textureID, eqMat->shaderID, eqMat->textureID, m_CubeDrawable);
+            m_Renderer->renderToCubeMapHDR(skyboxMat->textureID, eqMat->shaderID, eqMat->textureID,
+                m_CubeDrawable);
 
             m_Renderer->renderToIrradianceMap(skyboxMat->textureID, conMat->textureID,
                 conMat->shaderID, m_CubeDrawable);
@@ -239,7 +236,7 @@ void RenderSystem::renderSkybox(const glm::mat4& view, const glm::mat4& projecti
         m_Renderer->m_ResourceManager->bindShader(skyboxMat->shaderID);
         m_Renderer->m_ResourceManager->bindCubeMapTexture(skyboxMat->textureID, 0);
 
-        m_Renderer->m_Context->drawMesh(*m_Renderer->m_ResourceManager, drawable);
+        m_Renderer->m_Context->drawMesh(*m_Renderer->m_ResourceManager, *m_Library->getMeshDrawable(drawable.name));
 
         m_Renderer->m_Context->depthMask(true);
         m_Renderer->m_Context->setDepthMode(LESS);
@@ -258,6 +255,10 @@ void RenderSystem::bindSceneUBOs() {
 }
 
 
+bool RenderSystem::onPlayModeEvent(RunPlayModeEvent &e) {
+    m_IsPlaying = e.getPlaying();
+    return false;
+}
 void RenderSystem::onRender() {
     //write camera data
     glm::mat4 view;
@@ -278,4 +279,15 @@ void RenderSystem::onRender() {
     //draw skybox
     renderSkybox(view, projection);
 
+    if(m_IsPlaying) {
+        //bind default FBO, render to screen quad
+        m_Renderer->renderToScreenQuad(m_QuadShaderID, m_QuadDrawable);
+    }
+
+}
+
+void RenderSystem::onEvent(Event &event) {
+    EventDispatcher dispatcher(event);
+
+    dispatcher.dispatch<RunPlayModeEvent>([this](RunPlayModeEvent& e) {return onPlayModeEvent(e); });
 }

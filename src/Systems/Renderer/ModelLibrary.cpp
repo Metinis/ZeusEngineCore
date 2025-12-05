@@ -1,4 +1,8 @@
 #include "ZeusEngineCore/ModelLibrary.h"
+
+#include <ZeusEngineCore/Application.h>
+#include <ZeusEngineCore/InputEvents.h>
+
 #include "IResourceManager.h"
 #include "ZeusEngineCore/Components.h"
 
@@ -6,10 +10,15 @@ using namespace ZEN;
 
 ModelLibrary::ModelLibrary(IResourceManager *resourceManager, const std::string &resourceRoot) : m_ResourceManager(resourceManager) {
     m_Materials["Default"] = createDefaultMaterial("/shaders/pbr.vert", "/shaders/pbr.frag", "");
-    m_Meshes["Cube"] = createCube();
-    m_Meshes["Skybox"] = createSkybox();
-    m_Meshes["Quad"] = createQuad();
-    m_Meshes["Sphere"] = createSphere(1.0f, 32, 16);
+    m_MeshData["Cube"] = createCube();
+    m_MeshData["Skybox"] = createSkybox();
+    m_MeshData["Quad"] = createQuad();
+    m_MeshData["Sphere"] = createSphere(1.0f, 32, 16);
+
+    createAndAddDrawable("Cube", *m_MeshData["Cube"]);
+    createAndAddDrawable("Skybox", *m_MeshData["Skybox"]);
+    createAndAddDrawable("Quad", *m_MeshData["Quad"]);
+    createAndAddDrawable("Sphere", *m_MeshData["Sphere"]);
 
     m_Textures["Wall"] = m_ResourceManager->createTexture("/textures/wall.jpg", false);
     m_Textures["Container"] = m_ResourceManager->createTexture("/textures/container2.png", false);
@@ -56,6 +65,13 @@ ModelLibrary::ModelLibrary(IResourceManager *resourceManager, const std::string 
     m_Textures["PrefilterMap"] = m_ResourceManager->createPrefilterMap(128, 128);
 
     m_Textures["brdfLUT"] = m_ResourceManager->createBRDFLUTTexture(1024, 1024);
+
+    Material screenQuadMat{
+        .shaderID = m_ResourceManager->createShader("/shaders/screenQuad.vert",
+                                                               "/shaders/screenQuad.frag",
+                                                               "")
+    };
+    m_Materials["ScreenQuad"] = std::make_unique<Material>(screenQuadMat);
 
     uint32_t normalsShaderID = m_ResourceManager->createShader("/shaders/normal-visual.vert",
                                                                "/shaders/normal-visual.frag",
@@ -147,11 +163,22 @@ ModelLibrary::ModelLibrary(IResourceManager *resourceManager, const std::string 
     m_Materials["brdfLUT"] = std::make_unique<Material>(brdfLUT);
 }
 
-void ModelLibrary::removeMesh(const std::string &name) {
-    auto it = m_Meshes.find(name);
-    if (it != m_Meshes.end()) {
-        m_Meshes.erase(name);
-        //m_Dispatcher->trigger<RemoveMeshEvent>(RemoveMeshEvent{name});
+void ModelLibrary::removeMeshData(const std::string &name) {
+    auto it = m_MeshData.find(name);
+    if (it != m_MeshData.end()) {
+        m_MeshData.erase(name);
+        RemoveResourceEvent event(name, Resources::MeshData);
+        Application::get().callEvent(event);
+        return;
+    }
+    std::cout << "Mesh not found: " << name << "\n";
+}
+void ModelLibrary::removeMeshDrawable(const std::string &name) {
+    auto it = m_MeshDrawables.find(name);
+    if (it != m_MeshDrawables.end()) {
+        m_MeshDrawables.erase(name);
+        RemoveResourceEvent event(name, Resources::MeshDrawable);
+        Application::get().callEvent(event);
         return;
     }
     std::cout << "Mesh not found: " << name << "\n";
@@ -161,7 +188,8 @@ void ModelLibrary::removeMaterial(const std::string &name) {
     auto it = m_Materials.find(name);
     if (it != m_Materials.end()) {
         m_Materials.erase(name);
-        //m_Dispatcher->trigger<RemoveMaterialEvent>(RemoveMaterialEvent{name});
+        RemoveResourceEvent event(name, Resources::Material);
+        Application::get().callEvent(event);
         return;
     }
     std::cout << "Material not found: " << name << "\n";
@@ -179,7 +207,8 @@ void ModelLibrary::removeTexture(const std::string &name) {
         }
         m_Textures.erase(name);
         m_ResourceManager->deleteTexture(textureID);
-        //m_Dispatcher->trigger<RemoveTextureEvent>(RemoveTextureEvent{name});
+        RemoveResourceEvent event(name, Resources::Texture);
+        Application::get().callEvent(event);
         return;
     }
     std::cout << "Texture not found: " << name << "\n";
@@ -189,10 +218,10 @@ void ModelLibrary::addMaterial(const std::string &name, std::unique_ptr<Material
     m_Materials[name] = std::move(material);
 }
 
-Material *ModelLibrary::getMaterial(const std::string &name) {
+Material* ModelLibrary::getMaterial(const std::string &name) {
     auto it = m_Materials.find(name);
     if (it != m_Materials.end()) return it->second.get();
-    std::cout << "Material not found: " << name << "\n";
+    std::cout << "Material not found, returning default..: " << name << "\n";
     return nullptr;
 }
 
@@ -203,31 +232,54 @@ void ModelLibrary::addTexture(const std::string &name, uint32_t texID) {
 uint32_t ModelLibrary::getTexture(const std::string &name) {
     auto it = m_Textures.find(name);
     if (it != m_Textures.end()) return it->second;
-    std::cout << "Texture not found: " << name << "\n";
+    std::cout << "Texture not found, returning default..: " << name << "\n";
     return 0;
 }
 
-Mesh *ModelLibrary::getMesh(const std::string &name) {
-    auto it = m_Meshes.find(name);
-    if (it != m_Meshes.end()) return it->second.get();
-    std::cout << "Mesh not found: " << name << "\n";
+MeshData* ModelLibrary::getMeshData(const std::string &name) {
+    auto it = m_MeshData.find(name);
+    if (it != m_MeshData.end()) return it->second.get();
+    std::cout << "Mesh not found, returning default..: " << name << "\n";
+    return nullptr;
+}
+
+MeshDrawable* ModelLibrary::getMeshDrawable(const std::string &name) {
+    auto it = m_MeshDrawables.find(name);
+    if (it != m_MeshDrawables.end()) return it->second.get();
+    std::cout << "Drawable not found, returning default..: " << name << "\n";
     return nullptr;
 }
 
 //TODO template this
-void ModelLibrary::addMesh(const std::string &name, std::unique_ptr<Mesh> mesh) {
-    m_Meshes[name] = std::move(mesh);
+void ModelLibrary::addMeshData(const std::string &name, std::unique_ptr<MeshData> mesh) {
+    m_MeshData[name] = std::move(mesh);
 }
 
-void ModelLibrary::addMesh(const std::string &name, const Mesh &mesh) {
-    m_Meshes[name] = std::make_unique<Mesh>(mesh);
+void ModelLibrary::addMeshData(const std::string &name, const MeshData &mesh) {
+    m_MeshData[name] = std::make_unique<MeshData>(mesh);
+}
+void ModelLibrary::addMeshDrawable(const std::string &name, std::unique_ptr<MeshDrawable> drawable) {
+    m_MeshDrawables[name] = std::move(drawable);
+}
+
+void ModelLibrary::createAndAddDrawable(const std::string &name, const MeshData &data) {
+    MeshDrawable drawable {
+        .drawableID = m_ResourceManager->createMeshDrawable(data),
+        .indexCount = data.indices.size(),
+        .instanceCount = 1,
+    };
+    m_MeshDrawables[name] = std::make_unique<MeshDrawable>(drawable);
+}
+
+void ModelLibrary::addMeshDrawable(const std::string &name, const MeshDrawable &drawable) {
+    m_MeshDrawables[name] = std::make_unique<MeshDrawable>(drawable);
 }
 
 void ModelLibrary::addMaterial(const std::string &name, const Material &material) {
     m_Materials[name] = std::make_unique<Material>(material);
 }
 
-void computeTangents(Mesh &mesh) {
+void computeTangents(MeshData &mesh) {
     for (auto &v: mesh.vertices) {
         v.Tangent = glm::vec3(0.0f);
         v.Bitangent = glm::vec3(0.0f);
@@ -268,8 +320,8 @@ void computeTangents(Mesh &mesh) {
     }
 }
 
-std::unique_ptr<Mesh> ModelLibrary::createCube() {
-    Mesh mesh;
+std::unique_ptr<MeshData> ModelLibrary::createCube() {
+    MeshData mesh;
 
     mesh.vertices = {
         {{-0.5f, 0.5f, 0.5f}, {0, 0, 1}, {0.0f, 1.0f}}, // Front
@@ -312,11 +364,11 @@ std::unique_ptr<Mesh> ModelLibrary::createCube() {
         20, 22, 21, 23, 22, 20 // Bottom
     };
     computeTangents(mesh);
-    return std::make_unique<Mesh>(mesh);
+    return std::make_unique<MeshData>(mesh);
 }
 
-std::unique_ptr<Mesh> ModelLibrary::createQuad() {
-    Mesh mesh;
+std::unique_ptr<MeshData> ModelLibrary::createQuad() {
+    MeshData mesh;
 
     mesh.vertices = {
         {{-1.0f, -1.0f, 0.0f}, {0, 0, 1}, {0.0f, 0.0f}}, // Bottom-left
@@ -330,12 +382,12 @@ std::unique_ptr<Mesh> ModelLibrary::createQuad() {
         2, 3, 0
     };
     computeTangents(mesh);
-    return std::make_unique<Mesh>(mesh);
+    return std::make_unique<MeshData>(mesh);
 }
 
 
-std::unique_ptr<Mesh> ModelLibrary::createSkybox() {
-    Mesh skyboxMesh{};
+std::unique_ptr<MeshData> ModelLibrary::createSkybox() {
+    MeshData skyboxMesh{};
     skyboxMesh.vertices = {
         {{-1.0f, 1.0f, -1.0f}}, {{-1.0f, -1.0f, -1.0f}}, {{1.0f, -1.0f, -1.0f}}, {{1.0f, 1.0f, -1.0f}}, // Back
         {{-1.0f, -1.0f, 1.0f}}, {{-1.0f, 1.0f, 1.0f}}, {{1.0f, 1.0f, 1.0f}}, {{1.0f, -1.0f, 1.0f}}, // Front
@@ -353,7 +405,7 @@ std::unique_ptr<Mesh> ModelLibrary::createSkybox() {
         16, 17, 18, 16, 18, 19, // Top
         20, 21, 22, 20, 22, 23 // Bottom
     };
-    return std::make_unique<Mesh>(skyboxMesh);
+    return std::make_unique<MeshData>(skyboxMesh);
 }
 
 std::unique_ptr<Material> ModelLibrary::createDefaultMaterial(const std::string &vertPath,
@@ -364,8 +416,8 @@ std::unique_ptr<Material> ModelLibrary::createDefaultMaterial(const std::string 
 }
 
 
-std::unique_ptr<Mesh> ModelLibrary::createSphere(float radius, unsigned int sectorCount, unsigned int stackCount) {
-    Mesh sphere{};
+std::unique_ptr<MeshData> ModelLibrary::createSphere(float radius, unsigned int sectorCount, unsigned int stackCount) {
+    MeshData sphere{};
 
     const float PI = 3.14159265359f;
 
@@ -410,5 +462,5 @@ std::unique_ptr<Mesh> ModelLibrary::createSphere(float radius, unsigned int sect
         }
     }
     computeTangents(sphere);
-    return std::make_unique<Mesh>(sphere);
+    return std::make_unique<MeshData>(sphere);
 }

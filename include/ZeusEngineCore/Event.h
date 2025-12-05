@@ -57,8 +57,10 @@ namespace ZEN {
         WindowResize, WindowClose, ViewportResize,
         KeyPressed, KeyReleased,
         MouseButtonPressed, MouseButtonReleased, MouseMoved, MouseScrolled,
-        RemoveResource
+        RemoveResource,
+        RunPlayMode
     };
+
     class Event {
     public:
         bool handled{false};

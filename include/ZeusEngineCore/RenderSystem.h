@@ -1,10 +1,10 @@
 #pragma once
 #include "Layer.h"
 #include "Renderer.h"
+#include "ZeusEngineCore/ModelLibrary.h"
 
 namespace ZEN {
 	class Scene;
-	class ModelLibrary;
 	struct RemoveMeshEvent;
 	struct RemoveMeshCompEvent;
 	struct RemoveMeshDrawableEvent;
@@ -14,7 +14,10 @@ namespace ZEN {
 		explicit RenderSystem(Renderer *renderer, Scene *scene, ModelLibrary* library);
 		void onUpdate(float deltaTime) override;
 		void onRender() override;
+		void onEvent(Event& event) override;
+		void toggleDrawNormals() { m_DrawNormals = !m_DrawNormals; }
 	private:
+		bool onPlayModeEvent(RunPlayModeEvent& e);
 		void writeCameraData(glm::mat4& view, glm::mat4& projection);
 		void setLightData(glm::vec3 cameraPos);
 		void bindSceneUBOs();
@@ -25,19 +28,16 @@ namespace ZEN {
 
 		void updateWorldTransforms();
 
-		/*void onMeshRemove(RemoveMeshEvent& e);
-		void onMeshCompRemove(RemoveMeshCompEvent& e);
-		void onMeshDrawableRemove(RemoveMeshDrawableEvent& e);
-		void onToggleDrawNormals(ToggleDrawNormalsEvent& e);*/
-
 		uint32_t m_IrradianceMapID{};
 		uint32_t m_PrefilterMapID{};
 		uint32_t m_BRDFLUTID{};
-		MeshDrawableComp m_CubeDrawable{};
-		MeshDrawableComp m_QuadDrawable{};
+		uint32_t m_QuadShaderID{};
+		MeshDrawable m_CubeDrawable{};
+		MeshDrawable m_QuadDrawable{};
 		Renderer* m_Renderer{};
 		ModelLibrary* m_Library{};
 		Scene* m_Scene{};
 		bool m_DrawNormals{};
+		bool m_IsPlaying{};
 	};
 }
