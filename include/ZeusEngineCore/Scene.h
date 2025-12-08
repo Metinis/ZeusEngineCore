@@ -60,5 +60,6 @@ namespace ZEN {
 		void onMeshDrawableRemove(entt::registry& registry, entt::entity entity);
 
 		friend class Entity;
+		friend class SceneSerializer;
 	};
 }

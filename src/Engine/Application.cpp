@@ -55,7 +55,6 @@ void Application::callEvent(Event &event) {
     dispatcher.dispatch<WindowResizeEvent>([this](WindowResizeEvent& e) {return onWindowResize(e); });
     dispatcher.dispatch<RunPlayModeEvent>([this](RunPlayModeEvent& e) {return onPlayMode(e); });
 
-    //dispatcher.dispatch<KeyPressedEvent>([this](KeyPressedEvent& e) {return onKeyPressed(e); });
     for (auto it = m_LayerStack->rbegin(); it != m_LayerStack->rend(); ++it)
     {
         if (event.handled)
@@ -72,7 +71,6 @@ bool Application::onPlayMode(const RunPlayModeEvent &event) {
 }
 
 bool Application::onWindowResize(const WindowResizeEvent &event) {
-    //m_Engine->getRenderer().setSize(m_Window->getHandleWidth(), m_Window->getHandleHeight());
     m_Engine->getRenderer().setSize(event.getWidth(), event.getHeight());
     return true;
 }

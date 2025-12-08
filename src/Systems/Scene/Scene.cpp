@@ -5,6 +5,7 @@
 #include <ZeusEngineCore/InputEvents.h>
 #include <ZeusEngineCore/ModelLibrary.h>
 #include <ZeusEngineCore/ZEngine.h>
+#include "SceneSerializer.h"
 
 using namespace ZEN;
 
@@ -51,6 +52,10 @@ void Scene::createDefaultScene(ZEngine* engine) {
 
     skyboxEntity.addComponent<SkyboxComp>(skyboxComp);
     skyboxEntity.addComponent<MeshComp>(MeshComp{.name = "Skybox"});
+
+    SceneSerializer serializer(this);
+    serializer.serialize("/scenes/default.zen");
+
 }
 
 Entity Scene::createEntity(const std::string& name) {

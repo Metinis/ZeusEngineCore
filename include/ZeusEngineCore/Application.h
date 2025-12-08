@@ -26,6 +26,8 @@ namespace ZEN {
         Window* getWindow() const { return m_Window.get(); }
         static Application& get() { return *s_Instance; }
 
+        std::string getResourceRoot() { return m_ResourceRoot; }
+
         void close();
 
         void run();

@@ -5,7 +5,6 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-find_package(assimp REQUIRED)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/include/glfw glfw)
 
 add_library(ZeusEngineCore STATIC)
@@ -57,12 +56,28 @@ target_include_directories(ZeusEngineCore
         ${CMAKE_CURRENT_SOURCE_DIR}/include/glm
         ${CMAKE_CURRENT_SOURCE_DIR}/include/tinyfiledialogs
 )
+include(FetchContent)
+
+FetchContent_Declare(
+        assimp
+        GIT_REPOSITORY https://github.com/assimp/assimp.git
+        GIT_TAG v6.0.2
+)
+FetchContent_MakeAvailable(assimp)
+
+FetchContent_Declare(
+        yaml-cpp
+        GIT_REPOSITORY https://github.com/jbeder/yaml-cpp.git
+        GIT_TAG 0.8.0
+)
+FetchContent_MakeAvailable(yaml-cpp)
 
 target_link_libraries(ZeusEngineCore
         PUBLIC
         glfw
         assimp::assimp
         imgui
+        yaml-cpp::yaml-cpp
 )
 
 if(APPLE)
