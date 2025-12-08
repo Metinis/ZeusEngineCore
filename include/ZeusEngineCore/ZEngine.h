@@ -16,6 +16,7 @@ namespace ZEN {
     public:
         explicit ZEngine(eRendererAPI api, GLFWwindow* nativeWindow, const std::string& resourceRoot);
         ~ZEngine();
+        void setAspectRatio(float aspectRatio);
         Renderer& getRenderer(){return *m_Renderer;}
         ModelImporter& getModelImporter(){return *m_ModelImporter;}
         ModelLibrary& getModelLibrary(){return *m_ModelLibrary;}

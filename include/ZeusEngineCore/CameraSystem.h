@@ -3,15 +3,6 @@
 #include "ZeusEngineCore/InputEvents.h"
 
 namespace ZEN {
-    /*struct SceneViewResizeEvent;
-    struct KeyPressedEvent;
-    struct KeyRepeatEvent;
-    struct KeyReleaseEvent;
-    struct MouseButtonPressEvent;
-    struct MouseButtonReleaseEvent;
-    struct PanelFocusEvent;
-    struct MouseMoveEvent;*/
-
     class Scene;
     class EventDispatcher;
 
@@ -20,9 +11,8 @@ namespace ZEN {
         explicit CameraSystem(Scene* scene);
         void onUpdate(float deltaTime) override;
         void onEvent(Event& event) override;
-        void setSize(int width, int height);
+        void setAspectRatio(float aspectRatio) { m_Resized = true; m_AspectRatio = aspectRatio; }
     private:
-        bool onViewportResize(const ViewportResizeEvent& e);
         bool onKeyPressed(const KeyPressedEvent& e);
         bool onKeyRepeat(const KeyPressedEvent& e);
         bool onKeyReleased(const KeyReleasedEvent& e);
@@ -31,10 +21,7 @@ namespace ZEN {
         bool onMouseButtonReleased(const MouseButtonReleasedEvent& e);
         bool onMouseMove(const MouseMovedEvent& e);
 
-        //void onPanelFocusEvent(const PanelFocusedEvent& e);
-
-        float m_Width{};
-        float m_Height{};
+        float m_AspectRatio{};
         float m_MoveSpeed{5.0f};
         double m_CursorPosLastX{};
         double m_CursorPosLastY{};

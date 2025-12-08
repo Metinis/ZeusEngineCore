@@ -1,4 +1,5 @@
 #pragma once
+#include "Application.h"
 #include "ZeusEngineCore/ZEngine.h"
 #include "ZeusEngineCore/Window.h"
 #include "../../src/Engine/LayerStack.h"
@@ -18,7 +19,7 @@ namespace ZEN {
         void popOverlay(Layer* layer);
         void callEvent(Event& event);
 
-        void setViewportSize(glm::vec2 size);
+        bool onPlayMode(const RunPlayModeEvent &event);
 
         bool onWindowResize(const WindowResizeEvent& event);
 
@@ -38,9 +39,9 @@ namespace ZEN {
         std::unique_ptr<ZEngine> m_Engine{};
 
         std::string m_ResourceRoot{};
-        eRendererAPI m_API{OpenGL};
+        eRendererAPI m_API{ OpenGL };
         bool m_Running { false };
-        glm::vec2 m_ViewportSize{1.0f, 1.0f};
+        bool m_IsPlaying { false };
 
     };
 

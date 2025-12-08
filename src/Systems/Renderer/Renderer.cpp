@@ -5,6 +5,8 @@
 
 using namespace ZEN;
 
+float xCorner = 0, yCorner = 0;
+
 Renderer::Renderer(eRendererAPI api, const std::string& resourceRoot, GLFWwindow* window) : m_Window(window){
     m_Context = IContext::create(api, window);
     m_ResourceManager = IResourceManager::create(api, resourceRoot);
@@ -15,6 +17,8 @@ Renderer::Renderer(eRendererAPI api, const std::string& resourceRoot, GLFWwindow
 
     int fbWidth, fbHeight;
     glfwGetFramebufferSize(window, &fbWidth, &fbHeight);
+    m_Width = fbWidth;
+    m_Height = fbHeight;
     m_MainFBO.fboID = m_ResourceManager->createFBO();
     m_ResourceManager->bindFBO(m_MainFBO.fboID);
     m_ColorTex.textureID = m_ResourceManager->createColorTex(fbWidth, fbHeight);
@@ -25,12 +29,6 @@ Renderer::Renderer(eRendererAPI api, const std::string& resourceRoot, GLFWwindow
     m_CaptureRBO.rboID = m_ResourceManager->createDepthBuffer(512, 512);
 }
 
-void Renderer::onEvent(Event &event) {
-
-}
-
-
-
 void Renderer::beginFrame() {
     m_ResourceManager->bindFBO(m_MainFBO.fboID);
     m_ResourceManager->bindDepthBuffer(m_DepthRBO.rboID);
@@ -38,6 +36,7 @@ void Renderer::beginFrame() {
 
     if(m_Resized) {
         m_ResourceManager->bindFBO(m_MainFBO.fboID);
+        m_Context->setViewport(xCorner, yCorner, m_Width, m_Height);
         m_ResourceManager->deleteTexture(m_ColorTex.textureID);
         m_ResourceManager->deleteDepthBuffer(m_DepthRBO.rboID);
         m_ColorTex.textureID = m_ResourceManager->createColorTex(m_Width, m_Height);
@@ -48,9 +47,7 @@ void Renderer::beginFrame() {
 
 void Renderer::bindDefaultFBO() {
     m_ResourceManager->bindFBO(0);
-    int fbWidth, fbHeight;
-    glfwGetFramebufferSize(m_Window, &fbWidth, &fbHeight);
-    m_Context->setViewport(fbWidth, fbHeight);
+    m_Context->setViewport(xCorner, yCorner, m_Width, m_Height);
 
 }
 const glm::mat4 captureProjection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
@@ -92,10 +89,7 @@ void Renderer::renderToCubeMapHDR(uint32_t cubemapTexID, uint32_t eqToCubeMapSha
     m_Context->enableCullFace();
     m_ResourceManager->bindFBO(m_MainFBO.fboID);
     m_ResourceManager->bindDepthBuffer(m_DepthRBO.rboID);
-    int fbWidth, fbHeight;
-    glfwGetFramebufferSize(m_Window, &fbWidth, &fbHeight);
-    //m_ResourceManager->updateDepthBufferDimensions(fbWidth, fbHeight);
-    m_Context->setViewport(fbWidth, fbHeight);
+    m_Context->setViewport(xCorner, yCorner, m_Width, m_Height);
 }
 
 void Renderer::renderToIrradianceMap(uint32_t cubemapTexID, uint32_t irradianceTexID, uint32_t irradianceShader,
@@ -126,9 +120,7 @@ void Renderer::renderToIrradianceMap(uint32_t cubemapTexID, uint32_t irradianceT
     m_Context->enableCullFace();
     m_ResourceManager->bindFBO(m_MainFBO.fboID);
     m_ResourceManager->bindDepthBuffer(m_DepthRBO.rboID);
-    int fbWidth, fbHeight;
-    glfwGetFramebufferSize(m_Window, &fbWidth, &fbHeight);
-    m_Context->setViewport(fbWidth, fbHeight);
+    m_Context->setViewport(xCorner, yCorner, m_Width, m_Height);
 }
 
 void Renderer::renderToPrefilterMap(uint32_t cubemapTexID, uint32_t prefilterTexID, uint32_t prefilterShader,
@@ -169,9 +161,7 @@ void Renderer::renderToPrefilterMap(uint32_t cubemapTexID, uint32_t prefilterTex
     m_Context->enableCullFace();
     m_ResourceManager->bindFBO(m_MainFBO.fboID);
     m_ResourceManager->bindDepthBuffer(m_DepthRBO.rboID);
-    int fbWidth, fbHeight;
-    glfwGetFramebufferSize(m_Window, &fbWidth, &fbHeight);
-    m_Context->setViewport(fbWidth, fbHeight);
+    m_Context->setViewport(xCorner, yCorner, m_Width, m_Height);
 }
 
 void Renderer::renderToBRDFLUT(uint32_t brdfTexID, uint32_t brdfShader, const MeshDrawable& drawable) {
@@ -192,9 +182,7 @@ void Renderer::renderToBRDFLUT(uint32_t brdfTexID, uint32_t brdfShader, const Me
 
     m_ResourceManager->bindFBO(m_MainFBO.fboID);
     m_ResourceManager->bindDepthBuffer(m_DepthRBO.rboID);
-    int fbWidth, fbHeight;
-    glfwGetFramebufferSize(m_Window, &fbWidth, &fbHeight);
-    m_Context->setViewport(fbWidth, fbHeight);
+    m_Context->setViewport(xCorner, yCorner, m_Width, m_Height);
 
 }
 
@@ -213,16 +201,36 @@ void Renderer::endFrame() {
     m_Context->swapBuffers();
 }
 
-bool Renderer::onResize(WindowResizeEvent &e) {
-
-}
-
-void Renderer::setSize(int width, int height) {
-    m_Width = width;
-    m_Height = height;
-    std::cout<<"Renderer resized! "<<width<<"x "<<height<<"y \n";
+void Renderer::setSize(float width, float height) {
+    std::cout << "Width: "<<width<<" Height: "<<height<<"\n";
+    float requiredHeightOfViewport = width * (1.0f / m_AspectRatio);
+    if (requiredHeightOfViewport > height)
+    {
+        float requiredWidthOfViewport = height * m_AspectRatio;
+        if (requiredWidthOfViewport > width)
+        {
+            std::cout << "Error: Couldn't find dimensions that preserve the aspect ratio\n";
+        }
+        else
+        {
+            m_Width = static_cast<int>(requiredWidthOfViewport);
+            m_Height = height;
+            float widthOfTheTwoVerticalBars = width - m_Width;
+            xCorner = (int)glm::round(widthOfTheTwoVerticalBars * 0.5f);
+            yCorner = 0;
+        }
+    }
+    else
+    {
+        m_Width = width;
+        m_Height = static_cast<int>(requiredHeightOfViewport);
+        float heightOfTheTwoHorizontalBars = height - m_Height;
+        xCorner = 0;
+        yCorner = (int)glm::round(heightOfTheTwoHorizontalBars * 0.5f);
+    }
     m_Resized = true;
 }
+
 
 void* Renderer::getColorTextureHandle() {
     return (void*)m_ResourceManager->getTexture(m_ColorTex.textureID);

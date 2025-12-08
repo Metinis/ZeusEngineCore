@@ -39,6 +39,40 @@ Window::Window(int width, int height, std::string title, ZEN::eRendererAPI api)
     };
 }
 
+Window::Window(std::string title, ZEN::eRendererAPI api) {
+    if (!glfwInit())
+        throw std::runtime_error("Failed to initialize GLFW");
+
+    if (api != ZEN::OpenGL) {
+        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    }
+    else {
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+#ifdef __APPLE__
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
+        glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // Required on macOS
+#else
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
+#endif
+        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    }
+    GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+    const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+
+    m_Width = mode->width;
+    m_Height = mode->height;
+    m_Window = glfwCreateWindow(m_Width, m_Height, m_Title.c_str(), nullptr, nullptr);
+
+    if (!m_Window)
+        throw std::runtime_error("Failed to create window");
+
+    m_LastTime = static_cast<float>(glfwGetTime());
+
+    m_SubmitEventFn = [](Event& event) {
+        Application::get().callEvent(event);
+    };
+}
+
 void Window::attachDispatcher() {
     glfwSetWindowUserPointer(m_Window, &m_SubmitEventFn);
     //m_Dispatcher->attach<SceneViewResizeEvent>(this, &CameraSystem::onResize);
@@ -53,6 +87,8 @@ void Window::attachDispatcher() {
         (*submitEventFn)(event);
 
     });
+
+
 
     glfwSetKeyCallback(m_Window, [](GLFWwindow* window, int key, int scan,
         int action, int mods) {
@@ -131,6 +167,18 @@ void Window::pollEvents() {
         m_Height = height;
     }
     updateWindowTitleWithFPS();
+}
+
+float Window::getHandleWidth() {
+    int fbWidth, fbHeight;
+    glfwGetFramebufferSize(m_Window, &fbWidth, &fbHeight);
+    return fbWidth;
+}
+
+float Window::getHandleHeight() {
+    int fbWidth, fbHeight;
+    glfwGetFramebufferSize(m_Window, &fbWidth, &fbHeight);
+    return fbHeight;
 }
 
 void Window::setCursorLock(bool isLocked, int xPos, int yPos) {

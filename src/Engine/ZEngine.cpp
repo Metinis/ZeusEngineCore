@@ -15,7 +15,6 @@ ZEngine::ZEngine(eRendererAPI api, GLFWwindow* nativeWindow, const std::string& 
 
     m_RenderSystem = new RenderSystem(m_Renderer, m_Scene, m_ModelLibrary.get());
     m_CameraSystem = new CameraSystem(m_Scene);
-    m_CameraSystem->setSize(Application::get().getWindow()->getWidth(), Application::get().getWindow()->getHeight());
 
     Application::get().pushLayer(m_Scene);
     Application::get().pushLayer(m_Renderer);
@@ -24,3 +23,11 @@ ZEngine::ZEngine(eRendererAPI api, GLFWwindow* nativeWindow, const std::string& 
 }
 
 ZEngine::~ZEngine() = default;
+
+void ZEngine::setAspectRatio(float aspectRatio) {
+    m_Renderer->setAspectRatio(aspectRatio);
+    m_Renderer->setSize(Application::get().getWindow()->getHandleWidth(),
+        Application::get().getWindow()->getHandleHeight());
+    m_CameraSystem->setAspectRatio(aspectRatio);
+    std::cout<<"Aspect Ratio: "<<aspectRatio<<"\n";
+}

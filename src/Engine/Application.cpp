@@ -17,7 +17,7 @@ Application::~Application() {
 }
 
 void Application::init() {
-    m_Window = std::make_unique<Window>(1280, 720, "Zeus Editor", m_API);
+    m_Window = std::make_unique<Window>("Zeus Editor", m_API);
     m_LayerStack = std::make_unique<LayerStack>();
     m_Engine = std::make_unique<ZEngine>(m_API, m_Window->getNativeWindow(), m_ResourceRoot);
     m_Window->attachDispatcher();
@@ -26,6 +26,8 @@ void Application::init() {
     m_Running = true;
 
     m_Engine->getScene().createDefaultScene(m_Engine.get());
+    m_Engine->setAspectRatio(m_Window->getHandleWidth() / m_Window->getHandleHeight());
+
 }
 
 void Application::pushLayer(Layer* layer) {
@@ -51,6 +53,7 @@ void Application::popOverlay(Layer *layer) {
 void Application::callEvent(Event &event) {
     EventDispatcher dispatcher(event);
     dispatcher.dispatch<WindowResizeEvent>([this](WindowResizeEvent& e) {return onWindowResize(e); });
+    dispatcher.dispatch<RunPlayModeEvent>([this](RunPlayModeEvent& e) {return onPlayMode(e); });
 
     //dispatcher.dispatch<KeyPressedEvent>([this](KeyPressedEvent& e) {return onKeyPressed(e); });
     for (auto it = m_LayerStack->rbegin(); it != m_LayerStack->rend(); ++it)
@@ -61,13 +64,15 @@ void Application::callEvent(Event &event) {
     }
 }
 
-void Application::setViewportSize(glm::vec2 size) {
-    m_ViewportSize = size;
-    ViewportResizeEvent event(size.x, size.y);
-    callEvent(event);
+bool Application::onPlayMode(const RunPlayModeEvent &event) {
+    if(event.getPlaying()) {
+        m_IsPlaying = true;
+    }
+    return false;
 }
 
 bool Application::onWindowResize(const WindowResizeEvent &event) {
+    //m_Engine->getRenderer().setSize(m_Window->getHandleWidth(), m_Window->getHandleHeight());
     m_Engine->getRenderer().setSize(event.getWidth(), event.getHeight());
     return true;
 }

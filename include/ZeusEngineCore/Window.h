@@ -11,6 +11,8 @@ namespace ZEN {
     public:
         Window(int width, int height, std::string title, ZEN::eRendererAPI api);
 
+        Window(std::string title, ZEN::eRendererAPI api);
+
         void attachDispatcher();
 
         ~Window();
@@ -27,6 +29,10 @@ namespace ZEN {
 
         float getHeight(){return m_Height;}
 
+        float getHandleWidth();
+
+        float getHandleHeight();
+
         void setCursorLock(bool isLocked, int xPos, int yPos);
 
         void updateWindowTitleWithFPS();
@@ -36,8 +42,8 @@ namespace ZEN {
         std::function<void(Event&)> m_SubmitEventFn{};
 
         GLFWwindow *m_Window = nullptr;
-        int m_Width = 1280;
-        int m_Height = 720;
+        int m_Width{};
+        int m_Height{};
         float m_LastTime;
         float m_DeltaTime;
         float m_SmoothFPS = 0.0f;

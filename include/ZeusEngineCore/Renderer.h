@@ -37,8 +37,6 @@ namespace ZEN {
 	public:
 		explicit Renderer(eRendererAPI api, const std::string& resourceRoot, GLFWwindow* window);
 
-		void onEvent(Event& event) override;
-
 		template<typename T>
 		void writeToUBO(uint32_t uboID, T ubo) {
 			auto const bytes = std::bit_cast<std::array<std::byte, sizeof(ubo)>>(ubo);
@@ -54,8 +52,10 @@ namespace ZEN {
 		void renderToScreenQuad(uint32_t quadShader, const MeshDrawable& drawable);
 
 		void endFrame();
-		bool onResize(WindowResizeEvent& e);
-		void setSize(int width, int height);
+		void setSize(float width, float height);
+		glm::vec2 getSize() {return {m_Width, m_Height};}
+		float getAspectRatio() const {return m_AspectRatio;}
+		void setAspectRatio(float aspectRatio) { m_AspectRatio = aspectRatio; }
 		Texture& getColorTexture() {return m_ColorTex;}
 		void* getColorTextureHandle();
 		IResourceManager* getResourceManager() {return m_ResourceManager.get();}
@@ -79,6 +79,7 @@ namespace ZEN {
 		RBO m_DepthRBO{};
 
 		bool m_Resized{};
+		float m_AspectRatio{};
 		float m_Width{};
 		float m_Height{};
 	};

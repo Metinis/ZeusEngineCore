@@ -67,6 +67,9 @@ void GLContext::setViewport(uint32_t width, uint32_t height) {
     glViewport(0, 0, width, height);
 }
 
+void GLContext::setViewport(uint32_t xCorner, uint32_t yCorner, uint32_t width, uint32_t height) {
+    glViewport(xCorner, yCorner, width, height);
+}
 
 
 void GLContext::swapBuffers() {

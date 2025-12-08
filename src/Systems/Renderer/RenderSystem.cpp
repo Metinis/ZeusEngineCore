@@ -6,7 +6,7 @@
 using namespace ZEN;
 
 RenderSystem::RenderSystem(Renderer *renderer, Scene *scene, ModelLibrary* library) :
-m_Renderer(renderer), m_Scene(scene), m_Library(library){
+m_Renderer(renderer), m_Scene(scene), m_Library(library) {
 
     //m_Dispatcher->attach<RemoveMeshEvent, RenderSystem, &RenderSystem::onMeshRemove>(this);
     //m_Dispatcher->attach<RemoveMeshCompEvent, RenderSystem, &RenderSystem::onMeshCompRemove>(this);
@@ -269,7 +269,6 @@ void RenderSystem::onRender() {
     bindSceneUBOs();
 
     //render all meshes with drawable comps
-
     renderDrawables();
 
     if(m_DrawNormals) {

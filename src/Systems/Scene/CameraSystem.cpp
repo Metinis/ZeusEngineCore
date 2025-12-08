@@ -58,11 +58,8 @@ void CameraSystem::onUpdate(float deltaTime) {
                 m_CursorPosLastY = m_CursorPosY;
             }
         }
-
-        //update perspective matrix if resized
         if(m_Resized) {
-            camera.aspect = (float)m_Width / m_Height;
-            std::cout<<"Aspect: "<< m_Width/m_Height<<"\n";
+            camera.aspect = m_AspectRatio;
             camera.projection = glm::perspective(camera.fov, camera.aspect, camera.near, camera.far);
             m_Resized = false;
         }
@@ -72,35 +69,13 @@ void CameraSystem::onUpdate(float deltaTime) {
 }
 
 void CameraSystem::onEvent(Event &event) {
-    /*m_Dispatcher->attach<SceneViewResizeEvent, CameraSystem, &CameraSystem::onResize>(this);
-    m_Dispatcher->attach<KeyPressedEvent, CameraSystem, &CameraSystem::onKeyPressed>(this);
-    m_Dispatcher->attach<KeyRepeatEvent, CameraSystem, &CameraSystem::onKeyRepeat>(this);
-    m_Dispatcher->attach<KeyReleaseEvent, CameraSystem, &CameraSystem::onKeyReleased>(this);
-    m_Dispatcher->attach<MouseButtonPressEvent, CameraSystem, &CameraSystem::onMouseButtonPressed>(this);
-    m_Dispatcher->attach<MouseButtonReleaseEvent, CameraSystem, &CameraSystem::onMouseButtonReleased>(this);
-    m_Dispatcher->attach<PanelFocusEvent, CameraSystem, &CameraSystem::onPanelFocusEvent>(this);
-    m_Dispatcher->attach<MouseMoveEvent, CameraSystem, &CameraSystem::onMouseMove>(this);*/
     EventDispatcher dispatcher(event);
-    dispatcher.dispatch<ViewportResizeEvent>([this](ViewportResizeEvent& e) {return onViewportResize(e); });
     dispatcher.dispatch<KeyPressedEvent>([this](KeyPressedEvent& e) {return onKeyPressed(e); });
     dispatcher.dispatch<KeyReleasedEvent>([this](KeyReleasedEvent& e) {return onKeyReleased(e); });
     dispatcher.dispatch<MouseButtonPressedEvent>([this](MouseButtonPressedEvent& e) {return onMouseButtonPressed(e); });
     dispatcher.dispatch<MouseButtonReleasedEvent>([this](MouseButtonReleasedEvent& e) {return onMouseButtonReleased(e); });
     dispatcher.dispatch<MouseMovedEvent>([this](MouseMovedEvent& e) {return onMouseMove(e); });
 
-}
-
-void CameraSystem::setSize(int width, int height) {
-    m_Width = width;
-    m_Height = height;
-    m_Resized = true;
-}
-
-bool CameraSystem::onViewportResize(const ViewportResizeEvent &e) {
-    m_Width = e.getWidth();
-    m_Height = e.getHeight();
-    m_Resized = true;
-    return true;
 }
 
 bool CameraSystem::onKeyPressed(const KeyPressedEvent &e) {
@@ -119,11 +94,6 @@ bool CameraSystem::onKeyReleased(const KeyReleasedEvent &e) {
 
 bool CameraSystem::onMouseButtonPressed(const MouseButtonPressedEvent &e) {
     if(e.getKeyCode() == GLFW_MOUSE_BUTTON_RIGHT) {
-       /* m_Dispatcher->trigger<CursorLockEvent>(CursorLockEvent{
-            .lock = true,
-            .xPos = m_CursorPosX,
-            .yPos = m_CursorPosY
-        });*/
         Application::get().getWindow()->setCursorLock(true, m_CursorPosX, m_CursorPosY);
         m_CursorLocked = true;
         m_CursorPosLastX = m_CursorPosX;
@@ -135,11 +105,6 @@ bool CameraSystem::onMouseButtonPressed(const MouseButtonPressedEvent &e) {
 bool CameraSystem::onMouseButtonReleased(const MouseButtonReleasedEvent &e) {
     if(e.getKeyCode() == GLFW_MOUSE_BUTTON_RIGHT) {
         Application::get().getWindow()->setCursorLock(false, m_CursorPosX, m_CursorPosY);
-        /*m_Dispatcher->trigger<CursorLockEvent>(CursorLockEvent{
-            .lock = false,
-            .xPos = m_CursorPosX,
-            .yPos = m_CursorPosY
-        });*/
         m_CursorLocked = false;
     }
     return true;
@@ -150,8 +115,3 @@ bool CameraSystem::onMouseMove(const MouseMovedEvent &e) {
     m_CursorPosY = e.getYPos();
     return true;
 }
-
-/*void CameraSystem::onPanelFocusEvent(const PanelFocusEvent &e) {
-    m_PanelSelected = e.panel == "Scene View";
-}*/
-

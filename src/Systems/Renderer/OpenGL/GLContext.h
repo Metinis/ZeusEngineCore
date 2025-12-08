@@ -14,6 +14,7 @@ namespace ZEN {
 		void enableCullFace() override;
 		void disableCullFace() override;
 		void setViewport(uint32_t width, uint32_t height) override;
+		void setViewport(uint32_t xCorner, uint32_t yCorner, uint32_t width, uint32_t height) override;
 		void setDepthMode(eDepthModes depthMode) override;
 		void swapBuffers() override;
 	private:
