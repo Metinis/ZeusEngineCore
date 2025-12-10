@@ -70,5 +70,69 @@ bool ZEN::AssetSerializer::serialize(const std::string &path) {
 }
 
 bool ZEN::AssetSerializer::deserialize(const std::string &path) {
+    //need to clear data before
 
+    YAML::Node data;
+    try
+    {
+        data = YAML::LoadFile(Application::get().getResourceRoot() + path);
+    }
+    catch (YAML::ParserException e)
+    {
+        return false;
+    }
+
+    if (!data["Assets"])
+        return false;
+
+    auto textures = data["Textures"];
+    if (textures) {
+        for(auto texture : textures) {
+            auto name = texture["Name"];
+            auto texpath = texture["Path"];
+            if(name && texpath) {
+                m_AssetLibrary->createTexture(name.as<std::string>(), texpath.as<std::string>());
+            }
+        }
+    }
+    auto shaders = data["Shaders"];
+    if(shaders) {
+        for(auto shader : shaders) {
+            auto name = shader["Name"];
+            if(name) {
+                m_AssetLibrary->createShader(name.as<std::string>(), shader["VertPath"].as<std::string>(),
+                    shader["FragPath"].as<std::string>(), shader["GeoPath"].as<std::string>());
+            }
+        }
+    }
+    auto materials = data["Materials"];
+    if(materials) {
+        for(auto material : materials) {
+            auto name = material["Name"];
+            if(name) {
+                Material mat{
+                    .shader = material["Shader"].as<std::string>(),
+                    .texture = material["Texture"].as<std::string>(),
+                    .metallicTex = material["MetallicTexture"].as<std::string>(),
+                    .normalTex = material["NormalTexture"].as<std::string>(),
+                    .roughnessTex = material["RoughnessTexture"].as<std::string>(),
+                    .aoTex = material["AoTexture"].as<std::string>(),
+                    .albedo = material["Albedo"].as<glm::vec3>(),
+                    .metallic = material["Metallic"].as<float>(),
+                    .roughness = material["Roughness"].as<float>(),
+                    .ao = material["AO"].as<float>(),
+                    .metal = material["Metal"].as<bool>(),
+                    .useAlbedo = material["UseAlbedo"].as<bool>(),
+                    .useMetallic = material["UseMetallic"].as<bool>(),
+                    .useRoughness = material["UseRoughness"].as<bool>(),
+                    .useNormal = material["UseNormal"].as<bool>(),
+                    .useAO = material["UseAO"].as<bool>(),
+
+                };
+                m_AssetLibrary->m_Materials[name.as<std::string>()] = std::make_unique<Material>(mat);
+            }
+        }
+    }
+
+    return true;
 }

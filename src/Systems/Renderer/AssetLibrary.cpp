@@ -21,11 +21,11 @@ AssetLibrary::AssetLibrary(IResourceManager *resourceManager, const std::string 
     createAndAddDrawable("Quad", *m_MeshData["Quad"]);
     createAndAddDrawable("Sphere", *m_MeshData["Sphere"]);
 
-    createTexture("DarkWood_Albedo", "/textures/dark-wood-stain-ue/dark-wood-stain_albedo.png");
-    createTexture("DarkWood_Metallic", "/textures/dark-wood-stain-ue/dark-wood-stain_metallic.png");
-    createTexture("DarkWood_Normal", "/textures/dark-wood-stain-ue/dark-wood-stain_normal-dx.png");
-    createTexture("DarkWood_Roughness", "/textures/dark-wood-stain-ue/dark-wood-stain_roughness.png");
-    createTexture("DarkWood_AO", "/textures/dark-wood-stain-ue/dark-wood-stain_ao.png");
+    //createTexture("DarkWood_Albedo", "/textures/dark-wood-stain-ue/dark-wood-stain_albedo.png");
+    //createTexture("DarkWood_Metallic", "/textures/dark-wood-stain-ue/dark-wood-stain_metallic.png");
+    //createTexture("DarkWood_Normal", "/textures/dark-wood-stain-ue/dark-wood-stain_normal-dx.png");
+    //createTexture("DarkWood_Roughness", "/textures/dark-wood-stain-ue/dark-wood-stain_roughness.png");
+    //createTexture("DarkWood_AO", "/textures/dark-wood-stain-ue/dark-wood-stain_ao.png");
 
     //load env map
     TextureData data {
@@ -66,16 +66,16 @@ AssetLibrary::AssetLibrary(IResourceManager *resourceManager, const std::string 
     };
     m_Materials["NormalsMat"] = std::make_unique<Material>(normalsMat);
 
-    Material darkwoodMaterial{
+    /*Material darkwoodMaterial{
         .shader = "Default",
         .texture = "DarkWood_Albedo",
         .metallicTex = "DarkWood_Metallic",
         .normalTex = "DarkWood_Normal",
         .roughnessTex = "DarkWood_Roughness",
         .aoTex = "DarkWood_AO",
-    };
+    };*/
 
-    m_Materials["DarkWoodMaterial"] = std::make_unique<Material>(darkwoodMaterial);
+    //m_Materials["DarkWoodMaterial"] = std::make_unique<Material>(darkwoodMaterial);
 
     createShader("HDRSkybox", "/shaders/glskyboxHDR.vert", "/shaders/glskyboxHDR.frag", "");
     Material skyboxMat{
@@ -116,7 +116,8 @@ AssetLibrary::AssetLibrary(IResourceManager *resourceManager, const std::string 
     m_Materials["brdfLUT"] = std::make_unique<Material>(brdfLUT);
 
     AssetSerializer serializer(this);
-    serializer.serialize("/assets/default.zenpackage");
+    //serializer.serialize("/assets/default.zenpackage");
+    serializer.deserialize("/assets/default.zenpackage");
 }
 
 void AssetLibrary::removeMeshData(const std::string &name) {
