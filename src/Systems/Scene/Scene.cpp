@@ -3,7 +3,7 @@
 #include <ZeusEngineCore/Application.h>
 #include <ZeusEngineCore/Entity.h>
 #include <ZeusEngineCore/InputEvents.h>
-#include <ZeusEngineCore/ModelLibrary.h>
+#include <ZeusEngineCore/AssetLibrary.h>
 #include <ZeusEngineCore/ZEngine.h>
 #include "ZeusEngineCore/SceneSerializer.h"
 

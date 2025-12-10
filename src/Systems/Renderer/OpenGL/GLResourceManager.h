@@ -52,7 +52,7 @@ namespace ZEN {
         void bindTexture(uint32_t textureID, uint32_t binding) override;
         void deleteTexture(uint32_t textureID) override;
 
-        void bindMaterial(const Material& material) override;
+        void bindMaterial(const MaterialRaw& material) override;
 
         uint32_t createCubeMapTexture(const std::string& texturePath) override;
         uint32_t createCubeMapTextureHDRMip(uint32_t width, uint32_t height) override;

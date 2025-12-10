@@ -1,4 +1,4 @@
-#include "ZeusEngineCore/ModelLibrary.h"
+#include "ZeusEngineCore/AssetLibrary.h"
 
 #include <ZeusEngineCore/Application.h>
 #include <ZeusEngineCore/InputEvents.h>
@@ -8,7 +8,7 @@
 
 using namespace ZEN;
 
-ModelLibrary::ModelLibrary(IResourceManager *resourceManager, const std::string &resourceRoot) : m_ResourceManager(resourceManager) {
+AssetLibrary::AssetLibrary(IResourceManager *resourceManager, const std::string &resourceRoot) : m_ResourceManager(resourceManager) {
     m_Materials["Default"] = createDefaultMaterial("/shaders/pbr.vert", "/shaders/pbr.frag", "");
     m_MeshData["Cube"] = createCube();
     m_MeshData["Skybox"] = createSkybox();
@@ -20,150 +20,102 @@ ModelLibrary::ModelLibrary(IResourceManager *resourceManager, const std::string 
     createAndAddDrawable("Quad", *m_MeshData["Quad"]);
     createAndAddDrawable("Sphere", *m_MeshData["Sphere"]);
 
-    m_Textures["Wall"] = m_ResourceManager->createTexture("/textures/wall.jpg", false);
-    m_Textures["Container"] = m_ResourceManager->createTexture("/textures/container2.png", false);
-    m_Textures["ContainerSpec"] = m_ResourceManager->createTexture("/textures/container2_specular.png", false);
-
-    m_Textures["RustedIron_Albedo"] = m_ResourceManager->createTexture(
-        "/textures/rusted_iron/rustediron2_basecolor.png", false);
-    m_Textures["RustedIron_Metallic"] = m_ResourceManager->createTexture(
-        "/textures/rusted_iron/rustediron2_metallic.png", false);
-    m_Textures["RustedIron_Normal"] = m_ResourceManager->createTexture("/textures/rusted_iron/rustediron2_normal.png",
-                                                                       false);
-    m_Textures["RustedIron_Roughness"] = m_ResourceManager->createTexture(
-        "/textures/rusted_iron/rustediron2_roughness.png", false);
-
-    m_Textures["DarkWood_Albedo"] = m_ResourceManager->createTexture(
-        "/textures/dark-wood-stain-ue/dark-wood-stain_albedo.png", false);
-    m_Textures["DarkWood_Metallic"] = m_ResourceManager->createTexture(
-        "/textures/dark-wood-stain-ue/dark-wood-stain_metallic.png", false);
-    m_Textures["DarkWood_Normal"] = m_ResourceManager->createTexture(
-        "/textures/dark-wood-stain-ue/dark-wood-stain_normal-dx.png", false);
-    m_Textures["DarkWood_Roughness"] = m_ResourceManager->createTexture(
-        "/textures/dark-wood-stain-ue/dark-wood-stain_roughness.png", false);
-    m_Textures["DarkWood_AO"] = m_ResourceManager->createTexture(
-    "/textures/dark-wood-stain-ue/dark-wood-stain_ao.png", false);
-
-    m_Textures["Brick_Albedo"] = m_ResourceManager->createTexture(
-        "/textures/dirty-red-bricks-ue/dirty-red-bricks_albedo.png", false);
-    m_Textures["Brick_Metallic"] = m_ResourceManager->createTexture(
-        "/textures/dirty-red-bricks-ue/dirty-red-bricks_metallic.png", false);
-    m_Textures["Brick_Normal"] = m_ResourceManager->createTexture(
-        "/textures/dirty-red-bricks-ue/dirty-red-bricks_normal-dx.png", false);
-    m_Textures["Brick_AO"] = m_ResourceManager->createTexture("/textures/dirty-red-bricks-ue/dirty-red-bricks_ao.png",
-                                                              false);
-    m_Textures["Brick_Roughness"] = m_ResourceManager->createTexture(
-        "/textures/dirty-red-bricks-ue/dirty-red-bricks_roughness.png", false);
+    createTexture("DarkWood_Albedo", "/textures/dark-wood-stain-ue/dark-wood-stain_albedo.png");
+    createTexture("DarkWood_Metallic", "/textures/dark-wood-stain-ue/dark-wood-stain_metallic.png");
+    createTexture("DarkWood_Normal", "/textures/dark-wood-stain-ue/dark-wood-stain_normal-dx.png");
+    createTexture("DarkWood_Roughness", "/textures/dark-wood-stain-ue/dark-wood-stain_roughness.png");
+    createTexture("DarkWood_AO", "/textures/dark-wood-stain-ue/dark-wood-stain_ao.png");
 
     //load env map
-    m_Textures["Skybox"] = m_ResourceManager->createCubeMapTextureHDRMip(1024, 1024);
+    TextureData data {
+        .id = m_ResourceManager->createCubeMapTextureHDRMip(1024, 1024)
+    };
+    m_Textures["Skybox"] = std::make_unique<TextureData>(data);
 
-    m_Textures["EqMap"] = m_ResourceManager->createHDRTexture("/env-maps/christmas_photo_studio_04_4k.hdr");
+    data = {
+        .id = m_ResourceManager->createHDRTexture("/env-maps/christmas_photo_studio_04_4k.hdr")
+    };
+    m_Textures["EqMap"] = std::make_unique<TextureData>(data);
 
-    m_Textures["ConMap"] = m_ResourceManager->createCubeMapTextureHDR(32, 32);
+    data = {
+        .id = m_ResourceManager->createCubeMapTextureHDR(32, 32)
+    };
+    m_Textures["ConMap"] = std::make_unique<TextureData>(data);
 
-    m_Textures["PrefilterMap"] = m_ResourceManager->createPrefilterMap(128, 128);
+    data = {
+        .id = m_ResourceManager->createPrefilterMap(128, 128)
+    };
+    m_Textures["PrefilterMap"] = std::make_unique<TextureData>(data);
 
-    m_Textures["brdfLUT"] = m_ResourceManager->createBRDFLUTTexture(1024, 1024);
+    data = {
+        .id = m_ResourceManager->createBRDFLUTTexture(1024, 1024)
+    };
+    m_Textures["brdfLUT"] = std::make_unique<TextureData>(data);
 
+    createShader("ScreenQuad", "/shaders/screenQuad.vert", "/shaders/screenQuad.frag", "");
     Material screenQuadMat{
-        .shaderID = m_ResourceManager->createShader("/shaders/screenQuad.vert",
-                                                               "/shaders/screenQuad.frag",
-                                                               "")
+        .shader = "ScreenQuad",
     };
     m_Materials["ScreenQuad"] = std::make_unique<Material>(screenQuadMat);
 
-    uint32_t normalsShaderID = m_ResourceManager->createShader("/shaders/normal-visual.vert",
-                                                               "/shaders/normal-visual.frag",
-                                                               "/shaders/normal-visual.geom");
+    createShader("Normals", "/shaders/normal-visual.vert","/shaders/normal-visual.frag",
+        "/shaders/normal-visual.geom");
     Material normalsMat{
-        .shaderID = normalsShaderID,
+        .shader = "Normals"
     };
     m_Materials["NormalsMat"] = std::make_unique<Material>(normalsMat);
 
-    uint32_t defaultShaderID = m_Materials["Default"]->shaderID;
-    Material wallMaterial{
-        .shaderID = defaultShaderID,
-        .textureID = m_Textures["Wall"],
-    };
-
-    m_Materials["Wall"] = std::make_unique<Material>(wallMaterial);
-
-    Material containerMaterial{
-        .shaderID = defaultShaderID,
-        .textureID = m_Textures["Container"],
-    };
-
-    m_Materials["Container"] = std::make_unique<Material>(containerMaterial);
-
-    Material rustedMaterial{
-        .shaderID = defaultShaderID,
-        .textureID = m_Textures["RustedIron_Albedo"],
-        .metallicTexID = m_Textures["RustedIron_Metallic"],
-        .normalTexID = m_Textures["RustedIron_Normal"],
-        .roughnessTexID = m_Textures["RustedIron_Roughness"],
-
-    };
-
-    m_Materials["RustedMaterial"] = std::make_unique<Material>(rustedMaterial);
-
     Material darkwoodMaterial{
-        .shaderID = defaultShaderID,
-        .textureID = m_Textures["DarkWood_Albedo"],
-        .metallicTexID = m_Textures["DarkWood_Metallic"],
-        .normalTexID = m_Textures["DarkWood_Normal"],
-        .roughnessTexID = m_Textures["DarkWood_Roughness"],
-        .aoTexID = m_Textures["DarkWood_AO"],
+        .shader = "Default",
+        .texture = "DarkWood_Albedo",
+        .metallicTex = "DarkWood_Metallic",
+        .normalTex = "DarkWood_Normal",
+        .roughnessTex = "DarkWood_Roughness",
+        .aoTex = "DarkWood_AO",
     };
 
     m_Materials["DarkWoodMaterial"] = std::make_unique<Material>(darkwoodMaterial);
 
-    Material bricks{
-        .shaderID = defaultShaderID,
-        .textureID = m_Textures["Brick_Albedo"],
-        .metallicTexID = m_Textures["Brick_Metallic"],
-        .normalTexID = m_Textures["Brick_Normal"],
-        .roughnessTexID = m_Textures["Brick_Roughness"],
-
-    };
-
-    m_Materials["BricksMaterial"] = std::make_unique<Material>(bricks);
-
+    createShader("HDRSkybox", "/shaders/glskyboxHDR.vert", "/shaders/glskyboxHDR.frag", "");
     Material skyboxMat{
-        .shaderID = m_ResourceManager->createShader("/shaders/glskyboxHDR.vert", "/shaders/glskyboxHDR.frag", ""),
-        .textureID = m_Textures["Skybox"],
+        .shader = "HDRSkybox",
+        .texture = "Skybox",
     };
     m_Materials["Skybox"] = std::make_unique<Material>(skyboxMat);
 
+    createShader("EqMap", "/shaders/eq-to-cubemap.vert", "/shaders/eq-to-cubemap.frag", "");
     Material eqMap{
-        .shaderID = m_ResourceManager->createShader("/shaders/eq-to-cubemap.vert", "/shaders/eq-to-cubemap.frag", ""),
-        .textureID = m_Textures["EqMap"],
+        .shader = "EqMap",
+        .texture = "EqMap",
 
     };
     m_Materials["EqMap"] = std::make_unique<Material>(eqMap);
 
+    createShader("ConMap", "/shaders/irradiance-con.vert", "/shaders/irradiance-con.frag", "");
     Material conMap{
-        .shaderID = m_ResourceManager->createShader("/shaders/irradiance-con.vert", "/shaders/irradiance-con.frag", ""),
-        .textureID = m_Textures["ConMap"],
+        .shader = "ConMap",
+        .texture = "ConMap",
     };
     m_Materials["ConMap"] = std::make_unique<Material>(conMap);
 
+    createShader("PrefilterMap", "/shaders/prefilter.vert", "/shaders/prefilter.frag", "");
     Material prefilterMap{
-        .shaderID = m_ResourceManager->createShader("/shaders/prefilter.vert", "/shaders/prefilter.frag", ""),
-        .textureID = m_Textures["PrefilterMap"],
+        .shader = "PrefilterMap",
+        .texture = "PrefilterMap",
 
     };
     m_Materials["PrefilterMap"] = std::make_unique<Material>(prefilterMap);
 
+    createShader("brdfLUT", "/shaders/brdf-con.vert", "/shaders/brdf-con.frag", "");
     Material brdfLUT{
-        .shaderID = m_ResourceManager->createShader("/shaders/brdf-con.vert", "/shaders/brdf-con.frag", ""),
-        .textureID = m_Textures["brdfLUT"],
+        .shader = "brdfLUT",
+        .texture = "brdfLUT",
 
     };
     m_Materials["brdfLUT"] = std::make_unique<Material>(brdfLUT);
 }
 
-void ModelLibrary::removeMeshData(const std::string &name) {
+void AssetLibrary::removeMeshData(const std::string &name) {
     auto it = m_MeshData.find(name);
     if (it != m_MeshData.end()) {
         m_MeshData.erase(name);
@@ -173,7 +125,7 @@ void ModelLibrary::removeMeshData(const std::string &name) {
     }
     std::cout << "Mesh not found: " << name << "\n";
 }
-void ModelLibrary::removeMeshDrawable(const std::string &name) {
+void AssetLibrary::removeMeshDrawable(const std::string &name) {
     auto it = m_MeshDrawables.find(name);
     if (it != m_MeshDrawables.end()) {
         m_MeshDrawables.erase(name);
@@ -184,7 +136,74 @@ void ModelLibrary::removeMeshDrawable(const std::string &name) {
     std::cout << "Mesh not found: " << name << "\n";
 }
 
-void ModelLibrary::removeMaterial(const std::string &name) {
+void AssetLibrary::createShader(const std::string &name, const std::string &vertPath, const std::string &fragPath,
+    const std::string &geoPath) {
+
+    uint32_t shaderID = m_ResourceManager->createShader(vertPath, fragPath, geoPath);
+
+    ShaderData data {
+        .vertPath = vertPath,
+        .fragPath = fragPath,
+        .geoPath = geoPath,
+        .id = shaderID
+    };
+    m_Shaders[name] = std::make_unique<ShaderData>(data);
+}
+
+void AssetLibrary::addShader(const std::string &name, std::unique_ptr<ShaderData> shader) {
+    m_Shaders[name] = std::move(shader);
+}
+
+void AssetLibrary::addShader(const std::string &name, const ShaderData &shader) {
+    m_Shaders[name] = std::make_unique<ShaderData>(shader);
+}
+
+ShaderData* AssetLibrary::getShader(const std::string &name) {
+    auto it = m_Shaders.find(name);
+    if (it != m_Shaders.end()) return it->second.get();
+    std::cout << "Shader not found, returning default..: " << name << "\n";
+    return nullptr;
+}
+
+void AssetLibrary::removeShader(const std::string &name) {
+    auto it = m_Shaders.find(name);
+    if (it != m_Shaders.end()) {
+        m_Shaders.erase(name);
+        //TODO
+        //RemoveResourceEvent event(name, Resources::MeshData);
+        //Application::get().callEvent(event);
+        return;
+    }
+    std::cout << "Mesh not found: " << name << "\n";
+}
+
+MaterialRaw AssetLibrary::getMaterialRaw(const Material &material) {
+    MaterialRaw ret {
+        .shaderID = getShader(material.shader)->id,
+        .textureID = getTexture(material.texture)->id,
+        .metallicTexID = getTexture(material.metallicTex)->id,
+        .roughnessTexID = getTexture(material.roughnessTex)->id,
+        .normalTexID = getTexture(material.normalTex)->id,
+        .aoTexID = getTexture(material.aoTex)->id,
+        .albedo = material.albedo,
+        .metallic = material.metallic,
+        .roughness = material.roughness,
+        .metal = material.metal,
+        .useAlbedo = material.useAlbedo,
+        .useMetallic = material.useMetallic,
+        .useRoughness = material.useRoughness,
+        .useNormal = material.useNormal,
+        .useAO = material.useAO,
+    };
+    return ret;
+}
+
+MaterialRaw AssetLibrary::getMaterialRaw(const std::string &name) {
+    auto mat = *m_Materials[name];
+    return getMaterialRaw(mat);
+}
+
+void AssetLibrary::removeMaterial(const std::string &name) {
     auto it = m_Materials.find(name);
     if (it != m_Materials.end()) {
         m_Materials.erase(name);
@@ -195,18 +214,26 @@ void ModelLibrary::removeMaterial(const std::string &name) {
     std::cout << "Material not found: " << name << "\n";
 }
 
-void ModelLibrary::removeTexture(const std::string &name) {
+void AssetLibrary::createTexture(const std::string &name, const std::string &path) {
+    TextureData texture = {
+        .path = path,
+        .id = m_ResourceManager->createTexture(path, false),
+    };
+    m_Textures[name] = std::make_unique<TextureData>(texture);
+}
+
+void AssetLibrary::removeTexture(const std::string &name) {
     auto it = m_Textures.find(name);
     if (it != m_Textures.end()) {
-        auto textureID = m_Textures[name];
+        auto& texture = m_Textures[name];
         //find every material with this texture and set the textureID to 0
         for (auto &[matName, material]: m_Materials) {
-            if (material->textureID == textureID) {
-                material->textureID = 0;
+            if (material->texture == name) {
+                material->texture = "Default";
             }
         }
         m_Textures.erase(name);
-        m_ResourceManager->deleteTexture(textureID);
+        m_ResourceManager->deleteTexture(texture->id);
         RemoveResourceEvent event(name, Resources::Texture);
         Application::get().callEvent(event);
         return;
@@ -214,36 +241,43 @@ void ModelLibrary::removeTexture(const std::string &name) {
     std::cout << "Texture not found: " << name << "\n";
 }
 
-void ModelLibrary::addMaterial(const std::string &name, std::unique_ptr<Material> material) {
+void AssetLibrary::addMaterial(const std::string &name, std::unique_ptr<Material> material) {
     m_Materials[name] = std::move(material);
 }
 
-Material* ModelLibrary::getMaterial(const std::string &name) {
+Material* AssetLibrary::getMaterial(const std::string &name) {
     auto it = m_Materials.find(name);
     if (it != m_Materials.end()) return it->second.get();
     std::cout << "Material not found, returning default..: " << name << "\n";
     return nullptr;
 }
 
-void ModelLibrary::addTexture(const std::string &name, uint32_t texID) {
-    m_Textures[name] = texID; //user is responsible for manually deleting a texture from resource manager
+void AssetLibrary::addTexture(const std::string &name, uint32_t texID) {
+    m_Textures[name] = std::make_unique<TextureData>(TextureData{.id = texID});
+}
+void AssetLibrary::addTexture(const std::string &name, const TextureData& data) {
+    m_Textures[name] = std::make_unique<TextureData>(data);
 }
 
-uint32_t ModelLibrary::getTexture(const std::string &name) {
+TextureData* AssetLibrary::getTexture(const std::string &name) {
     auto it = m_Textures.find(name);
-    if (it != m_Textures.end()) return it->second;
+    if (it != m_Textures.end()) return it->second.get();
     std::cout << "Texture not found, returning default..: " << name << "\n";
-    return 0;
+    if(name == "Default") {
+        std::cout << "ERROR: Default Texture not found!!: " << name << "\n";
+        return nullptr;
+    }
+    return getTexture("Default");
 }
 
-MeshData* ModelLibrary::getMeshData(const std::string &name) {
+MeshData* AssetLibrary::getMeshData(const std::string &name) {
     auto it = m_MeshData.find(name);
     if (it != m_MeshData.end()) return it->second.get();
     std::cout << "Mesh not found, returning default..: " << name << "\n";
     return nullptr;
 }
 
-MeshDrawable* ModelLibrary::getMeshDrawable(const std::string &name) {
+MeshDrawable* AssetLibrary::getMeshDrawable(const std::string &name) {
     auto it = m_MeshDrawables.find(name);
     if (it != m_MeshDrawables.end()) return it->second.get();
     std::cout << "Drawable not found, returning default..: " << name << "\n";
@@ -251,18 +285,18 @@ MeshDrawable* ModelLibrary::getMeshDrawable(const std::string &name) {
 }
 
 //TODO template this
-void ModelLibrary::addMeshData(const std::string &name, std::unique_ptr<MeshData> mesh) {
+void AssetLibrary::addMeshData(const std::string &name, std::unique_ptr<MeshData> mesh) {
     m_MeshData[name] = std::move(mesh);
 }
 
-void ModelLibrary::addMeshData(const std::string &name, const MeshData &mesh) {
+void AssetLibrary::addMeshData(const std::string &name, const MeshData &mesh) {
     m_MeshData[name] = std::make_unique<MeshData>(mesh);
 }
-void ModelLibrary::addMeshDrawable(const std::string &name, std::unique_ptr<MeshDrawable> drawable) {
+void AssetLibrary::addMeshDrawable(const std::string &name, std::unique_ptr<MeshDrawable> drawable) {
     m_MeshDrawables[name] = std::move(drawable);
 }
 
-void ModelLibrary::createAndAddDrawable(const std::string &name, const MeshData &data) {
+void AssetLibrary::createAndAddDrawable(const std::string &name, const MeshData &data) {
     MeshDrawable drawable {
         .drawableID = m_ResourceManager->createMeshDrawable(data),
         .indexCount = data.indices.size(),
@@ -271,11 +305,11 @@ void ModelLibrary::createAndAddDrawable(const std::string &name, const MeshData 
     m_MeshDrawables[name] = std::make_unique<MeshDrawable>(drawable);
 }
 
-void ModelLibrary::addMeshDrawable(const std::string &name, const MeshDrawable &drawable) {
+void AssetLibrary::addMeshDrawable(const std::string &name, const MeshDrawable &drawable) {
     m_MeshDrawables[name] = std::make_unique<MeshDrawable>(drawable);
 }
 
-void ModelLibrary::addMaterial(const std::string &name, const Material &material) {
+void AssetLibrary::addMaterial(const std::string &name, const Material &material) {
     m_Materials[name] = std::make_unique<Material>(material);
 }
 
@@ -320,7 +354,7 @@ void computeTangents(MeshData &mesh) {
     }
 }
 
-std::unique_ptr<MeshData> ModelLibrary::createCube() {
+std::unique_ptr<MeshData> AssetLibrary::createCube() {
     MeshData mesh;
 
     mesh.vertices = {
@@ -367,7 +401,7 @@ std::unique_ptr<MeshData> ModelLibrary::createCube() {
     return std::make_unique<MeshData>(mesh);
 }
 
-std::unique_ptr<MeshData> ModelLibrary::createQuad() {
+std::unique_ptr<MeshData> AssetLibrary::createQuad() {
     MeshData mesh;
 
     mesh.vertices = {
@@ -386,7 +420,7 @@ std::unique_ptr<MeshData> ModelLibrary::createQuad() {
 }
 
 
-std::unique_ptr<MeshData> ModelLibrary::createSkybox() {
+std::unique_ptr<MeshData> AssetLibrary::createSkybox() {
     MeshData skyboxMesh{};
     skyboxMesh.vertices = {
         {{-1.0f, 1.0f, -1.0f}}, {{-1.0f, -1.0f, -1.0f}}, {{1.0f, -1.0f, -1.0f}}, {{1.0f, 1.0f, -1.0f}}, // Back
@@ -408,15 +442,19 @@ std::unique_ptr<MeshData> ModelLibrary::createSkybox() {
     return std::make_unique<MeshData>(skyboxMesh);
 }
 
-std::unique_ptr<Material> ModelLibrary::createDefaultMaterial(const std::string &vertPath,
+std::unique_ptr<Material> AssetLibrary::createDefaultMaterial(const std::string &vertPath,
                                                               const std::string &fragPath, const std::string &geoPath) {
-    uint32_t defaultShaderID = m_ResourceManager->createShader(vertPath, fragPath, geoPath);
-    Material defaultMat{.shaderID = defaultShaderID, .textureID = 0};
+    TextureData defaultTex {
+        .id = 0,
+    };
+    m_Textures["Default"] = std::make_unique<TextureData>(defaultTex);
+    createShader("Default", vertPath, fragPath, geoPath);
+    Material defaultMat{.shader = "Default", .texture = "Default"};
     return std::make_unique<Material>(defaultMat);
 }
 
 
-std::unique_ptr<MeshData> ModelLibrary::createSphere(float radius, unsigned int sectorCount, unsigned int stackCount) {
+std::unique_ptr<MeshData> AssetLibrary::createSphere(float radius, unsigned int sectorCount, unsigned int stackCount) {
     MeshData sphere{};
 
     const float PI = 3.14159265359f;

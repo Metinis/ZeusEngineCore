@@ -4,7 +4,7 @@
 #include <glad/glad.h>
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image/stb_image.h>
-#include <ZeusEngineCore/ModelLibrary.h>
+#include <ZeusEngineCore/AssetLibrary.h>
 
 constexpr std::array uboBindings{
     "View",
@@ -426,7 +426,7 @@ void ZEN::GLResourceManager::deleteTexture(uint32_t textureID) {
     });
 }
 
-void ZEN::GLResourceManager::bindMaterial(const Material &material) {
+void ZEN::GLResourceManager::bindMaterial(const MaterialRaw &material) {
     bindShader(material.shaderID);
 
     withResource(m_Shaders, material.shaderID, [&](GLShader& s) {

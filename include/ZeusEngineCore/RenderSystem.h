@@ -1,7 +1,7 @@
 #pragma once
 #include "Layer.h"
 #include "Renderer.h"
-#include "ZeusEngineCore/ModelLibrary.h"
+#include "ZeusEngineCore/AssetLibrary.h"
 
 namespace ZEN {
 	class Scene;
@@ -11,7 +11,7 @@ namespace ZEN {
 	struct ToggleDrawNormalsEvent;
 	class RenderSystem : public Layer {
 	public:
-		explicit RenderSystem(Renderer *renderer, Scene *scene, ModelLibrary* library);
+		explicit RenderSystem(Renderer *renderer, Scene *scene, AssetLibrary* library);
 		void onUpdate(float deltaTime) override;
 		void onRender() override;
 		void onEvent(Event& event) override;
@@ -35,7 +35,7 @@ namespace ZEN {
 		MeshDrawable m_CubeDrawable{};
 		MeshDrawable m_QuadDrawable{};
 		Renderer* m_Renderer{};
-		ModelLibrary* m_Library{};
+		AssetLibrary* m_Library{};
 		Scene* m_Scene{};
 		bool m_DrawNormals{};
 		bool m_IsPlaying{};

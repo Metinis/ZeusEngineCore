@@ -1,13 +1,13 @@
 #include "ZeusEngineCore/ModelImporter.h"
 #include <ZeusEngineCore/Entity.h>
 #include <ZeusEngineCore/Components.h>
-#include <ZeusEngineCore/ModelLibrary.h>
+#include <ZeusEngineCore/AssetLibrary.h>
 #include <ZeusEngineCore/Scene.h>
 
 
 using namespace ZEN;
 
-ModelImporter::ModelImporter(Scene* scene, IResourceManager* resourceManager, ModelLibrary* modelLibrary) : m_Scene(scene),
+ModelImporter::ModelImporter(Scene* scene, IResourceManager* resourceManager, AssetLibrary* modelLibrary) : m_Scene(scene),
 m_ResourceManager(resourceManager), m_ModelLibrary(modelLibrary){
 
 }
@@ -44,7 +44,7 @@ constexpr auto processMeshUVs = [](const aiVector3D& uvs) {
     return uv;
 };
 
-void ModelImporter::processTexturesEmbedded(uint32_t& textureID,
+void ModelImporter::processTexturesEmbedded(std::string& texture,
                                             const aiScene* aiscene, const aiString& texPath) {
     unsigned int texIndex = std::atoi(texPath.C_Str() + 1);
     const aiTexture* tex = aiscene->mTextures[texIndex];
@@ -58,10 +58,10 @@ void ModelImporter::processTexturesEmbedded(uint32_t& textureID,
         m_ModelLibrary->addTexture(tex->mFilename.data, texID);
         m_EmbeddedTextureCache[tex] = texID; // cache
     }
-    textureID = texID;
+    texture = tex->mFilename.data;
 }
 
-void ModelImporter::processTextureType(uint32_t& textureID,
+void ModelImporter::processTextureType(std::string& texture,
                                        const aiScene* aiscene, aiTextureType type,
                                        const aiMaterial* aimaterial) {
     uint32_t count = aimaterial->GetTextureCount(type);
@@ -70,7 +70,7 @@ void ModelImporter::processTextureType(uint32_t& textureID,
         aimaterial->GetTexture(type, i, &texPath);
         std::cout<<texPath.data<<"\n";
         if (texPath.length > 0 && texPath.C_Str()[0] == '*') {
-            processTexturesEmbedded(textureID, aiscene, texPath);
+            processTexturesEmbedded(texture, aiscene, texPath);
         } else if (texPath.length > 0) {
             std::cout<<"Trying to load external file!\n";
             uint32_t texID;
@@ -79,9 +79,14 @@ void ModelImporter::processTextureType(uint32_t& textureID,
                 texID = it->second;
             } else {
                 texID = m_ResourceManager->createTexture(texPath.C_Str(), true);
+                TextureData texData {
+                    .id = texID,
+                    .path = texPath.C_Str(),
+                };
+                m_ModelLibrary->addTexture(texPath.C_Str(), texData);
                 m_ExternalTextureCache[texPath.C_Str()] = texID;
             }
-            textureID = texID;
+            texture = texPath.C_Str();
         }
         else {
             std::cout<<"Warning! No texture path found!\n";
@@ -99,7 +104,7 @@ void ModelImporter::processTextureType(uint32_t& textureID,
 void ModelImporter::processAiMesh(Entity& entity, aiMesh* aimesh,
                                   const aiScene* aiscene, const glm::mat4& transform) {
     MeshData mesh{};
-    Material material{.shaderID = m_ModelLibrary->getMaterial("Default")->shaderID};
+    Material material{.shader = "Default"};
     for (uint32_t i{0}; i < aimesh->mNumVertices; ++i) {
         Vertex vertex{};
         vertex.Position = processMeshPos(aimesh->mVertices[i], transform);
@@ -128,10 +133,10 @@ void ModelImporter::processAiMesh(Entity& entity, aiMesh* aimesh,
     if (aimesh->mMaterialIndex >= 0) {
         const aiMaterial* aiMaterial = aiscene->mMaterials[aimesh->mMaterialIndex];
         //processAllTextureTypes(aiMaterial);
-        processTextureType(material.textureID, aiscene, aiTextureType_DIFFUSE, aiMaterial);
-        processTextureType(material.roughnessTexID, aiscene, aiTextureType_DIFFUSE_ROUGHNESS, aiMaterial);
-        processTextureType(material.metallicTexID, aiscene, aiTextureType_METALNESS, aiMaterial);
-        processTextureType(material.normalTexID, aiscene, aiTextureType_NORMALS, aiMaterial);
+        processTextureType(material.texture, aiscene, aiTextureType_DIFFUSE, aiMaterial);
+        processTextureType(material.roughnessTex, aiscene, aiTextureType_DIFFUSE_ROUGHNESS, aiMaterial);
+        processTextureType(material.metallicTex, aiscene, aiTextureType_METALNESS, aiMaterial);
+        processTextureType(material.normalTex, aiscene, aiTextureType_NORMALS, aiMaterial);
     }
     m_ModelLibrary->addMeshData(aimesh->mName.C_Str(), mesh);
     m_ModelLibrary->addMaterial(aiscene->mMaterials[aimesh->mMaterialIndex]->GetName().C_Str(), material);

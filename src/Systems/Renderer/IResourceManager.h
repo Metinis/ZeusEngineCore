@@ -3,8 +3,8 @@
 #include <assimp/scene.h>
 
 namespace ZEN {
+    struct MaterialRaw;
     struct MeshData;
-    struct Material;
     struct UniformBuffer {
         uint32_t uboID{};
     };
@@ -46,7 +46,7 @@ namespace ZEN {
         virtual void bindTexture(uint32_t textureID, uint32_t binding) = 0;
         virtual void deleteTexture(uint32_t textureID) = 0;
 
-        virtual void bindMaterial(const Material& material) = 0;
+        virtual void bindMaterial(const MaterialRaw& material) = 0;
 
         virtual uint32_t createCubeMapTexture(const std::string& texturePath) = 0;
         virtual uint32_t createCubeMapTextureHDRMip(uint32_t width, uint32_t height) = 0;

@@ -9,7 +9,7 @@
 #include "ZeusEngineCore/InputEvents.h"
 #include "ZeusEngineCore/Layer.h"
 #include "ZeusEngineCore/ModelImporter.h"
-#include "ZeusEngineCore/ModelLibrary.h"
+#include "ZeusEngineCore/AssetLibrary.h"
 #include "ZeusEngineCore/Renderer.h"
 #include "ZeusEngineCore/RenderSystem.h"
 #include "ZeusEngineCore/Scene.h"

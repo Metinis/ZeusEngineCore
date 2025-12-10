@@ -7,7 +7,7 @@
 
 
 namespace ZEN {
-	class ModelLibrary;
+	class AssetLibrary;
 	class ModelImporter;
 	class ZEngine;
 	struct RemoveMeshEvent;
@@ -37,7 +37,7 @@ namespace ZEN {
 		glm::vec3 getAmbientColor() {return m_AmbientColor;}
 	private:
 		entt::registry m_Registry{};
-		ModelLibrary* m_ModelLibrary{};
+		AssetLibrary* m_ModelLibrary{};
 		glm::vec3 m_LightPos{1.0f, 5.0f, 1.0f};
 		glm::vec3 m_LightDir{-0.2f, -1.0f, 0.3f};
 		glm::vec3 m_AmbientColor{0.01f, 0.01f, 0.01f};
