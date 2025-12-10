@@ -5,17 +5,11 @@
 #include <ZeusEngineCore/InputEvents.h>
 #include <ZeusEngineCore/ModelLibrary.h>
 #include <ZeusEngineCore/ZEngine.h>
-#include "SceneSerializer.h"
+#include "ZeusEngineCore/SceneSerializer.h"
 
 using namespace ZEN;
 
 Scene::Scene(){
-    //m_Dispatcher->attach<RemoveMeshEvent, Scene, &Scene::onRemoveMesh>(this);
-    //m_Dispatcher->attach<RemoveMaterialEvent, Scene, &Scene::onRemoveMaterial>(this);
-    //m_Dispatcher->attach<RemoveTextureEvent, Scene, &Scene::onRemoveTexture>(this);
-
-    //m_Registry.on_destroy<MeshComp>().connect<&Scene::onMeshCompRemove>(this);
-    //m_Registry.on_destroy<MeshDrawableComp>().connect<&Scene::onMeshDrawableRemove>(this);
 }
 
 void Scene::onMeshCompRemove(entt::registry& registry, entt::entity entity) {
@@ -52,9 +46,6 @@ void Scene::createDefaultScene(ZEngine* engine) {
 
     skyboxEntity.addComponent<SkyboxComp>(skyboxComp);
     skyboxEntity.addComponent<MeshComp>(MeshComp{.name = "Skybox"});
-
-    SceneSerializer serializer(this);
-    serializer.serialize("/scenes/default.zen");
 
 }
 

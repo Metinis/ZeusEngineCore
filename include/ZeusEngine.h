@@ -17,3 +17,4 @@
 #include "ZeusEngineCore/Vertex.h"
 #include "ZeusEngineCore/Window.h"
 #include "ZeusEngineCore/ZEngine.h"
+#include "ZeusEngineCore/SceneSerializer.h"

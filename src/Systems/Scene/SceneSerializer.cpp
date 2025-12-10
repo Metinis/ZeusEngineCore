@@ -1,7 +1,44 @@
-#include "SceneSerializer.h"
+#include "ZeusEngineCore/SceneSerializer.h"
 #include <yaml-cpp/yaml.h>
-#include <entt/entt.hpp>
 #include <ZeusEngineCore/Application.h>
+
+/* Add operators for glm */
+namespace YAML {
+    template<>
+    struct convert<glm::vec3>
+    {
+        static Node encode(const glm::vec3& rhs)
+        {
+            Node node;
+            node.push_back(rhs.x);
+            node.push_back(rhs.y);
+            node.push_back(rhs.z);
+            node.SetStyle(EmitterStyle::Flow);
+            return node;
+        }
+
+        static bool decode(const Node& node, glm::vec3& rhs)
+        {
+            if (!node.IsSequence() || node.size() != 3)
+                return false;
+
+            rhs.x = node[0].as<float>();
+            rhs.y = node[1].as<float>();
+            rhs.z = node[2].as<float>();
+            return true;
+        }
+    };
+    Emitter &operator<<(Emitter &emitter, const glm::vec3 &v) {
+        emitter << Flow;
+        emitter << BeginSeq << v.x << v.y << v.z << EndSeq;
+        return emitter;
+    }
+    Emitter &operator<<(Emitter &emitter, const glm::vec4 &v) {
+        emitter << Flow;
+        emitter << BeginSeq << v.x << v.y << v.z << v.w << EndSeq;
+        return emitter;
+    }
+}
 
 using namespace ZEN;
 SceneSerializer::SceneSerializer(Scene *scene) : m_Scene(scene) {
@@ -16,6 +53,63 @@ static void serializeEntity(YAML::Emitter& out, Entity entity) {
         out << YAML::Key << "TagComponent";
         out << YAML::BeginMap;
         out << YAML::Key << "Tag" << YAML::Value << entity.getComponent<TagComp>().tag;
+        out << YAML::EndMap;
+    }
+    if(entity.hasComponent<TransformComp>()) {
+        out << YAML::Key << "TransformComponent";
+        out << YAML::BeginMap;
+        auto transformComp = entity.getComponent<TransformComp>();
+        out << YAML::Key << "LocalPosition" << YAML::Value << transformComp.localPosition;
+        out << YAML::Key << "LocalRotation" << YAML::Value << transformComp.localRotation;
+        out << YAML::Key << "LocalScale" << YAML::Value << transformComp.localScale;
+        out << YAML::EndMap;
+    }
+    if(entity.hasComponent<MeshComp>()) {
+        out << YAML::Key << "MeshComponent";
+        out << YAML::BeginMap;
+        out << YAML::Key << "MeshName" << YAML::Value << entity.getComponent<MeshComp>().name;
+        out << YAML::EndMap;
+    }
+    if(entity.hasComponent<MaterialComp>()) {
+        out << YAML::Key << "MaterialComponent";
+        out << YAML::BeginMap;
+        out << YAML::Key << "MaterialName" << YAML::Value << entity.getComponent<MaterialComp>().name;
+        out << YAML::EndMap;
+    }
+    if(entity.hasComponent<DirectionalLightComp>()) {
+        out << YAML::Key << "DirLightComponent";
+        out << YAML::BeginMap;
+        out << YAML::Key << "Ambient" << YAML::Value << entity.getComponent<DirectionalLightComp>().ambient;
+        out << YAML::Key << "isPrimary" << YAML::Value << entity.getComponent<DirectionalLightComp>().isPrimary;
+        out << YAML::EndMap;
+    }
+    if(entity.hasComponent<CameraComp>()) {
+        out << YAML::Key << "CameraComponent";
+        out << YAML::BeginMap;
+        out << YAML::Key << "Aspect" << YAML::Value << entity.getComponent<CameraComp>().aspect;
+        out << YAML::Key << "Fov" << YAML::Value << entity.getComponent<CameraComp>().fov;
+        out << YAML::Key << "Near" << YAML::Value << entity.getComponent<CameraComp>().near;
+        out << YAML::Key << "Far" << YAML::Value << entity.getComponent<CameraComp>().far;
+        out << YAML::Key << "isPrimary" << YAML::Value << entity.getComponent<CameraComp>().isPrimary;
+        out << YAML::EndMap;
+    }
+    if(entity.hasComponent<ParentComp>()) {
+        out << YAML::Key << "ParentComponent";
+        out << YAML::BeginMap;
+        //todo use UUID
+        out << YAML::Key << "Entity" << YAML::Value << entity.getComponent<ParentComp>().parent.getComponent<TagComp>().tag;
+        out << YAML::EndMap;
+    }
+    if(entity.hasComponent<SkyboxComp>()) {
+        out << YAML::Key << "SkyboxComponent";
+        out << YAML::BeginMap;
+        auto skyboxComp = entity.getComponent<SkyboxComp>();
+        out << YAML::Key << "SkyboxMaterialName" << YAML::Value << skyboxComp.skyboxMat.name;
+        out << YAML::Key << "EqMaterialName" << YAML::Value << skyboxComp.eqMat.name;
+        out << YAML::Key << "ConMaterialName" << YAML::Value << skyboxComp.conMat.name;
+        out << YAML::Key << "PrefilterMaterialName" << YAML::Value << skyboxComp.prefilterMat.name;
+        out << YAML::Key << "BRDFLUTMaterialName" << YAML::Value << skyboxComp.brdfLUTMat.name;
+        out << YAML::Key << "EnvGenerated" << YAML::Value << skyboxComp.envGenerated;
         out << YAML::EndMap;
     }
 
@@ -33,7 +127,6 @@ bool SceneSerializer::serialize(const std::string &path) {
         serializeEntity(out, entity);
     }
 
-
     out << YAML::EndSeq;
     out << YAML::EndMap;
     std::ofstream fout(Application::get().getResourceRoot() + path);
@@ -42,5 +135,92 @@ bool SceneSerializer::serialize(const std::string &path) {
 }
 
 bool SceneSerializer::deserialize(const std::string &path) {
-    return false;
+    m_Scene->m_Registry.clear();
+    YAML::Node data;
+    try
+    {
+        data = YAML::LoadFile(Application::get().getResourceRoot() + path);
+    }
+    catch (YAML::ParserException e)
+    {
+        return false;
+    }
+
+    if (!data["Scene"])
+        return false;
+
+    auto entities = data["Entities"];
+    if (entities) {
+        for (auto entity : entities) {
+            std::string name;
+            auto tagComponent = entity["TagComponent"];
+            if (tagComponent) {
+                name = tagComponent["Tag"].as<std::string>();
+            }
+            auto entityInst = m_Scene->createEntity(name);
+
+            auto transformComp = entity["TransformComponent"];
+            if (transformComp) {
+                TransformComp comp {
+                    .localPosition = transformComp["LocalPosition"].as<glm::vec3>(),
+                    .localRotation = transformComp["LocalRotation"].as<glm::vec3>(),
+                    .localScale = transformComp["LocalScale"].as<glm::vec3>(),
+                };
+                entityInst.getComponent<TransformComp>() = comp;
+            }
+
+            auto meshComp = entity["MeshComponent"];
+            if(meshComp) {
+                MeshComp comp = {.name = meshComp["MeshName"].as<std::string>()};
+                entityInst.addComponent<MeshComp>(comp);
+            }
+
+            auto matComp = entity["MaterialComponent"];
+            if(matComp) {
+                MaterialComp comp = {.name = matComp["MaterialName"].as<std::string>()};
+                entityInst.addComponent<MaterialComp>(comp);
+            }
+
+            auto dirLightComp = entity["DirLightComponent"];
+            if(dirLightComp) {
+                DirectionalLightComp comp = {
+                    .ambient = dirLightComp["Ambient"].as<glm::vec3>(),
+                    .isPrimary = dirLightComp["isPrimary"].as<bool>(),
+                };
+                entityInst.addComponent<DirectionalLightComp>(comp);
+            }
+            auto camComp = entity["CameraComponent"];
+            if(camComp) {
+                CameraComp comp = {
+                    //.projection = glm::perspective(comp.fov, comp.aspect, comp.near, comp.far),
+                    .aspect = camComp["Aspect"].as<float>(),
+                    .fov = camComp["Fov"].as<float>(),
+                    .near = camComp["Near"].as<float>(),
+                    .far = camComp["Far"].as<float>(),
+                    .isPrimary = camComp["isPrimary"].as<bool>(),
+                };
+                entityInst.addComponent<CameraComp>(comp);
+            }
+
+            auto parentComp = entity["ParentComponent"];
+            if(parentComp) {
+                //todo after loading all entities
+                //ParentComp comp = { .parent =
+            }
+
+            auto skyboxComp = entity["SkyboxComponent"];
+            if(skyboxComp) {
+                SkyboxComp comp {
+                    .skyboxMat.name = skyboxComp["SkyboxMaterialName"].as<std::string>(),
+                    .eqMat.name = skyboxComp["EqMaterialName"].as<std::string>(),
+                    .conMat.name = skyboxComp["ConMaterialName"].as<std::string>(),
+                    .prefilterMat.name = skyboxComp["PrefilterMaterialName"].as<std::string>(),
+                    .brdfLUTMat.name = skyboxComp["BRDFLUTMaterialName"].as<std::string>(),
+                    .envGenerated = skyboxComp["EnvGenerated"].as<bool>(),
+                };
+                entityInst.addComponent<SkyboxComp>(comp);
+            }
+        }
+    }
+    return true;
 }

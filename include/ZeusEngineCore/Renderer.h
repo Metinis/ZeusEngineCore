@@ -64,10 +64,10 @@ namespace ZEN {
 		GLFWwindow* m_Window{};
 		std::unique_ptr<IContext> m_Context{};
 		std::unique_ptr<IResourceManager> m_ResourceManager{};
-		UniformComp m_ViewUBO{};
-		UniformComp m_InstanceUBO{};
-		UniformComp m_GlobalUBO{};
-		UniformComp m_MaterialUBO{};
+		UniformBuffer m_ViewUBO{};
+		UniformBuffer m_InstanceUBO{};
+		UniformBuffer m_GlobalUBO{};
+		UniformBuffer m_MaterialUBO{};
 		MaterialComp m_DefaultShader{};
 
 		FBO m_MainFBO{};

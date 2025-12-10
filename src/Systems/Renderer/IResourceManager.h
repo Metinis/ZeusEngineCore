@@ -5,6 +5,9 @@
 namespace ZEN {
     struct MeshData;
     struct Material;
+    struct UniformBuffer {
+        uint32_t uboID{};
+    };
     class IResourceManager {
     public:
         template<typename T, typename F>

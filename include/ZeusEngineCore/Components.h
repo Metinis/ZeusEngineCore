@@ -27,9 +27,7 @@ namespace ZEN {
         MaterialComp brdfLUTMat{};
         bool envGenerated{};
     };
-    struct UniformComp {
-        uint32_t uboID{};
-    };
+
     struct TagComp {
         std::string tag;
     };
