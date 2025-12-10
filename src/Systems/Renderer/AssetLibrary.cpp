@@ -2,6 +2,7 @@
 
 #include <ZeusEngineCore/Application.h>
 #include <ZeusEngineCore/InputEvents.h>
+#include "ZeusEngineCore/AssetSerializer.h"
 
 #include "IResourceManager.h"
 #include "ZeusEngineCore/Components.h"
@@ -113,6 +114,9 @@ AssetLibrary::AssetLibrary(IResourceManager *resourceManager, const std::string 
 
     };
     m_Materials["brdfLUT"] = std::make_unique<Material>(brdfLUT);
+
+    AssetSerializer serializer(this);
+    serializer.serialize("/assets/default.zenpackage");
 }
 
 void AssetLibrary::removeMeshData(const std::string &name) {
