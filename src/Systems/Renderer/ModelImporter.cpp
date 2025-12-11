@@ -182,5 +182,5 @@ void ModelImporter::loadModel(const std::string &name, const std::string &path) 
 }
 
 void ModelImporter::loadTexture(const std::string &name, const std::string &path) {
-    m_ModelLibrary->addTexture(name, m_ResourceManager->createTexture(path, true));
+    m_ModelLibrary->createTextureAbs(name, path);
 }

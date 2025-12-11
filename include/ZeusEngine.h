@@ -18,3 +18,4 @@
 #include "ZeusEngineCore/Window.h"
 #include "ZeusEngineCore/ZEngine.h"
 #include "ZeusEngineCore/SceneSerializer.h"
+#include "ZeusEngineCore/AssetSerializer.h"

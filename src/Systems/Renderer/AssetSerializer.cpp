@@ -1,5 +1,8 @@
 #include "ZeusEngineCore/AssetSerializer.h"
 #include <ZeusEngineCore/Application.h>
+#include <ZeusEngineCore/FileStreamReader.h>
+#include <ZeusEngineCore/FileStreamWriter.h>
+
 #include "ZeusEngineCore/SerializerCommon.h"
 
 ZEN::AssetSerializer::AssetSerializer(AssetLibrary *library) : m_AssetLibrary(library){
@@ -7,10 +10,25 @@ ZEN::AssetSerializer::AssetSerializer(AssetLibrary *library) : m_AssetLibrary(li
 }
 
 bool ZEN::AssetSerializer::serialize(const std::string &path) {
+    //save all meshes to binary file
+
     YAML::Emitter out;
     out << YAML::BeginMap;
     out << YAML::Key << "Assets" << YAML::Value << "Default";
 
+    out << YAML::Key << "Meshes" << YAML::BeginSeq;
+    for(auto& [name, mesh] : m_AssetLibrary->m_MeshData) {
+        std::string localPath = std::format("/meshes/{}.bin", name);
+        FileStreamWriter writer(Application::get().getResourceRoot() + localPath);
+        writer.writeVector(mesh->indices);
+        writer.writeVector(mesh->vertices);
+
+        out << YAML::BeginMap;
+        out << YAML::Key << "Name" << YAML::Value << name;
+        out << YAML::Key << "Path" << YAML::Value << localPath;
+        out << YAML::EndMap;
+    }
+    out << YAML::EndSeq;
     out << YAML::Key << "Textures" << YAML::BeginSeq;
 
     for(auto& [name, texture] : m_AssetLibrary->m_Textures) {
@@ -85,6 +103,20 @@ bool ZEN::AssetSerializer::deserialize(const std::string &path) {
     if (!data["Assets"])
         return false;
 
+    auto meshes = data["Meshes"];
+    if(meshes) {
+        for(auto mesh : meshes) {
+            auto name = mesh["Name"];
+            auto meshpath = mesh["Path"];
+            if(name && meshpath) {
+                MeshData meshdata{};
+                FileStreamReader reader(Application::get().getResourceRoot() + meshpath.as<std::string>());
+                reader.readVector(meshdata.indices);
+                reader.readVector(meshdata.vertices);
+                m_AssetLibrary->m_MeshData[name.as<std::string>()] = std::make_unique<MeshData>(meshdata);
+            }
+        }
+    }
     auto textures = data["Textures"];
     if (textures) {
         for(auto texture : textures) {
@@ -133,6 +165,7 @@ bool ZEN::AssetSerializer::deserialize(const std::string &path) {
             }
         }
     }
+    //TODO meshes
 
     return true;
 }

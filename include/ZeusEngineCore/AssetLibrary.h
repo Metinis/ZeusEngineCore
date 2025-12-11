@@ -112,6 +112,7 @@ namespace ZEN {
         void removeMaterial(const std::string& name);
 
         void createTexture(const std::string& name, const std::string& path);
+        void createTextureAbs(const std::string& name, const std::string& path);
         void addTexture(const std::string &name, const TextureData& data);
         void addTexture(const std::string& name, uint32_t texID);
         TextureData* getTexture(const std::string& name);

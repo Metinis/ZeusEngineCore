@@ -57,7 +57,7 @@ static void serializeEntity(YAML::Emitter& out, Entity entity) {
         out << YAML::Key << "isPrimary" << YAML::Value << entity.getComponent<CameraComp>().isPrimary;
         out << YAML::EndMap;
     }
-    if(entity.hasComponent<ParentComp>()) {
+    if(entity.hasComponent<ParentComp>() && entity.getComponent<ParentComp>().parent.isValid()) {
         out << YAML::Key << "ParentComponent";
         out << YAML::BeginMap;
         //todo use UUID
