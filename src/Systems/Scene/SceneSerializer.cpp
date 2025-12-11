@@ -3,7 +3,6 @@
 #include <ZeusEngineCore/Application.h>
 
 
-
 using namespace ZEN;
 SceneSerializer::SceneSerializer(Scene *scene) : m_Scene(scene) {
 
@@ -11,7 +10,8 @@ SceneSerializer::SceneSerializer(Scene *scene) : m_Scene(scene) {
 
 static void serializeEntity(YAML::Emitter& out, Entity entity) {
     out << YAML::BeginMap;
-    out << YAML::Key << "Entity" << YAML::Value << "671526351623";
+    assert(entity.hasComponent<UUIDComp>());
+    out << YAML::Key << "Entity" << YAML::Value << entity.getComponent<UUIDComp>().uuid;
 
     if(entity.hasComponent<TagComp>()) {
         out << YAML::Key << "TagComponent";
@@ -116,12 +116,14 @@ bool SceneSerializer::deserialize(const std::string &path) {
     auto entities = data["Entities"];
     if (entities) {
         for (auto entity : entities) {
+            auto id = entity["Entity"].as<uint64_t>();
+
             std::string name;
             auto tagComponent = entity["TagComponent"];
             if (tagComponent) {
                 name = tagComponent["Tag"].as<std::string>();
             }
-            auto entityInst = m_Scene->createEntity(name);
+            auto entityInst = m_Scene->createEntity(name, id);
 
             auto transformComp = entity["TransformComponent"];
             if (transformComp) {

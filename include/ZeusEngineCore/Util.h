@@ -29,19 +29,6 @@ namespace ZEN {
         };
     }
 
-    struct UUID {
-        uint64_t high;
-        uint64_t low;
-    };
-
-
-    static UUID generateUUID() {
-        static std::random_device rd;
-        static std::mt19937_64 gen(rd());
-        static std::uniform_int_distribution<uint64_t> dist;
-        return { dist(gen), dist(gen) };
-    }
-
 }
 
 

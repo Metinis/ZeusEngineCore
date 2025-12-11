@@ -2,6 +2,7 @@
 #include "ZeusEngineCore/Vertex.h"
 #include "ZeusEngineCore/Util.h"
 #include "ZeusEngineCore/Entity.h"
+#include "ZeusEngineCore/UUID.h"
 
 namespace entt {
     enum class entity : std::uint32_t;
@@ -10,6 +11,9 @@ namespace entt {
 namespace ZEN {
     class Entity;
 
+    struct UUIDComp {
+        UUID uuid;
+    };
     struct MeshComp {
         std::string name{};
     };

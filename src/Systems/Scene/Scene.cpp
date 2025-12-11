@@ -51,6 +51,28 @@ void Scene::createDefaultScene(ZEngine* engine) {
 
 Entity Scene::createEntity(const std::string& name) {
 	auto ret = Entity{this, m_Registry.create()};
+    ret.addComponent<UUIDComp>();
+    ret.addComponent<TransformComp>();
+    auto view = getEntities<CameraComp>();
+    for (auto entity : view) {
+        auto& camera = entity.getComponent<CameraComp>();
+        auto& cameraTransform = entity.getComponent<TransformComp>();
+        if(camera.isPrimary) {
+            ret.getComponent<TransformComp>() = TransformComp{.localPosition =
+                cameraTransform.localPosition + cameraTransform.getFront() * 5.0f};
+            break;
+        }
+    }
+    TagComp tag {.tag = "Unnamed Entity"};
+    if(!name.empty()) {
+        tag.tag = name;
+    }
+    ret.addComponent<TagComp>(tag);
+    return ret;
+}
+Entity Scene::createEntity(const std::string& name, UUID id) {
+    auto ret = Entity{this, m_Registry.create()};
+    ret.addComponent<UUIDComp>(id);
     ret.addComponent<TransformComp>();
     auto view = getEntities<CameraComp>();
     for (auto entity : view) {
