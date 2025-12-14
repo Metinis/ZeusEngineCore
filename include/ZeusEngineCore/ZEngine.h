@@ -19,7 +19,6 @@ namespace ZEN {
         void setAspectRatio(float aspectRatio);
         Renderer& getRenderer(){return *m_Renderer;}
         ModelImporter& getModelImporter(){return *m_ModelImporter;}
-        AssetLibrary& getModelLibrary(){return *m_ModelLibrary;}
         RenderSystem& getRenderSystem(){return *m_RenderSystem;}
         CameraSystem& getCameraSystem(){return *m_CameraSystem;}
         Scene& getScene(){return *m_Scene;}
@@ -30,7 +29,6 @@ namespace ZEN {
 
         //Libraries/Loaders
         std::unique_ptr<ModelImporter> m_ModelImporter{};
-        std::unique_ptr<AssetLibrary> m_ModelLibrary{};
 
         //Systems
         RenderSystem* m_RenderSystem{};

@@ -5,17 +5,39 @@
 
 using namespace ZEN;
 
-RenderSystem::RenderSystem(Renderer *renderer, Scene *scene, AssetLibrary* library) :
-m_Renderer(renderer), m_Scene(scene), m_Library(library) {
+RenderSystem::RenderSystem(Renderer *renderer, Scene *scene) :
+m_Renderer(renderer), m_ResourceManager(renderer->getResourceManager()), m_Scene(scene) {
+    auto library = Project::getActive()->getAssetLibrary();
+    MeshData* cubeData = library->get<MeshData>(library->getCubeID());
+    MeshDrawable cubeDrawable {
+        .drawableID = m_Renderer->m_ResourceManager->createMeshDrawable(*cubeData),
+        .indexCount = cubeData->indices.size(),
+        1
+    };
+    m_CubeDrawable = AssetHandle<MeshDrawable>(std::move(cubeDrawable));
 
-    //m_Dispatcher->attach<RemoveMeshEvent, RenderSystem, &RenderSystem::onMeshRemove>(this);
-    //m_Dispatcher->attach<RemoveMeshCompEvent, RenderSystem, &RenderSystem::onMeshCompRemove>(this);
-    //m_Dispatcher->attach<RemoveMeshDrawableEvent, RenderSystem, &RenderSystem::onMeshDrawableRemove>(this);
-    //m_Dispatcher->attach<ToggleDrawNormalsEvent, RenderSystem, &RenderSystem::onToggleDrawNormals>(this);
+    MeshData* quadData = library->get<MeshData>(library->getQuadID());
+    MeshDrawable quadDrawable {
+        .drawableID = m_Renderer->m_ResourceManager->createMeshDrawable(*quadData),
+        .indexCount = cubeData->indices.size(),
+        1
+    };
+    m_QuadDrawable = AssetHandle<MeshDrawable>(std::move(quadDrawable));
 
-    m_CubeDrawable = *m_Library->getMeshDrawable("Cube");
-    m_QuadDrawable = *m_Library->getMeshDrawable("Quad");
-    m_QuadShaderID = m_Library->getShader("ScreenQuad")->id;
+    ShaderData quadShaderData {
+        .vertPath = "/shaders/screenQuad.vert",
+        .fragPath = "/shaders/screenQuad.frag",
+        .geoPath = ""
+    };
+
+    m_QuadShaderID = AssetHandle<ShaderData>(std::move(quadShaderData));
+
+    ShaderData normalsShader {
+        .vertPath = "/shaders/normal-visual.vert",
+        .fragPath = "/shaders/normal-visual.frag",
+        .geoPath = "/shaders/normal-visual.geom"
+    };
+    m_NormalsShaderID = AssetHandle<ShaderData>(std::move(normalsShader));
 
 }
 void RenderSystem::updateWorldTransforms() {
@@ -26,9 +48,9 @@ void RenderSystem::updateWorldTransforms() {
         glm::mat4 local = tc.getLocalMatrix();
 
         if (auto parentComp = e.tryGetComponent<ParentComp>()) {
-            if(auto tranformComp = parentComp->parent.tryGetComponent<TransformComp>()) {
-                tc.worldMatrix = tranformComp->worldMatrix * local;
-            }
+            //if(auto tranformComp = parentComp->parent.tryGetComponent<TransformComp>()) {
+            //    tc.worldMatrix = tranformComp->worldMatrix * local;
+            //}
         }
         else {
             tc.worldMatrix = local;
@@ -70,24 +92,23 @@ void RenderSystem::onUpdate(float deltaTime) {
         if(entity.hasComponent<MeshDrawableComp>()) continue;
 
         auto& meshComp = entity.getComponent<MeshComp>();
-        if(meshComp.name.empty()) continue;
-        auto mesh = m_Library->getMeshData(meshComp.name);
-        if(!mesh) continue;
+        //if(!meshComp.handle.) continue;
 
         if(!entity.hasComponent<MaterialComp>() && !entity.hasComponent<SkyboxComp>()) {
-            entity.addComponent<MaterialComp>(MaterialComp{ .name = "Default"}); //default needs to exist in model library
-        }
-        MeshDrawableComp comp{};
 
-        if(!m_Library->hasDrawable(meshComp.name)) {
-            m_Library->createAndAddDrawable(meshComp.name, *m_Library->getMeshData(meshComp.name)); //todo create a overload for just name
+            auto library = Project::getActive()->getAssetLibrary();
+            entity.addComponent<MaterialComp>(MaterialComp{.handle =
+                AssetHandle<Material>(library->getDefaultMaterialID())});
         }
-        comp.name = meshComp.name;
-        entity.addComponent<MeshDrawableComp>(comp);
-        //todo have the drawable in the modellibrary to avoid creating the same drawable
+
+        MeshDrawable drawable {
+            .drawableID = m_Renderer->m_ResourceManager->createMeshDrawable(*meshComp.handle.get()),
+            .indexCount = meshComp.handle.get()->indices.size(),
+            1
+        };
+        auto meshDrawable = AssetHandle<MeshDrawable>(std::move(drawable));
+        entity.addComponent<MeshDrawableComp>(meshDrawable);
     }
-
-
 }
 void RenderSystem::writeCameraData(glm::mat4& view, glm::mat4& projection) {
     auto cameraView = m_Scene->getEntities<CameraComp, TransformComp>();
@@ -135,20 +156,21 @@ void RenderSystem::renderDrawables() {
     for(auto entity : viewDraw) {
 
         auto& materialComp = entity.getComponent<MaterialComp>();
-        auto material = m_Library->getMaterialRaw(materialComp.name);
-        //m_Renderer->m_ResourceManager->bindShader(material->shaderID);
+        auto* mat = materialComp.handle.get();
+        auto library = Project::getActive()->getAssetLibrary();
+        auto matRaw = library->getMaterialRaw(*mat);
 
         //convert to UBO format
         glm::vec4 alb;
-        alb.x = material.albedo.x;
-        alb.y = material.albedo.y;
-        alb.z = material.albedo.z;
+        alb.x = matRaw.albedo.x;
+        alb.y = matRaw.albedo.y;
+        alb.z = matRaw.albedo.z;
 
         glm::vec4 props;
-        props.x = material.metallic;
-        props.y = material.roughness;
-        props.z = material.ao;
-        props.w = material.metal;
+        props.x = matRaw.metallic;
+        props.y = matRaw.roughness;
+        props.z = matRaw.ao;
+        props.w = matRaw.metal;
         MaterialUBO materialUBO {
             .albedo = alb,
             .params = props
@@ -157,10 +179,10 @@ void RenderSystem::renderDrawables() {
         m_Renderer->writeToUBO(m_Renderer->m_MaterialUBO.uboID, materialUBO);
 
         //bind material texture
-        m_Renderer->m_ResourceManager->bindMaterial(material);
-        m_Renderer->m_ResourceManager->bindCubeMapTexture(m_IrradianceMapID, 5);
-        m_Renderer->m_ResourceManager->bindCubeMapTexture(m_PrefilterMapID, 6);
-        m_Renderer->m_ResourceManager->bindTexture(m_BRDFLUTID, 7);
+        m_Renderer->m_ResourceManager->bindMaterial(matRaw);
+        m_Renderer->m_ResourceManager->bindCubeMapTexture(m_IrradianceMapID.get()->id, 5);
+        m_Renderer->m_ResourceManager->bindCubeMapTexture(m_PrefilterMapID.get()->id, 6);
+        m_Renderer->m_ResourceManager->bindTexture(m_BRDFLUTID.get()->id, 7);
         //write to instance ubo (todo check if last mesh is same for instancing)
 
         auto transform = entity.getComponent<TransformComp>();
@@ -168,8 +190,8 @@ void RenderSystem::renderDrawables() {
         m_Renderer->writeToUBO(m_Renderer->m_InstanceUBO.uboID, transform.worldMatrix);
 
         //todo submit mesh to renderer
-        MeshDrawableComp drawable = entity.getComponent<MeshDrawableComp>();
-        m_Renderer->m_Context->drawMesh(*m_Renderer->m_ResourceManager, *m_Library->getMeshDrawable(drawable.name));
+        auto drawable = entity.getComponent<MeshDrawableComp>();
+        m_Renderer->m_Context->drawMesh(*m_Renderer->m_ResourceManager, *drawable.handle.get());
 
     }
 }
@@ -185,43 +207,126 @@ void RenderSystem::renderDrawablesToShader(uint32_t shaderID) {
 
         //todo submit mesh to renderer
         MeshDrawableComp drawable = entity.getComponent<MeshDrawableComp>();
-        m_Renderer->m_Context->drawMesh(*m_Renderer->m_ResourceManager, *m_Library->getMeshDrawable(drawable.name));
+        m_Renderer->m_Context->drawMesh(*m_Renderer->m_ResourceManager, *drawable.handle.get());
 
     }
 }
 
-void RenderSystem::renderSkybox(const glm::mat4& view, const glm::mat4& projection) {
+void RenderSystem::initSkyboxAssets(SkyboxComp& comp) {
+    auto library = Project::getActive()->getAssetLibrary();
+    //load env map
+    TextureData skyboxData {
+        .id = m_ResourceManager->createCubeMapTextureHDRMip(1024, 1024)
+    };
+    auto skyboxTex = AssetHandle<TextureData>(UUID(), std::move(skyboxData));
 
+    TextureData hdrData = {
+        .id = m_ResourceManager->createHDRTexture("/env-maps/christmas_photo_studio_04_4k.hdr")
+    };
+    auto hdrTex = AssetHandle<TextureData>(UUID(), std::move(hdrData));
+
+    TextureData conData = {
+        .id = m_ResourceManager->createCubeMapTextureHDR(32, 32)
+    };
+    auto conTex = AssetHandle<TextureData>(UUID(), std::move(conData));
+
+    TextureData prefilterData = {
+        .id = m_ResourceManager->createPrefilterMap(128, 128)
+    };
+    auto prefilterTex = AssetHandle<TextureData>(UUID(), std::move(prefilterData));
+
+    TextureData brdfData = {
+        .id = m_ResourceManager->createBRDFLUTTexture(1024, 1024)
+    };
+    auto brdfTex = AssetHandle<TextureData>(UUID(), std::move(brdfData));
+
+
+    auto skyboxShader = ShaderData("/shaders/glskyboxHDR.vert", "/shaders/glskyboxHDR.frag", "");
+    auto shader = AssetHandle<ShaderData>(std::move(skyboxShader));
+    Material skyboxMat {
+        .shader = shader.id(),
+        .texture = skyboxTex.id(),
+    };
+
+    auto eqToCubeMapShader = ShaderData("/shaders/eq-to-cubemap.vert", "/shaders/eq-to-cubemap.frag", "");
+    shader = AssetHandle<ShaderData>(std::move(eqToCubeMapShader));
+    Material eqMap {
+        .shader = shader.id(),
+        .texture = hdrTex.id(),
+    };
+
+
+    auto irradianceShader = ShaderData("/shaders/irradiance-con.vert", "/shaders/irradiance-con.frag", "");
+    shader = AssetHandle<ShaderData>(std::move(irradianceShader));
+    Material conMap {
+        .shader = shader.id(),
+        .texture = conTex.id(),
+    };
+
+
+    auto prefilterShader = ShaderData("/shaders/prefilter.vert", "/shaders/prefilter.frag", "");
+    shader = AssetHandle<ShaderData>(std::move(prefilterShader));
+    Material prefilterMap {
+        .shader = shader.id(),
+        .texture = prefilterTex.id(),
+
+    };
+
+    auto brdfShader = ShaderData("/shaders/brdf-con.vert", "/shaders/brdf-con.frag", "");
+    shader = AssetHandle<ShaderData>( std::move(brdfShader));
+    Material brdfLUT {
+        .shader = shader.id(),
+        .texture = brdfTex.id(),
+
+    };
+
+    SkyboxComp skybox {
+        .skyboxMat = AssetHandle<Material>(UUID(), std::move(skyboxMat)),
+        .eqMat = AssetHandle<Material>(UUID(), std::move(eqMap)),
+        .conMat = AssetHandle<Material>(UUID(), std::move(conMap)),
+        .prefilterMat = AssetHandle<Material>(UUID(), std::move(prefilterMap)),
+        .brdfLUTMat = AssetHandle<Material>(UUID(), std::move(brdfLUT)),
+
+    };
+    comp = skybox;
+
+}
+void RenderSystem::renderSkybox(const glm::mat4& view, const glm::mat4& projection) {
     auto skyboxView = m_Scene->getEntities<SkyboxComp, MeshDrawableComp>();
     for (auto entity: skyboxView) {
         auto& drawable = entity.getComponent<MeshDrawableComp>();
         auto& skyboxComp = entity.getComponent<SkyboxComp>();
+        if(!skyboxComp.envGenerated) {
+            initSkyboxAssets(skyboxComp);
+        }
 
-        auto skyboxMat = m_Library->getMaterialRaw(skyboxComp.skyboxMat.name);
-        auto eqMat = m_Library->getMaterialRaw(skyboxComp.eqMat.name);
-        auto conMat = m_Library->getMaterialRaw(skyboxComp.conMat.name);
-        auto prefilterMat = m_Library->getMaterialRaw(skyboxComp.prefilterMat.name);
-        auto brdfLUTMat = m_Library->getMaterialRaw(skyboxComp.brdfLUTMat.name);
+        auto library = Project::getActive()->getAssetLibrary();
+        auto skyboxMat = library->getMaterialRaw(*skyboxComp.skyboxMat.handle.get());
+        auto eqMat = library->getMaterialRaw(*skyboxComp.eqMat.handle.get());
+        auto conMat = library->getMaterialRaw(*skyboxComp.conMat.handle.get());
+        auto prefilterMat = library->getMaterialRaw(*skyboxComp.prefilterMat.handle.get());
+        auto brdfLUTMat = library->getMaterialRaw(*skyboxComp.brdfLUTMat.handle.get());
 
 
         if(!skyboxComp.envGenerated) {
 
             m_Renderer->m_ResourceManager->bindCubeMapTexture(skyboxMat.textureID, 0);
             m_Renderer->renderToCubeMapHDR(skyboxMat.textureID, eqMat.shaderID, eqMat.textureID,
-                m_CubeDrawable);
+                *m_CubeDrawable.get());
 
             m_Renderer->renderToIrradianceMap(skyboxMat.textureID, conMat.textureID,
-                conMat.shaderID, m_CubeDrawable);
+                conMat.shaderID, *m_CubeDrawable.get());
 
-            m_IrradianceMapID = conMat.textureID;
+            m_IrradianceMapID = AssetHandle<TextureData>(skyboxComp.conMat.handle.get()->texture);
+
 
             m_Renderer->renderToPrefilterMap(skyboxMat.textureID, prefilterMat.textureID,
-                prefilterMat.shaderID, m_CubeDrawable);
+                prefilterMat.shaderID, *m_CubeDrawable.get());
 
-            m_PrefilterMapID = prefilterMat.textureID;
+            m_PrefilterMapID = AssetHandle<TextureData>(skyboxComp.prefilterMat.handle.get()->texture);
 
-            m_Renderer->renderToBRDFLUT(brdfLUTMat.textureID, brdfLUTMat.shaderID, m_QuadDrawable);
-            m_BRDFLUTID = brdfLUTMat.textureID;
+            m_Renderer->renderToBRDFLUT(brdfLUTMat.textureID, brdfLUTMat.shaderID, *m_QuadDrawable.get());
+            m_PrefilterMapID = AssetHandle<TextureData>(skyboxComp.brdfLUTMat.handle.get()->texture);
 
             skyboxComp.envGenerated = true;
         }
@@ -237,7 +342,7 @@ void RenderSystem::renderSkybox(const glm::mat4& view, const glm::mat4& projecti
         m_Renderer->m_ResourceManager->bindShader(skyboxMat.shaderID);
         m_Renderer->m_ResourceManager->bindCubeMapTexture(skyboxMat.textureID, 0);
 
-        m_Renderer->m_Context->drawMesh(*m_Renderer->m_ResourceManager, *m_Library->getMeshDrawable(drawable.name));
+        m_Renderer->m_Context->drawMesh(*m_Renderer->m_ResourceManager, *drawable.handle.get());
 
         m_Renderer->m_Context->depthMask(true);
         m_Renderer->m_Context->setDepthMode(LESS);
@@ -273,7 +378,7 @@ void RenderSystem::onRender() {
     renderDrawables();
 
     if(m_DrawNormals) {
-        renderDrawablesToShader(m_Library->getShader("NormalsMat")->id);
+        renderDrawablesToShader(m_NormalsShaderID.get()->id);
     }
 
     //draw skybox
@@ -281,7 +386,7 @@ void RenderSystem::onRender() {
 
     if(m_IsPlaying) {
         //bind default FBO, render to screen quad
-        m_Renderer->renderToScreenQuad(m_QuadShaderID, m_QuadDrawable);
+        m_Renderer->renderToScreenQuad(m_QuadShaderID.get()->id, *m_QuadDrawable.get());
     }
 
 }

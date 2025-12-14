@@ -1,31 +1,24 @@
 #include "ZeusEngineCore/AssetLibrary.h"
-
 #include <ZeusEngineCore/Application.h>
 #include <ZeusEngineCore/InputEvents.h>
-#include "ZeusEngineCore/AssetSerializer.h"
-
 #include "IResourceManager.h"
 #include "ZeusEngineCore/Components.h"
+#include "ZeusEngineCore/AssetHandle.h"
 
 using namespace ZEN;
 
 AssetLibrary::AssetLibrary(IResourceManager *resourceManager, const std::string &resourceRoot) : m_ResourceManager(resourceManager) {
-    m_Materials["Default"] = createDefaultMaterial("/shaders/pbr.vert", "/shaders/pbr.frag", "");
-    m_MeshData["Cube"] = createCube();
-    m_MeshData["Skybox"] = createSkybox();
-    m_MeshData["Quad"] = createQuad();
-    m_MeshData["Sphere"] = createSphere(1.0f, 32, 16);
+    m_DefaultMatID = createAsset<Material>(createDefaultMaterial("/shaders/pbr.vert", "/shaders/pbr.frag", ""));
+    m_CubeID = createAsset<MeshData>(createCube());
+    m_SkyboxID = createAsset<MeshData>(createSkybox());
+    m_QuadID = createAsset<MeshData>(createQuad());
+    m_SphereID = createAsset<MeshData>(createSphere(1.0f, 32, 16));
 
+    /*
     createAndAddDrawable("Cube", *m_MeshData["Cube"]);
     createAndAddDrawable("Skybox", *m_MeshData["Skybox"]);
     createAndAddDrawable("Quad", *m_MeshData["Quad"]);
     createAndAddDrawable("Sphere", *m_MeshData["Sphere"]);
-
-    createTexture("DarkWood_Albedo", "/textures/dark-wood-stain-ue/dark-wood-stain_albedo.png");
-    createTexture("DarkWood_Metallic", "/textures/dark-wood-stain-ue/dark-wood-stain_metallic.png");
-    createTexture("DarkWood_Normal", "/textures/dark-wood-stain-ue/dark-wood-stain_normal-dx.png");
-    createTexture("DarkWood_Roughness", "/textures/dark-wood-stain-ue/dark-wood-stain_roughness.png");
-    createTexture("DarkWood_AO", "/textures/dark-wood-stain-ue/dark-wood-stain_ao.png");
 
     //load env map
     TextureData data {
@@ -118,8 +111,10 @@ AssetLibrary::AssetLibrary(IResourceManager *resourceManager, const std::string 
     //AssetSerializer serializer(this);
     //serializer.serialize("/assets/default.zenpackage");
     //serializer.deserialize("/assets/default.zenpackage");
+    */
 }
 
+/*
 void AssetLibrary::removeMeshData(const std::string &name) {
     auto it = m_MeshData.find(name);
     if (it != m_MeshData.end()) {
@@ -181,15 +176,15 @@ void AssetLibrary::removeShader(const std::string &name) {
     }
     std::cout << "Mesh not found: " << name << "\n";
 }
-
+*/
 MaterialRaw AssetLibrary::getMaterialRaw(const Material &material) {
     MaterialRaw ret {
-        .shaderID = getShader(material.shader)->id,
-        .textureID = getTexture(material.texture)->id,
-        .metallicTexID = getTexture(material.metallicTex)->id,
-        .roughnessTexID = getTexture(material.roughnessTex)->id,
-        .normalTexID = getTexture(material.normalTex)->id,
-        .aoTexID = getTexture(material.aoTex)->id,
+        .shaderID = get<ShaderData>(material.shader)->id,
+        .textureID = get<TextureData>(material.texture)->id,
+        .metallicTexID = get<TextureData>(material.metallicTex)->id,
+        .roughnessTexID = get<TextureData>(material.roughnessTex)->id,
+        .normalTexID = get<TextureData>(material.normalTex)->id,
+        .aoTexID = get<TextureData>(material.aoTex)->id,
         .albedo = material.albedo,
         .metallic = material.metallic,
         .roughness = material.roughness,
@@ -202,7 +197,7 @@ MaterialRaw AssetLibrary::getMaterialRaw(const Material &material) {
     };
     return ret;
 }
-
+/*
 MaterialRaw AssetLibrary::getMaterialRaw(const std::string &name) {
     auto mat = *m_Materials[name];
     return getMaterialRaw(mat);
@@ -226,14 +221,14 @@ void AssetLibrary::createTexture(const std::string &name, const std::string &pat
     };
     m_Textures[name] = std::make_unique<TextureData>(texture);
 }
-
+*/
 std::string removePrefix(const std::string& full, const std::string& prefix) {
     if (full.starts_with(prefix)) {
         return full.substr(prefix.size());
     }
     return full;
 }
-
+/*
 void AssetLibrary::createTextureAbs(const std::string &name, const std::string &path) {
     TextureData texture = {
         .path = removePrefix(path, Application::get().getResourceRoot()),
@@ -332,6 +327,7 @@ void AssetLibrary::addMeshDrawable(const std::string &name, const MeshDrawable &
 void AssetLibrary::addMaterial(const std::string &name, const Material &material) {
     m_Materials[name] = std::make_unique<Material>(material);
 }
+*/
 
 void computeTangents(MeshData &mesh) {
     for (auto &v: mesh.vertices) {
@@ -374,7 +370,7 @@ void computeTangents(MeshData &mesh) {
     }
 }
 
-std::unique_ptr<MeshData> AssetLibrary::createCube() {
+MeshData AssetLibrary::createCube() {
     MeshData mesh;
 
     mesh.vertices = {
@@ -418,10 +414,10 @@ std::unique_ptr<MeshData> AssetLibrary::createCube() {
         20, 22, 21, 23, 22, 20 // Bottom
     };
     computeTangents(mesh);
-    return std::make_unique<MeshData>(mesh);
+    return mesh;
 }
 
-std::unique_ptr<MeshData> AssetLibrary::createQuad() {
+MeshData AssetLibrary::createQuad() {
     MeshData mesh;
 
     mesh.vertices = {
@@ -436,11 +432,11 @@ std::unique_ptr<MeshData> AssetLibrary::createQuad() {
         2, 3, 0
     };
     computeTangents(mesh);
-    return std::make_unique<MeshData>(mesh);
+    return mesh;
 }
 
 
-std::unique_ptr<MeshData> AssetLibrary::createSkybox() {
+MeshData AssetLibrary::createSkybox() {
     MeshData skyboxMesh{};
     skyboxMesh.vertices = {
         {{-1.0f, 1.0f, -1.0f}}, {{-1.0f, -1.0f, -1.0f}}, {{1.0f, -1.0f, -1.0f}}, {{1.0f, 1.0f, -1.0f}}, // Back
@@ -459,22 +455,27 @@ std::unique_ptr<MeshData> AssetLibrary::createSkybox() {
         16, 17, 18, 16, 18, 19, // Top
         20, 21, 22, 20, 22, 23 // Bottom
     };
-    return std::make_unique<MeshData>(skyboxMesh);
+    return skyboxMesh;
 }
 
-std::unique_ptr<Material> AssetLibrary::createDefaultMaterial(const std::string &vertPath,
+Material AssetLibrary::createDefaultMaterial(const std::string &vertPath,
                                                               const std::string &fragPath, const std::string &geoPath) {
     TextureData defaultTex {
         .id = 0,
     };
-    m_Textures["Default"] = std::make_unique<TextureData>(defaultTex);
-    createShader("Default", vertPath, fragPath, geoPath);
-    Material defaultMat{.shader = "Default", .texture = "Default"};
-    return std::make_unique<Material>(defaultMat);
+    AssetID defTexID = createAsset<TextureData>(std::move(defaultTex));
+    ShaderData defaultShader {
+        .vertPath = vertPath,
+        .fragPath = fragPath,
+        .geoPath = geoPath
+    };
+    AssetID defShaderID = createAsset<ShaderData>(std::move(defaultShader));
+    Material defaultMat{.shader = defShaderID, .texture = defTexID};
+    return defaultMat;
 }
 
 
-std::unique_ptr<MeshData> AssetLibrary::createSphere(float radius, unsigned int sectorCount, unsigned int stackCount) {
+MeshData AssetLibrary::createSphere(float radius, unsigned int sectorCount, unsigned int stackCount) {
     MeshData sphere{};
 
     const float PI = 3.14159265359f;
@@ -520,5 +521,5 @@ std::unique_ptr<MeshData> AssetLibrary::createSphere(float radius, unsigned int 
         }
     }
     computeTangents(sphere);
-    return std::make_unique<MeshData>(sphere);
+    return sphere;
 }

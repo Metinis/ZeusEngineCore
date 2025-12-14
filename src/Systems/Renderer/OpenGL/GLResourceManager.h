@@ -1,4 +1,5 @@
 #pragma once
+
 #include "../IResourceManager.h"
 
 namespace ZEN {

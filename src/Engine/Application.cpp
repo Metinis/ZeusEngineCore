@@ -4,6 +4,7 @@
 #include "ZeusEngineCore/InputEvents.h"
 #include "ZeusEngineCore/Event.h"
 #include "ZeusEngineCore/CameraSystem.h"
+#include "ZeusEngineCore/Project.h"
 
 using namespace ZEN;
 
@@ -19,7 +20,10 @@ Application::~Application() {
 void Application::init() {
     m_Window = std::make_unique<Window>("Zeus Editor", m_API);
     m_LayerStack = std::make_unique<LayerStack>();
+    Project::createNew();
+
     m_Engine = std::make_unique<ZEngine>(m_API, m_Window->getNativeWindow(), m_ResourceRoot);
+
     m_Window->attachDispatcher();
 
     m_ImGUILayer = ImGUILayer::create(m_Window->getNativeWindow(), m_API);

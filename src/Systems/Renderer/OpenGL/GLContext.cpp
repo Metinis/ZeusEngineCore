@@ -27,7 +27,7 @@ void GLContext::drawMesh(IResourceManager& resourceManager, const MeshDrawable& 
 }
 
 void GLContext::clear(bool shouldClearColor, bool shouldClearDepth) {
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
     GLenum clearBit = 0;
     if(shouldClearColor)
         clearBit |= GL_COLOR_BUFFER_BIT;

@@ -10,10 +10,9 @@ using namespace ZEN;
 ZEngine::ZEngine(eRendererAPI api, GLFWwindow* nativeWindow, const std::string& resourceRoot) : m_API(api) {
     m_Scene = new Scene();
     m_Renderer = new Renderer(m_API, resourceRoot, nativeWindow);
-    m_ModelLibrary = std::make_unique<AssetLibrary>(m_Renderer->getResourceManager(), resourceRoot);
-    m_ModelImporter = std::make_unique<ModelImporter>(m_Scene, m_Renderer->getResourceManager(), m_ModelLibrary.get());
-
-    m_RenderSystem = new RenderSystem(m_Renderer, m_Scene, m_ModelLibrary.get());
+    Project::getActive()->init(m_Renderer->getResourceManager(), resourceRoot);
+    m_ModelImporter = std::make_unique<ModelImporter>(m_Scene, m_Renderer->getResourceManager());
+    m_RenderSystem = new RenderSystem(m_Renderer, m_Scene);
     m_CameraSystem = new CameraSystem(m_Scene);
 
     Application::get().pushLayer(m_Scene);

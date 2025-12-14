@@ -1,8 +1,7 @@
 #include "ZeusEngineCore/AssetSerializer.h"
-#include <ZeusEngineCore/Application.h>
-#include <ZeusEngineCore/FileStreamReader.h>
-#include <ZeusEngineCore/FileStreamWriter.h>
-
+#include "ZeusEngineCore/Application.h"
+#include "ZeusEngineCore/FileStreamReader.h"
+#include "ZeusEngineCore/FileStreamWriter.h"
 #include "ZeusEngineCore/SerializerCommon.h"
 
 ZEN::AssetSerializer::AssetSerializer(AssetLibrary *library) : m_AssetLibrary(library){
@@ -11,13 +10,13 @@ ZEN::AssetSerializer::AssetSerializer(AssetLibrary *library) : m_AssetLibrary(li
 
 bool ZEN::AssetSerializer::serialize(const std::string &path) {
     //save all meshes to binary file
-
+    /*
     YAML::Emitter out;
     out << YAML::BeginMap;
     out << YAML::Key << "Assets" << YAML::Value << "Default";
 
     out << YAML::Key << "Meshes" << YAML::BeginSeq;
-    for(auto& [name, mesh] : m_AssetLibrary->m_MeshData) {
+    for(auto& [name, mesh] : m_AssetLibrary->m_AssetMap) {
         std::string localPath = std::format("/meshes/{}.bin", name);
         FileStreamWriter writer(Application::get().getResourceRoot() + localPath);
         writer.writeVector(mesh->indices);
@@ -83,13 +82,13 @@ bool ZEN::AssetSerializer::serialize(const std::string &path) {
     out << YAML::EndSeq;
     out << YAML::EndMap;
     std::ofstream fout(Application::get().getResourceRoot() + path);
-    fout << out.c_str();
+    fout << out.c_str();*/
     return true;
 }
 
 bool ZEN::AssetSerializer::deserialize(const std::string &path) {
     //need to clear data before
-
+    /*
     YAML::Node data;
     try
     {
@@ -142,7 +141,7 @@ bool ZEN::AssetSerializer::deserialize(const std::string &path) {
         for(auto material : materials) {
             auto name = material["Name"];
             if(name) {
-                Material mat{
+                Material mat {
                     .shader = material["Shader"].as<std::string>(),
                     .texture = material["Texture"].as<std::string>(),
                     .metallicTex = material["MetallicTexture"].as<std::string>(),
@@ -166,6 +165,6 @@ bool ZEN::AssetSerializer::deserialize(const std::string &path) {
         }
     }
     //TODO meshes
-
+    */
     return true;
 }

@@ -1,13 +1,34 @@
 #pragma once
 #include <ZeusEngineCore/API.h>
 #include <assimp/scene.h>
+#include <ZeusEngineCore/UUID.h>
 
 namespace ZEN {
-    struct MaterialRaw;
-    struct MeshData;
+
+    using AssetID = UUID;
+
     struct UniformBuffer {
         uint32_t uboID{};
     };
+
+    struct GPUTexture {
+        uint32_t drawableID{};
+    };
+    struct GPUShader {
+        uint32_t drawableID{};
+    };
+
+    using GPUVariant = std::variant<
+        //GPUMesh,
+        GPUTexture,
+        GPUShader
+    //Add to this for more asset types
+    >;
+    using GPUMap = std::unordered_map<AssetID, GPUVariant>;
+
+    struct MeshData;
+    struct Material;
+    struct MaterialRaw;
     class IResourceManager {
     public:
         template<typename T, typename F>
@@ -74,5 +95,6 @@ namespace ZEN {
         static std::unique_ptr<IResourceManager> create(eRendererAPI api, const std::string& resourceRoot);
     protected:
         std::string m_ResourceRoot{};
+        GPUMap m_Mappings{};
     };
 }

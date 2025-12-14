@@ -1,8 +1,10 @@
 #pragma once
+#include "UUID.h"
 #include "Vertex.h"
+#include "../../src/Systems/Renderer/IResourceManager.h"
 
 namespace ZEN {
-    class AssetLibrary;
+    using AssetID = UUID;
     //cant remove these
     const std::unordered_set<std::string> defaultMeshes = {
         "Cube", "Sphere", "Capsule"
@@ -11,12 +13,12 @@ namespace ZEN {
         "Default"
     };
     struct Material {
-        std::string shader{"Default"};
-        std::string texture{"Default"};
-        std::string metallicTex{"Default"};
-        std::string roughnessTex{"Default"};
-        std::string normalTex{"Default"};
-        std::string aoTex{"Default"};
+        AssetID shader{0};
+        AssetID texture{0};
+        AssetID metallicTex{0};
+        AssetID roughnessTex{0};
+        AssetID normalTex{0};
+        AssetID aoTex{0};
         glm::vec3 albedo{1.0f, 1.0f, 1.0f};
         float metallic{1.0f};
         float roughness{1.0f};
@@ -46,15 +48,17 @@ namespace ZEN {
         bool useNormal{false};
         bool useAO{false};
     };
+    struct MeshDrawable {
+        uint32_t drawableID{};
+        size_t indexCount{};
+        int instanceCount{1};
+    };
+
     struct MeshData {
         std::vector<uint32_t> indices{};
         std::vector<Vertex> vertices{};
     };
-    struct MeshDrawable {
-        uint32_t drawableID{}; //id from resource manager
-        size_t indexCount{};
-        int instanceCount{1};
-    };
+
     struct TextureData {
         std::string path;
         uint32_t id;
@@ -68,78 +72,110 @@ namespace ZEN {
     class IResourceManager;
     class EventDispatcher;
 
+    using AssetVariant = std::variant<
+        MeshData,
+        MeshDrawable,
+        Material,
+        TextureData,
+        ShaderData
+    //Add to this for more asset types
+    >;
+
+    using AssetMap = std::unordered_map<AssetID, AssetVariant>;
+
     class AssetLibrary {
     public:
         explicit AssetLibrary(IResourceManager* resourceManager, const std::string& resourceRoot);
 
-        void addMeshData(const std::string& name, std::unique_ptr<MeshData> mesh);
-        void addMeshData(const std::string& name, const MeshData& mesh);
-        MeshData* getMeshData(const std::string& name);
-        const std::unordered_map<std::string, std::unique_ptr<MeshData>>& getAllMeshData() {
-            return m_MeshData;
+        template<typename T>
+        AssetID createAsset(T&& asset) {
+            AssetID id;
+            if constexpr (std::is_same_v<T, TextureData>) {
+                asset.id = m_ResourceManager->createTexture(asset.path, false);
+            }
+            if constexpr (std::is_same_v<T, ShaderData>) {
+                asset.id = m_ResourceManager->createShader(asset.vertPath, asset.fragPath, asset.geoPath);
+            }
+            m_AssetMap.emplace(id, std::forward<T>(asset));
+            return id;
         }
-        MeshDrawable* getMeshDrawable(const std::string& name);
-        const std::unordered_map<std::string, std::unique_ptr<MeshDrawable>>& getAllMeshDrawables() {
-            return m_MeshDrawables;
+
+        template<typename T>
+        void addAsset(AssetID id, T&& asset) {
+            m_AssetMap[id] = std::forward<T>(asset);
         }
-        void addMeshDrawable(const std::string &name, const MeshDrawable& drawable);
-        void addMeshDrawable(const std::string &name, std::unique_ptr<MeshDrawable> drawable);
 
-        bool hasDrawable(const std::string &name) const { return m_MeshDrawables.contains(name); }
-
-        void createAndAddDrawable(const std::string &name, const MeshData& data);
-
-        void removeMeshData(const std::string& name);
-        void removeMeshDrawable(const std::string& name);
-
-        void createShader(const std::string& name, const std::string& vertPath, const std::string& fragPath, const std::string& geoPath);
-        void addShader(const std::string& name, std::unique_ptr<ShaderData> shader);
-        void addShader(const std::string& name, const ShaderData& shader);
-        ShaderData* getShader(const std::string& name);
-        const std::unordered_map<std::string, std::unique_ptr<ShaderData>>& getAllShaders() {
-            return m_Shaders;
+        template <typename T>
+        T* get(AssetID id) {
+            auto it = m_AssetMap.find(id);
+            if (it == m_AssetMap.end()) {
+                if constexpr (std::is_same_v<T, TextureData>) {
+                    static TextureData defaultTexture{.id = 0};
+                    return &defaultTexture;
+                }
+                std::cout<<"Asset not found! returning nullptr: "<<id;
+                return nullptr;
+            }
+            return std::get_if<T>(&it->second);
         }
-        void removeShader(const std::string& name);
 
-        void addMaterial(const std::string& name, std::unique_ptr<Material> material);
-        void addMaterial(const std::string& name, const Material& material);
-        Material* getMaterial(const std::string& name);
-        const std::unordered_map<std::string, std::unique_ptr<Material>>& getAllMaterials() {
-            return m_Materials;
+        template<typename T>
+        std::vector<T*> getAllOfType() {
+            std::vector<T*> ret;
+            for (auto& [id, asset] : m_AssetMap) {
+                if (auto ptr = std::get_if<T>(&asset)) {
+                    ret.push_back(ptr);
+                }
+            }
+            return ret;
         }
-        MaterialRaw getMaterialRaw(const Material& material);
-        MaterialRaw getMaterialRaw(const std::string& name);
-        void removeMaterial(const std::string& name);
 
-        void createTexture(const std::string& name, const std::string& path);
-        void createTextureAbs(const std::string& name, const std::string& path);
-        void addTexture(const std::string &name, const TextureData& data);
-        void addTexture(const std::string& name, uint32_t texID);
-        TextureData* getTexture(const std::string& name);
-        const std::unordered_map<std::string, std::unique_ptr<TextureData>>& getAllTextures() {
-            return m_Textures;
+        template<typename T>
+        std::vector<AssetID> getAllIDsOfType() const {
+            std::vector<AssetID> result;
+            for (const auto& [id, asset] : m_AssetMap) {
+                if (std::holds_alternative<T>(asset)) {
+                    result.push_back(id);
+                }
+            }
+            return result;
         }
-        void removeTexture(const std::string& name);
 
+        void remove(AssetID id) {
+            m_AssetMap.erase(id);
+        }
+
+        const AssetMap& getAll() const { return m_AssetMap; }
+
+        MaterialRaw getMaterialRaw(const Material &material);
+
+        AssetID getCubeID() const { return m_CubeID; }
+        AssetID getQuadID() const { return m_QuadID; }
+        AssetID getSkyboxID() const { return m_SkyboxID; }
+        AssetID getSphereID() const { return m_SphereID; }
+        AssetID getDefaultMaterialID() const { return m_DefaultMatID; }
 
     private:
-        std::unordered_map<std::string, std::unique_ptr<MeshData>> m_MeshData;
-        std::unordered_map<std::string, std::unique_ptr<MeshDrawable>> m_MeshDrawables;
-        std::unordered_map<std::string, std::unique_ptr<ShaderData>> m_Shaders;
-        std::unordered_map<std::string, std::unique_ptr<Material>> m_Materials;
-        std::unordered_map<std::string, std::unique_ptr<TextureData>> m_Textures;
-        // Internal generators
-        std::unique_ptr<MeshData> createCube();
-        std::unique_ptr<MeshData> createQuad();
-        std::unique_ptr<MeshData> createSkybox();
-        std::unique_ptr<Material> createDefaultMaterial(const std::string& vertPath, const std::string& fragPath,
-            const std::string& geoPath);
-        //static std::shared_ptr<MeshComp> createPlane();
-        std::unique_ptr<MeshData> createSphere(float radius, unsigned int sectorCount, unsigned int stackCount);
+        AssetMap m_AssetMap{};
         IResourceManager* m_ResourceManager{};
+        AssetID m_CubeID{};
+        AssetID m_QuadID{};
+        AssetID m_SkyboxID{};
+        AssetID m_SphereID{};
+        AssetID m_DefaultMatID{};
+
+        // Internal generators
+        MeshData createCube();
+        MeshData createQuad();
+        MeshData createSkybox();
+        Material createDefaultMaterial(const std::string& vertPath, const std::string& fragPath,
+            const std::string& geoPath);
+        MeshData createSphere(float radius, unsigned int sectorCount, unsigned int stackCount);
+
 
         friend class AssetSerializer;
     };
+
 }
 
 

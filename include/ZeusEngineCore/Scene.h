@@ -45,6 +45,7 @@ namespace ZEN {
 
 		Entity makeEntity(entt::entity entity);
 
+		/*
 		template<typename T>
 		void removeResource(const std::string& resourceName) {
 			auto view = getEntities<T>();
@@ -54,7 +55,7 @@ namespace ZEN {
                 }
                 entity.template removeComponent<T>();
             }
-		}
+		}*/
 
 		bool onRemoveResource(RemoveResourceEvent& e);
 		void onMeshCompRemove(entt::registry& registry, entt::entity entity);

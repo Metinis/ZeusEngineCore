@@ -7,8 +7,8 @@
 
 using namespace ZEN;
 
-ModelImporter::ModelImporter(Scene* scene, IResourceManager* resourceManager, AssetLibrary* modelLibrary) : m_Scene(scene),
-m_ResourceManager(resourceManager), m_ModelLibrary(modelLibrary){
+ModelImporter::ModelImporter(Scene* scene, IResourceManager* resourceManager) : m_Scene(scene),
+m_ResourceManager(resourceManager){
 
 }
 
@@ -55,7 +55,7 @@ void ModelImporter::processTexturesEmbedded(std::string& texture,
         texID = it->second; // reuse
     } else {
         texID = m_ResourceManager->createTextureAssimp(*tex);
-        m_ModelLibrary->addTexture(tex->mFilename.data, texID);
+        //m_ModelLibrary->addTexture(tex->mFilename.data, texID);
         m_EmbeddedTextureCache[tex] = texID; // cache
     }
     texture = tex->mFilename.data;
@@ -83,7 +83,7 @@ void ModelImporter::processTextureType(std::string& texture,
                     .id = texID,
                     .path = texPath.C_Str(),
                 };
-                m_ModelLibrary->addTexture(texPath.C_Str(), texData);
+                //m_ModelLibrary->addTexture(texPath.C_Str(), texData);
                 m_ExternalTextureCache[texPath.C_Str()] = texID;
             }
             texture = texPath.C_Str();
@@ -104,7 +104,7 @@ void ModelImporter::processTextureType(std::string& texture,
 void ModelImporter::processAiMesh(Entity& entity, aiMesh* aimesh,
                                   const aiScene* aiscene, const glm::mat4& transform) {
     MeshData mesh{};
-    Material material{.shader = "Default"};
+    //Material material{.shader = "Default"};
     for (uint32_t i{0}; i < aimesh->mNumVertices; ++i) {
         Vertex vertex{};
         vertex.Position = processMeshPos(aimesh->mVertices[i], transform);
@@ -133,16 +133,16 @@ void ModelImporter::processAiMesh(Entity& entity, aiMesh* aimesh,
     if (aimesh->mMaterialIndex >= 0) {
         const aiMaterial* aiMaterial = aiscene->mMaterials[aimesh->mMaterialIndex];
         //processAllTextureTypes(aiMaterial);
-        processTextureType(material.texture, aiscene, aiTextureType_DIFFUSE, aiMaterial);
-        processTextureType(material.roughnessTex, aiscene, aiTextureType_DIFFUSE_ROUGHNESS, aiMaterial);
-        processTextureType(material.metallicTex, aiscene, aiTextureType_METALNESS, aiMaterial);
-        processTextureType(material.normalTex, aiscene, aiTextureType_NORMALS, aiMaterial);
+        //processTextureType(material.texture, aiscene, aiTextureType_DIFFUSE, aiMaterial);
+        //processTextureType(material.roughnessTex, aiscene, aiTextureType_DIFFUSE_ROUGHNESS, aiMaterial);
+        //processTextureType(material.metallicTex, aiscene, aiTextureType_METALNESS, aiMaterial);
+        //processTextureType(material.normalTex, aiscene, aiTextureType_NORMALS, aiMaterial);
     }
-    m_ModelLibrary->addMeshData(aimesh->mName.C_Str(), mesh);
-    m_ModelLibrary->addMaterial(aiscene->mMaterials[aimesh->mMaterialIndex]->GetName().C_Str(), material);
+   // m_ModelLibrary->addMeshData(aimesh->mName.C_Str(), mesh);
+   // m_ModelLibrary->addMaterial(aiscene->mMaterials[aimesh->mMaterialIndex]->GetName().C_Str(), material);
 
-    entity.addComponent<MeshComp>(MeshComp{.name = aimesh->mName.C_Str()});
-    entity.addComponent<MaterialComp>(MaterialComp{.name = aiscene->mMaterials[aimesh->mMaterialIndex]->GetName().C_Str()});
+    //entity.addComponent<MeshComp>(MeshComp{.name = aimesh->mName.C_Str()});
+    //entity.addComponent<MaterialComp>(MaterialComp{.name = aiscene->mMaterials[aimesh->mMaterialIndex]->GetName().C_Str()});
 
 }
 
@@ -156,7 +156,7 @@ void ModelImporter::processNode(aiNode* ainode, const aiScene* aiscene,
         Entity entity = m_Scene->createEntity(mesh->mName.C_Str());
         processAiMesh(entity, mesh, aiscene, globalTransform);
 
-        entity.addComponent<ParentComp>(parent);
+        //entity.addComponent<ParentComp>(parent);
 
     }
 
@@ -182,5 +182,5 @@ void ModelImporter::loadModel(const std::string &name, const std::string &path) 
 }
 
 void ModelImporter::loadTexture(const std::string &name, const std::string &path) {
-    m_ModelLibrary->createTextureAbs(name, path);
+    //m_ModelLibrary->createTextureAbs(name, path);
 }

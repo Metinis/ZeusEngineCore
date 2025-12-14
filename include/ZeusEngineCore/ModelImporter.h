@@ -12,7 +12,7 @@ namespace ZEN {
 
     class ModelImporter {
     public:
-        explicit ModelImporter(Scene* scene, IResourceManager* resourceManager, AssetLibrary* modelLibrary);
+        explicit ModelImporter(Scene* scene, IResourceManager* resourceManager);
         void loadModel(const std::string &name, const std::string& path);
         void loadTexture(const std::string &name, const std::string& path);
     private:
@@ -31,7 +31,6 @@ namespace ZEN {
 
         Scene* m_Scene{};
         IResourceManager* m_ResourceManager{};
-        AssetLibrary* m_ModelLibrary{};
         std::unordered_map<const aiTexture*, uint32_t> m_EmbeddedTextureCache{};
         std::unordered_map<const char*, uint32_t> m_ExternalTextureCache{};
     };

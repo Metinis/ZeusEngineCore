@@ -35,6 +35,15 @@ void Scene::createDefaultScene(ZEngine* engine) {
     auto cameraEntity = createEntity("Scene Camera");
     cameraEntity.addComponent<CameraComp>();
 
+    auto cubeEntity = createEntity("Cube");
+    auto assetLibrary = Project::getActive()->getAssetLibrary();
+    cubeEntity.addComponent<MeshComp>(AssetHandle<MeshData>(assetLibrary->getCubeID()));
+
+    auto skyboxEntity = createEntity("Skybox");
+    skyboxEntity.addComponent<SkyboxComp>();
+    skyboxEntity.addComponent<MeshComp>(AssetHandle<MeshData>(assetLibrary->getSkyboxID()));
+
+    /*
     auto skyboxEntity = createEntity("Skybox");
     SkyboxComp skyboxComp {
         .skyboxMat.name = "Skybox",
@@ -45,7 +54,7 @@ void Scene::createDefaultScene(ZEngine* engine) {
     };
 
     skyboxEntity.addComponent<SkyboxComp>(skyboxComp);
-    skyboxEntity.addComponent<MeshComp>(MeshComp{.name = "Skybox"});
+    skyboxEntity.addComponent<MeshComp>(MeshComp{.name = "Skybox"});*/
 
 }
 
@@ -111,18 +120,18 @@ bool Scene::onRemoveResource(RemoveResourceEvent &e) {
     switch(e.getResourceType()) {
         case Resources::MeshDrawable: {
             //todo cleanup gpu resource
-            removeResource<MeshDrawableComp>(e.getResourceName());
+            //removeResource<MeshDrawableComp>(e.getResourceName());
             return true;
         }
 
         case Resources::MeshData: {
-            removeResource<MeshComp>(e.getResourceName());
+            //removeResource<MeshComp>(e.getResourceName());
             return true;
         }
 
         case Resources::Material: {
             //todo cleanup shader resources
-            removeResource<MaterialComp>(e.getResourceName());
+            //removeResource<MaterialComp>(e.getResourceName());
             return true;
         }
 
