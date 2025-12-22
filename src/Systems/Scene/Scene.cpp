@@ -101,6 +101,15 @@ Entity Scene::createEntity(const std::string& name, UUID id) {
     return ret;
 }
 
+Entity Scene::getEntity(UUID id) {
+    auto view = getEntities<UUIDComp>();
+    for (auto entity : view) {
+        if (entity.getComponent<UUIDComp>().uuid == id) {
+            return entity;
+        }
+    }
+}
+
 void Scene::removeEntity(Entity entity) {
     m_Registry.destroy((entt::entity)entity);
 }

@@ -40,9 +40,9 @@ void RenderSystem::updateWorldTransforms() {
         glm::mat4 local = tc.getLocalMatrix();
 
         if (auto parentComp = e.tryGetComponent<ParentComp>()) {
-            //if(auto tranformComp = parentComp->parent.tryGetComponent<TransformComp>()) {
-            //    tc.worldMatrix = tranformComp->worldMatrix * local;
-            //}
+            if(auto tranformComp = m_Scene->getEntity(parentComp->parentID).tryGetComponent<TransformComp>()) {
+                tc.worldMatrix = tranformComp->worldMatrix * local;
+            }
         }
         else {
             tc.worldMatrix = local;
@@ -136,6 +136,11 @@ void RenderSystem::renderDrawables() {
         auto& materialComp = entity.getComponent<MaterialComp>();
         auto* mat = materialComp.handle.get();
         auto library = Project::getActive()->getAssetLibrary();
+        if (!mat) {
+            materialComp.handle = library->getDefaultMaterialID();
+            continue;
+        }
+
         auto matRaw = library->getMaterialRaw(*mat);
 
         //convert to UBO format
@@ -157,15 +162,15 @@ void RenderSystem::renderDrawables() {
         m_Renderer->writeToUBO(m_Renderer->m_MaterialUBO.uboID, materialUBO);
 
         //bind material texture
-        m_Renderer->m_ResourceManager->bindMaterial(matRaw);
+        m_ResourceManager->bindMaterial(matRaw);
         if (m_IrradianceMapID.get()) {
-            m_Renderer->m_ResourceManager->bindCubeMapTexture(m_IrradianceMapID->drawableID, 5);
+            m_ResourceManager->bindCubeMapTexture(m_IrradianceMapID->drawableID, 5);
         }
         if (m_PrefilterMapID.get()) {
-            m_Renderer->m_ResourceManager->bindCubeMapTexture(m_PrefilterMapID->drawableID, 6);
+            m_ResourceManager->bindCubeMapTexture(m_PrefilterMapID->drawableID, 6);
         }
         if (m_BRDFLUTID.get()) {
-            m_Renderer->m_ResourceManager->bindTexture(m_BRDFLUTID->drawableID, 7);
+            m_ResourceManager->bindTexture(m_BRDFLUTID->drawableID, 7);
         }
         //write to instance ubo (todo check if last mesh is same for instancing)
 
@@ -175,14 +180,16 @@ void RenderSystem::renderDrawables() {
 
         //todo submit mesh to renderer
         auto drawable = entity.getComponent<MeshComp>();
-        m_Renderer->m_Context->drawMesh(*m_Renderer->m_ResourceManager,
-            *m_ResourceManager->get<GPUMesh>(drawable.handle.id()));
+        if (auto* gpuMesh = m_ResourceManager->get<GPUMesh>(drawable.handle.id())) {
+            m_Renderer->m_Context->drawMesh(*m_ResourceManager,
+            *gpuMesh);
+        }
 
     }
 }
 
 void RenderSystem::renderDrawablesToShader(uint32_t shaderID) {
-    m_Renderer->m_ResourceManager->bindShader(shaderID);
+    m_ResourceManager->bindShader(shaderID);
     auto viewDraw = m_Scene->getEntities<MeshComp, MaterialComp, TransformComp>();
     for(auto entity : viewDraw) {
         //write to instance ubo (todo check if last mesh is same for instancing)
@@ -192,8 +199,10 @@ void RenderSystem::renderDrawablesToShader(uint32_t shaderID) {
 
         //todo submit mesh to renderer
         auto drawable = entity.getComponent<MeshComp>();
-        m_Renderer->m_Context->drawMesh(*m_Renderer->m_ResourceManager,
-            *m_ResourceManager->get<GPUMesh>(drawable.handle.id()));
+        if (auto* gpuMesh = m_ResourceManager->get<GPUMesh>(drawable.handle.id())) {
+            m_Renderer->m_Context->drawMesh(*m_ResourceManager,
+            *gpuMesh);
+        }
 
     }
 }
@@ -305,7 +314,7 @@ void RenderSystem::renderSkybox(const glm::mat4& view, const glm::mat4& projecti
 
         if(!skyboxComp.envGenerated) {
 
-            m_Renderer->m_ResourceManager->bindCubeMapTexture(skyboxMat.textureID, 0);
+            m_ResourceManager->bindCubeMapTexture(skyboxMat.textureID, 0);
             m_Renderer->renderToCubeMapHDR(skyboxMat.textureID, eqMat.shaderID, eqMat.textureID,
                 *m_CubeDrawable);
 
@@ -334,11 +343,13 @@ void RenderSystem::renderSkybox(const glm::mat4& view, const glm::mat4& projecti
 
         m_Renderer->writeToUBO(m_Renderer->m_ViewUBO.uboID, vp);
 
-        m_Renderer->m_ResourceManager->bindShader(skyboxMat.shaderID);
-        m_Renderer->m_ResourceManager->bindCubeMapTexture(skyboxMat.textureID, 0);
+        m_ResourceManager->bindShader(skyboxMat.shaderID);
+        m_ResourceManager->bindCubeMapTexture(skyboxMat.textureID, 0);
 
-        m_Renderer->m_Context->drawMesh(*m_Renderer->m_ResourceManager,
-            *m_ResourceManager->get<GPUMesh>(drawable.handle.id()));
+        if (auto* gpuMesh = m_ResourceManager->get<GPUMesh>(drawable.handle.id())) {
+            m_Renderer->m_Context->drawMesh(*m_ResourceManager,
+            *gpuMesh);
+        }
 
         m_Renderer->m_Context->depthMask(true);
         m_Renderer->m_Context->setDepthMode(LESS);
@@ -347,13 +358,13 @@ void RenderSystem::renderSkybox(const glm::mat4& view, const glm::mat4& projecti
 
 void RenderSystem::bindSceneUBOs() {
     //bind uniform vp matrix
-    m_Renderer->m_ResourceManager->bindUBO(m_Renderer->m_ViewUBO.uboID);
+    m_ResourceManager->bindUBO(m_Renderer->m_ViewUBO.uboID);
     //bind instance ubo (different binding so its ok)
-    m_Renderer->m_ResourceManager->bindUBO(m_Renderer->m_InstanceUBO.uboID);
+    m_ResourceManager->bindUBO(m_Renderer->m_InstanceUBO.uboID);
     //bind global ubo (different binding so its ok)
-    m_Renderer->m_ResourceManager->bindUBO(m_Renderer->m_GlobalUBO.uboID);
+    m_ResourceManager->bindUBO(m_Renderer->m_GlobalUBO.uboID);
     //bind material ubo (different binding so its ok)
-    m_Renderer->m_ResourceManager->bindUBO(m_Renderer->m_MaterialUBO.uboID);
+    m_ResourceManager->bindUBO(m_Renderer->m_MaterialUBO.uboID);
 }
 
 

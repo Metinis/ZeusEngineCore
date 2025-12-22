@@ -15,6 +15,7 @@ namespace ZEN {
     struct GPUTexture {
         uint32_t drawableID{0};
         TextureType type{};
+
     };
     struct GPUShader {
         uint32_t drawableID{};
@@ -62,6 +63,14 @@ namespace ZEN {
                 else if(asset.type == Texture2D && !asset.absPath) {
                     auto ret = GPUTexture {
                         .drawableID = createTexture(asset.path, false),
+                        .type = asset.type,
+                    };
+                    m_Mappings.emplace(id, ret);
+                    return ret;
+                }
+                else if(asset.type == Texture2DAssimp && asset.absPath) {
+                    auto ret = GPUTexture {
+                        .drawableID = createTextureAssimp(*asset.aiTex),
                         .type = asset.type,
                     };
                     m_Mappings.emplace(id, ret);
@@ -150,6 +159,13 @@ namespace ZEN {
                 return nullptr;
             }
             return std::get_if<T>(&it->second);
+        }
+        bool has(AssetID id) {
+            auto it = m_Mappings.find(id);
+            if (it == m_Mappings.end()) {
+                return false;
+            }
+            return true;
         }
 
         virtual ~IResourceManager() = default;

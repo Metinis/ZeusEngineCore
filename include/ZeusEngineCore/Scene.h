@@ -21,6 +21,7 @@ namespace ZEN {
 		void createDefaultScene();
 		Entity createEntity(const std::string& name = "");
 		Entity createEntity(const std::string& name, UUID id);
+		Entity getEntity(UUID id);
 		void removeEntity(Entity entity);
 
 		template<typename ...Args>

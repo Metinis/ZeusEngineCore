@@ -15,8 +15,14 @@ AssetLibrary::AssetLibrary() : m_ResourceManager(Application::get().getEngine()-
     m_SphereID = createAsset<MeshData>(createSphere(1.0f, 32, 16), "Sphere");
 }
 MaterialRaw AssetLibrary::getMaterialRaw(const Material &material) {
+    AssetHandle<Material> def = getDefaultMaterialID();
+    uint32_t shaderID = m_ResourceManager->get<GPUShader>(def->shader)->drawableID;
+    if (m_ResourceManager->get<GPUShader>(material.shader)) {
+        auto shader = m_ResourceManager->get<GPUShader>(material.shader);
+        shaderID = shader->drawableID;
+    }
     MaterialRaw ret {
-        .shaderID = m_ResourceManager->get<GPUShader>(material.shader)->drawableID,
+        .shaderID = shaderID,
         .textureID = m_ResourceManager->get<GPUTexture>(material.texture)->drawableID,
         .metallicTexID = m_ResourceManager->get<GPUTexture>(material.metallicTex)->drawableID,
         .roughnessTexID = m_ResourceManager->get<GPUTexture>(material.roughnessTex)->drawableID,

@@ -4,6 +4,8 @@
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
 
+#include "UUID.h"
+
 namespace ZEN {
     class Scene;
     class IResourceManager;
@@ -16,11 +18,9 @@ namespace ZEN {
         void loadModel(const std::string &name, const std::string& path);
         void loadTexture(const std::string &name, const std::string& path);
     private:
-        void processTexturesEmbedded(std::string& textureID,
-                                 const aiScene* aiscene, const aiString& texPath);
+        UUID processTexturesEmbedded(const aiScene* aiscene, const aiString& texPath);
 
-        void processTextureType(std::string& textureIDs,
-                                const aiScene* aiscene, aiTextureType type,
+        UUID processTextureType(const aiScene* aiscene, aiTextureType type,
                                 const aiMaterial* aimaterial);
 
         void processAiMesh(Entity& entity, aiMesh* mesh,
@@ -31,8 +31,9 @@ namespace ZEN {
 
         Scene* m_Scene{};
         IResourceManager* m_ResourceManager{};
-        std::unordered_map<const aiTexture*, uint32_t> m_EmbeddedTextureCache{};
-        std::unordered_map<const char*, uint32_t> m_ExternalTextureCache{};
+        std::shared_ptr<AssetLibrary> m_AssetLibrary{};
+        std::unordered_map<const aiTexture*, UUID> m_EmbeddedTextureCache{};
+        std::unordered_map<const char*, UUID> m_ExternalTextureCache{};
     };
 }
 

@@ -32,6 +32,9 @@ namespace ZEN {
 
         template<typename T>
         void addAsset(AssetID id, T&& asset, const std::string& name = "") {
+            if (!m_ResourceManager->has(id)) {
+                m_ResourceManager->create(id, asset);
+            }
             m_AssetMap[id] = std::forward<T>(asset);
             m_NameMap.emplace(id, name);
         }

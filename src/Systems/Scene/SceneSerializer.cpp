@@ -31,13 +31,13 @@ static void serializeEntity(YAML::Emitter& out, Entity entity) {
     if(entity.hasComponent<MeshComp>()) {
         out << YAML::Key << "MeshComponent";
         out << YAML::BeginMap;
-        //out << YAML::Key << "MeshName" << YAML::Value << entity.getComponent<MeshComp>().name;
+        out << YAML::Key << "MeshID" << YAML::Value << entity.getComponent<MeshComp>().handle.id();
         out << YAML::EndMap;
     }
     if(entity.hasComponent<MaterialComp>()) {
         out << YAML::Key << "MaterialComponent";
         out << YAML::BeginMap;
-        //out << YAML::Key << "MaterialName" << YAML::Value << entity.getComponent<MaterialComp>().name;
+        out << YAML::Key << "MaterialID" << YAML::Value << entity.getComponent<MaterialComp>().handle.id();
         out << YAML::EndMap;
     }
     if(entity.hasComponent<DirectionalLightComp>()) {
@@ -57,22 +57,21 @@ static void serializeEntity(YAML::Emitter& out, Entity entity) {
         out << YAML::Key << "isPrimary" << YAML::Value << entity.getComponent<CameraComp>().isPrimary;
         out << YAML::EndMap;
     }
-    //if(entity.hasComponent<ParentComp>() && entity.getComponent<ParentComp>().parent.isValid()) {
+    if(entity.hasComponent<ParentComp>()) {
         out << YAML::Key << "ParentComponent";
         out << YAML::BeginMap;
-        //todo use UUID
-        //out << YAML::Key << "Entity" << YAML::Value << entity.getComponent<ParentComp>().parent.getComponent<TagComp>().tag;
+        out << YAML::Key << "Entity" << YAML::Value << entity.getComponent<ParentComp>().parentID;
         out << YAML::EndMap;
-    //}
+    }
     if(entity.hasComponent<SkyboxComp>()) {
         out << YAML::Key << "SkyboxComponent";
         out << YAML::BeginMap;
         auto skyboxComp = entity.getComponent<SkyboxComp>();
-        //out << YAML::Key << "SkyboxMaterialName" << YAML::Value << skyboxComp.skyboxMat.name;
-        //out << YAML::Key << "EqMaterialName" << YAML::Value << skyboxComp.eqMat.name;
-        //out << YAML::Key << "ConMaterialName" << YAML::Value << skyboxComp.conMat.name;
-        //out << YAML::Key << "PrefilterMaterialName" << YAML::Value << skyboxComp.prefilterMat.name;
-        //out << YAML::Key << "BRDFLUTMaterialName" << YAML::Value << skyboxComp.brdfLUTMat.name;
+        out << YAML::Key << "SkyboxMaterialID" << YAML::Value << skyboxComp.skyboxMat.handle.id();
+        out << YAML::Key << "EqMaterialID" << YAML::Value << skyboxComp.eqMat.handle.id();
+        out << YAML::Key << "ConMaterialID" << YAML::Value << skyboxComp.conMat.handle.id();
+        out << YAML::Key << "PrefilterMaterialID" << YAML::Value << skyboxComp.prefilterMat.handle.id();
+        out << YAML::Key << "BRDFLUTMaterialID" << YAML::Value << skyboxComp.brdfLUTMat.handle.id();
         out << YAML::Key << "EnvGenerated" << YAML::Value << skyboxComp.envGenerated;
         out << YAML::EndMap;
     }
@@ -137,14 +136,14 @@ bool SceneSerializer::deserialize(const std::string &path) {
 
             auto meshComp = entity["MeshComponent"];
             if(meshComp) {
-                //MeshComp comp = {.name = meshComp["MeshName"].as<std::string>()};
-                //entityInst.addComponent<MeshComp>(comp);
+                MeshComp comp = {.handle = AssetID(meshComp["MeshID"].as<uint64_t>())};
+                entityInst.addComponent<MeshComp>(comp);
             }
 
             auto matComp = entity["MaterialComponent"];
             if(matComp) {
-                //MaterialComp comp = {.name = matComp["MaterialName"].as<std::string>()};
-                //entityInst.addComponent<MaterialComp>(comp);
+                MaterialComp comp = {.handle = AssetID(matComp["MaterialID"].as<uint64_t>())};
+                entityInst.addComponent<MaterialComp>(comp);
             }
 
             auto dirLightComp = entity["DirLightComponent"];
@@ -170,18 +169,18 @@ bool SceneSerializer::deserialize(const std::string &path) {
 
             auto parentComp = entity["ParentComponent"];
             if(parentComp) {
-                //todo after loading all entities
-                //ParentComp comp = { .parent =
+                ParentComp comp = { .parentID = parentComp["ParentID"].as<uint64_t>()};
+                entityInst.addComponent<ParentComp>(comp);
             }
 
             auto skyboxComp = entity["SkyboxComponent"];
             if(skyboxComp) {
                 SkyboxComp comp {
-                    //.skyboxMat.name = skyboxComp["SkyboxMaterialName"].as<std::string>(),
-                    //.eqMat.name = skyboxComp["EqMaterialName"].as<std::string>(),
-                    //.conMat.name = skyboxComp["ConMaterialName"].as<std::string>(),
-                    //.prefilterMat.name = skyboxComp["PrefilterMaterialName"].as<std::string>(),
-                    //.brdfLUTMat.name = skyboxComp["BRDFLUTMaterialName"].as<std::string>(),
+                    .skyboxMat.handle = AssetID(skyboxComp["SkyboxMaterialID"].as<uint64_t>()),
+                    .eqMat.handle = AssetID(skyboxComp["EqMaterialID"].as<uint64_t>()),
+                    .conMat.handle = AssetID(skyboxComp["ConMaterialID"].as<uint64_t>()),
+                    .prefilterMat.handle = AssetID(skyboxComp["PrefilterMaterialID"].as<uint64_t>()),
+                    .brdfLUTMat.handle = AssetID(skyboxComp["BRDFLUTMaterialID"].as<uint64_t>()),
                     .envGenerated = skyboxComp["EnvGenerated"].as<bool>(),
                 };
                 entityInst.addComponent<SkyboxComp>(comp);

@@ -10,41 +10,46 @@ ZEN::AssetSerializer::AssetSerializer(AssetLibrary *library) : m_AssetLibrary(li
 
 bool ZEN::AssetSerializer::serialize(const std::string &path) {
     //save all meshes to binary file
-    /*
     YAML::Emitter out;
     out << YAML::BeginMap;
     out << YAML::Key << "Assets" << YAML::Value << "Default";
 
     out << YAML::Key << "Meshes" << YAML::BeginSeq;
-    for(auto& [name, mesh] : m_AssetLibrary->m_AssetMap) {
-        std::string localPath = std::format("/meshes/{}.bin", name);
+    for(auto& ID : m_AssetLibrary->getAllIDsOfType<MeshData>()) {
+        std::string localPath = std::format("/meshes/{}.bin", std::to_string(ID));
         FileStreamWriter writer(Application::get().getResourceRoot() + localPath);
-        writer.writeVector(mesh->indices);
-        writer.writeVector(mesh->vertices);
+        writer.writeVector(m_AssetLibrary->get<MeshData>(ID)->indices);
+        writer.writeVector(m_AssetLibrary->get<MeshData>(ID)->vertices);
 
         out << YAML::BeginMap;
-        out << YAML::Key << "Name" << YAML::Value << name;
+        out << YAML::Key << "Mesh" << YAML::Value << ID;
+        out << YAML::Key << "Name" << YAML::Value << m_AssetLibrary->getName(ID);
         out << YAML::Key << "Path" << YAML::Value << localPath;
         out << YAML::EndMap;
     }
     out << YAML::EndSeq;
     out << YAML::Key << "Textures" << YAML::BeginSeq;
 
-    for(auto& [name, texture] : m_AssetLibrary->m_Textures) {
+    for(auto& ID : m_AssetLibrary->getAllIDsOfType<TextureData>()) {
         out << YAML::BeginMap;
-        out << YAML::Key << "Name" << YAML::Value << name;
-
-        if (!texture->path.empty()) {
-            out << YAML::Key << "Path" << YAML::Value << texture->path;
-        }
+        out << YAML::Key << "Texture" << YAML::Value << ID;
+        out << YAML::Key << "Name" << YAML::Value << m_AssetLibrary->getName(ID);
+        out << YAML::Key << "Path" << YAML::Value << m_AssetLibrary->get<TextureData>(ID)->path;
+        out << YAML::Key << "Type" << YAML::Value << m_AssetLibrary->get<TextureData>(ID)->type;
+        out << YAML::Key << "Mip" << YAML::Value << m_AssetLibrary->get<TextureData>(ID)->mip;
+        out << YAML::Key << "AbsPath" << YAML::Value << m_AssetLibrary->get<TextureData>(ID)->absPath;
+        out << YAML::Key << "Dimensions" << YAML::Value << m_AssetLibrary->get<TextureData>(ID)->dimensions;
 
         out << YAML::EndMap;
     }
     out << YAML::EndSeq;
     out << YAML::Key << "Shaders" << YAML::BeginSeq;
-    for(auto& [name, shader] : m_AssetLibrary->m_Shaders) {
+    for(auto& ID : m_AssetLibrary->getAllIDsOfType<ShaderData>()) {
         out << YAML::BeginMap;
-        out << YAML::Key << "Name" << YAML::Value << name;
+        out << YAML::Key << "Shader" << YAML::Value << ID;
+        out << YAML::Key << "Name" << YAML::Value << m_AssetLibrary->getName(ID);
+
+        auto shader = m_AssetLibrary->get<ShaderData>(ID);
 
         out << YAML::Key << "VertPath" << YAML::Value << shader->vertPath;
         out << YAML::Key << "FragPath" << YAML::Value << shader->fragPath;
@@ -55,9 +60,11 @@ bool ZEN::AssetSerializer::serialize(const std::string &path) {
 
     out << YAML::EndSeq;
     out << YAML::Key << "Materials" << YAML::BeginSeq;
-    for(auto& [name, mat] : m_AssetLibrary->m_Materials) {
+    for(auto& ID : m_AssetLibrary->getAllIDsOfType<Material>()) {
         out << YAML::BeginMap;
-        out << YAML::Key << "Name" << YAML::Value << name;
+        out << YAML::Key << "Material" << YAML::Value << ID;
+        out << YAML::Key << "Name" << YAML::Value << m_AssetLibrary->getName(ID);
+        auto mat = m_AssetLibrary->get<Material>(ID);
 
         out << YAML::Key << "Shader" << YAML::Value << mat->shader;
         out << YAML::Key << "Texture" << YAML::Value << mat->texture;
@@ -82,13 +89,12 @@ bool ZEN::AssetSerializer::serialize(const std::string &path) {
     out << YAML::EndSeq;
     out << YAML::EndMap;
     std::ofstream fout(Application::get().getResourceRoot() + path);
-    fout << out.c_str();*/
+    fout << out.c_str();
     return true;
 }
 
 bool ZEN::AssetSerializer::deserialize(const std::string &path) {
     //need to clear data before
-    /*
     YAML::Node data;
     try
     {
@@ -105,49 +111,74 @@ bool ZEN::AssetSerializer::deserialize(const std::string &path) {
     auto meshes = data["Meshes"];
     if(meshes) {
         for(auto mesh : meshes) {
+            auto id = mesh["Mesh"];
             auto name = mesh["Name"];
             auto meshpath = mesh["Path"];
-            if(name && meshpath) {
+            if(id && meshpath) {
                 MeshData meshdata{};
                 FileStreamReader reader(Application::get().getResourceRoot() + meshpath.as<std::string>());
                 reader.readVector(meshdata.indices);
                 reader.readVector(meshdata.vertices);
-                m_AssetLibrary->m_MeshData[name.as<std::string>()] = std::make_unique<MeshData>(meshdata);
-            }
+                m_AssetLibrary->addAsset<MeshData>(id.as<uint64_t>(), std::move(meshdata), name.as<std::string>());}
         }
     }
     auto textures = data["Textures"];
     if (textures) {
         for(auto texture : textures) {
+            auto id = texture["Texture"];
             auto name = texture["Name"];
             auto texpath = texture["Path"];
-            if(name && texpath) {
-                m_AssetLibrary->createTexture(name.as<std::string>(), texpath.as<std::string>());
+            auto texType = texture["Type"];
+            auto hasMip = texture["Mip"];
+            auto absPath = texture["AbsPath"];
+            auto dimensions = texture["Dimensions"];
+            if(id) {
+                m_AssetLibrary->addAsset<TextureData>(
+                 id.as<uint64_t>(),
+                    TextureData {
+                        .path = texpath.as<std::string>(),
+                        .type = texType.as<TextureType>(),
+                        .dimensions = dimensions.as<glm::vec2>(),
+                        .mip = hasMip.as<bool>(),
+                        .absPath = absPath.as<bool>(),
+                    },
+                    name.as<std::string>()
+                    );
+
             }
         }
     }
     auto shaders = data["Shaders"];
     if(shaders) {
         for(auto shader : shaders) {
+            auto id = shader["Shader"];
             auto name = shader["Name"];
-            if(name) {
-                m_AssetLibrary->createShader(name.as<std::string>(), shader["VertPath"].as<std::string>(),
-                    shader["FragPath"].as<std::string>(), shader["GeoPath"].as<std::string>());
+            if(id) {
+                m_AssetLibrary->addAsset<ShaderData>(id.as<uint64_t>(),
+                    ShaderData{
+                    .vertPath = shader["VertPath"].as<std::string>(),
+                    .fragPath = shader["FragPath"].as<std::string>(),
+                    .geoPath = shader["GeoPath"].as<std::string>(),
+                },
+                name.as<std::string>()
+                );
+                //todo load gpu asset
             }
         }
     }
     auto materials = data["Materials"];
     if(materials) {
         for(auto material : materials) {
+            auto id = material["Material"];
             auto name = material["Name"];
-            if(name) {
+            if(id) {
                 Material mat {
-                    .shader = material["Shader"].as<std::string>(),
-                    .texture = material["Texture"].as<std::string>(),
-                    .metallicTex = material["MetallicTexture"].as<std::string>(),
-                    .normalTex = material["NormalTexture"].as<std::string>(),
-                    .roughnessTex = material["RoughnessTexture"].as<std::string>(),
-                    .aoTex = material["AoTexture"].as<std::string>(),
+                    .shader = AssetID(material["Shader"].as<uint64_t>()),
+                    .texture = AssetID(material["Texture"].as<uint64_t>()),
+                    .metallicTex = AssetID(material["MetallicTexture"].as<uint64_t>()),
+                    .roughnessTex = AssetID(material["RoughnessTexture"].as<uint64_t>()),
+                    .normalTex = AssetID(material["NormalTexture"].as<uint64_t>()),
+                    .aoTex = AssetID(material["AoTexture"].as<uint64_t>()),
                     .albedo = material["Albedo"].as<glm::vec3>(),
                     .metallic = material["Metallic"].as<float>(),
                     .roughness = material["Roughness"].as<float>(),
@@ -160,11 +191,9 @@ bool ZEN::AssetSerializer::deserialize(const std::string &path) {
                     .useAO = material["UseAO"].as<bool>(),
 
                 };
-                m_AssetLibrary->m_Materials[name.as<std::string>()] = std::make_unique<Material>(mat);
+                m_AssetLibrary->addAsset<Material>(id.as<uint64_t>(), std::move(mat), name.as<std::string>());
             }
         }
     }
-    //TODO meshes
-    */
     return true;
 }
