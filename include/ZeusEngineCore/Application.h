@@ -25,6 +25,9 @@ namespace ZEN {
 
         Window* getWindow() const { return m_Window.get(); }
         static Application& get() { return *s_Instance; }
+        eRendererAPI getRendererAPI() const { return m_API; }
+        ZEngine* getEngine() const { return m_Engine.get(); }
+        std::string getResourceRoot() { return m_ResourceRoot; }
 
         void close();
 

@@ -2,6 +2,8 @@
 #include "ZeusEngineCore/Vertex.h"
 #include "ZeusEngineCore/Util.h"
 #include "ZeusEngineCore/Entity.h"
+#include "ZeusEngineCore/UUID.h"
+#include "ZeusEngineCore/AssetHandle.h"
 
 namespace entt {
     enum class entity : std::uint32_t;
@@ -10,14 +12,17 @@ namespace entt {
 namespace ZEN {
     class Entity;
 
+    struct UUIDComp {
+        UUID uuid;
+    };
     struct MeshComp {
-        std::string name{};
+        AssetHandle<MeshData> handle;
     };
     struct MeshDrawableComp {
-        std::string name{};
+        AssetHandle<GPUMesh> handle;
     };
     struct MaterialComp {
-        std::string name{};
+        AssetHandle<Material> handle;
     };
     struct SkyboxComp {
         MaterialComp skyboxMat{};
@@ -27,9 +32,7 @@ namespace ZEN {
         MaterialComp brdfLUTMat{};
         bool envGenerated{};
     };
-    struct UniformComp {
-        uint32_t uboID{};
-    };
+
     struct TagComp {
         std::string tag;
     };
@@ -89,7 +92,7 @@ namespace ZEN {
         bool isPrimary = true;
     };
     struct ParentComp {
-        Entity parent;
+        UUID parentID{};
     };
 
 }

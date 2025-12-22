@@ -1,4 +1,5 @@
 #pragma once
+
 #include "../IResourceManager.h"
 
 namespace ZEN {
@@ -25,9 +26,9 @@ namespace ZEN {
         uint32_t handle;
     };
 
-    class GLResourceManager : public IResourceManager{
+    class GLResourceManager : public IResourceManager {
     public:
-        GLResourceManager(const std::string& resourceRoot);
+        GLResourceManager();
         ~GLResourceManager() override;
 
         uint32_t createMeshDrawable(const MeshData& mesh) override;
@@ -52,7 +53,7 @@ namespace ZEN {
         void bindTexture(uint32_t textureID, uint32_t binding) override;
         void deleteTexture(uint32_t textureID) override;
 
-        void bindMaterial(const Material& material) override;
+        void bindMaterial(const MaterialRaw& material) override;
 
         uint32_t createCubeMapTexture(const std::string& texturePath) override;
         uint32_t createCubeMapTextureHDRMip(uint32_t width, uint32_t height) override;

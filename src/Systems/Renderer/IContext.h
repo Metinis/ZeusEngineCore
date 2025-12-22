@@ -8,11 +8,10 @@ namespace ZEN {
         LESS,
         LEQUAL
     };
-    struct MeshDrawable;
     class IContext {
     public:
         virtual ~IContext() = default;
-        virtual void drawMesh(IResourceManager& resourceManager, const MeshDrawable& drawable) = 0;
+        virtual void drawMesh(IResourceManager& resourceManager, const GPUMesh& drawable) = 0;
         virtual void clear(bool shouldClearColor, bool shouldClearDepth) = 0;
         virtual void depthMask(bool val) = 0;
         virtual void enableCullFace() = 0;
@@ -21,7 +20,6 @@ namespace ZEN {
         virtual void setViewport(uint32_t width, uint32_t height) = 0;
 		virtual void setViewport(uint32_t xCorner, uint32_t yCorner, uint32_t width, uint32_t height) = 0;
         virtual void swapBuffers() = 0;
-        static std::unique_ptr<IContext> create(eRendererAPI api,
-            GLFWwindow* window);
+        static std::unique_ptr<IContext> create();
     };
 }

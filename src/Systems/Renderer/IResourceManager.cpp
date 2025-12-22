@@ -1,11 +1,12 @@
 #include "IResourceManager.h"
 #include "OpenGL/GLResourceManager.h"
+#include "ZeusEngineCore/Application.h"
 
 using namespace ZEN;
-std::unique_ptr<IResourceManager> IResourceManager::create(eRendererAPI api, const std::string& resourceRoot) {
-    switch (api) {
+std::unique_ptr<IResourceManager> IResourceManager::create() {
+    switch (Application::get().getRendererAPI()) {
         case OpenGL:
-            return std::make_unique<GLResourceManager>(resourceRoot);
+            return std::make_unique<GLResourceManager>();
 
         case Vulkan:
             return nullptr;

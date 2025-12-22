@@ -7,7 +7,7 @@
 
 
 namespace ZEN {
-	class ModelLibrary;
+	class AssetLibrary;
 	class ModelImporter;
 	class ZEngine;
 	struct RemoveMeshEvent;
@@ -18,8 +18,10 @@ namespace ZEN {
 
 	public:
 		Scene();
-		void createDefaultScene(ZEngine* engine);
+		void createDefaultScene();
 		Entity createEntity(const std::string& name = "");
+		Entity createEntity(const std::string& name, UUID id);
+		Entity getEntity(UUID id);
 		void removeEntity(Entity entity);
 
 		template<typename ...Args>
@@ -37,13 +39,14 @@ namespace ZEN {
 		glm::vec3 getAmbientColor() {return m_AmbientColor;}
 	private:
 		entt::registry m_Registry{};
-		ModelLibrary* m_ModelLibrary{};
+		AssetLibrary* m_ModelLibrary{};
 		glm::vec3 m_LightPos{1.0f, 5.0f, 1.0f};
 		glm::vec3 m_LightDir{-0.2f, -1.0f, 0.3f};
 		glm::vec3 m_AmbientColor{0.01f, 0.01f, 0.01f};
 
 		Entity makeEntity(entt::entity entity);
 
+		/*
 		template<typename T>
 		void removeResource(const std::string& resourceName) {
 			auto view = getEntities<T>();
@@ -53,12 +56,13 @@ namespace ZEN {
                 }
                 entity.template removeComponent<T>();
             }
-		}
+		}*/
 
 		bool onRemoveResource(RemoveResourceEvent& e);
 		void onMeshCompRemove(entt::registry& registry, entt::entity entity);
 		void onMeshDrawableRemove(entt::registry& registry, entt::entity entity);
 
 		friend class Entity;
+		friend class SceneSerializer;
 	};
 }

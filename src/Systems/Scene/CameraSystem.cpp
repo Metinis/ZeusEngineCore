@@ -9,7 +9,7 @@
 
 using namespace ZEN;
 
-CameraSystem::CameraSystem(Scene* scene) : m_Scene(scene){
+CameraSystem::CameraSystem() : m_Scene(&Application::get().getEngine()->getScene()){
 
 
 }
@@ -58,11 +58,11 @@ void CameraSystem::onUpdate(float deltaTime) {
                 m_CursorPosLastY = m_CursorPosY;
             }
         }
-        if(m_Resized) {
+        //if(m_Resized) {
             camera.aspect = m_AspectRatio;
             camera.projection = glm::perspective(camera.fov, camera.aspect, camera.near, camera.far);
-            m_Resized = false;
-        }
+            //m_Resized = false;
+        //}
 
     }
 

@@ -1,11 +1,10 @@
-cmake_minimum_required(VERSION 3.28)
-project(ZeusEngineCore LANGUAGES CXX)
+cmake_minimum_required(VERSION 3.5)
+project(ZeusEngineCore LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-find_package(assimp REQUIRED)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/include/glfw glfw)
 
 add_library(ZeusEngineCore STATIC)
@@ -35,11 +34,16 @@ target_link_libraries(imgui
         glfw
 )
 
-
 file(GLOB_RECURSE ZEUSENGINECORE_SOURCES
         src/*.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/include/glad/src/glad.c
         ${CMAKE_CURRENT_SOURCE_DIR}/include/tinyfiledialogs/tinyfiledialogs.c
+)
+
+file(GLOB_RECURSE ZEUSENGINECORE_HEADERS include/*.h include/*.hpp)
+target_sources(ZeusEngineCore PRIVATE
+        ${ZEUSENGINECORE_SOURCES}
+        ${ZEUSENGINECORE_HEADERS}
 )
 
 target_sources(ZeusEngineCore PRIVATE ${ZEUSENGINECORE_SOURCES} )
@@ -57,12 +61,28 @@ target_include_directories(ZeusEngineCore
         ${CMAKE_CURRENT_SOURCE_DIR}/include/glm
         ${CMAKE_CURRENT_SOURCE_DIR}/include/tinyfiledialogs
 )
+include(FetchContent)
+
+FetchContent_Declare(
+        assimp
+        GIT_REPOSITORY https://github.com/assimp/assimp.git
+        GIT_TAG v6.0.2
+)
+FetchContent_MakeAvailable(assimp)
+
+FetchContent_Declare(
+        yaml-cpp
+        GIT_REPOSITORY https://github.com/jbeder/yaml-cpp.git
+        GIT_TAG master
+)
+FetchContent_MakeAvailable(yaml-cpp)
 
 target_link_libraries(ZeusEngineCore
         PUBLIC
         glfw
         assimp::assimp
         imgui
+        yaml-cpp::yaml-cpp
 )
 
 if(APPLE)

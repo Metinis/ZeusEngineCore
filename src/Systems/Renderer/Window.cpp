@@ -8,12 +8,11 @@
 using namespace ZEN;
 
 
-Window::Window(int width, int height, std::string title, ZEN::eRendererAPI api)
-    : m_Width(width), m_Height(height), m_Title(std::move(title)) {
+Window::Window(int width, int height, std::string title) : m_Width(width), m_Height(height), m_Title(std::move(title)) {
     if (!glfwInit())
         throw std::runtime_error("Failed to initialize GLFW");
 
-    if (api != ZEN::OpenGL) {
+    if (Application::get().getRendererAPI() != ZEN::OpenGL) {
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     }
     else {
@@ -39,11 +38,11 @@ Window::Window(int width, int height, std::string title, ZEN::eRendererAPI api)
     };
 }
 
-Window::Window(std::string title, ZEN::eRendererAPI api) {
+Window::Window(std::string title) {
     if (!glfwInit())
         throw std::runtime_error("Failed to initialize GLFW");
 
-    if (api != ZEN::OpenGL) {
+    if (Application::get().getRendererAPI() != ZEN::OpenGL) {
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     }
     else {

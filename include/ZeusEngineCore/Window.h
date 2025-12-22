@@ -9,9 +9,9 @@ namespace ZEN {
     class EventDispatcher;
     class Window {
     public:
-        Window(int width, int height, std::string title, ZEN::eRendererAPI api);
+        Window(int width, int height, std::string title);
 
-        Window(std::string title, ZEN::eRendererAPI api);
+        Window(std::string title);
 
         void attachDispatcher();
 

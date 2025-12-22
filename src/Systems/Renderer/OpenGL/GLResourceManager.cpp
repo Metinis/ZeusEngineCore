@@ -4,7 +4,9 @@
 #include <glad/glad.h>
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image/stb_image.h>
-#include <ZeusEngineCore/ModelLibrary.h>
+#include <ZeusEngineCore/AssetLibrary.h>
+#include "ZeusEngineCore/Application.h"
+
 
 constexpr std::array uboBindings{
     "View",
@@ -17,7 +19,7 @@ constexpr std::array textureBindings{
     "u_SpecularMap"
 };
 
-ZEN::GLResourceManager::GLResourceManager(const std::string& resourceRoot) {
+ZEN::GLResourceManager::GLResourceManager() {
     unsigned char whitePixel[4] = { 255, 255, 255, 255 };
     GLTexture tex{};
     glGenTextures(1, &tex.textureID);
@@ -28,7 +30,7 @@ ZEN::GLResourceManager::GLResourceManager(const std::string& resourceRoot) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     m_Textures[0] = tex;
 
-    m_ResourceRoot = resourceRoot;
+    m_ResourceRoot = Application::get().getResourceRoot();
 }
 ZEN::GLResourceManager::~GLResourceManager() {
     for (auto &[id, drawable]: m_Drawables) {
@@ -426,7 +428,7 @@ void ZEN::GLResourceManager::deleteTexture(uint32_t textureID) {
     });
 }
 
-void ZEN::GLResourceManager::bindMaterial(const Material &material) {
+void ZEN::GLResourceManager::bindMaterial(const MaterialRaw &material) {
     bindShader(material.shaderID);
 
     withResource(m_Shaders, material.shaderID, [&](GLShader& s) {

@@ -2,13 +2,14 @@
 #define GLFW_INCLUDE_NONE
 #include "GLFW/glfw3.h"
 #include <glad/glad.h>
-#include "ZeusEngineCore/ModelLibrary.h"
+
+#include "ZeusEngineCore/Application.h"
+#include "ZeusEngineCore/AssetLibrary.h"
 
 using namespace ZEN;
 
-GLContext::GLContext(GLFWwindow* window)
-: m_WindowHandle(window){
-    glfwMakeContextCurrent(window);
+GLContext::GLContext() : m_WindowHandle(Application::get().getWindow()->getNativeWindow()){
+    glfwMakeContextCurrent(m_WindowHandle);
     glfwSwapInterval(1); // Enable VSync
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
         throw std::runtime_error("Failed to initialize GLAD");
@@ -18,7 +19,7 @@ GLContext::GLContext(GLFWwindow* window)
     glCullFace(GL_BACK);
     glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 }
-void GLContext::drawMesh(IResourceManager& resourceManager, const MeshDrawable& drawable) {
+void GLContext::drawMesh(IResourceManager& resourceManager, const GPUMesh& drawable) {
     //retrieve GLDrawable by meshID from resource manager
     resourceManager.bindMeshDrawable(drawable.drawableID);
     glDrawElementsInstanced(GL_TRIANGLES, drawable.indexCount, GL_UNSIGNED_INT,
@@ -27,7 +28,7 @@ void GLContext::drawMesh(IResourceManager& resourceManager, const MeshDrawable& 
 }
 
 void GLContext::clear(bool shouldClearColor, bool shouldClearDepth) {
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
     GLenum clearBit = 0;
     if(shouldClearColor)
         clearBit |= GL_COLOR_BUFFER_BIT;

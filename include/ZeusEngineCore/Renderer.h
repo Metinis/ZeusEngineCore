@@ -35,7 +35,7 @@ namespace ZEN {
 
 	class Renderer : public Layer {
 	public:
-		explicit Renderer(eRendererAPI api, const std::string& resourceRoot, GLFWwindow* window);
+		explicit Renderer();
 
 		template<typename T>
 		void writeToUBO(uint32_t uboID, T ubo) {
@@ -45,11 +45,11 @@ namespace ZEN {
 		void beginFrame();
 		void bindDefaultFBO();
 
-		void renderToCubeMapHDR(uint32_t cubemapTexID, uint32_t eqToCubeMapShader, uint32_t hdrTexID, const MeshDrawable& drawable);
-		void renderToIrradianceMap(uint32_t cubemapTexID, uint32_t irradianceTexID, uint32_t irradianceShader,const MeshDrawable &drawable);
-		void renderToPrefilterMap(uint32_t cubemapTexID, uint32_t prefilterTexID, uint32_t prefilterShader,const MeshDrawable &drawable);
-		void renderToBRDFLUT(uint32_t brdfTexID, uint32_t brdfShader, const MeshDrawable& drawable);
-		void renderToScreenQuad(uint32_t quadShader, const MeshDrawable& drawable);
+		void renderToCubeMapHDR(uint32_t cubemapTexID, uint32_t eqToCubeMapShader, uint32_t hdrTexID, const GPUMesh& drawable);
+		void renderToIrradianceMap(uint32_t cubemapTexID, uint32_t irradianceTexID, uint32_t irradianceShader,const GPUMesh &drawable);
+		void renderToPrefilterMap(uint32_t cubemapTexID, uint32_t prefilterTexID, uint32_t prefilterShader,const GPUMesh &drawable);
+		void renderToBRDFLUT(uint32_t brdfTexID, uint32_t brdfShader, const GPUMesh& drawable);
+		void renderToScreenQuad(uint32_t quadShader, const GPUMesh& drawable);
 
 		void endFrame();
 		void setSize(float width, float height);
@@ -64,10 +64,10 @@ namespace ZEN {
 		GLFWwindow* m_Window{};
 		std::unique_ptr<IContext> m_Context{};
 		std::unique_ptr<IResourceManager> m_ResourceManager{};
-		UniformComp m_ViewUBO{};
-		UniformComp m_InstanceUBO{};
-		UniformComp m_GlobalUBO{};
-		UniformComp m_MaterialUBO{};
+		UniformBuffer m_ViewUBO{};
+		UniformBuffer m_InstanceUBO{};
+		UniformBuffer m_GlobalUBO{};
+		UniformBuffer m_MaterialUBO{};
 		MaterialComp m_DefaultShader{};
 
 		FBO m_MainFBO{};

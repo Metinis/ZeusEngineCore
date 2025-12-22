@@ -4,6 +4,7 @@
 #include "ZeusEngineCore/InputEvents.h"
 #include "ZeusEngineCore/Event.h"
 #include "ZeusEngineCore/CameraSystem.h"
+#include "ZeusEngineCore/Project.h"
 
 using namespace ZEN;
 
@@ -17,15 +18,19 @@ Application::~Application() {
 }
 
 void Application::init() {
-    m_Window = std::make_unique<Window>("Zeus Editor", m_API);
+    m_Window = std::make_unique<Window>("Zeus Editor");
     m_LayerStack = std::make_unique<LayerStack>();
-    m_Engine = std::make_unique<ZEngine>(m_API, m_Window->getNativeWindow(), m_ResourceRoot);
+    Project::createNew();
+
+    m_Engine = std::make_unique<ZEngine>();
+    m_Engine->init();
+
     m_Window->attachDispatcher();
 
     m_ImGUILayer = ImGUILayer::create(m_Window->getNativeWindow(), m_API);
     m_Running = true;
 
-    m_Engine->getScene().createDefaultScene(m_Engine.get());
+    m_Engine->getScene().createDefaultScene();
     m_Engine->setAspectRatio(m_Window->getHandleWidth() / m_Window->getHandleHeight());
 
 }
@@ -55,7 +60,6 @@ void Application::callEvent(Event &event) {
     dispatcher.dispatch<WindowResizeEvent>([this](WindowResizeEvent& e) {return onWindowResize(e); });
     dispatcher.dispatch<RunPlayModeEvent>([this](RunPlayModeEvent& e) {return onPlayMode(e); });
 
-    //dispatcher.dispatch<KeyPressedEvent>([this](KeyPressedEvent& e) {return onKeyPressed(e); });
     for (auto it = m_LayerStack->rbegin(); it != m_LayerStack->rend(); ++it)
     {
         if (event.handled)
@@ -72,7 +76,6 @@ bool Application::onPlayMode(const RunPlayModeEvent &event) {
 }
 
 bool Application::onWindowResize(const WindowResizeEvent &event) {
-    //m_Engine->getRenderer().setSize(m_Window->getHandleWidth(), m_Window->getHandleHeight());
     m_Engine->getRenderer().setSize(event.getWidth(), event.getHeight());
     return true;
 }
