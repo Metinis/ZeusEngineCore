@@ -18,7 +18,7 @@ GLContext::GLContext(GLFWwindow* window)
     glCullFace(GL_BACK);
     glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 }
-void GLContext::drawMesh(IResourceManager& resourceManager, const MeshDrawable& drawable) {
+void GLContext::drawMesh(IResourceManager& resourceManager, const GPUMesh& drawable) {
     //retrieve GLDrawable by meshID from resource manager
     resourceManager.bindMeshDrawable(drawable.drawableID);
     glDrawElementsInstanced(GL_TRIANGLES, drawable.indexCount, GL_UNSIGNED_INT,

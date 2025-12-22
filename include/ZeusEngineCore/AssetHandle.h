@@ -11,12 +11,12 @@ namespace ZEN {
         AssetHandle(AssetID id) : m_ID(id) {
         }
 
-        AssetHandle(AssetID id, T&& asset) : m_ID(id) {
-            Project::getActive()->getAssetLibrary()->addAsset<T>(id, std::forward<T>(asset));
+        AssetHandle(AssetID id, T&& asset, const std::string& name = "") : m_ID(id) {
+            Project::getActive()->getAssetLibrary()->addAsset<T>(id, std::forward<T>(asset), name);
         }
 
-        AssetHandle(T&& asset) {
-            m_ID = Project::getActive()->getAssetLibrary()->createAsset<T>(std::forward<T>(asset));
+        AssetHandle(T&& asset, const std::string& name = "") {
+            m_ID = Project::getActive()->getAssetLibrary()->createAsset<T>(std::forward<T>(asset), name);
         }
 
         T *get() const {
@@ -32,6 +32,7 @@ namespace ZEN {
         }
 
         AssetID id() const { return m_ID; }
+        void setID(AssetID id) {m_ID = id;}
         bool valid() const { return get() != nullptr; }
 
     private:

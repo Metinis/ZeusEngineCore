@@ -19,7 +19,7 @@ namespace ZEN {
         AssetHandle<MeshData> handle;
     };
     struct MeshDrawableComp {
-        AssetHandle<MeshDrawable> handle;
+        AssetHandle<GPUMesh> handle;
     };
     struct MaterialComp {
         AssetHandle<Material> handle;

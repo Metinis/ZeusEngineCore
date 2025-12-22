@@ -78,12 +78,14 @@ void ModelImporter::processTextureType(std::string& texture,
             if (it != m_ExternalTextureCache.end()) {
                 texID = it->second;
             } else {
-                texID = m_ResourceManager->createTexture(texPath.C_Str(), true);
                 TextureData texData {
-                    .id = texID,
                     .path = texPath.C_Str(),
+                    .type = Texture2D,
+                    .dimensions = glm::vec2{},
+                    .mip = false,
+                    .absPath = true,
                 };
-                //m_ModelLibrary->addTexture(texPath.C_Str(), texData);
+                AssetHandle(UUID(), std::move(texData));
                 m_ExternalTextureCache[texPath.C_Str()] = texID;
             }
             texture = texPath.C_Str();

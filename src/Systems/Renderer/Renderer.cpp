@@ -60,7 +60,7 @@ const glm::mat4 captureViews[] =
     glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 0.0f,  0.0f,  1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
     glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f))
  };
-void Renderer::renderToCubeMapHDR(uint32_t cubemapTexID, uint32_t eqToCubeMapShader, uint32_t hdrTexID, const MeshDrawable& drawable) {
+void Renderer::renderToCubeMapHDR(uint32_t cubemapTexID, uint32_t eqToCubeMapShader, uint32_t hdrTexID, const GPUMesh& drawable) {
 
     // convert HDR equirectangular environment map to cubemap equivalent
     m_ResourceManager->bindShader(eqToCubeMapShader);
@@ -93,7 +93,7 @@ void Renderer::renderToCubeMapHDR(uint32_t cubemapTexID, uint32_t eqToCubeMapSha
 }
 
 void Renderer::renderToIrradianceMap(uint32_t cubemapTexID, uint32_t irradianceTexID, uint32_t irradianceShader,
-    const MeshDrawable &drawable) {
+    const GPUMesh &drawable) {
     // convert HDR equirectangular environment map to cubemap equivalent
     m_ResourceManager->bindShader(irradianceShader);
     m_ResourceManager->bindCubeMapTexture(cubemapTexID, 0);
@@ -124,7 +124,7 @@ void Renderer::renderToIrradianceMap(uint32_t cubemapTexID, uint32_t irradianceT
 }
 
 void Renderer::renderToPrefilterMap(uint32_t cubemapTexID, uint32_t prefilterTexID, uint32_t prefilterShader,
-    const MeshDrawable &drawable) {
+    const GPUMesh &drawable) {
     // convert HDR equirectangular environment map to cubemap equivalent
     m_ResourceManager->bindShader(prefilterShader);
     m_ResourceManager->bindCubeMapTexture(cubemapTexID, 0);
@@ -164,7 +164,7 @@ void Renderer::renderToPrefilterMap(uint32_t cubemapTexID, uint32_t prefilterTex
     m_Context->setViewport(xCorner, yCorner, m_Width, m_Height);
 }
 
-void Renderer::renderToBRDFLUT(uint32_t brdfTexID, uint32_t brdfShader, const MeshDrawable& drawable) {
+void Renderer::renderToBRDFLUT(uint32_t brdfTexID, uint32_t brdfShader, const GPUMesh& drawable) {
     m_Context->disableCullFace();
 
     m_ResourceManager->bindFBO(m_CaptureFBO.fboID);
@@ -186,7 +186,7 @@ void Renderer::renderToBRDFLUT(uint32_t brdfTexID, uint32_t brdfShader, const Me
 
 }
 
-void Renderer::renderToScreenQuad(uint32_t quadShader, const MeshDrawable &drawable) {
+void Renderer::renderToScreenQuad(uint32_t quadShader, const GPUMesh &drawable) {
     m_Context->disableCullFace();
     bindDefaultFBO();
     m_ResourceManager->bindShader(quadShader);

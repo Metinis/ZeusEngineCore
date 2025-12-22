@@ -1,4 +1,5 @@
 #pragma once
+#include "GPUHandle.h"
 #include "Layer.h"
 #include "Renderer.h"
 #include "ZeusEngineCore/AssetLibrary.h"
@@ -30,13 +31,13 @@ namespace ZEN {
 
 		void updateWorldTransforms();
 
-		AssetHandle<TextureData> m_IrradianceMapID{};
-		AssetHandle<TextureData> m_PrefilterMapID{};
-		AssetHandle<TextureData> m_BRDFLUTID{};
-		AssetHandle<ShaderData> m_QuadShaderID{};
-		AssetHandle<ShaderData> m_NormalsShaderID{};
-		AssetHandle<MeshDrawable> m_CubeDrawable{};
-		AssetHandle<MeshDrawable> m_QuadDrawable{};
+		GPUHandle<GPUTexture> m_IrradianceMapID;
+		GPUHandle<GPUTexture> m_PrefilterMapID;
+		GPUHandle<GPUTexture> m_BRDFLUTID;
+		GPUHandle<GPUShader> m_QuadShaderID;
+		GPUHandle<GPUShader> m_NormalsShaderID;
+		GPUHandle<GPUMesh> m_CubeDrawable;
+		GPUHandle<GPUMesh> m_QuadDrawable;
 		IResourceManager* m_ResourceManager{};
 		Renderer* m_Renderer{};
 		Scene* m_Scene{};

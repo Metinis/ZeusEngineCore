@@ -1,5 +1,5 @@
-cmake_minimum_required(VERSION 3.28)
-project(ZeusEngineCore LANGUAGES CXX)
+cmake_minimum_required(VERSION 3.5)
+project(ZeusEngineCore LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -34,11 +34,16 @@ target_link_libraries(imgui
         glfw
 )
 
-
 file(GLOB_RECURSE ZEUSENGINECORE_SOURCES
         src/*.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/include/glad/src/glad.c
         ${CMAKE_CURRENT_SOURCE_DIR}/include/tinyfiledialogs/tinyfiledialogs.c
+)
+
+file(GLOB_RECURSE ZEUSENGINECORE_HEADERS include/*.h include/*.hpp)
+target_sources(ZeusEngineCore PRIVATE
+        ${ZEUSENGINECORE_SOURCES}
+        ${ZEUSENGINECORE_HEADERS}
 )
 
 target_sources(ZeusEngineCore PRIVATE ${ZEUSENGINECORE_SOURCES} )
@@ -68,7 +73,7 @@ FetchContent_MakeAvailable(assimp)
 FetchContent_Declare(
         yaml-cpp
         GIT_REPOSITORY https://github.com/jbeder/yaml-cpp.git
-        GIT_TAG 0.8.0
+        GIT_TAG master
 )
 FetchContent_MakeAvailable(yaml-cpp)
 

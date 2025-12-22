@@ -7,6 +7,6 @@ Project* Project::createNew() {
     return s_ActiveProject.get();
 }
 
-void Project::init(IResourceManager *resourceManager, const std::string &resourceRoot) {
-    m_AssetLibrary = std::make_shared<AssetLibrary>(resourceManager, resourceRoot);
+void Project::init(IResourceManager *resourceManager) {
+    m_AssetLibrary = std::make_shared<AssetLibrary>(resourceManager);
 }

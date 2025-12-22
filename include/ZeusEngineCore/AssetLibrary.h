@@ -1,10 +1,9 @@
 #pragma once
 #include "UUID.h"
-#include "Vertex.h"
 #include "../../src/Systems/Renderer/IResourceManager.h"
+#include "ZeusEngineCore/AssetTypes.h"
 
 namespace ZEN {
-    using AssetID = UUID;
     //cant remove these
     const std::unordered_set<std::string> defaultMeshes = {
         "Cube", "Sphere", "Capsule"
@@ -12,107 +11,36 @@ namespace ZEN {
     const std::unordered_set<std::string> defaultMaterials = {
         "Default"
     };
-    struct Material {
-        AssetID shader{0};
-        AssetID texture{0};
-        AssetID metallicTex{0};
-        AssetID roughnessTex{0};
-        AssetID normalTex{0};
-        AssetID aoTex{0};
-        glm::vec3 albedo{1.0f, 1.0f, 1.0f};
-        float metallic{1.0f};
-        float roughness{1.0f};
-        float ao{1.0f};
-        bool metal{false};
-        bool useAlbedo{false};
-        bool useMetallic{false};
-        bool useRoughness{false};
-        bool useNormal{false};
-        bool useAO{false};
-    };
-    struct MaterialRaw {
-        uint32_t shaderID{0};
-        uint32_t textureID{0};
-        uint32_t metallicTexID{0};
-        uint32_t roughnessTexID{0};
-        uint32_t normalTexID{0};
-        uint32_t aoTexID{0};
-        glm::vec3 albedo{1.0f, 1.0f, 1.0f};
-        float metallic{1.0f};
-        float roughness{1.0f};
-        float ao{1.0f};
-        bool metal{false};
-        bool useAlbedo{false};
-        bool useMetallic{false};
-        bool useRoughness{false};
-        bool useNormal{false};
-        bool useAO{false};
-    };
-    struct MeshDrawable {
-        uint32_t drawableID{};
-        size_t indexCount{};
-        int instanceCount{1};
-    };
-
-    struct MeshData {
-        std::vector<uint32_t> indices{};
-        std::vector<Vertex> vertices{};
-    };
-
-    struct TextureData {
-        std::string path;
-        uint32_t id;
-    };
-    struct ShaderData {
-        std::string vertPath;
-        std::string fragPath;
-        std::string geoPath;
-        uint32_t id;
-    };
     class IResourceManager;
     class EventDispatcher;
 
-    using AssetVariant = std::variant<
-        MeshData,
-        MeshDrawable,
-        Material,
-        TextureData,
-        ShaderData
-    //Add to this for more asset types
-    >;
-
     using AssetMap = std::unordered_map<AssetID, AssetVariant>;
+    using NameMap = std::unordered_map<AssetID, std::string>;
 
     class AssetLibrary {
     public:
-        explicit AssetLibrary(IResourceManager* resourceManager, const std::string& resourceRoot);
+        explicit AssetLibrary(IResourceManager* resourceManager);
 
         template<typename T>
-        AssetID createAsset(T&& asset) {
+        AssetID createAsset(T&& asset, const std::string& name = "") {
             AssetID id;
-            if constexpr (std::is_same_v<T, TextureData>) {
-                asset.id = m_ResourceManager->createTexture(asset.path, false);
-            }
-            if constexpr (std::is_same_v<T, ShaderData>) {
-                asset.id = m_ResourceManager->createShader(asset.vertPath, asset.fragPath, asset.geoPath);
-            }
+            m_ResourceManager->create(id, asset);
             m_AssetMap.emplace(id, std::forward<T>(asset));
+            m_NameMap.emplace(id, name);
             return id;
         }
 
         template<typename T>
-        void addAsset(AssetID id, T&& asset) {
+        void addAsset(AssetID id, T&& asset, const std::string& name = "") {
             m_AssetMap[id] = std::forward<T>(asset);
+            m_NameMap.emplace(id, name);
         }
+
 
         template <typename T>
         T* get(AssetID id) {
             auto it = m_AssetMap.find(id);
             if (it == m_AssetMap.end()) {
-                if constexpr (std::is_same_v<T, TextureData>) {
-                    static TextureData defaultTexture{.id = 0};
-                    return &defaultTexture;
-                }
                 std::cout<<"Asset not found! returning nullptr: "<<id;
                 return nullptr;
             }
@@ -147,7 +75,15 @@ namespace ZEN {
 
         const AssetMap& getAll() const { return m_AssetMap; }
 
+        std::string getName(AssetID id) {
+            if(m_NameMap.contains(id)) {
+                return m_NameMap[id];
+            }
+            return "";
+        }
+
         MaterialRaw getMaterialRaw(const Material &material);
+        MaterialRaw getMaterialRaw(const AssetID &material);
 
         AssetID getCubeID() const { return m_CubeID; }
         AssetID getQuadID() const { return m_QuadID; }
@@ -157,6 +93,7 @@ namespace ZEN {
 
     private:
         AssetMap m_AssetMap{};
+        NameMap m_NameMap{};
         IResourceManager* m_ResourceManager{};
         AssetID m_CubeID{};
         AssetID m_QuadID{};
