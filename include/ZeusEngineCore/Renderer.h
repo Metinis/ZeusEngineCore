@@ -35,7 +35,7 @@ namespace ZEN {
 
 	class Renderer : public Layer {
 	public:
-		explicit Renderer(eRendererAPI api, const std::string& resourceRoot, GLFWwindow* window);
+		explicit Renderer();
 
 		template<typename T>
 		void writeToUBO(uint32_t uboID, T ubo) {

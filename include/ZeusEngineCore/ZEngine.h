@@ -14,10 +14,11 @@ namespace ZEN {
     class EventDispatcher;
     class ZEngine {
     public:
-        explicit ZEngine(eRendererAPI api, GLFWwindow* nativeWindow, const std::string& resourceRoot);
+        explicit ZEngine();
+        void init();
         ~ZEngine();
         void setAspectRatio(float aspectRatio);
-        Renderer& getRenderer(){return *m_Renderer;}
+        Renderer& getRenderer(){ return *m_Renderer; }
         ModelImporter& getModelImporter(){return *m_ModelImporter;}
         RenderSystem& getRenderSystem(){return *m_RenderSystem;}
         CameraSystem& getCameraSystem(){return *m_CameraSystem;}

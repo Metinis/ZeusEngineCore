@@ -1,22 +1,23 @@
 #include "ZeusEngineCore/Renderer.h"
 #define GLFW_INCLUDE_NONE
 #include "GLFW/glfw3.h"
+#include "ZeusEngineCore/Application.h"
 #include "ZeusEngineCore/InputEvents.h"
 
 using namespace ZEN;
 
 float xCorner = 0, yCorner = 0;
 
-Renderer::Renderer(eRendererAPI api, const std::string& resourceRoot, GLFWwindow* window) : m_Window(window){
-    m_Context = IContext::create(api, window);
-    m_ResourceManager = IResourceManager::create(api, resourceRoot);
+Renderer::Renderer() : m_Window(Application::get().getWindow()->getNativeWindow()){
+    m_Context = IContext::create();
+    m_ResourceManager = IResourceManager::create();
     m_ViewUBO.uboID = m_ResourceManager->createUBO(0);
     m_InstanceUBO.uboID = m_ResourceManager->createUBO(1);
     m_GlobalUBO.uboID = m_ResourceManager->createUBO(2);
     m_MaterialUBO.uboID = m_ResourceManager->createUBO(3);
 
     int fbWidth, fbHeight;
-    glfwGetFramebufferSize(window, &fbWidth, &fbHeight);
+    glfwGetFramebufferSize(m_Window, &fbWidth, &fbHeight);
     m_Width = fbWidth;
     m_Height = fbHeight;
     m_MainFBO.fboID = m_ResourceManager->createFBO();

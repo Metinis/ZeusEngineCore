@@ -2,8 +2,6 @@
 #include "GPUHandle.h"
 #include "Layer.h"
 #include "Renderer.h"
-#include "ZeusEngineCore/AssetLibrary.h"
-#include "ZeusEngineCore/AssetHandle.h"
 
 namespace ZEN {
 	class Scene;
@@ -13,7 +11,7 @@ namespace ZEN {
 	struct ToggleDrawNormalsEvent;
 	class RenderSystem : public Layer {
 	public:
-		explicit RenderSystem(Renderer *renderer, Scene *scene);
+		explicit RenderSystem();
 		void onUpdate(float deltaTime) override;
 		void onRender() override;
 		void onEvent(Event& event) override;

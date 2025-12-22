@@ -1,54 +1,6 @@
 #pragma once
-//#include <entt.hpp>
 
 namespace ZEN {
-    /*class EventDispatcher {
-    public:
-        explicit EventDispatcher() = default;
-
-        template<typename Event, typename C, void (C::*Handler)(Event&)>
-        void attach(C* instance) {
-            m_Handle.sink<Event>().template connect<Handler>(*instance);
-        }
-
-        template<typename Event, typename C, void (C::*Handler)(const Event&)>
-        void attach(C* instance) {
-            m_Handle.sink<Event>().template connect<Handler>(*instance);
-        }
-
-        template<typename T>
-        void trigger(T&& t) {
-            m_Handle.trigger<T>(std::forward<T>(t));
-        }
-
-    private:
-        entt::dispatcher m_Handle{};
-    };*/
-    /*
-    enum class EventType
-    {
-        None = 0,
-        WindowClose, WindowResize,
-        KeyPressed, KeyReleased,
-        MouseButtonPressed, MouseButtonReleased, MouseMoved, MouseScrolled,
-    };
-
-
-#define EVENT_CLASS_TYPE(type) static EventType GetStaticType() { return EventType::type; }\
-                                virtual EventType GetEventType() const override { return GetStaticType(); }\
-                                virtual const char* GetName() const override { return #type; }
-
-    class Event
-    {
-    public:
-        bool Handled = false;
-
-        virtual ~Event() {}
-        virtual EventType GetEventType() const = 0;
-        virtual const char* GetName() const = 0;
-        virtual std::string ToString() const { return GetName(); }
-    };
-     **/
 #define EVENT_CLASS_TYPE(type)  static EventType getStaticType() { return EventType::type; }\
                                 virtual EventType getEventType() const override { return getStaticType(); }\
                                 virtual const char* getName() const override { return #type; }

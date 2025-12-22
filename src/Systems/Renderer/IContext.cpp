@@ -1,11 +1,11 @@
 #include "IContext.h"
 #include "OpenGL/GLContext.h"
+#include "ZeusEngineCore/Application.h"
 
-std::unique_ptr<ZEN::IContext> ZEN::IContext::create(eRendererAPI api,
-    GLFWwindow* window) {
-    switch (api) {
+std::unique_ptr<ZEN::IContext> ZEN::IContext::create() {
+    switch (Application::get().getRendererAPI()) {
         case OpenGL:
-            return std::make_unique<GLContext>(window);
+            return std::make_unique<GLContext>();
 
         case Vulkan:
             return nullptr;

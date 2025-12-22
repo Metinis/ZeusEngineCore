@@ -20,7 +20,6 @@ namespace ZEN {
         virtual void setViewport(uint32_t width, uint32_t height) = 0;
 		virtual void setViewport(uint32_t xCorner, uint32_t yCorner, uint32_t width, uint32_t height) = 0;
         virtual void swapBuffers() = 0;
-        static std::unique_ptr<IContext> create(eRendererAPI api,
-            GLFWwindow* window);
+        static std::unique_ptr<IContext> create();
     };
 }

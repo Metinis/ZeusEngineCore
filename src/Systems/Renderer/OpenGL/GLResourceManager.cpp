@@ -6,6 +6,8 @@
 #include <stb_image/stb_image.h>
 #include <ZeusEngineCore/AssetLibrary.h>
 
+#include "ZeusEngineCore/Application.h"
+
 constexpr std::array uboBindings{
     "View",
     "Instances",
@@ -17,7 +19,7 @@ constexpr std::array textureBindings{
     "u_SpecularMap"
 };
 
-ZEN::GLResourceManager::GLResourceManager(const std::string& resourceRoot) {
+ZEN::GLResourceManager::GLResourceManager() {
     unsigned char whitePixel[4] = { 255, 255, 255, 255 };
     GLTexture tex{};
     glGenTextures(1, &tex.textureID);
@@ -28,7 +30,7 @@ ZEN::GLResourceManager::GLResourceManager(const std::string& resourceRoot) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     m_Textures[0] = tex;
 
-    m_ResourceRoot = resourceRoot;
+    m_ResourceRoot = Application::get().getResourceRoot();
 }
 ZEN::GLResourceManager::~GLResourceManager() {
     for (auto &[id, drawable]: m_Drawables) {

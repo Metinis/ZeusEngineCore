@@ -9,7 +9,7 @@
 
 using namespace ZEN;
 
-CameraSystem::CameraSystem(Scene* scene) : m_Scene(scene){
+CameraSystem::CameraSystem() : m_Scene(&Application::get().getEngine()->getScene()){
 
 
 }

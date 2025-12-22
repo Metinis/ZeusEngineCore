@@ -5,8 +5,11 @@
 
 using namespace ZEN;
 
-RenderSystem::RenderSystem(Renderer *renderer, Scene *scene) :
-m_Renderer(renderer), m_ResourceManager(renderer->getResourceManager()), m_Scene(scene) {
+RenderSystem::RenderSystem() :
+    m_Renderer(&Application::get().getEngine()->getRenderer()),
+    m_ResourceManager(Application::get().getEngine()->getRenderer().getResourceManager()),
+    m_Scene(&Application::get().getEngine()->getScene()) {
+
     auto library = Project::getActive()->getAssetLibrary();
 
     m_CubeDrawable = GPUHandle<GPUMesh>(library->getCubeID());

@@ -1,10 +1,11 @@
 #include "ZeusEngineCore/AssetLibrary.h"
 #include "IResourceManager.h"
+#include "ZeusEngineCore/Application.h"
 #include "ZeusEngineCore/Components.h"
 
 using namespace ZEN;
 
-AssetLibrary::AssetLibrary(IResourceManager *resourceManager) : m_ResourceManager(resourceManager) {
+AssetLibrary::AssetLibrary() : m_ResourceManager(Application::get().getEngine()->getRenderer().getResourceManager()) {
     m_DefaultMatID = createAsset<Material>(
         createDefaultMaterial("/shaders/pbr.vert", "/shaders/pbr.frag", ""),
         "Default");

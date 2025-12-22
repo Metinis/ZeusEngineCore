@@ -2,13 +2,14 @@
 #define GLFW_INCLUDE_NONE
 #include "GLFW/glfw3.h"
 #include <glad/glad.h>
+
+#include "ZeusEngineCore/Application.h"
 #include "ZeusEngineCore/AssetLibrary.h"
 
 using namespace ZEN;
 
-GLContext::GLContext(GLFWwindow* window)
-: m_WindowHandle(window){
-    glfwMakeContextCurrent(window);
+GLContext::GLContext() : m_WindowHandle(Application::get().getWindow()->getNativeWindow()){
+    glfwMakeContextCurrent(m_WindowHandle);
     glfwSwapInterval(1); // Enable VSync
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
         throw std::runtime_error("Failed to initialize GLAD");

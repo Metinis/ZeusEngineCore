@@ -19,7 +19,7 @@ namespace ZEN {
 
     class AssetLibrary {
     public:
-        explicit AssetLibrary(IResourceManager* resourceManager);
+        explicit AssetLibrary();
 
         template<typename T>
         AssetID createAsset(T&& asset, const std::string& name = "") {

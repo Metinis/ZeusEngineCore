@@ -7,8 +7,8 @@
 
 using namespace ZEN;
 
-ModelImporter::ModelImporter(Scene* scene, IResourceManager* resourceManager) : m_Scene(scene),
-m_ResourceManager(resourceManager){
+ModelImporter::ModelImporter() : m_Scene(&Application::get().getEngine()->getScene()),
+m_ResourceManager(Application::get().getEngine()->getRenderer().getResourceManager()) {
 
 }
 

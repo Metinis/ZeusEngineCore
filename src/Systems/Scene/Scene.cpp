@@ -24,7 +24,7 @@ void Scene::onMeshDrawableRemove(entt::registry& registry, entt::entity entity) 
     //m_Dispatcher->trigger<RemoveMeshDrawableEvent>(RemoveMeshDrawableEvent{Entity(&m_Registry, entity)});
 }
 
-void Scene::createDefaultScene(ZEngine* engine) {
+void Scene::createDefaultScene() {
     auto dirLightEntity = createEntity("Directional Light");
     DirectionalLightComp comp {
         .ambient = m_AmbientColor,

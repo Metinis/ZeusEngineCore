@@ -12,7 +12,7 @@ namespace ZEN {
 
     class ModelImporter {
     public:
-        explicit ModelImporter(Scene* scene, IResourceManager* resourceManager);
+        explicit ModelImporter();
         void loadModel(const std::string &name, const std::string& path);
         void loadTexture(const std::string &name, const std::string& path);
     private:

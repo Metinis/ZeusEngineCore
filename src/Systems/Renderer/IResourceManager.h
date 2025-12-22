@@ -203,7 +203,7 @@ namespace ZEN {
             return m_ResourceRoot + path;
         }
 
-        static std::unique_ptr<IResourceManager> create(eRendererAPI api, const std::string& resourceRoot);
+        static std::unique_ptr<IResourceManager> create();
     protected:
         std::string m_ResourceRoot{};
         GPUMap m_Mappings{};

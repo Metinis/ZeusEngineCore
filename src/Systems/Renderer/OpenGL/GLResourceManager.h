@@ -26,9 +26,9 @@ namespace ZEN {
         uint32_t handle;
     };
 
-    class GLResourceManager : public IResourceManager{
+    class GLResourceManager : public IResourceManager {
     public:
-        GLResourceManager(const std::string& resourceRoot);
+        GLResourceManager();
         ~GLResourceManager() override;
 
         uint32_t createMeshDrawable(const MeshData& mesh) override;

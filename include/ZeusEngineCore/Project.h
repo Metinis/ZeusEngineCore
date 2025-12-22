@@ -6,7 +6,7 @@ namespace ZEN {
     public:
         static Project* getActive() { return s_ActiveProject.get(); }
         static Project* createNew();
-        void init(IResourceManager* resourceManager);
+        void init();
         std::shared_ptr<AssetLibrary> getAssetLibrary() { return m_AssetLibrary; }
     private:
         std::shared_ptr<AssetLibrary> m_AssetLibrary;
