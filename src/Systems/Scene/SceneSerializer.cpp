@@ -60,7 +60,7 @@ static void serializeEntity(YAML::Emitter& out, Entity entity) {
     if(entity.hasComponent<ParentComp>()) {
         out << YAML::Key << "ParentComponent";
         out << YAML::BeginMap;
-        out << YAML::Key << "Entity" << YAML::Value << entity.getComponent<ParentComp>().parentID;
+        out << YAML::Key << "ParentID" << YAML::Value << entity.getComponent<ParentComp>().parentID;
         out << YAML::EndMap;
     }
     if(entity.hasComponent<SkyboxComp>()) {
