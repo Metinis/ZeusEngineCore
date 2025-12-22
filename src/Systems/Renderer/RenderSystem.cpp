@@ -210,89 +210,78 @@ void RenderSystem::renderDrawablesToShader(uint32_t shaderID) {
 void RenderSystem::initSkyboxAssets(SkyboxComp& comp) {
     auto library = Project::getActive()->getAssetLibrary();
     //load env map
-    //TODO do this automatically by specifying texture type and size
-
-
-    TextureData skyboxData {
-        .type = CubemapHDR,
-        .dimensions = glm::vec2(1024, 1024),
-        .mip = true,
-    };
-    auto skyboxTex = AssetHandle<TextureData>(std::move(skyboxData), "Skybox");
-
-    TextureData hdrData = {
-        .path = "/env-maps/christmas_photo_studio_04_4k.hdr",
-        .type = HDR,
-        .mip = false,
-        .absPath = false,
-    };
-    auto hdrTex = AssetHandle<TextureData>(std::move(hdrData), "HDRTex");
-
-    TextureData conData = {
-        .type = CubemapHDR,
-        .dimensions = glm::vec2(32, 32),
-        .mip = false,
-    };
-    auto conTex = AssetHandle<TextureData>(std::move(conData), "Convuluted Map");
-    m_IrradianceMapID = GPUHandle<GPUTexture>(conTex.id());
-
-    TextureData prefilterData = {
-        .type = Prefilter,
-        .dimensions = glm::vec2(128, 128),
-    };
-    auto prefilterTex = AssetHandle<TextureData>( std::move(prefilterData), "Prefilter Map");
-    m_PrefilterMapID = GPUHandle<GPUTexture>(prefilterTex.id());
-
-    TextureData brdfData = {
-        .type = BRDF,
-        .dimensions = glm::vec2(1024, 1024),
-    };
-    auto brdfTex = AssetHandle<TextureData>(std::move(brdfData),"BRDF Map");
-    m_BRDFLUTID = GPUHandle<GPUTexture>(brdfTex.id());
-
-    AssetHandle skyboxShader = ShaderData("/shaders/glskyboxHDR.vert", "/shaders/glskyboxHDR.frag", "");
-    Material skyboxMat {
-        .shader = skyboxShader.id(),
-        .texture = skyboxTex.id(),
-    };
-
-    AssetHandle eqToCubeMapShader = ShaderData("/shaders/eq-to-cubemap.vert", "/shaders/eq-to-cubemap.frag", "");
-    Material eqMap {
-        .shader = eqToCubeMapShader.id(),
-        .texture = hdrTex.id(),
-    };
-
-
-    AssetHandle irradianceShader = ShaderData("/shaders/irradiance-con.vert", "/shaders/irradiance-con.frag", "");
-    Material conMap {
-        .shader = irradianceShader.id(),
-        .texture = conTex.id(),
-    };
-
-
-    AssetHandle prefilterShader = ShaderData("/shaders/prefilter.vert", "/shaders/prefilter.frag", "");
-    Material prefilterMap {
-        .shader = prefilterShader.id(),
-        .texture = prefilterTex.id(),
-
-    };
-
-    AssetHandle brdfShader = ShaderData("/shaders/brdf-con.vert", "/shaders/brdf-con.frag", "");
-    Material brdfLUT {
-        .shader = brdfShader.id(),
-        .texture = brdfTex.id(),
-
-    };
-
-    SkyboxComp skybox {
-        .skyboxMat = AssetHandle<Material>( std::move(skyboxMat), "SkyboxMat"),
-        .eqMat = AssetHandle<Material>(std::move(eqMap), "EqMat"),
-        .conMat = AssetHandle<Material>( std::move(conMap), "ConMat"),
-        .prefilterMat = AssetHandle<Material>( std::move(prefilterMap), "PrefilterMat"),
-        .brdfLUTMat = AssetHandle<Material>( std::move(brdfLUT), "BRDFMat"),
-
-    };
-    comp = skybox;
+    if (!comp.skyboxMat.handle.get()) {
+        TextureData skyboxData {
+            .type = CubemapHDR,
+            .dimensions = glm::vec2(1024, 1024),
+            .mip = true,
+        };
+        auto skyboxTex = AssetHandle<TextureData>(std::move(skyboxData), "Skybox");
+        AssetHandle skyboxShader = ShaderData("/shaders/glskyboxHDR.vert", "/shaders/glskyboxHDR.frag", "");
+        Material skyboxMat {
+            .shader = skyboxShader.id(),
+            .texture = skyboxTex.id(),
+        };
+        comp.skyboxMat = {AssetHandle<Material>( std::move(skyboxMat), "SkyboxMat")};
+    }
+    if (!comp.eqMat.handle.get()) {
+        TextureData hdrData = {
+            .path = "/env-maps/christmas_photo_studio_04_4k.hdr",
+            .type = HDR,
+            .mip = false,
+            .absPath = false,
+        };
+        auto hdrTex = AssetHandle<TextureData>(std::move(hdrData), "HDRTex");
+        AssetHandle eqToCubeMapShader = ShaderData("/shaders/eq-to-cubemap.vert", "/shaders/eq-to-cubemap.frag", "");
+        Material eqMap {
+            .shader = eqToCubeMapShader.id(),
+            .texture = hdrTex.id(),
+        };
+        comp.eqMat = {AssetHandle<Material>(std::move(eqMap), "EqMat")};
+    }
+    if (!comp.conMat.handle.get()) {
+        TextureData conData = {
+            .type = CubemapHDR,
+            .dimensions = glm::vec2(32, 32),
+            .mip = false,
+        };
+        auto conTex = AssetHandle<TextureData>(std::move(conData), "Convuluted Map");
+        m_IrradianceMapID = GPUHandle<GPUTexture>(conTex.id());
+        AssetHandle irradianceShader = ShaderData("/shaders/irradiance-con.vert", "/shaders/irradiance-con.frag", "");
+        Material conMap {
+            .shader = irradianceShader.id(),
+            .texture = conTex.id(),
+        };
+        comp.conMat = {AssetHandle<Material>(std::move(conMap), "ConMat")};
+    }
+    if (!comp.prefilterMat.handle.get()) {
+        TextureData prefilterData = {
+            .type = Prefilter,
+            .dimensions = glm::vec2(128, 128),
+        };
+        auto prefilterTex = AssetHandle<TextureData>( std::move(prefilterData), "Prefilter Map");
+        m_PrefilterMapID = GPUHandle<GPUTexture>(prefilterTex.id());
+        AssetHandle prefilterShader = ShaderData("/shaders/prefilter.vert", "/shaders/prefilter.frag", "");
+        Material prefilterMap {
+            .shader = prefilterShader.id(),
+            .texture = prefilterTex.id(),
+        };
+        comp.prefilterMat = {AssetHandle<Material>(std::move(prefilterMap), "PrefilterMat")};
+    }
+    if (!comp.brdfLUTMat.handle.get()) {
+        TextureData brdfData = {
+            .type = BRDF,
+            .dimensions = glm::vec2(1024, 1024),
+        };
+        auto brdfTex = AssetHandle<TextureData>(std::move(brdfData),"BRDF Map");
+        m_BRDFLUTID = GPUHandle<GPUTexture>(brdfTex.id());
+        AssetHandle brdfShader = ShaderData("/shaders/brdf-con.vert", "/shaders/brdf-con.frag", "");
+        Material brdfLUT {
+            .shader = brdfShader.id(),
+            .texture = brdfTex.id(),
+        };
+        comp.brdfLUTMat = {AssetHandle<Material>(std::move(brdfLUT), "BRDFMat")};
+    }
 
 }
 void RenderSystem::renderSkybox(const glm::mat4& view, const glm::mat4& projection) {

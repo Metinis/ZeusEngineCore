@@ -44,7 +44,7 @@ namespace ZEN {
         T* get(AssetID id) {
             auto it = m_AssetMap.find(id);
             if (it == m_AssetMap.end()) {
-                std::cout<<"Asset not found! returning nullptr: "<<id;
+                //std::cout<<"Asset not found! returning nullptr: "<<id;
                 return nullptr;
             }
             return std::get_if<T>(&it->second);

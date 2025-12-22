@@ -72,7 +72,7 @@ static void serializeEntity(YAML::Emitter& out, Entity entity) {
         out << YAML::Key << "ConMaterialID" << YAML::Value << skyboxComp.conMat.handle.id();
         out << YAML::Key << "PrefilterMaterialID" << YAML::Value << skyboxComp.prefilterMat.handle.id();
         out << YAML::Key << "BRDFLUTMaterialID" << YAML::Value << skyboxComp.brdfLUTMat.handle.id();
-        out << YAML::Key << "EnvGenerated" << YAML::Value << skyboxComp.envGenerated;
+        out << YAML::Key << "EnvGenerated" << YAML::Value << false; //For now, just regenerate
         out << YAML::EndMap;
     }
 
