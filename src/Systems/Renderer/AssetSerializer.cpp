@@ -117,9 +117,11 @@ bool ZEN::AssetSerializer::deserialize(const std::string &path) {
             if(id && meshpath) {
                 MeshData meshdata{};
                 FileStreamReader reader(Application::get().getResourceRoot() + meshpath.as<std::string>());
-                reader.readVector(meshdata.indices);
-                reader.readVector(meshdata.vertices);
-                m_AssetLibrary->addAsset<MeshData>(id.as<uint64_t>(), std::move(meshdata), name.as<std::string>());}
+                if (reader.isStreamGood()) {
+                    reader.readVector(meshdata.indices);
+                    reader.readVector(meshdata.vertices);
+                    m_AssetLibrary->addAsset<MeshData>(id.as<uint64_t>(), std::move(meshdata), name.as<std::string>());}
+                }
         }
     }
     auto textures = data["Textures"];
@@ -162,7 +164,6 @@ bool ZEN::AssetSerializer::deserialize(const std::string &path) {
                 },
                 name.as<std::string>()
                 );
-                //todo load gpu asset
             }
         }
     }
