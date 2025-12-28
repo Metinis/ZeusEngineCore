@@ -4,7 +4,6 @@
 #include <ZeusEngineCore/AssetLibrary.h>
 #include <ZeusEngineCore/Scene.h>
 
-
 using namespace ZEN;
 
 ModelImporter::ModelImporter() :
@@ -93,14 +92,6 @@ UUID ModelImporter::processTextureType(const aiScene* aiscene, aiTextureType typ
         }
     }
 }
-/*void processAllTextureTypes(const aiMaterial* aiMaterial) {
-    for (int t = aiTextureType_NONE; t <= aiTextureType_UNKNOWN; ++t) {
-        aiTextureType type = static_cast<aiTextureType>(t);
-        unsigned int count = aiMaterial->GetTextureCount(type);
-
-        std::cout<<count<<"\n";
-    }
-}*/
 bool hasTextureType(aiTextureType type, const aiMaterial* aimaterial) {
     if (aimaterial->GetTextureCount(type) > 0) {
         return true;
@@ -110,7 +101,6 @@ bool hasTextureType(aiTextureType type, const aiMaterial* aimaterial) {
 void ModelImporter::processAiMesh(Entity& entity, aiMesh* aimesh,
                                   const aiScene* aiscene, const glm::mat4& transform) {
     MeshData mesh{};
-    //Material material{.shader = "Default"};
     for (uint32_t i{0}; i < aimesh->mNumVertices; ++i) {
         Vertex vertex{};
         vertex.Position = processMeshPos(aimesh->mVertices[i], transform);

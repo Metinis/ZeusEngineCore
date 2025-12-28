@@ -74,6 +74,9 @@ namespace ZEN {
 
         void remove(AssetID id) {
             m_AssetMap.erase(id);
+            if (m_ResourceManager->has(id)) {
+                m_ResourceManager->remove(id);
+            }
         }
 
         const AssetMap& getAll() const { return m_AssetMap; }
