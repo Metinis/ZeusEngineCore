@@ -7,6 +7,7 @@ Project* Project::createNew() {
     return s_ActiveProject.get();
 }
 
-void Project::init() {
+void Project::init(const std::string& projectRoot) {
     m_AssetLibrary = std::make_shared<AssetLibrary>();
+    m_ProjectRoot = projectRoot;
 }
