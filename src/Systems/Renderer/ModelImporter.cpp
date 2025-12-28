@@ -50,18 +50,15 @@ UUID ModelImporter::processTexturesEmbedded(const aiScene* aiscene, const aiStri
     unsigned int texIndex = std::atoi(texPath.C_Str() + 1);
     aiTexture* tex = aiscene->mTextures[texIndex];
 
-    //auto it = m_EmbeddedTextureCache.find(tex);
-    //uint32_t texID;
-    //if (it != m_EmbeddedTextureCache.end()) {
-    //    texID = it->second; // reuse
-    //} else {
-        //m_ModelLibrary->addTexture(tex->mFilename.data, texID);
+    auto it = m_EmbeddedTextureCache.find(tex);
+    if (it != m_EmbeddedTextureCache.end()) {
+        return it->second; // reuse
+    } else {
         auto texData = TextureData{.type = Texture2DAssimp, .aiTex = tex};
         auto id = m_AssetLibrary->createAsset(std::move(texData));
         m_EmbeddedTextureCache[tex] = id; // cache
         return id;
-    //}
-    //texture = tex->mFilename.data;
+    }
 }
 
 UUID ModelImporter::processTextureType(const aiScene* aiscene, aiTextureType type,
@@ -75,11 +72,10 @@ UUID ModelImporter::processTextureType(const aiScene* aiscene, aiTextureType typ
             return processTexturesEmbedded(aiscene, texPath);
         } else if (texPath.length > 0) {
             std::cout<<"Trying to load external file!\n";
-            uint32_t texID;
-            //auto it = m_ExternalTextureCache.find(texPath.C_Str());
-            //if (it != m_ExternalTextureCache.end()) {
-            //    texID = it->second;
-            //} else {
+            auto it = m_ExternalTextureCache.find(texPath.C_Str());
+            if (it != m_ExternalTextureCache.end()) {
+                return it->second;
+            } else {
                 TextureData texData {
                     .path = texPath.C_Str(),
                     .type = Texture2D,
@@ -87,11 +83,11 @@ UUID ModelImporter::processTextureType(const aiScene* aiscene, aiTextureType typ
                     .mip = false,
                     .absPath = true,
                 };
-                return m_AssetLibrary->createAsset(std::move(texData));
-                //m_ExternalTextureCache[texPath.C_Str()] = texID;
-            //}
-            //texture = texPath.C_Str();
-        }
+                auto texID = m_AssetLibrary->createAsset(std::move(texData));
+                m_ExternalTextureCache[texPath.C_Str()] = texID;
+                return texID;
+
+            }}
         else {
             std::cout<<"Warning! No texture path found!\n";
         }
@@ -135,12 +131,17 @@ void ModelImporter::processAiMesh(Entity& entity, aiMesh* aimesh,
     }
 
     Material material = *AssetHandle<Material>(m_AssetLibrary->getDefaultMaterialID()).get();
+    material.useAlbedo = true;
+    //material.useAO = true;
+    //material.useMetallic = true;
+    //material.useNormal = true;
+    //material.useRoughness = true;
     if (aimesh->mMaterialIndex >= 0) {
         const aiMaterial* aiMaterial = aiscene->mMaterials[aimesh->mMaterialIndex];
         material.texture = processTextureType(aiscene, aiTextureType_DIFFUSE, aiMaterial);
-        material.roughnessTex = processTextureType(aiscene, aiTextureType_DIFFUSE_ROUGHNESS, aiMaterial);
-        material.metallicTex = processTextureType(aiscene, aiTextureType_METALNESS, aiMaterial);
-        material.normalTex = processTextureType(aiscene, aiTextureType_NORMALS, aiMaterial);
+        //material.roughnessTex = processTextureType(aiscene, aiTextureType_DIFFUSE_ROUGHNESS, aiMaterial);
+        //material.metallicTex = processTextureType(aiscene, aiTextureType_METALNESS, aiMaterial);
+        //material.normalTex = processTextureType(aiscene, aiTextureType_NORMALS, aiMaterial);
     }
     auto matID = m_AssetLibrary->createAsset<Material>(std::move(material), aiscene->mMaterials[aimesh->mMaterialIndex]->GetName().C_Str());
     auto meshID = m_AssetLibrary->createAsset<MeshData>(std::move(mesh), aimesh->mName.C_Str());
