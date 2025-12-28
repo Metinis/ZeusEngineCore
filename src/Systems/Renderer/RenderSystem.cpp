@@ -226,7 +226,7 @@ void RenderSystem::initSkyboxAssets(SkyboxComp& comp) {
     }
     if (!comp.eqMat.handle.get()) {
         TextureData hdrData = {
-            .path = "/env-maps/christmas_photo_studio_04_4k.hdr",
+            .path = "/env-maps/HDR_029_Sky_Cloudy_Ref.hdr",
             .type = HDR,
             .mip = false,
             .absPath = false,

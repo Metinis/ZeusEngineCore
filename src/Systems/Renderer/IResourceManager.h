@@ -68,7 +68,7 @@ namespace ZEN {
                     m_Mappings.emplace(id, ret);
                     return ret;
                 }
-                else if(asset.type == Texture2DAssimp && asset.absPath) {
+                else if(asset.type == Texture2DAssimp) {
                     auto ret = GPUTexture {
                         .drawableID = createTextureAssimp(*asset.aiTex),
                         .type = asset.type,

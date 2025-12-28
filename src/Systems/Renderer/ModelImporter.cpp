@@ -50,18 +50,15 @@ UUID ModelImporter::processTexturesEmbedded(const aiScene* aiscene, const aiStri
     unsigned int texIndex = std::atoi(texPath.C_Str() + 1);
     aiTexture* tex = aiscene->mTextures[texIndex];
 
-    //auto it = m_EmbeddedTextureCache.find(tex);
-    //uint32_t texID;
-    //if (it != m_EmbeddedTextureCache.end()) {
-    //    texID = it->second; // reuse
-    //} else {
-        //m_ModelLibrary->addTexture(tex->mFilename.data, texID);
+    auto it = m_EmbeddedTextureCache.find(tex);
+    if (it != m_EmbeddedTextureCache.end()) {
+        return it->second; // reuse
+    } else {
         auto texData = TextureData{.type = Texture2DAssimp, .aiTex = tex};
         auto id = m_AssetLibrary->createAsset(std::move(texData));
         m_EmbeddedTextureCache[tex] = id; // cache
         return id;
-    //}
-    //texture = tex->mFilename.data;
+    }
 }
 
 UUID ModelImporter::processTextureType(const aiScene* aiscene, aiTextureType type,
@@ -75,11 +72,10 @@ UUID ModelImporter::processTextureType(const aiScene* aiscene, aiTextureType typ
             return processTexturesEmbedded(aiscene, texPath);
         } else if (texPath.length > 0) {
             std::cout<<"Trying to load external file!\n";
-            uint32_t texID;
-            //auto it = m_ExternalTextureCache.find(texPath.C_Str());
-            //if (it != m_ExternalTextureCache.end()) {
-            //    texID = it->second;
-            //} else {
+            auto it = m_ExternalTextureCache.find(texPath.C_Str());
+            if (it != m_ExternalTextureCache.end()) {
+                return it->second;
+            } else {
                 TextureData texData {
                     .path = texPath.C_Str(),
                     .type = Texture2D,
@@ -87,11 +83,11 @@ UUID ModelImporter::processTextureType(const aiScene* aiscene, aiTextureType typ
                     .mip = false,
                     .absPath = true,
                 };
-                return m_AssetLibrary->createAsset(std::move(texData));
-                //m_ExternalTextureCache[texPath.C_Str()] = texID;
-            //}
-            //texture = texPath.C_Str();
-        }
+                auto texID = m_AssetLibrary->createAsset(std::move(texData));
+                m_ExternalTextureCache[texPath.C_Str()] = texID;
+                return texID;
+
+            }}
         else {
             std::cout<<"Warning! No texture path found!\n";
         }
@@ -105,6 +101,12 @@ UUID ModelImporter::processTextureType(const aiScene* aiscene, aiTextureType typ
         std::cout<<count<<"\n";
     }
 }*/
+bool hasTextureType(aiTextureType type, const aiMaterial* aimaterial) {
+    if (aimaterial->GetTextureCount(type) > 0) {
+        return true;
+    }
+    return false;
+}
 void ModelImporter::processAiMesh(Entity& entity, aiMesh* aimesh,
                                   const aiScene* aiscene, const glm::mat4& transform) {
     MeshData mesh{};
@@ -137,10 +139,26 @@ void ModelImporter::processAiMesh(Entity& entity, aiMesh* aimesh,
     Material material = *AssetHandle<Material>(m_AssetLibrary->getDefaultMaterialID()).get();
     if (aimesh->mMaterialIndex >= 0) {
         const aiMaterial* aiMaterial = aiscene->mMaterials[aimesh->mMaterialIndex];
-        material.texture = processTextureType(aiscene, aiTextureType_DIFFUSE, aiMaterial);
-        material.roughnessTex = processTextureType(aiscene, aiTextureType_DIFFUSE_ROUGHNESS, aiMaterial);
-        material.metallicTex = processTextureType(aiscene, aiTextureType_METALNESS, aiMaterial);
-        material.normalTex = processTextureType(aiscene, aiTextureType_NORMALS, aiMaterial);
+        if (hasTextureType(aiTextureType_DIFFUSE, aiMaterial)) {
+            material.texture = processTextureType(aiscene, aiTextureType_DIFFUSE, aiMaterial);
+            material.useAlbedo = true;
+        }
+        if (hasTextureType(aiTextureType_DIFFUSE_ROUGHNESS, aiMaterial)) {
+            material.roughnessTex = processTextureType(aiscene, aiTextureType_DIFFUSE_ROUGHNESS, aiMaterial);
+            material.useRoughness = true;
+        }
+        if (hasTextureType(aiTextureType_METALNESS, aiMaterial)) {
+            material.metallicTex = processTextureType(aiscene, aiTextureType_METALNESS, aiMaterial);
+            material.useMetallic = true;
+        }
+        if (hasTextureType(aiTextureType_NORMALS, aiMaterial)) {
+            material.normalTex = processTextureType(aiscene, aiTextureType_NORMALS, aiMaterial);
+            material.useNormal = true;
+        }
+        if (hasTextureType(aiTextureType_AMBIENT_OCCLUSION, aiMaterial)) {
+            material.aoTex = processTextureType(aiscene, aiTextureType_AMBIENT_OCCLUSION, aiMaterial);
+            material.useAO = true;
+        }
     }
     auto matID = m_AssetLibrary->createAsset<Material>(std::move(material), aiscene->mMaterials[aimesh->mMaterialIndex]->GetName().C_Str());
     auto meshID = m_AssetLibrary->createAsset<MeshData>(std::move(mesh), aimesh->mName.C_Str());
@@ -172,8 +190,20 @@ void ModelImporter::processNode(aiNode* ainode, const aiScene* aiscene,
 void ModelImporter::loadModel(const std::string &name, const std::string &path) {
     Assimp::Importer import;
     import.SetPropertyFloat(AI_CONFIG_GLOBAL_SCALE_FACTOR_KEY, 1.0f); // cm → m
-    const aiScene* scene = import.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs |
-        aiProcess_EmbedTextures | aiProcess_CalcTangentSpace | aiProcess_GlobalScale);
+    bool isGLTF = path.ends_with(".gltf") || path.ends_with(".glb");
+
+    unsigned int flags =
+        aiProcess_Triangulate |
+        aiProcess_EmbedTextures |
+        aiProcess_CalcTangentSpace |
+        aiProcess_GlobalScale;
+
+    if (!isGLTF) {
+        flags |= aiProcess_FlipUVs;
+    }
+
+    const aiScene* scene = import.ReadFile(path, flags);
+
 
     if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
         std::cout << "ERROR::ASSIMP::" << import.GetErrorString() << std::endl;
@@ -183,6 +213,8 @@ void ModelImporter::loadModel(const std::string &name, const std::string &path) 
     glm::mat4 parentTransform(1.0f);
     Entity parent = m_Scene->createEntity(name);
     processNode(scene->mRootNode, scene, parentTransform, parent);
+    m_EmbeddedTextureCache.clear();
+    m_ExternalTextureCache.clear();
 }
 
 void ModelImporter::loadTexture(const std::string &name, const std::string &path) {
