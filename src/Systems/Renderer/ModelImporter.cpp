@@ -101,6 +101,12 @@ UUID ModelImporter::processTextureType(const aiScene* aiscene, aiTextureType typ
         std::cout<<count<<"\n";
     }
 }*/
+bool hasTextureType(aiTextureType type, const aiMaterial* aimaterial) {
+    if (aimaterial->GetTextureCount(type) > 0) {
+        return true;
+    }
+    return false;
+}
 void ModelImporter::processAiMesh(Entity& entity, aiMesh* aimesh,
                                   const aiScene* aiscene, const glm::mat4& transform) {
     MeshData mesh{};
@@ -131,17 +137,28 @@ void ModelImporter::processAiMesh(Entity& entity, aiMesh* aimesh,
     }
 
     Material material = *AssetHandle<Material>(m_AssetLibrary->getDefaultMaterialID()).get();
-    material.useAlbedo = true;
-    //material.useAO = true;
-    //material.useMetallic = true;
-    //material.useNormal = true;
-    //material.useRoughness = true;
     if (aimesh->mMaterialIndex >= 0) {
         const aiMaterial* aiMaterial = aiscene->mMaterials[aimesh->mMaterialIndex];
-        material.texture = processTextureType(aiscene, aiTextureType_DIFFUSE, aiMaterial);
-        //material.roughnessTex = processTextureType(aiscene, aiTextureType_DIFFUSE_ROUGHNESS, aiMaterial);
-        //material.metallicTex = processTextureType(aiscene, aiTextureType_METALNESS, aiMaterial);
-        //material.normalTex = processTextureType(aiscene, aiTextureType_NORMALS, aiMaterial);
+        if (hasTextureType(aiTextureType_DIFFUSE, aiMaterial)) {
+            material.texture = processTextureType(aiscene, aiTextureType_DIFFUSE, aiMaterial);
+            material.useAlbedo = true;
+        }
+        if (hasTextureType(aiTextureType_DIFFUSE_ROUGHNESS, aiMaterial)) {
+            material.roughnessTex = processTextureType(aiscene, aiTextureType_DIFFUSE_ROUGHNESS, aiMaterial);
+            material.useRoughness = true;
+        }
+        if (hasTextureType(aiTextureType_METALNESS, aiMaterial)) {
+            material.metallicTex = processTextureType(aiscene, aiTextureType_METALNESS, aiMaterial);
+            material.useMetallic = true;
+        }
+        if (hasTextureType(aiTextureType_NORMALS, aiMaterial)) {
+            material.normalTex = processTextureType(aiscene, aiTextureType_NORMALS, aiMaterial);
+            material.useNormal = true;
+        }
+        if (hasTextureType(aiTextureType_AMBIENT_OCCLUSION, aiMaterial)) {
+            material.aoTex = processTextureType(aiscene, aiTextureType_AMBIENT_OCCLUSION, aiMaterial);
+            material.useAO = true;
+        }
     }
     auto matID = m_AssetLibrary->createAsset<Material>(std::move(material), aiscene->mMaterials[aimesh->mMaterialIndex]->GetName().C_Str());
     auto meshID = m_AssetLibrary->createAsset<MeshData>(std::move(mesh), aimesh->mName.C_Str());
@@ -173,8 +190,20 @@ void ModelImporter::processNode(aiNode* ainode, const aiScene* aiscene,
 void ModelImporter::loadModel(const std::string &name, const std::string &path) {
     Assimp::Importer import;
     import.SetPropertyFloat(AI_CONFIG_GLOBAL_SCALE_FACTOR_KEY, 1.0f); // cm → m
-    const aiScene* scene = import.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs |
-        aiProcess_EmbedTextures | aiProcess_CalcTangentSpace | aiProcess_GlobalScale);
+    bool isGLTF = path.ends_with(".gltf") || path.ends_with(".glb");
+
+    unsigned int flags =
+        aiProcess_Triangulate |
+        aiProcess_EmbedTextures |
+        aiProcess_CalcTangentSpace |
+        aiProcess_GlobalScale;
+
+    if (!isGLTF) {
+        flags |= aiProcess_FlipUVs;
+    }
+
+    const aiScene* scene = import.ReadFile(path, flags);
+
 
     if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
         std::cout << "ERROR::ASSIMP::" << import.GetErrorString() << std::endl;
