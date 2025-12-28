@@ -213,6 +213,8 @@ void ModelImporter::loadModel(const std::string &name, const std::string &path) 
     glm::mat4 parentTransform(1.0f);
     Entity parent = m_Scene->createEntity(name);
     processNode(scene->mRootNode, scene, parentTransform, parent);
+    m_EmbeddedTextureCache.clear();
+    m_ExternalTextureCache.clear();
 }
 
 void ModelImporter::loadTexture(const std::string &name, const std::string &path) {
