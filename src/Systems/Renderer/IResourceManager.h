@@ -155,7 +155,7 @@ namespace ZEN {
                   static GPUTexture defaultTexture{.drawableID = 0};
                 return &defaultTexture;
                 }
-                std::cout<<"GPU Resource not found! returning nullptr: "<<id;
+                std::cout<<"GPU Resource not found! returning nullptr: "<<id<<"\n";
                 return nullptr;
             }
             return std::get_if<T>(&it->second);
@@ -166,6 +166,26 @@ namespace ZEN {
                 return false;
             }
             return true;
+        }
+        void remove(AssetID id) {
+            if (has(id)) {
+                GPUVariant asset = m_Mappings.at(id);
+                if (auto* a = std::get_if<GPUTexture>(&asset)) {
+                    deleteTexture(a->drawableID);
+                }
+                else if (auto* a = std::get_if<GPUShader>(&asset)) {
+                    deleteShader(a->drawableID);
+                }
+                else if (auto* a = std::get_if<GPUMesh>(&asset)) {
+                    deleteMeshDrawable(a->drawableID);
+                }
+                else {
+                    std::cout<<"Deletion for variant undefined!\n";
+                }
+                m_Mappings.erase(id);
+            } else {
+                std::cout<<"GPU Resource not found! failed to remove: "<<id<<"\n";
+            }
         }
 
         virtual ~IResourceManager() = default;
