@@ -92,7 +92,7 @@ bool SceneSerializer::serialize(const std::string &path) {
 
     out << YAML::EndSeq;
     out << YAML::EndMap;
-    std::ofstream fout(Application::get().getResourceRoot() + path);
+    std::ofstream fout(Project::getActive()->getActiveProjectRoot() + path);
     fout << out.c_str();
     return true;
 }
@@ -102,7 +102,7 @@ bool SceneSerializer::deserialize(const std::string &path) {
     YAML::Node data;
     try
     {
-        data = YAML::LoadFile(Application::get().getResourceRoot() + path);
+        data = YAML::LoadFile(Project::getActive()->getActiveProjectRoot() + path);
     }
     catch (YAML::ParserException e)
     {

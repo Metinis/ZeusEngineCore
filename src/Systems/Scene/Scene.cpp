@@ -9,7 +9,11 @@
 
 using namespace ZEN;
 
-Scene::Scene(){
+Scene::Scene() {
+}
+
+void Scene::onUpdate(float dt) {
+    m_SystemManager.updateAll(dt);
 }
 
 void Scene::onMeshCompRemove(entt::registry& registry, entt::entity entity) {

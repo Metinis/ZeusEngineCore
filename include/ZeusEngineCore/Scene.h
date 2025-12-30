@@ -2,6 +2,7 @@
 #include <entt/entt.hpp>
 
 #include "InputEvents.h"
+#include "scripting/SystemManager.h"
 #include "ZeusEngineCore/RenderSystem.h"
 #include "ZeusEngineCore/Entity.h"
 
@@ -14,10 +15,11 @@ namespace ZEN {
 	struct RemoveMaterialEvent;
 	struct RemoveTextureEvent;
 
-	class Scene : public Layer{
+	class Scene : public Layer {
 
 	public:
 		Scene();
+		void onUpdate(float dt) override;
 		void createDefaultScene();
 		Entity createEntity(const std::string& name = "");
 		Entity createEntity(const std::string& name, UUID id);
@@ -33,6 +35,7 @@ namespace ZEN {
 			);
 		}
 		void onEvent(Event& event) override;
+		SystemManager& getSystemManager() {return m_SystemManager;};
 
 		glm::vec3 getLightPos() {return m_LightPos;}
 		glm::vec3 getLightDir() {return m_LightDir;}
@@ -40,6 +43,7 @@ namespace ZEN {
 	private:
 		entt::registry m_Registry{};
 		AssetLibrary* m_ModelLibrary{};
+		SystemManager m_SystemManager{};
 		glm::vec3 m_LightPos{1.0f, 5.0f, 1.0f};
 		glm::vec3 m_LightDir{-0.2f, -1.0f, 0.3f};
 		glm::vec3 m_AmbientColor{0.01f, 0.01f, 0.01f};

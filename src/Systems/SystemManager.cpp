@@ -1,0 +1,81 @@
+#include "ZeusEngineCore/scripting/SystemManager.h"
+#include <vector>
+#include <iostream>
+
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <dlfcn.h>
+#endif
+
+using namespace ZEN;
+
+SystemManager::SystemManager() = default;
+
+SystemManager::~SystemManager() {
+    for (auto* s : m_Systems) {
+        s->onUnload();
+        delete s;
+    }
+#ifdef _WIN32
+    for (auto h : m_DllHandles)
+        FreeLibrary(h);
+#else
+    for (auto h : m_DllHandles)
+        dlclose(h);
+#endif
+}
+
+
+bool SystemManager::loadSystemDLL(const std::string& path, Scene* scene) {
+#ifdef _WIN32
+    HMODULE handle = LoadLibraryA(path.c_str());
+    if (!handle) {
+        std::cerr << "Failed to load DLL: " << path << "\n";
+        return false;
+    }
+    m_DllHandles.push_back(handle);
+    auto createFunc = reinterpret_cast<ISystem*(*)()>(GetProcAddress(handle, "createScriptSystem"));
+#else
+    void* handle = dlopen(path.c_str(), RTLD_LAZY);
+    if (!handle) {
+        std::cerr << "Failed to load DLL: " << path << " Error: " << dlerror() << "\n";
+        return false;
+    }
+    m_DllHandles.push_back(handle);
+    auto createFunc = reinterpret_cast<ISystem*(*)()>(dlsym(handle, "createScriptSystem"));
+#endif
+
+    if (!createFunc) {
+        std::cerr << "Failed to find createScriptSystem in: " << path << "\n";
+        return false;
+    }
+
+    ISystem* system = createFunc();
+    if (!system) {
+        std::cerr << "Failed to create system from DLL: " << path << "\n";
+        return false;
+    }
+
+    m_Systems.push_back(system);
+    system->onLoad(scene);
+    return true;
+}
+void SystemManager::updateAll(float dt) {
+    for (auto* s : m_Systems)
+        s->onUpdate(dt);
+}
+
+void SystemManager::loadAll(Scene* scene) {
+    for (auto* s : m_Systems)
+        s->onLoad(scene);
+}
+
+void SystemManager::unloadAll() {
+    for (auto* s : m_Systems)
+        s->onUnload();
+}
+
+void SystemManager::addSystem(ISystem* system) {
+    m_Systems.push_back(system);
+}
