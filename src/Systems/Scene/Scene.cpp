@@ -10,10 +10,13 @@
 using namespace ZEN;
 
 Scene::Scene() {
+
 }
 
 void Scene::onUpdate(float dt) {
-    m_SystemManager.updateAll(dt);
+    if (m_PlayMode) {
+        m_SystemManager.updateAll(dt);
+    }
 }
 
 void Scene::onMeshCompRemove(entt::registry& registry, entt::entity entity) {
@@ -46,20 +49,6 @@ void Scene::createDefaultScene() {
     auto skyboxEntity = createEntity("Skybox");
     skyboxEntity.addComponent<SkyboxComp>();
     skyboxEntity.addComponent<MeshComp>(AssetHandle<MeshData>(assetLibrary->getSkyboxID()));
-
-    /*
-    auto skyboxEntity = createEntity("Skybox");
-    SkyboxComp skyboxComp {
-        .skyboxMat.name = "Skybox",
-        .eqMat.name = "EqMap",
-        .conMat.name = "ConMap",
-        .prefilterMat.name = "PrefilterMap",
-        .brdfLUTMat.name = "brdfLUT"
-    };
-
-    skyboxEntity.addComponent<SkyboxComp>(skyboxComp);
-    skyboxEntity.addComponent<MeshComp>(MeshComp{.name = "Skybox"});*/
-
 }
 
 Entity Scene::createEntity(const std::string& name) {
@@ -118,12 +107,20 @@ void Scene::removeEntity(Entity entity) {
     m_Registry.destroy((entt::entity)entity);
 }
 
+
+
 void Scene::onEvent(Event &event) {
     EventDispatcher dispatcher(event);
 
     dispatcher.dispatch<RemoveResourceEvent>([this](RemoveResourceEvent& e) {return onRemoveResource(e); });
+    dispatcher.dispatch<RunPlayModeEvent>([this](RunPlayModeEvent& e) {return onPlayMode(e); });
 }
-
+bool Scene::onPlayMode(RunPlayModeEvent &e) {
+    m_PlayMode = e.getPlaying();
+    m_SystemManager.loadAllFromDirectory(Project::getActive()->getActiveProjectRoot() +
+        "assets/scripts/bin/", this);
+    return false;
+}
 
 Entity Scene::makeEntity(entt::entity entity) {
     return Entity{this, entity};

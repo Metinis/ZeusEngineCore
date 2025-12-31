@@ -12,7 +12,6 @@ ZEngine::ZEngine() {
 }
 
 void ZEngine::init() {
-    m_Scene = new Scene();
     m_Renderer = new Renderer();
     //load project root through dialogue
 
@@ -20,9 +19,8 @@ void ZEngine::init() {
     const char* defaultPath = nullptr;
     const char* folderPath = tinyfd_selectFolderDialog(title, defaultPath);
     Project::getActive()->init(folderPath);
-    m_Scene->getSystemManager().loadSystemDLL(Project::getActive()->getActiveProjectRoot() +
-        "assets/scripts/bin/libMovementSystemd.dylib", m_Scene);
 
+    m_Scene = new Scene();
     m_ModelImporter = std::make_unique<ModelImporter>();
     m_RenderSystem = new RenderSystem();
     m_CameraSystem = new CameraSystem();

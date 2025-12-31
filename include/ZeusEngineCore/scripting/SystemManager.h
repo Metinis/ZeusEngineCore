@@ -9,6 +9,7 @@ namespace ZEN {
         ~SystemManager();
 
         bool loadSystemDLL(const std::string& path, Scene* scene);
+        bool loadAllFromDirectory(const std::string& directory, Scene* scene);
 
         void updateAll(float dt);
         void loadAll(Scene* scene);

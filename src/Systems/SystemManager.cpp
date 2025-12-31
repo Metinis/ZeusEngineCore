@@ -25,6 +25,14 @@ SystemManager::~SystemManager() {
         dlclose(h);
 #endif
 }
+#if defined(_WIN32)
+constexpr const char* DYLIB_EXT = ".dll";
+#elif defined(__APPLE__)
+constexpr const char* DYLIB_EXT = ".dylib";
+#else
+constexpr const char* DYLIB_EXT = ".so";
+#endif
+
 
 
 bool SystemManager::loadSystemDLL(const std::string& path, Scene* scene) {
@@ -59,6 +67,29 @@ bool SystemManager::loadSystemDLL(const std::string& path, Scene* scene) {
 
     m_Systems.push_back(system);
     system->onLoad(scene);
+    return true;
+}
+bool SystemManager::loadAllFromDirectory(const std::string& directory, Scene* scene) {
+    if (!std::filesystem::exists(directory)) {
+        std::cerr << "Directory does not exist: " << directory << "\n";
+        return false;
+    }
+
+    for (const auto& entry : std::filesystem::directory_iterator(directory)) {
+        if (!entry.is_regular_file())
+            continue;
+
+        const auto& path = entry.path();
+        if (path.extension() != DYLIB_EXT)
+            continue;
+
+        std::cout << "Loading system: " << path << "\n";
+
+        if (!loadSystemDLL(path.string(), scene)) {
+            std::cerr << "Failed to load: " << path << "\n";
+        }
+    }
+
     return true;
 }
 void SystemManager::updateAll(float dt) {

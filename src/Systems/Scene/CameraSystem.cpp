@@ -15,6 +15,9 @@ CameraSystem::CameraSystem() : m_Scene(&Application::get().getEngine()->getScene
 }
 
 void CameraSystem::onUpdate(float deltaTime) {
+    if (m_PlayMode) {
+        return;
+    }
     auto view = m_Scene->getEntities<CameraComp>();
 
     for (auto entity : view) {
@@ -75,7 +78,12 @@ void CameraSystem::onEvent(Event &event) {
     dispatcher.dispatch<MouseButtonPressedEvent>([this](MouseButtonPressedEvent& e) {return onMouseButtonPressed(e); });
     dispatcher.dispatch<MouseButtonReleasedEvent>([this](MouseButtonReleasedEvent& e) {return onMouseButtonReleased(e); });
     dispatcher.dispatch<MouseMovedEvent>([this](MouseMovedEvent& e) {return onMouseMove(e); });
+    dispatcher.dispatch<RunPlayModeEvent>([this](RunPlayModeEvent& e) {return onPlayMode(e); });
 
+}
+
+bool CameraSystem::onPlayMode(RunPlayModeEvent &e) {
+    m_PlayMode = e.getPlaying();
 }
 
 bool CameraSystem::onKeyPressed(const KeyPressedEvent &e) {
