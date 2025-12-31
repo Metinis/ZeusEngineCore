@@ -4,6 +4,7 @@
 #include "ZeusEngineCore/ModelImporter.h"
 #include "ZeusEngineCore/Scene.h"
 #include "ZeusEngineCore/Application.h"
+#include <tinyfiledialogs.h>
 
 using namespace ZEN;
 ZEngine::ZEngine() {
@@ -11,9 +12,15 @@ ZEngine::ZEngine() {
 }
 
 void ZEngine::init() {
-    m_Scene = new Scene();
     m_Renderer = new Renderer();
-    Project::getActive()->init();
+    //load project root through dialogue
+
+    const char* title = "Select a project";
+    const char* defaultPath = nullptr;
+    const char* folderPath = tinyfd_selectFolderDialog(title, defaultPath);
+    Project::getActive()->init(folderPath);
+
+    m_Scene = new Scene();
     m_ModelImporter = std::make_unique<ModelImporter>();
     m_RenderSystem = new RenderSystem();
     m_CameraSystem = new CameraSystem();

@@ -2,6 +2,7 @@
 #include <entt/entt.hpp>
 
 #include "InputEvents.h"
+#include "scripting/SystemManager.h"
 #include "ZeusEngineCore/RenderSystem.h"
 #include "ZeusEngineCore/Entity.h"
 
@@ -14,10 +15,11 @@ namespace ZEN {
 	struct RemoveMaterialEvent;
 	struct RemoveTextureEvent;
 
-	class Scene : public Layer{
+	class Scene : public Layer {
 
 	public:
 		Scene();
+		void onUpdate(float dt) override;
 		void createDefaultScene();
 		Entity createEntity(const std::string& name = "");
 		Entity createEntity(const std::string& name, UUID id);
@@ -32,7 +34,9 @@ namespace ZEN {
 				[this](entt::entity entity) { return makeEntity(entity); }
 			);
 		}
+		bool onPlayMode(RunPlayModeEvent& e);
 		void onEvent(Event& event) override;
+		SystemManager& getSystemManager() {return m_SystemManager;};
 
 		glm::vec3 getLightPos() {return m_LightPos;}
 		glm::vec3 getLightDir() {return m_LightDir;}
@@ -40,24 +44,13 @@ namespace ZEN {
 	private:
 		entt::registry m_Registry{};
 		AssetLibrary* m_ModelLibrary{};
+		SystemManager m_SystemManager{};
 		glm::vec3 m_LightPos{1.0f, 5.0f, 1.0f};
 		glm::vec3 m_LightDir{-0.2f, -1.0f, 0.3f};
 		glm::vec3 m_AmbientColor{0.01f, 0.01f, 0.01f};
+		bool m_PlayMode{false};
 
 		Entity makeEntity(entt::entity entity);
-
-		/*
-		template<typename T>
-		void removeResource(const std::string& resourceName) {
-			auto view = getEntities<T>();
-            for (auto entity : view) {
-                if(entity.template getComponent<T>().name != resourceName) {
-                    continue;
-                }
-                entity.template removeComponent<T>();
-            }
-		}*/
-
 		bool onRemoveResource(RemoveResourceEvent& e);
 		void onMeshCompRemove(entt::registry& registry, entt::entity entity);
 		void onMeshDrawableRemove(entt::registry& registry, entt::entity entity);

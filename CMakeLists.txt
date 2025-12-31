@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.16)
 project(ZeusEngineCore LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 23)
@@ -7,7 +7,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/include/glfw glfw)
 
-add_library(ZeusEngineCore STATIC)
+add_library(ZeusEngineCore SHARED)
 
 target_compile_features(ZeusEngineCore PUBLIC cxx_std_23)
 
@@ -30,7 +30,7 @@ target_sources(imgui PRIVATE
 )
 
 target_link_libraries(imgui
-        PUBLIC
+        PRIVATE
         glfw
 )
 
@@ -78,8 +78,9 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(yaml-cpp)
 
 target_link_libraries(ZeusEngineCore
-        PUBLIC
+        PRIVATE
         glfw
+        PUBLIC
         assimp::assimp
         imgui
         yaml-cpp::yaml-cpp

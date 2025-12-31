@@ -16,8 +16,8 @@ bool ZEN::AssetSerializer::serialize(const std::string &path) {
 
     out << YAML::Key << "Meshes" << YAML::BeginSeq;
     for(auto& ID : m_AssetLibrary->getAllIDsOfType<MeshData>()) {
-        std::string localPath = std::format("/meshes/{}.bin", std::to_string(ID));
-        FileStreamWriter writer(Application::get().getResourceRoot() + localPath);
+        std::string localPath = std::format("assets/meshes/{}.bin", std::to_string(ID));
+        FileStreamWriter writer(Project::getActive()->getActiveProjectRoot() + localPath);
         writer.writeVector(m_AssetLibrary->get<MeshData>(ID)->indices);
         writer.writeVector(m_AssetLibrary->get<MeshData>(ID)->vertices);
 
@@ -88,7 +88,7 @@ bool ZEN::AssetSerializer::serialize(const std::string &path) {
 
     out << YAML::EndSeq;
     out << YAML::EndMap;
-    std::ofstream fout(Application::get().getResourceRoot() + path);
+    std::ofstream fout(Project::getActive()->getActiveProjectRoot() + path);
     fout << out.c_str();
     return true;
 }
@@ -98,7 +98,7 @@ bool ZEN::AssetSerializer::deserialize(const std::string &path) {
     YAML::Node data;
     try
     {
-        data = YAML::LoadFile(Application::get().getResourceRoot() + path);
+        data = YAML::LoadFile(Project::getActive()->getActiveProjectRoot() + path);
     }
     catch (YAML::ParserException e)
     {
@@ -116,7 +116,7 @@ bool ZEN::AssetSerializer::deserialize(const std::string &path) {
             auto meshpath = mesh["Path"];
             if(id && meshpath) {
                 MeshData meshdata{};
-                FileStreamReader reader(Application::get().getResourceRoot() + meshpath.as<std::string>());
+                FileStreamReader reader(Project::getActive()->getActiveProjectRoot() + meshpath.as<std::string>());
                 if (reader.isStreamGood()) {
                     reader.readVector(meshdata.indices);
                     reader.readVector(meshdata.vertices);

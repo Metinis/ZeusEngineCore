@@ -13,6 +13,7 @@ namespace ZEN {
         void onEvent(Event& event) override;
         void setAspectRatio(float aspectRatio) { m_Resized = true; m_AspectRatio = aspectRatio; }
     private:
+        bool onPlayMode(RunPlayModeEvent& e);
         bool onKeyPressed(const KeyPressedEvent& e);
         bool onKeyRepeat(const KeyPressedEvent& e);
         bool onKeyReleased(const KeyReleasedEvent& e);
@@ -27,6 +28,7 @@ namespace ZEN {
         double m_CursorPosLastY{};
         double m_CursorPosX{};
         double m_CursorPosY{};
+        bool m_PlayMode{false};
         bool m_Resized{true};
         bool m_PanelSelected{};
         bool m_CursorLocked{};
