@@ -3,9 +3,9 @@
 #include "ZeusEngineCore/Scene.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include <ZeusEngineCore/Application.h>
-
 #include "ZeusEngineCore/InputEvents.h"
-#include "GLFW/glfw3.h"
+#include "ZeusEngineCore/input/KeyCodes.h"
+#include "ZeusEngineCore/input/MouseCodes.h"
 
 using namespace ZEN;
 
@@ -32,16 +32,16 @@ void CameraSystem::onUpdate(float deltaTime) {
             glm::vec3 up = worldUp;
 
             glm::vec3 moveVec = {};
-            if (m_KeysDown.contains(GLFW_KEY_W)) moveVec += front;
-            if (m_KeysDown.contains(GLFW_KEY_S)) moveVec -= front;
-            if (m_KeysDown.contains(GLFW_KEY_A)) moveVec -= right;
-            if (m_KeysDown.contains(GLFW_KEY_D)) moveVec += right;
-            if (m_KeysDown.contains(GLFW_KEY_SPACE)) moveVec += up;
-            if (m_KeysDown.contains(GLFW_KEY_LEFT_SHIFT)) moveVec -= up;
+            if (m_KeysDown.contains(Key::W)) moveVec += front;
+            if (m_KeysDown.contains(Key::S)) moveVec -= front;
+            if (m_KeysDown.contains(Key::A)) moveVec -= right;
+            if (m_KeysDown.contains(Key::D)) moveVec += right;
+            if (m_KeysDown.contains(Key::Space)) moveVec += up;
+            if (m_KeysDown.contains(Key::LeftShift)) moveVec -= up;
 
             if (glm::length(moveVec) > 0.0f) {
                 glm::vec3 toMove = glm::normalize(moveVec) * deltaTime * m_MoveSpeed;
-                if(m_KeysDown.contains(GLFW_KEY_LEFT_CONTROL)) {
+                if(m_KeysDown.contains(Key::LeftControl)) {
                     toMove /= 4;
                 }
                 transform->localPosition += toMove;
@@ -101,7 +101,7 @@ bool CameraSystem::onKeyReleased(const KeyReleasedEvent &e) {
 }
 
 bool CameraSystem::onMouseButtonPressed(const MouseButtonPressedEvent &e) {
-    if(e.getKeyCode() == GLFW_MOUSE_BUTTON_RIGHT) {
+    if(e.getKeyCode() == Mouse::Button::ButtonRight && !m_PlayMode) {
         Application::get().getWindow()->setCursorLock(true, m_CursorPosX, m_CursorPosY);
         m_CursorLocked = true;
         m_CursorPosLastX = m_CursorPosX;
@@ -111,7 +111,7 @@ bool CameraSystem::onMouseButtonPressed(const MouseButtonPressedEvent &e) {
 }
 
 bool CameraSystem::onMouseButtonReleased(const MouseButtonReleasedEvent &e) {
-    if(e.getKeyCode() == GLFW_MOUSE_BUTTON_RIGHT) {
+    if(e.getKeyCode() == Mouse::Button::ButtonRight && !m_PlayMode) {
         Application::get().getWindow()->setCursorLock(false, m_CursorPosX, m_CursorPosY);
         m_CursorLocked = false;
     }
