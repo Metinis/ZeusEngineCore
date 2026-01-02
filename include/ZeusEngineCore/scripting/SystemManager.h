@@ -14,6 +14,7 @@ namespace ZEN {
         void updateAll(float dt);
         void loadAll(Scene* scene);
         void unloadAll();
+        void clearAll();
 
         void addSystem(ISystem* system);
     private:

@@ -2,6 +2,7 @@
 #include <entt/entt.hpp>
 
 #include "InputEvents.h"
+#include "scripting/CompRegistry.h"
 #include "scripting/SystemManager.h"
 #include "ZeusEngineCore/RenderSystem.h"
 #include "ZeusEngineCore/Entity.h"
@@ -34,9 +35,13 @@ namespace ZEN {
 				[this](entt::entity entity) { return makeEntity(entity); }
 			);
 		}
+		std::vector<Entity> getEntities(const std::string& name);
+
+
 		bool onPlayMode(RunPlayModeEvent& e);
 		void onEvent(Event& event) override;
-		SystemManager& getSystemManager() {return m_SystemManager;};
+		//todo move this out of scene, probably in project or as static singletons
+		SystemManager& getSystemManager() {return m_SystemManager;}
 
 		glm::vec3 getLightPos() {return m_LightPos;}
 		glm::vec3 getLightDir() {return m_LightDir;}

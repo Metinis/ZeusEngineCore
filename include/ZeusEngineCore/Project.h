@@ -8,7 +8,7 @@ namespace ZEN {
         static Project* createNew();
         void init(const std::string& projectRoot);
         std::shared_ptr<AssetLibrary> getAssetLibrary() { return m_AssetLibrary; }
-        std::string getActiveProjectRoot() const { return m_ProjectRoot; }
+        [[nodiscard]] std::string getActiveProjectRoot() const { return m_ProjectRoot; }
     private:
         std::string m_ProjectRoot{};
         std::shared_ptr<AssetLibrary> m_AssetLibrary;

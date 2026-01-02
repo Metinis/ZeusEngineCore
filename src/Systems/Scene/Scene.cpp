@@ -10,7 +10,8 @@
 using namespace ZEN;
 
 Scene::Scene() {
-
+    m_SystemManager.loadAllFromDirectory(Project::getActive()->getActiveProjectRoot() +
+        "assets/scripts/bin/", this);
 }
 
 void Scene::onUpdate(float dt) {
@@ -115,10 +116,28 @@ void Scene::onEvent(Event &event) {
     dispatcher.dispatch<RemoveResourceEvent>([this](RemoveResourceEvent& e) {return onRemoveResource(e); });
     dispatcher.dispatch<RunPlayModeEvent>([this](RunPlayModeEvent& e) {return onPlayMode(e); });
 }
+
+std::vector<Entity> Scene::getEntities(const std::string &name) {
+    auto entities = getEntities<ComponentInfo>();
+    std::vector<Entity> ret;
+    for (auto entity : entities) {
+        if (entity.getComponent<ComponentInfo>().name == name) {
+            ret.push_back(entity);
+        }
+    }
+    return ret;
+}
+
 bool Scene::onPlayMode(RunPlayModeEvent &e) {
     m_PlayMode = e.getPlaying();
-    m_SystemManager.loadAllFromDirectory(Project::getActive()->getActiveProjectRoot() +
-        "assets/scripts/bin/", this);
+    if (m_PlayMode) {
+        m_SystemManager.loadAll(this);
+
+    }
+    else {
+        m_SystemManager.unloadAll();
+    }
+
     return false;
 }
 
