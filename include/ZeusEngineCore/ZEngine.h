@@ -23,7 +23,8 @@ namespace ZEN {
         ModelImporter& getModelImporter(){return *m_ModelImporter;}
         RenderSystem& getRenderSystem(){return *m_RenderSystem;}
         CameraSystem& getCameraSystem(){return *m_CameraSystem;}
-        SystemManager& getSystemManager() {return m_SystemManager;}
+        SystemManager& getSystemManager() {return *m_SystemManager;}
+        CompRegistry& getCompRegistry(){return *m_CompRegistry;}
         Scene& getScene(){return *m_Scene;}
     private:
         //Core
@@ -37,7 +38,8 @@ namespace ZEN {
         RenderSystem* m_RenderSystem{};
         CameraSystem* m_CameraSystem{};
 
-        SystemManager m_SystemManager{};
+        std::unique_ptr<SystemManager> m_SystemManager{};
+        std::unique_ptr<CompRegistry> m_CompRegistry{};
 
         eRendererAPI m_API{};
 

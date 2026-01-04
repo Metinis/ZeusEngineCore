@@ -20,6 +20,9 @@ void ZEngine::init() {
     const char* folderPath = tinyfd_selectFolderDialog(title, defaultPath);
     Project::getActive()->init(folderPath);
 
+    m_SystemManager = std::make_unique<SystemManager>();
+    m_CompRegistry = std::make_unique<CompRegistry>();
+
     m_Scene = new Scene();
     m_ModelImporter = std::make_unique<ModelImporter>();
     m_RenderSystem = new RenderSystem();
