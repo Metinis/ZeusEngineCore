@@ -10,27 +10,16 @@
 using namespace ZEN;
 
 Scene::Scene() {
-    m_SystemManager.loadAllFromDirectory(Project::getActive()->getActiveProjectRoot() +
+    Application::get().getEngine()->getSystemManager().loadAllFromDirectory(Project::getActive()->getActiveProjectRoot() +
         "assets/scripts/bin/", this);
 }
 
 void Scene::onUpdate(float dt) {
     if (m_PlayMode) {
-        m_SystemManager.updateAll(dt);
+        Application::get().getEngine()->getSystemManager().updateAll(dt);
     }
 }
 
-void Scene::onMeshCompRemove(entt::registry& registry, entt::entity entity) {
-    //need to call render systems remove mesh comp somehow
-    //Application::get()
-    //m_Dispatcher->trigger<RemoveMeshCompEvent>(RemoveMeshCompEvent{Entity(&m_Registry, entity)});
-}
-
-void Scene::onMeshDrawableRemove(entt::registry& registry, entt::entity entity) {
-
-    //need to call render systems remove mesh drawable somehow
-    //m_Dispatcher->trigger<RemoveMeshDrawableEvent>(RemoveMeshDrawableEvent{Entity(&m_Registry, entity)});
-}
 
 void Scene::createDefaultScene() {
     auto dirLightEntity = createEntity("Directional Light");
@@ -102,28 +91,7 @@ Entity Scene::getEntity(UUID id) {
             return entity;
         }
     }
-}
-
-void* Scene::addRuntimeComponent(entt::entity entity, const ComponentInfo& compInfo) {
-    auto& entityMap = m_RuntimeComponents[entity];
-    auto& storage = entityMap[compInfo.name];
-    storage.buffer.resize(compInfo.size);
-    storage.info = &compInfo;
-    std::memset(storage.buffer.data(), 0, compInfo.size);
-    return storage.buffer.data();
-}
-
-RuntimeComponent* Scene::getRuntimeComponent(entt::entity entity, const std::string& compName) {
-    auto entityIt = m_RuntimeComponents.find(entity);
-    if (entityIt == m_RuntimeComponents.end()) return nullptr;
-    auto compIt = entityIt->second.find(compName);
-    if (compIt == entityIt->second.end()) return nullptr;
-    return &compIt->second;
-}
-
-void Scene::removeRuntimeComponent(entt::entity entity, const std::string &compName) {
-    auto& entityMap = m_RuntimeComponents[entity];
-    entityMap.erase(compName);
+    return Entity{};
 }
 
 void Scene::removeEntity(Entity entity) {
@@ -135,7 +103,6 @@ void Scene::removeEntity(Entity entity) {
 void Scene::onEvent(Event &event) {
     EventDispatcher dispatcher(event);
 
-    dispatcher.dispatch<RemoveResourceEvent>([this](RemoveResourceEvent& e) {return onRemoveResource(e); });
     dispatcher.dispatch<RunPlayModeEvent>([this](RunPlayModeEvent& e) {return onPlayMode(e); });
 }
 
@@ -144,7 +111,7 @@ std::vector<Entity> Scene::getEntities(const std::string &name) {
 
     for (auto& [entity, comps] : m_RuntimeComponents) {
         if (comps.contains(name)) {
-            result.emplace_back(this, entity);
+            result.emplace_back(entity);
         }
     }
 
@@ -154,11 +121,11 @@ std::vector<Entity> Scene::getEntities(const std::string &name) {
 bool Scene::onPlayMode(RunPlayModeEvent &e) {
     m_PlayMode = e.getPlaying();
     if (m_PlayMode) {
-        m_SystemManager.loadAll(this);
+        Application::get().getEngine()->getSystemManager().loadAll(this);
 
     }
     else {
-        m_SystemManager.unloadAll();
+        Application::get().getEngine()->getSystemManager().unloadAll();
     }
 
     return false;
@@ -168,33 +135,3 @@ Entity Scene::makeEntity(entt::entity entity) {
     return Entity{this, entity};
 }
 
-bool Scene::onRemoveResource(RemoveResourceEvent &e) {
-    switch(e.getResourceType()) {
-        case Resources::MeshDrawable: {
-            //todo cleanup gpu resource
-            //removeResource<MeshDrawableComp>(e.getResourceName());
-            return true;
-        }
-
-        case Resources::MeshData: {
-            //removeResource<MeshComp>(e.getResourceName());
-            return true;
-        }
-
-        case Resources::Material: {
-            //todo cleanup shader resources
-            //removeResource<MaterialComp>(e.getResourceName());
-            return true;
-        }
-
-        case Resources::Texture: {
-            //todo cleanup textures
-            break;
-        }
-        default: {
-            std::cout<<"Resource type undefined!"<<"\n";
-            return false;
-        }
-    }
-    return false;
-}

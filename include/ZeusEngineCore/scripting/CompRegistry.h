@@ -73,27 +73,31 @@ static Type##_Registrar s_##Type##_registrar;        \
     struct RuntimeComponent {
         std::vector<uint8_t> buffer;
         const ComponentInfo *info;
+
+        void* getFieldPtr(const std::string_view name) {
+            for (const auto &field: info->fields) {
+                if (std::strcmp(field.name, name.data()) == 0) {
+                    return buffer.data() + field.offset;
+                }
+            }
+            return nullptr;
+        }
+        template<typename T>
+        T &getField(const char *fieldName) {
+            void *ptr = getFieldPtr(fieldName);
+            ENTT_ASSERT(ptr, "Field not found");
+            return *reinterpret_cast<T *>(ptr);
+        }
     };
 
-    inline void *getFieldPtr(RuntimeComponent &comp, const char *fieldName) {
-        for (const auto &field: comp.info->fields) {
-            if (std::strcmp(field.name, fieldName) == 0) {
-                return comp.buffer.data() + field.offset;
-            }
-        }
-        return nullptr;
-    }
 
-    template<typename T>
-    inline T &getField(RuntimeComponent &comp, const char *fieldName) {
-        void *ptr = getFieldPtr(comp, fieldName);
-        ENTT_ASSERT(ptr, "Field not found");
-        return *reinterpret_cast<T *>(ptr);
-    }
-#define ZEN_GET(COMP, ENTITY, FIELD) \
-m_Scene->getRuntimeField<decltype(COMP::FIELD)>(ENTITY, #COMP, #FIELD)
+#define ZEN_GET_ENTITIES(COMP) \
+m_Scene->getEntities(#COMP)
 
-#define ZEN_SET(COMP, ENTITY, FIELD, VALUE) \
+#define ZEN_GET_FIELD(COMP, ENTITY, FIELD) \
+ENTITY.getRuntimeField<decltype(COMP::FIELD)>(#COMP, #FIELD)
+
+#define ZEN_SET_FIELD(COMP, ENTITY, FIELD, VALUE) \
 (ZEN_GET(COMP, ENTITY, FIELD) = (VALUE))
 
     class CompRegistry {

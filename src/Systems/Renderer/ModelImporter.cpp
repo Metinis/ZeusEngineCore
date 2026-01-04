@@ -91,6 +91,7 @@ UUID ModelImporter::processTextureType(const aiScene* aiscene, aiTextureType typ
             std::cout<<"Warning! No texture path found!\n";
         }
     }
+    return 0;
 }
 bool hasTextureType(aiTextureType type, const aiMaterial* aimaterial) {
     if (aimaterial->GetTextureCount(type) > 0) {

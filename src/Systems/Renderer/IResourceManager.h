@@ -146,6 +146,7 @@ namespace ZEN {
                 m_Mappings.emplace(id, ret);
                 return ret;
             }
+            return std::nullopt;
         }
         template <typename T>
         T* get(AssetID id) {

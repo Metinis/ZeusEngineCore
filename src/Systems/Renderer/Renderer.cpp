@@ -234,6 +234,6 @@ void Renderer::setSize(float width, float height) {
 
 
 void* Renderer::getColorTextureHandle() {
-    return (void*)m_ResourceManager->getTexture(m_ColorTex.textureID);
+    return reinterpret_cast<void*>(static_cast<uintptr_t>(m_ResourceManager->getTexture(m_ColorTex.textureID)));
 }
 

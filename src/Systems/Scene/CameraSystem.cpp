@@ -84,6 +84,7 @@ void CameraSystem::onEvent(Event &event) {
 
 bool CameraSystem::onPlayMode(RunPlayModeEvent &e) {
     m_PlayMode = e.getPlaying();
+    return false;
 }
 
 bool CameraSystem::onKeyPressed(const KeyPressedEvent &e) {
