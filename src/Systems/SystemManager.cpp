@@ -25,7 +25,7 @@ constexpr const char* DYLIB_EXT = ".so";
 
 
 
-bool SystemManager::loadSystemDLL(const std::string& path, Scene* scene) {
+bool SystemManager::loadSystemDLL(const std::string& path) {
 #ifdef _WIN32
     HMODULE handle = LoadLibraryA(path.c_str());
     if (!handle) {
@@ -74,7 +74,7 @@ bool SystemManager::loadAllFromDirectory(const std::string& directory, Scene* sc
 
         std::cout << "Loading system: " << path << "\n";
 
-        if (!loadSystemDLL(path.string(), scene)) {
+        if (!loadSystemDLL(path.string())) {
             std::cerr << "Failed to load: " << path << "\n";
         }
     }

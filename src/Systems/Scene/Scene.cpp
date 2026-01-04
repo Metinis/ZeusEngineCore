@@ -104,6 +104,23 @@ Entity Scene::getEntity(UUID id) {
     }
 }
 
+void* Scene::addRuntimeComponent(entt::entity entity, const ComponentInfo& compInfo) {
+    auto& entityMap = m_RuntimeComponents[entity];
+    auto& storage = entityMap[compInfo.name];
+    storage.buffer.resize(compInfo.size);
+    storage.info = &compInfo;
+    std::memset(storage.buffer.data(), 0, compInfo.size);
+    return storage.buffer.data();
+}
+
+RuntimeComponent* Scene::getRuntimeComponent(entt::entity entity, const std::string& compName) {
+    auto entityIt = m_RuntimeComponents.find(entity);
+    if (entityIt == m_RuntimeComponents.end()) return nullptr;
+    auto compIt = entityIt->second.find(compName);
+    if (compIt == entityIt->second.end()) return nullptr;
+    return &compIt->second;
+}
+
 void Scene::removeEntity(Entity entity) {
     m_Registry.destroy((entt::entity)entity);
 }
@@ -118,14 +135,15 @@ void Scene::onEvent(Event &event) {
 }
 
 std::vector<Entity> Scene::getEntities(const std::string &name) {
-    auto entities = getEntities<ComponentInfo>();
-    std::vector<Entity> ret;
-    for (auto entity : entities) {
-        if (entity.getComponent<ComponentInfo>().name == name) {
-            ret.push_back(entity);
+    std::vector<Entity> result;
+
+    for (auto& [entity, comps] : m_RuntimeComponents) {
+        if (comps.contains(name)) {
+            result.emplace_back(this, entity);
         }
     }
-    return ret;
+
+    return result;
 }
 
 bool Scene::onPlayMode(RunPlayModeEvent &e) {

@@ -16,6 +16,9 @@ namespace ZEN {
 	struct RemoveMaterialEvent;
 	struct RemoveTextureEvent;
 
+
+
+
 	class Scene : public Layer {
 
 	public:
@@ -36,6 +39,20 @@ namespace ZEN {
 			);
 		}
 		std::vector<Entity> getEntities(const std::string& name);
+		void* addRuntimeComponent(entt::entity entity, const ComponentInfo& compInfo);
+		RuntimeComponent* getRuntimeComponent(entt::entity entity, const std::string& compName);
+
+		RuntimeComponent* getRuntimeComponent(Entity entity, const std::string& compName) {
+			return getRuntimeComponent(static_cast<entt::entity>(entity), compName);
+		}
+
+		template<typename T>
+		T& getRuntimeField(Entity entity, const char* comp, const char* field) {
+			auto* rc = getRuntimeComponent(entity, comp);
+			ENTT_ASSERT(rc, "Runtime component not found");
+			return getField<T>(*rc, field);
+		}
+
 
 
 		bool onPlayMode(RunPlayModeEvent& e);
@@ -48,6 +65,7 @@ namespace ZEN {
 		glm::vec3 getAmbientColor() {return m_AmbientColor;}
 	private:
 		entt::registry m_Registry{};
+		std::unordered_map<entt::entity, std::unordered_map<std::string, RuntimeComponent>> m_RuntimeComponents;
 		AssetLibrary* m_ModelLibrary{};
 		SystemManager m_SystemManager{};
 		glm::vec3 m_LightPos{1.0f, 5.0f, 1.0f};
