@@ -1,12 +1,10 @@
 #pragma once
 #include <entt/entt.hpp>
-
 #include "InputEvents.h"
 #include "scripting/CompRegistry.h"
 #include "scripting/SystemManager.h"
 #include "ZeusEngineCore/RenderSystem.h"
 #include "ZeusEngineCore/Entity.h"
-
 
 namespace ZEN {
 	class AssetLibrary;
@@ -15,9 +13,6 @@ namespace ZEN {
 	struct RemoveMeshEvent;
 	struct RemoveMaterialEvent;
 	struct RemoveTextureEvent;
-
-
-
 
 	class Scene : public Layer {
 
@@ -53,24 +48,15 @@ namespace ZEN {
 			return getField<T>(*rc, field);
 		}
 
-
-
 		bool onPlayMode(RunPlayModeEvent& e);
 		void onEvent(Event& event) override;
 		//todo move this out of scene, probably in project or as static singletons
 		SystemManager& getSystemManager() {return m_SystemManager;}
-
-		glm::vec3 getLightPos() {return m_LightPos;}
-		glm::vec3 getLightDir() {return m_LightDir;}
-		glm::vec3 getAmbientColor() {return m_AmbientColor;}
 	private:
 		entt::registry m_Registry{};
 		std::unordered_map<entt::entity, std::unordered_map<std::string, RuntimeComponent>> m_RuntimeComponents;
 		AssetLibrary* m_ModelLibrary{};
 		SystemManager m_SystemManager{};
-		glm::vec3 m_LightPos{1.0f, 5.0f, 1.0f};
-		glm::vec3 m_LightDir{-0.2f, -1.0f, 0.3f};
-		glm::vec3 m_AmbientColor{0.01f, 0.01f, 0.01f};
 		bool m_PlayMode{false};
 
 		Entity makeEntity(entt::entity entity);

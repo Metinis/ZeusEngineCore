@@ -35,7 +35,7 @@ void Scene::onMeshDrawableRemove(entt::registry& registry, entt::entity entity) 
 void Scene::createDefaultScene() {
     auto dirLightEntity = createEntity("Directional Light");
     DirectionalLightComp comp {
-        .ambient = m_AmbientColor,
+        .ambient = {0.1f, 0.1f, 0.1f},
         .isPrimary = true,
     };
     dirLightEntity.addComponent<DirectionalLightComp>(comp);
