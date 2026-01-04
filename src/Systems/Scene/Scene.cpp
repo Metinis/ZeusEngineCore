@@ -121,6 +121,11 @@ RuntimeComponent* Scene::getRuntimeComponent(entt::entity entity, const std::str
     return &compIt->second;
 }
 
+void Scene::removeRuntimeComponent(entt::entity entity, const std::string &compName) {
+    auto& entityMap = m_RuntimeComponents[entity];
+    entityMap.erase(compName);
+}
+
 void Scene::removeEntity(Entity entity) {
     m_Registry.destroy((entt::entity)entity);
 }

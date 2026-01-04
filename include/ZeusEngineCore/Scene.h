@@ -40,6 +40,10 @@ namespace ZEN {
 		RuntimeComponent* getRuntimeComponent(Entity entity, const std::string& compName) {
 			return getRuntimeComponent(static_cast<entt::entity>(entity), compName);
 		}
+		void removeRuntimeComponent(entt::entity entity, const std::string& compName);
+		void removeRuntimeComponent(Entity entity, const std::string& compName) {
+			removeRuntimeComponent(static_cast<entt::entity>(entity), compName);
+		}
 
 		template<typename T>
 		T& getRuntimeField(Entity entity, const char* comp, const char* field) {
