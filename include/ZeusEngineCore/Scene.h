@@ -18,11 +18,13 @@ namespace ZEN {
 
 	public:
 		Scene();
+		~Scene();
 		void onUpdate(float dt) override;
 		void createDefaultScene();
 		Entity createEntity(const std::string& name = "");
 		Entity createEntity(const std::string& name, UUID id);
 		Entity getEntity(UUID id);
+		bool isDescendantOf(Entity parent, Entity possibleChild);
 		void removeEntity(Entity entity);
 
 		template<typename ...Args>
@@ -45,6 +47,7 @@ namespace ZEN {
 		AssetLibrary* m_ModelLibrary{};
 
 		bool m_PlayMode{false};
+		bool m_LoadedScene{false};
 
 		Entity makeEntity(entt::entity entity);
 

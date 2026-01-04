@@ -1,6 +1,5 @@
 #pragma once
 #include <vector>
-#include "entt.hpp"
 #include "RuntimeComp.h"
 
 namespace ZEN {

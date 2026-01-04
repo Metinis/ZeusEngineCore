@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+#include <entt/entt.hpp>
 
 namespace ZEN {
     #ifdef _WIN32
@@ -96,6 +97,10 @@ m_Scene->getEntities(#COMP)
 #define ZEN_GET_FIELD(COMP, ENTITY, FIELD) \
 ENTITY.getRuntimeField<decltype(COMP::FIELD)>(#COMP, #FIELD)
 
+#define ZEN_GET_FIELD_S(COMP, ENTITY, FIELD) \
+ENTITY.getRuntimeField<decltype(COMP::FIELD)>(COMP, #FIELD)
+
 #define ZEN_SET_FIELD(COMP, ENTITY, FIELD, VALUE) \
 (ZEN_GET(COMP, ENTITY, FIELD) = (VALUE))
 }
+

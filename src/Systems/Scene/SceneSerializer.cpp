@@ -47,6 +47,16 @@ static void serializeEntity(YAML::Emitter& out, Entity entity) {
         out << YAML::Key << "isPrimary" << YAML::Value << entity.getComponent<DirectionalLightComp>().isPrimary;
         out << YAML::EndMap;
     }
+    if(entity.hasComponent<SceneCameraComp>()) {
+        out << YAML::Key << "SceneCameraComponent";
+        out << YAML::BeginMap;
+        out << YAML::Key << "Aspect" << YAML::Value << entity.getComponent<SceneCameraComp>().aspect;
+        out << YAML::Key << "Fov" << YAML::Value << entity.getComponent<SceneCameraComp>().fov;
+        out << YAML::Key << "Near" << YAML::Value << entity.getComponent<SceneCameraComp>().near;
+        out << YAML::Key << "Far" << YAML::Value << entity.getComponent<SceneCameraComp>().far;
+        //out << YAML::Key << "isPrimary" << YAML::Value << entity.getComponent<SceneCameraComp>().isPrimary;
+        out << YAML::EndMap;
+    }
     if(entity.hasComponent<CameraComp>()) {
         out << YAML::Key << "CameraComponent";
         out << YAML::BeginMap;
@@ -75,6 +85,30 @@ static void serializeEntity(YAML::Emitter& out, Entity entity) {
         out << YAML::Key << "EnvGenerated" << YAML::Value << false; //For now, just regenerate
         out << YAML::EndMap;
     }
+    auto& runtimeCompMap = Application::get().getEngine()->getCompRegistry().getComponents();
+
+    out << YAML::Key << "RuntimeComponents";
+    out << YAML::BeginMap;
+
+    for (auto& runtimeComp : runtimeCompMap) {
+        if (entity.hasRuntimeComponent(runtimeComp.name)) {
+            out << YAML::Key << runtimeComp.name;
+            out << YAML::BeginMap;
+
+            for (auto& field : runtimeComp.fields) {
+                if (field.type == FieldType::Float)
+                    out << YAML::Key << field.name << YAML::Value << entity.getRuntimeField<float>(runtimeComp.name, field.name);
+                else if (field.type == FieldType::Bool)
+                    out << YAML::Key << field.name << YAML::Value << entity.getRuntimeField<bool>(runtimeComp.name, field.name);
+                else if (field.type == FieldType::Int)
+                    out << YAML::Key << field.name << YAML::Value << entity.getRuntimeField<int>(runtimeComp.name, field.name);
+            }
+
+            out << YAML::EndMap;
+        }
+    }
+
+    out << YAML::EndMap;
 
     out << YAML::EndMap;
 }
@@ -104,7 +138,7 @@ bool SceneSerializer::deserialize(const std::string &path) {
     {
         data = YAML::LoadFile(Project::getActive()->getActiveProjectRoot() + path);
     }
-    catch (YAML::ParserException e)
+    catch (YAML::Exception& e)
     {
         return false;
     }
@@ -154,6 +188,18 @@ bool SceneSerializer::deserialize(const std::string &path) {
                 };
                 entityInst.addComponent<DirectionalLightComp>(comp);
             }
+            auto sceneCamComp = entity["SceneCameraComponent"];
+            if(sceneCamComp) {
+                SceneCameraComp comp = {
+                    //.projection = glm::perspective(comp.fov, comp.aspect, comp.near, comp.far),
+                    .aspect = sceneCamComp["Aspect"].as<float>(),
+                    .fov = sceneCamComp["Fov"].as<float>(),
+                    .near = sceneCamComp["Near"].as<float>(),
+                    .far = sceneCamComp["Far"].as<float>(),
+                    //.isPrimary = camComp["isPrimary"].as<bool>(),
+                };
+                entityInst.addComponent<SceneCameraComp>(comp);
+            }
             auto camComp = entity["CameraComponent"];
             if(camComp) {
                 CameraComp comp = {
@@ -185,6 +231,40 @@ bool SceneSerializer::deserialize(const std::string &path) {
                 };
                 entityInst.addComponent<SkyboxComp>(comp);
             }
+            auto runtimeComps = entity["RuntimeComponents"];
+            if (runtimeComps && runtimeComps.IsMap()) {
+                for (auto it = runtimeComps.begin(); it != runtimeComps.end(); ++it) {
+                    const auto& compName = it->first.as<std::string>();
+                    const auto& compNode = it->second;
+
+                    if (!compNode.IsMap()) continue;
+
+                    for (const auto& comp : Application::get().getEngine()->getCompRegistry().getComponents()) {
+                        if (comp.name != compName) continue;
+
+                        entityInst.addRuntimeComponent(comp);
+                        auto c = entityInst.getRuntimeComponent(comp.name);
+
+                        for (const auto& field : comp.fields) {
+                            if (!compNode[field.name]) continue;
+
+                            void* ptr = c->getFieldPtr(field.name);
+                            switch (field.type) {
+                                case FieldType::Float:
+                                    *reinterpret_cast<float*>(ptr) = compNode[field.name].as<float>();
+                                    break;
+                                case FieldType::Bool:
+                                    *reinterpret_cast<bool*>(ptr) = compNode[field.name].as<bool>();
+                                    break;
+                                case FieldType::Int:
+                                    *reinterpret_cast<int*>(ptr) = compNode[field.name].as<int>();
+                                    break;
+                            }
+                        }
+                    }
+                }
+            }
+
         }
     }
     return true;

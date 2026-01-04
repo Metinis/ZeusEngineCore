@@ -12,6 +12,16 @@ using namespace ZEN;
 Scene::Scene() {
     Application::get().getEngine()->getSystemManager().loadAllFromDirectory(Project::getActive()->getActiveProjectRoot() +
         "assets/scripts/bin/", this);
+    //SceneSerializer serializer(this);
+    //m_LoadedScene = serializer.deserialize("assets/scenes/default.zen");
+    //if (!m_LoadedScene) {
+        createDefaultScene();
+    //}
+}
+
+Scene::~Scene() {
+    //SceneSerializer serializer(this);
+    //serializer.serialize("assets/scenes/default.zen");
 }
 
 void Scene::onUpdate(float dt) {
@@ -29,7 +39,10 @@ void Scene::createDefaultScene() {
     };
     dirLightEntity.addComponent<DirectionalLightComp>(comp);
 
-    auto cameraEntity = createEntity("Scene Camera");
+    auto sceneCameraEntity = createEntity("Scene Camera");
+    sceneCameraEntity.addComponent<SceneCameraComp>();
+
+    auto cameraEntity = createEntity("Primary Camera");
     cameraEntity.addComponent<CameraComp>();
 
     auto cubeEntity = createEntity("Cube");
@@ -45,15 +58,13 @@ Entity Scene::createEntity(const std::string& name) {
 	auto ret = Entity{this, m_Registry.create()};
     ret.addComponent<UUIDComp>();
     ret.addComponent<TransformComp>();
-    auto view = getEntities<CameraComp>();
+    auto view = getEntities<SceneCameraComp>();
     for (auto entity : view) {
-        auto& camera = entity.getComponent<CameraComp>();
+        auto& camera = entity.getComponent<SceneCameraComp>();
         auto& cameraTransform = entity.getComponent<TransformComp>();
-        if(camera.isPrimary) {
-            ret.getComponent<TransformComp>() = TransformComp{.localPosition =
+        ret.getComponent<TransformComp>() = TransformComp{.localPosition =
                 cameraTransform.localPosition + cameraTransform.getFront() * 5.0f};
-            break;
-        }
+        break;
     }
     TagComp tag {.tag = "Unnamed Entity"};
     if(!name.empty()) {
@@ -66,15 +77,13 @@ Entity Scene::createEntity(const std::string& name, UUID id) {
     auto ret = Entity{this, m_Registry.create()};
     ret.addComponent<UUIDComp>(id);
     ret.addComponent<TransformComp>();
-    auto view = getEntities<CameraComp>();
+    auto view = getEntities<SceneCameraComp>();
     for (auto entity : view) {
-        auto& camera = entity.getComponent<CameraComp>();
+        auto& camera = entity.getComponent<SceneCameraComp>();
         auto& cameraTransform = entity.getComponent<TransformComp>();
-        if(camera.isPrimary) {
-            ret.getComponent<TransformComp>() = TransformComp{.localPosition =
+        ret.getComponent<TransformComp>() = TransformComp{.localPosition =
                 cameraTransform.localPosition + cameraTransform.getFront() * 5.0f};
-            break;
-        }
+        break;
     }
     TagComp tag {.tag = "Unnamed Entity"};
     if(!name.empty()) {
@@ -98,7 +107,22 @@ void Scene::removeEntity(Entity entity) {
     m_Registry.destroy((entt::entity)entity);
 }
 
+bool Scene::isDescendantOf(Entity parent, Entity possibleChild) {
+    if (!possibleChild.hasComponent<ParentComp>())
+        return false;
 
+    auto current = possibleChild;
+    while (current.hasComponent<ParentComp>()) {
+        auto pid = current.getComponent<ParentComp>().parentID;
+        if (pid == parent.getComponent<UUIDComp>().uuid)
+            return true;
+
+        current = getEntity(pid);
+        if (!current.isValid())
+            break;
+    }
+    return false;
+}
 
 void Scene::onEvent(Event &event) {
     EventDispatcher dispatcher(event);

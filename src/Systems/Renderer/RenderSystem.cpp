@@ -89,12 +89,11 @@ void RenderSystem::onUpdate(float deltaTime) {
     }
 }
 void RenderSystem::writeCameraData(glm::mat4& view, glm::mat4& projection) {
-    auto cameraView = m_Scene->getEntities<CameraComp, TransformComp>();
-    for (auto entity: cameraView) {
-        auto& camera = entity.getComponent<CameraComp>();
-        auto& transform = entity.getComponent<TransformComp>();
-        if(camera.isPrimary) {
-            //update view ubo
+    if (!m_IsPlaying) {
+        auto sceneCameraView = m_Scene->getEntities<SceneCameraComp, TransformComp>();
+        for (auto entity: sceneCameraView) {
+            auto& camera = entity.getComponent<SceneCameraComp>();
+            auto& transform = entity.getComponent<TransformComp>();
             view = transform.getViewMatrix();
             projection = camera.projection;
             glm::mat4 vpMat = projection * view;
@@ -102,9 +101,23 @@ void RenderSystem::writeCameraData(glm::mat4& view, glm::mat4& projection) {
             m_Renderer->writeToUBO(m_Renderer->m_ViewUBO.uboID, vpMat);
 
             setLightData(transform.localPosition);
-
         }
     }
+    else {
+        auto cameraView = m_Scene->getEntities<CameraComp, TransformComp>();
+        for (auto entity: cameraView) {
+            auto& camera = entity.getComponent<CameraComp>();
+            auto& transform = entity.getComponent<TransformComp>();
+            view = transform.getViewMatrix();
+            projection = camera.projection;
+            glm::mat4 vpMat = projection * view;
+
+            m_Renderer->writeToUBO(m_Renderer->m_ViewUBO.uboID, vpMat);
+
+            setLightData(transform.localPosition);
+        }
+    }
+
 }
 
 void RenderSystem::setLightData(glm::vec3 cameraPos) {

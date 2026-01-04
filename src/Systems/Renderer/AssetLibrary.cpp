@@ -1,6 +1,7 @@
 #include "ZeusEngineCore/AssetLibrary.h"
 #include "IResourceManager.h"
 #include "ZeusEngineCore/Application.h"
+#include "ZeusEngineCore/AssetSerializer.h"
 #include "ZeusEngineCore/Components.h"
 
 using namespace ZEN;
@@ -13,7 +14,15 @@ AssetLibrary::AssetLibrary() : m_ResourceManager(Application::get().getEngine()-
     m_SkyboxID = createAsset<MeshData>(createSkybox(), "Skybox");
     m_QuadID = createAsset<MeshData>(createQuad(), "Quad");
     m_SphereID = createAsset<MeshData>(createSphere(1.0f, 32, 16), "Sphere");
+    //AssetSerializer serializer(this);
+    //serializer.deserialize("assets/default.zenpackage");
 }
+
+AssetLibrary::~AssetLibrary() {
+    //AssetSerializer serializer(this);
+    //serializer.serialize("assets/default.zenpackage");
+}
+
 MaterialRaw AssetLibrary::getMaterialRaw(const Material &material) {
     AssetHandle<Material> def = getDefaultMaterialID();
     uint32_t shaderID = m_ResourceManager->get<GPUShader>(def->shader)->drawableID;

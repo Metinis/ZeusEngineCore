@@ -1,5 +1,6 @@
 #pragma once
 #include <entt/entt.hpp>
+#include "Components.h"
 #include "ZeusEngineCore/scripting/CompRegistry.h"
 
 namespace ZEN {
@@ -20,11 +21,16 @@ namespace ZEN {
             return m_Registry->any_of<T>(m_Handle);
         }
 
-        template<typename T, typename ...Args>
+        template<typename T, typename... Args>
         T& addComponent(Args... args) {
             return m_Registry->emplace<T>(m_Handle,
                 std::forward<Args>(args)...);
         }
+
+        ParentComp& addParent(const ParentComp &pc);
+        ParentComp& addParent(UUID parentID);
+
+        void removeParent();
 
         template<typename T>
         T* tryGetComponent() {
@@ -49,6 +55,7 @@ namespace ZEN {
 
         void* addRuntimeComponent(const ComponentInfo& compInfo);
         RuntimeComponent* getRuntimeComponent(const std::string& compName);
+        bool hasRuntimeComponent(const std::string& compName);
         void removeRuntimeComponent(const std::string& compName);
 
         template<typename T>
@@ -67,7 +74,6 @@ namespace ZEN {
         explicit operator entt::entity() const {
             return m_Handle;
         }
-
 
     private:
         Scene* m_Scene{};

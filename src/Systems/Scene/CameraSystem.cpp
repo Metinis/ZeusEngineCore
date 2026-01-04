@@ -16,12 +16,19 @@ CameraSystem::CameraSystem() : m_Scene(&Application::get().getEngine()->getScene
 
 void CameraSystem::onUpdate(float deltaTime) {
     if (m_PlayMode) {
+        auto gameCamView = m_Scene->getEntities<CameraComp>();
+
+        for (auto entity : gameCamView) {
+            auto &camera = entity.getComponent<CameraComp>();
+            camera.aspect = m_AspectRatio;
+            camera.projection = glm::perspective(camera.fov, camera.aspect, camera.near, camera.far);
+        }
         return;
     }
-    auto view = m_Scene->getEntities<CameraComp>();
+    auto view = m_Scene->getEntities<SceneCameraComp>();
 
     for (auto entity : view) {
-        auto &camera = entity.getComponent<CameraComp>();
+        auto &camera = entity.getComponent<SceneCameraComp>();
 
         //update position if has transform
         if (auto *transform = entity.tryGetComponent<TransformComp>()) {
@@ -66,8 +73,8 @@ void CameraSystem::onUpdate(float deltaTime) {
             camera.projection = glm::perspective(camera.fov, camera.aspect, camera.near, camera.far);
             //m_Resized = false;
         //}
-
     }
+
 
 }
 

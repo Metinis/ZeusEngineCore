@@ -30,7 +30,6 @@ void Application::init() {
     m_ImGUILayer = ImGUILayer::create(m_Window->getNativeWindow(), m_API);
     m_Running = true;
 
-    m_Engine->getScene().createDefaultScene();
     m_Engine->setAspectRatio(m_Window->getHandleWidth() / m_Window->getHandleHeight());
 
 }

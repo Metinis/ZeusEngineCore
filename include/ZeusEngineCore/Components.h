@@ -1,7 +1,6 @@
 #pragma once
 #include "ZeusEngineCore/Vertex.h"
 #include "ZeusEngineCore/Util.h"
-#include "ZeusEngineCore/Entity.h"
 #include "ZeusEngineCore/UUID.h"
 #include "ZeusEngineCore/AssetHandle.h"
 
@@ -82,6 +81,14 @@ namespace ZEN {
         float constant{};
         float linear{};
         float quadratic{};
+    };
+    struct SceneCameraComp {
+        glm::mat4 projection = glm::mat4(1.0f);
+
+        float aspect = 16.0f / 9.0f;
+        float fov = glm::radians(60.0f);
+        float near = 0.1f;
+        float far = 100.0f;
     };
     struct CameraComp {
         glm::mat4 projection = glm::mat4(1.0f);

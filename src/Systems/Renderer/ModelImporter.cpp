@@ -169,7 +169,7 @@ void ModelImporter::processNode(aiNode* ainode, const aiScene* aiscene,
         Entity entity = m_Scene->createEntity(mesh->mName.C_Str());
         processAiMesh(entity, mesh, aiscene, globalTransform);
 
-        entity.addComponent<ParentComp>(parent.getComponent<UUIDComp>().uuid);
+        entity.addParent({parent.getComponent<UUIDComp>().uuid});
 
     }
 

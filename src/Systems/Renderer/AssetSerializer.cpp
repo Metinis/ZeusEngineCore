@@ -100,7 +100,7 @@ bool ZEN::AssetSerializer::deserialize(const std::string &path) {
     {
         data = YAML::LoadFile(Project::getActive()->getActiveProjectRoot() + path);
     }
-    catch (YAML::ParserException e)
+    catch (YAML::Exception& e)
     {
         return false;
     }

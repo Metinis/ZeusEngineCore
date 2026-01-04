@@ -1,6 +1,7 @@
 #pragma once
 #include "API.h"
 #include "Layer.h"
+#include "scripting/CompRegistry.h"
 #include "scripting/SystemManager.h"
 #include "ZeusEngineCore/Renderer.h"
 
