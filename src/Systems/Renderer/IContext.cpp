@@ -1,6 +1,6 @@
 #include "IContext.h"
 #include "OpenGL/GLContext.h"
-#include "ZeusEngineCore/Application.h"
+#include "ZeusEngineCore/core/Application.h"
 
 std::unique_ptr<ZEN::IContext> ZEN::IContext::create() {
     switch (Application::get().getRendererAPI()) {

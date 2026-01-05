@@ -1,5 +1,5 @@
 #pragma once
-#include <ZeusEngineCore/API.h>
+#include <ZeusEngineCore/core/API.h>
 #include "Event.h"
 
 struct GLFWwindow;

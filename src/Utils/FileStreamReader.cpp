@@ -1,5 +1,5 @@
 
-#include "ZeusEngineCore/FileStreamReader.h"
+#include "ZeusEngineCore/stream/FileStreamReader.h"
 
 ZEN::FileStreamReader::FileStreamReader(const std::filesystem::path& path) :m_Path(path), m_Stream(path, std::ios::binary) {
 

@@ -1,5 +1,5 @@
-#include "ZeusEngineCore/Entity.h"
-#include "ZeusEngineCore/Scene.h"
+#include "ZeusEngineCore/engine/Entity.h"
+#include "ZeusEngineCore/engine/Scene.h"
 
 using namespace ZEN;
 Entity::Entity(Scene *scene, entt::entity handle) : m_Scene(scene), m_Registry(&scene->m_Registry), m_Handle(handle){

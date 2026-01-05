@@ -1,9 +1,9 @@
-#include "ZeusEngineCore/ZEngine.h"
-#include "ZeusEngineCore/RenderSystem.h"
-#include "ZeusEngineCore/CameraSystem.h"
-#include "ZeusEngineCore/ModelImporter.h"
-#include "ZeusEngineCore/Scene.h"
-#include "ZeusEngineCore/Application.h"
+#include "ZeusEngineCore/engine/ZEngine.h"
+#include "ZeusEngineCore/engine/RenderSystem.h"
+#include "ZeusEngineCore/engine/CameraSystem.h"
+#include "ZeusEngineCore/engine/ModelImporter.h"
+#include "ZeusEngineCore/engine/Scene.h"
+#include "ZeusEngineCore/core/Application.h"
 #include <tinyfiledialogs.h>
 
 using namespace ZEN;

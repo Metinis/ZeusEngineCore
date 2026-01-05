@@ -63,7 +63,7 @@ sizeof(Type),                        \
 );                                           \
 }                                                \
 };                                                   \
-static Type##_Registrar s_##Type##_registrar;        \
+inline Type##_Registrar s_##Type##_registrar;        \
 }
 
     struct RuntimeComponentStorage {

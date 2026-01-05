@@ -1,6 +1,6 @@
 #pragma once
-#include "GPUHandle.h"
-#include "Layer.h"
+#include "ZeusEngineCore/asset/GPUHandle.h"
+#include "ZeusEngineCore/core/Layer.h"
 #include "Renderer.h"
 
 namespace ZEN {

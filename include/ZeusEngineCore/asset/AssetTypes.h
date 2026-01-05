@@ -1,6 +1,6 @@
 #pragma once
-#include "UUID.h"
-#include "Vertex.h"
+#include "ZeusEngineCore/engine/UUID.h"
+#include "ZeusEngineCore/core/Vertex.h"
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>

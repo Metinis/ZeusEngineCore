@@ -1,6 +1,6 @@
 #pragma once
-#include "Layer.h"
-#include "ZeusEngineCore/InputEvents.h"
+#include "ZeusEngineCore/core/Layer.h"
+#include "ZeusEngineCore/core/InputEvents.h"
 
 namespace ZEN {
     class Scene;

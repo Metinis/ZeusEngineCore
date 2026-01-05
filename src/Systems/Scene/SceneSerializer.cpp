@@ -1,6 +1,6 @@
-#include "ZeusEngineCore/SceneSerializer.h"
-#include "ZeusEngineCore/SerializerCommon.h"
-#include <ZeusEngineCore/Application.h>
+#include "ZeusEngineCore/engine/SceneSerializer.h"
+#include "ZeusEngineCore/stream/SerializerCommon.h"
+#include <ZeusEngineCore/core/Application.h>
 
 
 using namespace ZEN;

@@ -1,9 +1,9 @@
-#include "ZeusEngineCore/Window.h"
+#include "ZeusEngineCore/core/Window.h"
 #include "GLFW/glfw3.h"
-#include <ZeusEngineCore/API.h>
-#include <ZeusEngineCore/Application.h>
-#include <ZeusEngineCore/InputEvents.h>
-#include <ZeusEngineCore/Event.h>
+#include <ZeusEngineCore/core/API.h>
+#include <ZeusEngineCore/core/Application.h>
+#include <ZeusEngineCore/core/InputEvents.h>
+#include <ZeusEngineCore/core/Event.h>
 
 using namespace ZEN;
 

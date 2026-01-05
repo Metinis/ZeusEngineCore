@@ -1,7 +1,7 @@
 #pragma once
-#include "UUID.h"
-#include "../../src/Systems/Renderer/IResourceManager.h"
-#include "ZeusEngineCore/AssetTypes.h"
+#include "ZeusEngineCore/core/Util.h"
+#include "../../../src/Systems/Renderer/IResourceManager.h"
+#include "AssetTypes.h"
 
 namespace ZEN {
     //cant remove these

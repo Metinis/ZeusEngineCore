@@ -1,5 +1,5 @@
 #pragma once
-#include <ZeusEngineCore/AssetLibrary.h>
+#include <ZeusEngineCore/asset/AssetLibrary.h>
 
 namespace ZEN {
     class Project {

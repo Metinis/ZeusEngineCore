@@ -1,8 +1,8 @@
 #pragma once
-#include "ZeusEngineCore/Vertex.h"
-#include "ZeusEngineCore/Util.h"
-#include "ZeusEngineCore/UUID.h"
-#include "ZeusEngineCore/AssetHandle.h"
+#include "ZeusEngineCore/core/Vertex.h"
+#include "ZeusEngineCore/core/Util.h"
+#include "ZeusEngineCore/engine/UUID.h"
+#include "ZeusEngineCore/asset/AssetHandle.h"
 
 namespace entt {
     enum class entity : std::uint32_t;

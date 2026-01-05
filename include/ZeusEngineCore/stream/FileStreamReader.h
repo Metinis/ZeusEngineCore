@@ -1,5 +1,5 @@
 #pragma once
-#include "ZeusEngineCore/StreamReader.h"
+#include "StreamReader.h"
 
 namespace ZEN {
     class FileStreamReader : public StreamReader {

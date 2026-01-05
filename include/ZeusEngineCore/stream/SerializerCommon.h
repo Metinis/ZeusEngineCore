@@ -1,7 +1,7 @@
 #pragma once
 #include <yaml-cpp/yaml.h>
 
-#include "AssetTypes.h"
+#include "ZeusEngineCore/asset/AssetTypes.h"
 
 /* Add operators for glm */
 namespace YAML {

@@ -1,7 +1,7 @@
-#include "ZeusEngineCore/RenderSystem.h"
-#include <ZeusEngineCore/InputEvents.h>
-#include "ZeusEngineCore/AssetLibrary.h"
-#include "ZeusEngineCore/Scene.h"
+#include "ZeusEngineCore/engine/RenderSystem.h"
+#include <ZeusEngineCore/core/InputEvents.h>
+#include "../../../include/ZeusEngineCore/asset/AssetLibrary.h"
+#include "ZeusEngineCore/engine/Scene.h"
 
 using namespace ZEN;
 

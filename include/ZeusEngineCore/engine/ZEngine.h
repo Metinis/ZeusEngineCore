@@ -1,9 +1,9 @@
 #pragma once
-#include "API.h"
-#include "Layer.h"
-#include "scripting/CompRegistry.h"
-#include "scripting/SystemManager.h"
-#include "ZeusEngineCore/Renderer.h"
+#include "../core/API.h"
+#include "../core/Layer.h"
+#include "ZeusEngineCore/scripting/CompRegistry.h"
+#include "ZeusEngineCore/scripting/SystemManager.h"
+#include "ZeusEngineCore/engine/Renderer.h"
 
 struct GLFWwindow;
 namespace ZEN {

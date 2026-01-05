@@ -1,8 +1,8 @@
 #pragma once
-#include <ZeusEngineCore/API.h>
+#include <ZeusEngineCore/core/API.h>
 #include <assimp/scene.h>
-#include <ZeusEngineCore/UUID.h>
-#include <ZeusEngineCore/AssetTypes.h>
+#include <ZeusEngineCore/engine/UUID.h>
+#include <ZeusEngineCore/asset/AssetTypes.h>
 
 namespace ZEN {
 
@@ -187,6 +187,13 @@ namespace ZEN {
             } else {
                 std::cout<<"GPU Resource not found! failed to remove: "<<id<<"\n";
             }
+        }
+        void clearAll() {
+            auto mapCpy = m_Mappings;
+            for (auto& [id, gpuVar] : mapCpy) {
+                remove(id);
+            }
+            m_Mappings.clear();
         }
 
         virtual ~IResourceManager() = default;

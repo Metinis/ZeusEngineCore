@@ -1,6 +1,6 @@
 #pragma once
-#include "ZeusEngineCore/AssetLibrary.h"
-#include "ZeusEngineCore/Project.h"
+#include "AssetLibrary.h"
+#include "ZeusEngineCore/core/Project.h"
 
 namespace ZEN {
     template<typename T>

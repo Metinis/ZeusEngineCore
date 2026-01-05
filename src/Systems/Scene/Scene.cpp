@@ -1,11 +1,11 @@
-#include "ZeusEngineCore/Scene.h"
+#include "ZeusEngineCore/engine/Scene.h"
 
-#include <ZeusEngineCore/Application.h>
-#include <ZeusEngineCore/Entity.h>
-#include <ZeusEngineCore/InputEvents.h>
-#include <ZeusEngineCore/AssetLibrary.h>
-#include <ZeusEngineCore/ZEngine.h>
-#include "ZeusEngineCore/SceneSerializer.h"
+#include <ZeusEngineCore/core/Application.h>
+#include <ZeusEngineCore/engine/Entity.h>
+#include <ZeusEngineCore/core/InputEvents.h>
+#include <ZeusEngineCore/asset/AssetLibrary.h>
+#include <ZeusEngineCore/engine/ZEngine.h>
+#include "ZeusEngineCore/engine/SceneSerializer.h"
 
 using namespace ZEN;
 

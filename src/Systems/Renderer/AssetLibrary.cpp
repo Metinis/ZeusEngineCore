@@ -1,8 +1,8 @@
-#include "ZeusEngineCore/AssetLibrary.h"
+#include "ZeusEngineCore/asset/AssetLibrary.h"
 #include "IResourceManager.h"
-#include "ZeusEngineCore/Application.h"
-#include "ZeusEngineCore/AssetSerializer.h"
-#include "ZeusEngineCore/Components.h"
+#include "ZeusEngineCore/core/Application.h"
+#include "ZeusEngineCore/asset/AssetSerializer.h"
+#include "ZeusEngineCore/engine/Components.h"
 
 using namespace ZEN;
 

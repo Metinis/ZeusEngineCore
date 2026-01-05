@@ -1,6 +1,6 @@
 #include "IResourceManager.h"
 #include "OpenGL/GLResourceManager.h"
-#include "ZeusEngineCore/Application.h"
+#include "ZeusEngineCore/core/Application.h"
 
 using namespace ZEN;
 std::unique_ptr<IResourceManager> IResourceManager::create() {

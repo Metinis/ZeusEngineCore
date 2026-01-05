@@ -1,9 +1,9 @@
-#include "ZeusEngineCore/CameraSystem.h"
-#include "ZeusEngineCore/Components.h"
-#include "ZeusEngineCore/Scene.h"
+#include "ZeusEngineCore/engine/CameraSystem.h"
+#include "ZeusEngineCore/engine/Components.h"
+#include "ZeusEngineCore/engine/Scene.h"
 #include <glm/gtc/matrix_transform.hpp>
-#include <ZeusEngineCore/Application.h>
-#include "ZeusEngineCore/InputEvents.h"
+#include <ZeusEngineCore/core/Application.h>
+#include "ZeusEngineCore/core/InputEvents.h"
 #include "ZeusEngineCore/input/KeyCodes.h"
 #include "ZeusEngineCore/input/MouseCodes.h"
 

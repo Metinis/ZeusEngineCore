@@ -1,8 +1,8 @@
-#include "ZeusEngineCore/Renderer.h"
+#include "ZeusEngineCore/engine/Renderer.h"
 #define GLFW_INCLUDE_NONE
 #include "GLFW/glfw3.h"
-#include "ZeusEngineCore/Application.h"
-#include "ZeusEngineCore/InputEvents.h"
+#include "ZeusEngineCore/core/Application.h"
+#include "ZeusEngineCore/core/InputEvents.h"
 
 using namespace ZEN;
 

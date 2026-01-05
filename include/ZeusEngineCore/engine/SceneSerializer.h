@@ -1,5 +1,5 @@
 #pragma once
-#include "ZeusEngineCore/Scene.h"
+#include "ZeusEngineCore/engine/Scene.h"
 #include "ZeusEngineCore/ZENPCH.h"
 
 namespace ZEN {

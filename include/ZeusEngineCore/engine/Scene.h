@@ -1,10 +1,10 @@
 #pragma once
 #include <entt/entt.hpp>
-#include "InputEvents.h"
-#include "scripting/CompRegistry.h"
-#include "scripting/SystemManager.h"
-#include "ZeusEngineCore/RenderSystem.h"
-#include "ZeusEngineCore/Entity.h"
+#include "ZeusEngineCore/core/InputEvents.h"
+#include "ZeusEngineCore/scripting/CompRegistry.h"
+#include "ZeusEngineCore/scripting/SystemManager.h"
+#include "ZeusEngineCore/engine/RenderSystem.h"
+#include "ZeusEngineCore/engine/Entity.h"
 
 namespace ZEN {
 	class AssetLibrary;

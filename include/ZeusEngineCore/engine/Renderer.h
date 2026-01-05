@@ -1,8 +1,8 @@
 #pragma once
-#include "InputEvents.h"
-#include "Layer.h"
+#include "ZeusEngineCore/core/InputEvents.h"
+#include "ZeusEngineCore/core/Layer.h"
 #include "../src/Systems/Renderer/OpenGL/GLContext.h"
-#include "ZeusEngineCore/Components.h"
+#include "ZeusEngineCore/engine/Components.h"
 
 struct GLFWwindow;
 namespace ZEN {

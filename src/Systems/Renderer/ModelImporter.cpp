@@ -1,8 +1,8 @@
-#include "ZeusEngineCore/ModelImporter.h"
-#include <ZeusEngineCore/Entity.h>
-#include <ZeusEngineCore/Components.h>
-#include <ZeusEngineCore/AssetLibrary.h>
-#include <ZeusEngineCore/Scene.h>
+#include "ZeusEngineCore/engine/ModelImporter.h"
+#include <ZeusEngineCore/engine/Entity.h>
+#include <ZeusEngineCore/engine/Components.h>
+#include <ZeusEngineCore/asset/AssetLibrary.h>
+#include <ZeusEngineCore/engine/Scene.h>
 
 using namespace ZEN;
 
