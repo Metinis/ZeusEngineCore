@@ -11,6 +11,6 @@ UUID::UUID() : m_Handle(s_Dist(s_RandEngine)) {
 
 }
 
-UUID::UUID(uint64_t handle) : m_Handle(handle) {
+//UUID::UUID(uint64_t handle) : m_Handle(handle) {
 
-}
+//}

@@ -12,19 +12,46 @@ using namespace ZEN;
 Scene::Scene() {
     Application::get().getEngine()->getSystemManager().loadAllFromDirectory(Project::getActive()->getActiveProjectRoot() +
         "assets/scripts/bin/", this);
-    //SceneSerializer serializer(this);
-    //m_LoadedScene = serializer.deserialize("assets/scenes/default.zen");
-    //if (!m_LoadedScene) {
-        createDefaultScene();
-    //}
+    createDefaultScene();
 }
 
 Scene::~Scene() {
-    //SceneSerializer serializer(this);
-    //serializer.serialize("assets/scenes/default.zen");
+
+}
+int Scene::computeDepth(Entity e) {
+    int depth = 0;
+    while (e.hasComponent<ParentComp>()) {
+        e = getEntity(e.getComponent<ParentComp>().parentID);
+        if (!e.isValid()) break;
+        depth++;
+    }
+    return depth;
 }
 
+void Scene::updateWorldTransforms() {
+    std::vector<Entity> entities;
+    for (auto e : getEntities<TransformComp>())
+        entities.push_back(e);
+
+    std::ranges::sort(entities,
+                      [&](Entity a, Entity b) {
+                          return computeDepth(a) < computeDepth(b);
+                      });
+
+    for (auto e : entities) {
+        auto& tc = e.getComponent<TransformComp>();
+        glm::mat4 local = tc.getLocalMatrix();
+
+        if (auto parent = e.tryGetComponent<ParentComp>()) {
+            auto parentEntity = getEntity(parent->parentID);
+            tc.worldMatrix = parentEntity.getComponent<TransformComp>().worldMatrix * local;
+        } else {
+            tc.worldMatrix = local;
+        }
+    }
+}
 void Scene::onUpdate(float dt) {
+    updateWorldTransforms();
     if (m_PlayMode) {
         Application::get().getEngine()->getSystemManager().updateAll(dt);
     }
@@ -47,11 +74,11 @@ void Scene::createDefaultScene() {
 
     auto cubeEntity = createEntity("Cube");
     auto assetLibrary = Project::getActive()->getAssetLibrary();
-    cubeEntity.addComponent<MeshComp>(AssetHandle<MeshData>(assetLibrary->getCubeID()));
+    cubeEntity.addComponent<MeshComp>(AssetHandle<MeshData>(defaultCubeID));
 
     auto skyboxEntity = createEntity("Skybox");
     skyboxEntity.addComponent<SkyboxComp>();
-    skyboxEntity.addComponent<MeshComp>(AssetHandle<MeshData>(assetLibrary->getSkyboxID()));
+    skyboxEntity.addComponent<MeshComp>(AssetHandle<MeshData>(defaultSkyboxID));
 }
 
 Entity Scene::createEntity(const std::string& name) {
@@ -145,11 +172,14 @@ std::vector<Entity> Scene::getEntities(const std::string &name) {
 bool Scene::onPlayMode(RunPlayModeEvent &e) {
     m_PlayMode = e.getPlaying();
     if (m_PlayMode) {
+        SceneSerializer serializer(this);
+        m_LoadedScene = serializer.serialize("assets/scenes/default.zen");
         Application::get().getEngine()->getSystemManager().loadAll(this);
-
     }
     else {
         Application::get().getEngine()->getSystemManager().unloadAll();
+        SceneSerializer serializer(this);
+        m_LoadedScene = serializer.deserialize("assets/scenes/default.zen");
     }
 
     return false;

@@ -133,6 +133,7 @@ bool SceneSerializer::serialize(const std::string &path) {
 
 bool SceneSerializer::deserialize(const std::string &path) {
     m_Scene->m_Registry.clear();
+    m_Scene->m_RuntimeComponents.clear();
     YAML::Node data;
     try
     {

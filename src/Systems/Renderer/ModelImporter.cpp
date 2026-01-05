@@ -127,7 +127,7 @@ void ModelImporter::processAiMesh(Entity& entity, aiMesh* aimesh,
             mesh.indices.push_back(face.mIndices[j]);
     }
 
-    Material material = *AssetHandle<Material>(m_AssetLibrary->getDefaultMaterialID()).get();
+    Material material = *AssetHandle<Material>(defaultMaterialID).get();
     if (aimesh->mMaterialIndex >= 0) {
         const aiMaterial* aiMaterial = aiscene->mMaterials[aimesh->mMaterialIndex];
         if (hasTextureType(aiTextureType_DIFFUSE, aiMaterial)) {

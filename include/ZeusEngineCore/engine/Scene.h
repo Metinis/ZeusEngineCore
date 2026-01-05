@@ -50,6 +50,8 @@ namespace ZEN {
 		bool m_LoadedScene{false};
 
 		Entity makeEntity(entt::entity entity);
+		int computeDepth(Entity e);
+		void updateWorldTransforms();
 
 		friend class Entity;
 		friend class SceneSerializer;

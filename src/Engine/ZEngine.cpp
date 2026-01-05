@@ -28,10 +28,10 @@ void ZEngine::init() {
     m_RenderSystem = new RenderSystem();
     m_CameraSystem = new CameraSystem();
 
-    Application::get().pushLayer(m_Scene);
     Application::get().pushLayer(m_Renderer);
     Application::get().pushLayer(m_RenderSystem);
     Application::get().pushLayer(m_CameraSystem);
+    Application::get().pushLayer(m_Scene);
 }
 
 ZEngine::~ZEngine() = default;

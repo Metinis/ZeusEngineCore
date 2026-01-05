@@ -12,79 +12,24 @@ RenderSystem::RenderSystem() :
 
     auto library = Project::getActive()->getAssetLibrary();
 
-    m_CubeDrawable = GPUHandle<GPUMesh>(library->getCubeID());
-    m_QuadDrawable = GPUHandle<GPUMesh>(library->getQuadID());
+    m_CubeDrawable = GPUHandle<GPUMesh>(defaultCubeID);
+    m_QuadDrawable = GPUHandle<GPUMesh>(defaultQuadID);
 
-    ShaderData quadShaderData {
-        .vertPath = "/shaders/screenQuad.vert",
-        .fragPath = "/shaders/screenQuad.frag",
-        .geoPath = ""
-    };
-    auto quadShaderID = library->createAsset(quadShaderData, "QuadShader");
-    m_QuadShaderID = GPUHandle<GPUShader>(quadShaderID);
 
-    ShaderData normalsShader {
-        .vertPath = "/shaders/normal-visual.vert",
-        .fragPath = "/shaders/normal-visual.frag",
-        .geoPath = "/shaders/normal-visual.geom"
-    };
-    auto normalsShaderID = library->createAsset(normalsShader, "NormalsShader");
-    m_NormalsShaderID = GPUHandle<GPUShader>(normalsShaderID);
-
-}
-void RenderSystem::updateWorldTransforms() {
-    auto view = m_Scene->getEntities<TransformComp>();
-
-    for (auto e : view) {
-        auto &tc = e.getComponent<TransformComp>();
-        glm::mat4 local = tc.getLocalMatrix();
-
-        if (auto parentComp = e.tryGetComponent<ParentComp>()) {
-            if(auto tranformComp = m_Scene->getEntity(parentComp->parentID).tryGetComponent<TransformComp>()) {
-                tc.worldMatrix = tranformComp->worldMatrix * local;
-            }
-        }
-        else {
-            tc.worldMatrix = local;
-        }
-    }
-}
-
-/*void RenderSystem::onMeshRemove(RemoveMeshEvent &e) {
-    //remove the drawable comp here
-    auto view = m_Scene->getEntities<MeshDrawableComp>();
-    for(auto entity : view) {
-        if(entity.getComponent<MeshDrawableComp>().name == e.meshName) {
-            entity.removeComponent<MeshDrawableComp>();
-        }
-    }
-}
-
-void RenderSystem::onMeshCompRemove(RemoveMeshCompEvent &e) {
-    if(e.entity.hasComponent<MeshDrawableComp>()) {
-        e.entity.removeComponent<MeshDrawableComp>();
-    }
+    m_QuadShaderID = GPUHandle<GPUShader>(defaultQuadShaderID);
+    m_NormalsShaderID = GPUHandle<GPUShader>(defaultNormalsShaderID);
 
 }
 
-void RenderSystem::onMeshDrawableRemove(RemoveMeshDrawableEvent &e) {
-    m_Renderer->getResourceManager()->deleteMeshDrawable(
-            e.entity.getComponent<MeshDrawableComp>().meshID);
-}
-
-void RenderSystem::onToggleDrawNormals(ToggleDrawNormalsEvent &e) {
-    m_DrawNormals = !m_DrawNormals;
-}*/
 
 void RenderSystem::onUpdate(float deltaTime) {
-    updateWorldTransforms();
     //create buffers for all meshes without drawable comps
     auto meshView = m_Scene->getEntities<MeshComp>();
     for (auto entity : meshView) {
         if(!entity.hasComponent<MaterialComp>() && !entity.hasComponent<SkyboxComp>()) {
 
             auto library = Project::getActive()->getAssetLibrary();
-            entity.addComponent<MaterialComp>(library->getDefaultMaterialID());
+            entity.addComponent<MaterialComp>(defaultMaterialID);
         }
     }
 }
@@ -150,7 +95,7 @@ void RenderSystem::renderDrawables() {
         auto* mat = materialComp.handle.get();
         auto library = Project::getActive()->getAssetLibrary();
         if (!mat) {
-            materialComp.handle = library->getDefaultMaterialID();
+            materialComp.handle = defaultMaterialID;
             continue;
         }
 
@@ -267,6 +212,9 @@ void RenderSystem::initSkyboxAssets(SkyboxComp& comp) {
         };
         comp.conMat = {AssetHandle<Material>(std::move(conMap), "ConMat")};
     }
+    else {
+        m_IrradianceMapID  = GPUHandle<GPUTexture>(comp.conMat.handle->texture);
+    }
     if (!comp.prefilterMat.handle.get()) {
         TextureData prefilterData = {
             .type = Prefilter,
@@ -281,6 +229,9 @@ void RenderSystem::initSkyboxAssets(SkyboxComp& comp) {
         };
         comp.prefilterMat = {AssetHandle<Material>(std::move(prefilterMap), "PrefilterMat")};
     }
+    else {
+        m_PrefilterMapID = GPUHandle<GPUTexture>(comp.prefilterMat.handle->texture);
+    }
     if (!comp.brdfLUTMat.handle.get()) {
         TextureData brdfData = {
             .type = BRDF,
@@ -294,6 +245,9 @@ void RenderSystem::initSkyboxAssets(SkyboxComp& comp) {
             .texture = brdfTex.id(),
         };
         comp.brdfLUTMat = {AssetHandle<Material>(std::move(brdfLUT), "BRDFMat")};
+    }
+    else {
+        m_BRDFLUTID = GPUHandle<GPUTexture>(comp.brdfLUTMat.handle->texture);
     }
 
 }
