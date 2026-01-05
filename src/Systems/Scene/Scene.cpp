@@ -130,6 +130,14 @@ Entity Scene::getEntity(UUID id) {
     return Entity{};
 }
 
+Entity Scene::getSceneCamera() {
+    auto view = getEntities<SceneCameraComp>();
+    for (auto entity : view) {
+        return entity;
+    }
+    return Entity{};
+}
+
 void Scene::removeEntity(Entity entity) {
     m_Registry.destroy((entt::entity)entity);
 }

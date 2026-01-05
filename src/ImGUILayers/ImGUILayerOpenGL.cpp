@@ -2,6 +2,7 @@
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
+#include "ImGuizmo.h"
 
 using namespace ZEN;
 void setupImGuiStyle( bool bStyleDark_, float alpha_  )
@@ -100,6 +101,7 @@ ImGUILayerOpenGL::ImGUILayerOpenGL(GLFWwindow *window) {
     callback = [this](void* cmd) {
         this->endFrame(cmd);
     };
+    ImGuizmo::Enable(true);
 }
 
 ImGUILayerOpenGL::~ImGUILayerOpenGL() {
@@ -112,6 +114,7 @@ void ImGUILayerOpenGL::beginFrame() {
     ImGui_ImplGlfw_NewFrame();
     ImGui_ImplOpenGL3_NewFrame();
     ImGui::NewFrame();
+    ImGuizmo::BeginFrame();
 }
 void ImGUILayerOpenGL::render() {
     ImGui::Render();

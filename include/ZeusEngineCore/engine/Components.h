@@ -1,4 +1,6 @@
 #pragma once
+#define GLM_ENABLE_EXPERIMENTAL
+#include "glm/gtx/matrix_decompose.hpp"
 #include "ZeusEngineCore/core/Vertex.h"
 #include "ZeusEngineCore/core/Util.h"
 #include "ZeusEngineCore/engine/UUID.h"
@@ -67,6 +69,23 @@ namespace ZEN {
 
             return -glm::normalize(front);
         }
+        static void decomposeTransform(
+        const glm::mat4& transform,
+        glm::vec3& position,
+        glm::vec3& rotation,
+     glm::vec3& scale)
+        {
+            using namespace glm;
+
+            vec3 skew;
+            vec4 perspective;
+            quat orientation;
+
+            glm::decompose(transform, scale, orientation, position, skew, perspective);
+
+            rotation = degrees(eulerAngles(orientation));
+        }
+
     };
 
     struct DirectionalLightComp {
