@@ -1,4 +1,4 @@
-#include "../../include/ZeusEngineCore/AssetTypes.h"
+#include "ZeusEngineCore/asset/AssetTypes.h"
 #include <cstring>
 
 namespace ZEN {

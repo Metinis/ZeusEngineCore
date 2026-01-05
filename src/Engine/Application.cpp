@@ -1,10 +1,10 @@
-#include "ZeusEngineCore/Application.h"
+#include "ZeusEngineCore/core/Application.h"
 #include "LayerStack.h"
-#include "ZeusEngineCore/Scene.h"
-#include "ZeusEngineCore/InputEvents.h"
-#include "ZeusEngineCore/Event.h"
-#include "ZeusEngineCore/CameraSystem.h"
-#include "ZeusEngineCore/Project.h"
+#include "ZeusEngineCore/engine/Scene.h"
+#include "ZeusEngineCore/core/InputEvents.h"
+#include "ZeusEngineCore/core/Event.h"
+#include "ZeusEngineCore/engine/CameraSystem.h"
+#include "ZeusEngineCore/core/Project.h"
 
 using namespace ZEN;
 
@@ -30,7 +30,6 @@ void Application::init() {
     m_ImGUILayer = ImGUILayer::create(m_Window->getNativeWindow(), m_API);
     m_Running = true;
 
-    m_Engine->getScene().createDefaultScene();
     m_Engine->setAspectRatio(m_Window->getHandleWidth() / m_Window->getHandleHeight());
 
 }

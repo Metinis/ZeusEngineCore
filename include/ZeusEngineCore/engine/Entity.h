@@ -1,12 +1,14 @@
 #pragma once
 #include <entt/entt.hpp>
+#include "Components.h"
+#include "ZeusEngineCore/scripting/CompRegistry.h"
 
 namespace ZEN {
     class Scene;
     class Entity {
     public:
         explicit Entity(Scene* scene, entt::entity handle);
-        explicit Entity(entt::registry* registry, entt::entity handle);
+        //explicit Entity(entt::registry* registry, entt::entity handle);
         explicit Entity() = default;
 
         template<typename T>
@@ -19,11 +21,16 @@ namespace ZEN {
             return m_Registry->any_of<T>(m_Handle);
         }
 
-        template<typename T, typename ...Args>
+        template<typename T, typename... Args>
         T& addComponent(Args... args) {
             return m_Registry->emplace<T>(m_Handle,
                 std::forward<Args>(args)...);
         }
+
+        ParentComp& addParent(const ParentComp &pc);
+        ParentComp& addParent(UUID parentID);
+
+        void removeParent();
 
         template<typename T>
         T* tryGetComponent() {
@@ -46,6 +53,18 @@ namespace ZEN {
             return false;
         }
 
+        void* addRuntimeComponent(const ComponentInfo& compInfo);
+        RuntimeComponent* getRuntimeComponent(const std::string& compName);
+        bool hasRuntimeComponent(const std::string& compName);
+        void removeRuntimeComponent(const std::string& compName);
+
+        template<typename T>
+        T& getRuntimeField(const char* comp, const char* field) {
+            auto* rc = getRuntimeComponent(comp);
+            ENTT_ASSERT(rc, "Runtime component not found");
+            return rc->getField<T>(field);
+        }
+
         bool operator==(const Entity &other) const {
             return m_Handle == other.m_Handle;
         }
@@ -57,7 +76,16 @@ namespace ZEN {
         }
 
     private:
+        Scene* m_Scene{};
         entt::registry* m_Registry{};
         entt::entity m_Handle{entt::null};
+    };
+}
+namespace std {
+    template<>
+    struct hash<ZEN::Entity>{
+        size_t operator()(const ZEN::Entity& entity) const {
+            return hash<entt::entity>()((entt::entity)entity);
+        }
     };
 }

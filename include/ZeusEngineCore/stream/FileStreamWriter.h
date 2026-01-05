@@ -1,5 +1,5 @@
 #pragma once
-#include "ZeusEngineCore/StreamWriter.h"
+#include "StreamWriter.h"
 
 namespace ZEN {
     class FileStreamWriter : public StreamWriter {

@@ -1,21 +1,44 @@
-#include "ZeusEngineCore/AssetLibrary.h"
+#include "ZeusEngineCore/asset/AssetLibrary.h"
 #include "IResourceManager.h"
-#include "ZeusEngineCore/Application.h"
-#include "ZeusEngineCore/Components.h"
+#include "ZeusEngineCore/core/Application.h"
+#include "ZeusEngineCore/asset/AssetSerializer.h"
+#include "ZeusEngineCore/engine/Components.h"
 
 using namespace ZEN;
 
 AssetLibrary::AssetLibrary() : m_ResourceManager(Application::get().getEngine()->getRenderer().getResourceManager()) {
-    m_DefaultMatID = createAsset<Material>(
+    addAsset<Material>(defaultMaterialID,
         createDefaultMaterial("/shaders/pbr.vert", "/shaders/pbr.frag", ""),
         "Default");
-    m_CubeID = createAsset<MeshData>(createCube(), "Cube");
-    m_SkyboxID = createAsset<MeshData>(createSkybox(), "Skybox");
-    m_QuadID = createAsset<MeshData>(createQuad(), "Quad");
-    m_SphereID = createAsset<MeshData>(createSphere(1.0f, 32, 16), "Sphere");
+    addAsset<MeshData>(defaultCubeID, createCube(), "Cube");
+    addAsset<MeshData>(defaultSkyboxID, createSkybox(), "Skybox");
+    addAsset<MeshData>(defaultQuadID, createQuad(), "Quad");
+    addAsset<MeshData>(defaultSphereID, createSphere(1.0f, 32, 16), "Sphere");
+
+    ShaderData quadShaderData {
+        .vertPath = "/shaders/screenQuad.vert",
+        .fragPath = "/shaders/screenQuad.frag",
+        .geoPath = ""
+    };
+    addAsset(defaultQuadShaderID, quadShaderData, "QuadShader");
+
+    ShaderData normalsShader {
+        .vertPath = "/shaders/normal-visual.vert",
+        .fragPath = "/shaders/normal-visual.frag",
+        .geoPath = "/shaders/normal-visual.geom"
+    };
+    addAsset(defaultNormalsShaderID, normalsShader, "NormalsShader");
+    //AssetSerializer serializer(this);
+    //serializer.deserialize("assets/default.zenpackage");
 }
+
+AssetLibrary::~AssetLibrary() {
+    //AssetSerializer serializer(this);
+    //serializer.serialize("assets/default.zenpackage");
+}
+
 MaterialRaw AssetLibrary::getMaterialRaw(const Material &material) {
-    AssetHandle<Material> def = getDefaultMaterialID();
+    AssetHandle<Material> def = defaultMaterialID;
     uint32_t shaderID = m_ResourceManager->get<GPUShader>(def->shader)->drawableID;
     if (m_ResourceManager->get<GPUShader>(material.shader)) {
         auto shader = m_ResourceManager->get<GPUShader>(material.shader);
@@ -89,6 +112,15 @@ void computeTangents(MeshData &mesh) {
     for (auto &v: mesh.vertices) {
         v.Tangent = glm::normalize(v.Tangent);
         v.Bitangent = glm::normalize(v.Bitangent);
+    }
+}
+
+void AssetLibrary::clearNonDefaults() {
+    auto cpy = m_AssetMap;
+    for (auto& [id, asset] : cpy) {
+        if (id > maxDefault || id < minDefault) {
+            remove(id);
+        }
     }
 }
 
@@ -185,14 +217,14 @@ Material AssetLibrary::createDefaultMaterial(const std::string &vertPath,
     TextureData defaultTex {
         .type = Texture2DRaw,
     };
-    AssetID defTexID = createAsset<TextureData>(std::move(defaultTex), "Default");
+    addAsset<TextureData>(defaultTextureID, std::move(defaultTex), "Default");
     ShaderData defaultShader {
         .vertPath = vertPath,
         .fragPath = fragPath,
         .geoPath = geoPath
     };
-    AssetID defShaderID = createAsset<ShaderData>(std::move(defaultShader), "Default");
-    Material defaultMat{.shader = defShaderID, .texture = defTexID};
+    addAsset<ShaderData>(defaultShaderID, std::move(defaultShader), "Default");
+    Material defaultMat{.shader = defaultShaderID, .texture = defaultTextureID};
     return defaultMat;
 }
 

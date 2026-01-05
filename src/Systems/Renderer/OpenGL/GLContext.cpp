@@ -3,8 +3,8 @@
 #include "GLFW/glfw3.h"
 #include <glad/glad.h>
 
-#include "ZeusEngineCore/Application.h"
-#include "ZeusEngineCore/AssetLibrary.h"
+#include "ZeusEngineCore/core/Application.h"
+#include "ZeusEngineCore/asset/AssetLibrary.h"
 
 using namespace ZEN;
 

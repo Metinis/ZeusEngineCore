@@ -8,12 +8,13 @@ namespace ZEN {
         SystemManager();
         ~SystemManager();
 
-        bool loadSystemDLL(const std::string& path, Scene* scene);
+        bool loadSystemDLL(const std::string& path);
         bool loadAllFromDirectory(const std::string& directory, Scene* scene);
 
         void updateAll(float dt);
         void loadAll(Scene* scene);
         void unloadAll();
+        void clearAll();
 
         void addSystem(ISystem* system);
     private:

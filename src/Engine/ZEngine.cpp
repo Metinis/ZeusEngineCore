@@ -1,9 +1,9 @@
-#include "ZeusEngineCore/ZEngine.h"
-#include "ZeusEngineCore/RenderSystem.h"
-#include "ZeusEngineCore/CameraSystem.h"
-#include "ZeusEngineCore/ModelImporter.h"
-#include "ZeusEngineCore/Scene.h"
-#include "ZeusEngineCore/Application.h"
+#include "ZeusEngineCore/engine/ZEngine.h"
+#include "ZeusEngineCore/engine/RenderSystem.h"
+#include "ZeusEngineCore/engine/CameraSystem.h"
+#include "ZeusEngineCore/engine/ModelImporter.h"
+#include "ZeusEngineCore/engine/Scene.h"
+#include "ZeusEngineCore/core/Application.h"
 #include <tinyfiledialogs.h>
 
 using namespace ZEN;
@@ -20,15 +20,18 @@ void ZEngine::init() {
     const char* folderPath = tinyfd_selectFolderDialog(title, defaultPath);
     Project::getActive()->init(folderPath);
 
+    m_SystemManager = std::make_unique<SystemManager>();
+    m_CompRegistry = std::make_unique<CompRegistry>();
+
     m_Scene = new Scene();
     m_ModelImporter = std::make_unique<ModelImporter>();
     m_RenderSystem = new RenderSystem();
     m_CameraSystem = new CameraSystem();
 
-    Application::get().pushLayer(m_Scene);
     Application::get().pushLayer(m_Renderer);
     Application::get().pushLayer(m_RenderSystem);
     Application::get().pushLayer(m_CameraSystem);
+    Application::get().pushLayer(m_Scene);
 }
 
 ZEngine::~ZEngine() = default;

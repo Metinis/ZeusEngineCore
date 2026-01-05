@@ -1,8 +1,8 @@
-#include "ZeusEngineCore/Renderer.h"
+#include "ZeusEngineCore/engine/Renderer.h"
 #define GLFW_INCLUDE_NONE
 #include "GLFW/glfw3.h"
-#include "ZeusEngineCore/Application.h"
-#include "ZeusEngineCore/InputEvents.h"
+#include "ZeusEngineCore/core/Application.h"
+#include "ZeusEngineCore/core/InputEvents.h"
 
 using namespace ZEN;
 
@@ -234,6 +234,6 @@ void Renderer::setSize(float width, float height) {
 
 
 void* Renderer::getColorTextureHandle() {
-    return (void*)m_ResourceManager->getTexture(m_ColorTex.textureID);
+    return reinterpret_cast<void*>(static_cast<uintptr_t>(m_ResourceManager->getTexture(m_ColorTex.textureID)));
 }
 

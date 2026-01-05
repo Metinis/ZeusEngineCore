@@ -1,69 +1,97 @@
-#include "ZeusEngineCore/Scene.h"
+#include "ZeusEngineCore/engine/Scene.h"
 
-#include <ZeusEngineCore/Application.h>
-#include <ZeusEngineCore/Entity.h>
-#include <ZeusEngineCore/InputEvents.h>
-#include <ZeusEngineCore/AssetLibrary.h>
-#include <ZeusEngineCore/ZEngine.h>
-#include "ZeusEngineCore/SceneSerializer.h"
+#include <ZeusEngineCore/core/Application.h>
+#include <ZeusEngineCore/engine/Entity.h>
+#include <ZeusEngineCore/core/InputEvents.h>
+#include <ZeusEngineCore/asset/AssetLibrary.h>
+#include <ZeusEngineCore/engine/ZEngine.h>
+#include "ZeusEngineCore/engine/SceneSerializer.h"
 
 using namespace ZEN;
 
 Scene::Scene() {
-
+    Application::get().getEngine()->getSystemManager().loadAllFromDirectory(Project::getActive()->getActiveProjectRoot() +
+        "assets/scripts/bin/", this);
+    createDefaultScene();
 }
 
+Scene::~Scene() {
+
+}
+int Scene::computeDepth(Entity e) {
+    int depth = 0;
+    while (e.hasComponent<ParentComp>()) {
+        e = getEntity(e.getComponent<ParentComp>().parentID);
+        if (!e.isValid()) break;
+        depth++;
+    }
+    return depth;
+}
+
+void Scene::updateWorldTransforms() {
+    std::vector<Entity> entities;
+    for (auto e : getEntities<TransformComp>())
+        entities.push_back(e);
+
+    std::ranges::sort(entities,
+                      [&](Entity a, Entity b) {
+                          return computeDepth(a) < computeDepth(b);
+                      });
+
+    for (auto e : entities) {
+        auto& tc = e.getComponent<TransformComp>();
+        glm::mat4 local = tc.getLocalMatrix();
+
+        if (auto parent = e.tryGetComponent<ParentComp>()) {
+            auto parentEntity = getEntity(parent->parentID);
+            tc.worldMatrix = parentEntity.getComponent<TransformComp>().worldMatrix * local;
+        } else {
+            tc.worldMatrix = local;
+        }
+    }
+}
 void Scene::onUpdate(float dt) {
+    updateWorldTransforms();
     if (m_PlayMode) {
-        m_SystemManager.updateAll(dt);
+        Application::get().getEngine()->getSystemManager().updateAll(dt);
     }
 }
 
-void Scene::onMeshCompRemove(entt::registry& registry, entt::entity entity) {
-    //need to call render systems remove mesh comp somehow
-    //Application::get()
-    //m_Dispatcher->trigger<RemoveMeshCompEvent>(RemoveMeshCompEvent{Entity(&m_Registry, entity)});
-}
-
-void Scene::onMeshDrawableRemove(entt::registry& registry, entt::entity entity) {
-
-    //need to call render systems remove mesh drawable somehow
-    //m_Dispatcher->trigger<RemoveMeshDrawableEvent>(RemoveMeshDrawableEvent{Entity(&m_Registry, entity)});
-}
 
 void Scene::createDefaultScene() {
     auto dirLightEntity = createEntity("Directional Light");
     DirectionalLightComp comp {
-        .ambient = m_AmbientColor,
+        .ambient = {0.1f, 0.1f, 0.1f},
         .isPrimary = true,
     };
     dirLightEntity.addComponent<DirectionalLightComp>(comp);
 
-    auto cameraEntity = createEntity("Scene Camera");
+    auto sceneCameraEntity = createEntity("Scene Camera");
+    sceneCameraEntity.addComponent<SceneCameraComp>();
+
+    auto cameraEntity = createEntity("Primary Camera");
     cameraEntity.addComponent<CameraComp>();
 
     auto cubeEntity = createEntity("Cube");
     auto assetLibrary = Project::getActive()->getAssetLibrary();
-    cubeEntity.addComponent<MeshComp>(AssetHandle<MeshData>(assetLibrary->getCubeID()));
+    cubeEntity.addComponent<MeshComp>(AssetHandle<MeshData>(defaultCubeID));
 
     auto skyboxEntity = createEntity("Skybox");
     skyboxEntity.addComponent<SkyboxComp>();
-    skyboxEntity.addComponent<MeshComp>(AssetHandle<MeshData>(assetLibrary->getSkyboxID()));
+    skyboxEntity.addComponent<MeshComp>(AssetHandle<MeshData>(defaultSkyboxID));
 }
 
 Entity Scene::createEntity(const std::string& name) {
 	auto ret = Entity{this, m_Registry.create()};
     ret.addComponent<UUIDComp>();
     ret.addComponent<TransformComp>();
-    auto view = getEntities<CameraComp>();
+    auto view = getEntities<SceneCameraComp>();
     for (auto entity : view) {
-        auto& camera = entity.getComponent<CameraComp>();
+        auto& camera = entity.getComponent<SceneCameraComp>();
         auto& cameraTransform = entity.getComponent<TransformComp>();
-        if(camera.isPrimary) {
-            ret.getComponent<TransformComp>() = TransformComp{.localPosition =
+        ret.getComponent<TransformComp>() = TransformComp{.localPosition =
                 cameraTransform.localPosition + cameraTransform.getFront() * 5.0f};
-            break;
-        }
+        break;
     }
     TagComp tag {.tag = "Unnamed Entity"};
     if(!name.empty()) {
@@ -76,15 +104,13 @@ Entity Scene::createEntity(const std::string& name, UUID id) {
     auto ret = Entity{this, m_Registry.create()};
     ret.addComponent<UUIDComp>(id);
     ret.addComponent<TransformComp>();
-    auto view = getEntities<CameraComp>();
+    auto view = getEntities<SceneCameraComp>();
     for (auto entity : view) {
-        auto& camera = entity.getComponent<CameraComp>();
+        auto& camera = entity.getComponent<SceneCameraComp>();
         auto& cameraTransform = entity.getComponent<TransformComp>();
-        if(camera.isPrimary) {
-            ret.getComponent<TransformComp>() = TransformComp{.localPosition =
+        ret.getComponent<TransformComp>() = TransformComp{.localPosition =
                 cameraTransform.localPosition + cameraTransform.getFront() * 5.0f};
-            break;
-        }
+        break;
     }
     TagComp tag {.tag = "Unnamed Entity"};
     if(!name.empty()) {
@@ -101,24 +127,61 @@ Entity Scene::getEntity(UUID id) {
             return entity;
         }
     }
+    return Entity{};
 }
 
 void Scene::removeEntity(Entity entity) {
     m_Registry.destroy((entt::entity)entity);
 }
 
+bool Scene::isDescendantOf(Entity parent, Entity possibleChild) {
+    if (!possibleChild.hasComponent<ParentComp>())
+        return false;
 
+    auto current = possibleChild;
+    while (current.hasComponent<ParentComp>()) {
+        auto pid = current.getComponent<ParentComp>().parentID;
+        if (pid == parent.getComponent<UUIDComp>().uuid)
+            return true;
+
+        current = getEntity(pid);
+        if (!current.isValid())
+            break;
+    }
+    return false;
+}
 
 void Scene::onEvent(Event &event) {
     EventDispatcher dispatcher(event);
 
-    dispatcher.dispatch<RemoveResourceEvent>([this](RemoveResourceEvent& e) {return onRemoveResource(e); });
     dispatcher.dispatch<RunPlayModeEvent>([this](RunPlayModeEvent& e) {return onPlayMode(e); });
 }
+
+std::vector<Entity> Scene::getEntities(const std::string &name) {
+    std::vector<Entity> result;
+
+    for (auto& [entity, comps] : m_RuntimeComponents) {
+        if (comps.contains(name)) {
+            result.emplace_back(entity);
+        }
+    }
+
+    return result;
+}
+
 bool Scene::onPlayMode(RunPlayModeEvent &e) {
     m_PlayMode = e.getPlaying();
-    m_SystemManager.loadAllFromDirectory(Project::getActive()->getActiveProjectRoot() +
-        "assets/scripts/bin/", this);
+    if (m_PlayMode) {
+        SceneSerializer serializer(this);
+        m_LoadedScene = serializer.serialize("assets/scenes/default.zen");
+        Application::get().getEngine()->getSystemManager().loadAll(this);
+    }
+    else {
+        Application::get().getEngine()->getSystemManager().unloadAll();
+        SceneSerializer serializer(this);
+        m_LoadedScene = serializer.deserialize("assets/scenes/default.zen");
+    }
+
     return false;
 }
 
@@ -126,33 +189,3 @@ Entity Scene::makeEntity(entt::entity entity) {
     return Entity{this, entity};
 }
 
-bool Scene::onRemoveResource(RemoveResourceEvent &e) {
-    switch(e.getResourceType()) {
-        case Resources::MeshDrawable: {
-            //todo cleanup gpu resource
-            //removeResource<MeshDrawableComp>(e.getResourceName());
-            return true;
-        }
-
-        case Resources::MeshData: {
-            //removeResource<MeshComp>(e.getResourceName());
-            return true;
-        }
-
-        case Resources::Material: {
-            //todo cleanup shader resources
-            //removeResource<MaterialComp>(e.getResourceName());
-            return true;
-        }
-
-        case Resources::Texture: {
-            //todo cleanup textures
-            break;
-        }
-        default: {
-            std::cout<<"Resource type undefined!"<<"\n";
-            return false;
-        }
-    }
-    return false;
-}

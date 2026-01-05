@@ -1,5 +1,5 @@
 #pragma once
-#include "Application.h"
+#include "ZeusEngineCore/core/Application.h"
 #include "../../src/Systems/Renderer/IResourceManager.h"
 
 namespace ZEN {

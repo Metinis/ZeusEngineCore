@@ -1,7 +1,7 @@
 #pragma once
 #include "Application.h"
-#include "ZeusEngineCore/ZEngine.h"
-#include "ZeusEngineCore/Window.h"
+#include "ZeusEngineCore/engine/ZEngine.h"
+#include "ZeusEngineCore/core/Window.h"
 #include "../../src/Engine/LayerStack.h"
 #include "../../src/ImGUILayers/ImGUILayer.h"
 

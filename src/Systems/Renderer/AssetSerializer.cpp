@@ -1,8 +1,8 @@
-#include "ZeusEngineCore/AssetSerializer.h"
-#include "ZeusEngineCore/Application.h"
-#include "ZeusEngineCore/FileStreamReader.h"
-#include "ZeusEngineCore/FileStreamWriter.h"
-#include "ZeusEngineCore/SerializerCommon.h"
+#include "ZeusEngineCore/asset/AssetSerializer.h"
+#include "ZeusEngineCore/core/Application.h"
+#include "ZeusEngineCore/stream/FileStreamReader.h"
+#include "ZeusEngineCore/stream/FileStreamWriter.h"
+#include "ZeusEngineCore/stream/SerializerCommon.h"
 
 ZEN::AssetSerializer::AssetSerializer(AssetLibrary *library) : m_AssetLibrary(library){
 
@@ -39,6 +39,10 @@ bool ZEN::AssetSerializer::serialize(const std::string &path) {
         out << YAML::Key << "Mip" << YAML::Value << m_AssetLibrary->get<TextureData>(ID)->mip;
         out << YAML::Key << "AbsPath" << YAML::Value << m_AssetLibrary->get<TextureData>(ID)->absPath;
         out << YAML::Key << "Dimensions" << YAML::Value << m_AssetLibrary->get<TextureData>(ID)->dimensions;
+
+        if (ID == m_AssetLibrary->get<Material>(defaultMaterialID)->texture) {
+
+        }
 
         out << YAML::EndMap;
     }
@@ -100,13 +104,15 @@ bool ZEN::AssetSerializer::deserialize(const std::string &path) {
     {
         data = YAML::LoadFile(Project::getActive()->getActiveProjectRoot() + path);
     }
-    catch (YAML::ParserException e)
+    catch (YAML::Exception& e)
     {
         return false;
     }
 
     if (!data["Assets"])
         return false;
+
+    m_AssetLibrary->clearNonDefaults();
 
     auto meshes = data["Meshes"];
     if(meshes) {

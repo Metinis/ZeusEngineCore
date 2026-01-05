@@ -1,8 +1,8 @@
-#include "ZeusEngineCore/ModelImporter.h"
-#include <ZeusEngineCore/Entity.h>
-#include <ZeusEngineCore/Components.h>
-#include <ZeusEngineCore/AssetLibrary.h>
-#include <ZeusEngineCore/Scene.h>
+#include "ZeusEngineCore/engine/ModelImporter.h"
+#include <ZeusEngineCore/engine/Entity.h>
+#include <ZeusEngineCore/engine/Components.h>
+#include <ZeusEngineCore/asset/AssetLibrary.h>
+#include <ZeusEngineCore/engine/Scene.h>
 
 using namespace ZEN;
 
@@ -91,6 +91,7 @@ UUID ModelImporter::processTextureType(const aiScene* aiscene, aiTextureType typ
             std::cout<<"Warning! No texture path found!\n";
         }
     }
+    return 0;
 }
 bool hasTextureType(aiTextureType type, const aiMaterial* aimaterial) {
     if (aimaterial->GetTextureCount(type) > 0) {
@@ -126,7 +127,7 @@ void ModelImporter::processAiMesh(Entity& entity, aiMesh* aimesh,
             mesh.indices.push_back(face.mIndices[j]);
     }
 
-    Material material = *AssetHandle<Material>(m_AssetLibrary->getDefaultMaterialID()).get();
+    Material material = *AssetHandle<Material>(defaultMaterialID).get();
     if (aimesh->mMaterialIndex >= 0) {
         const aiMaterial* aiMaterial = aiscene->mMaterials[aimesh->mMaterialIndex];
         if (hasTextureType(aiTextureType_DIFFUSE, aiMaterial)) {
@@ -168,7 +169,7 @@ void ModelImporter::processNode(aiNode* ainode, const aiScene* aiscene,
         Entity entity = m_Scene->createEntity(mesh->mName.C_Str());
         processAiMesh(entity, mesh, aiscene, globalTransform);
 
-        entity.addComponent<ParentComp>(parent.getComponent<UUIDComp>().uuid);
+        entity.addParent({parent.getComponent<UUIDComp>().uuid});
 
     }
 

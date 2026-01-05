@@ -1,7 +1,9 @@
 #pragma once
-#include "API.h"
-#include "Layer.h"
-#include "ZeusEngineCore/Renderer.h"
+#include "../core/API.h"
+#include "../core/Layer.h"
+#include "ZeusEngineCore/scripting/CompRegistry.h"
+#include "ZeusEngineCore/scripting/SystemManager.h"
+#include "ZeusEngineCore/engine/Renderer.h"
 
 struct GLFWwindow;
 namespace ZEN {
@@ -22,6 +24,8 @@ namespace ZEN {
         ModelImporter& getModelImporter(){return *m_ModelImporter;}
         RenderSystem& getRenderSystem(){return *m_RenderSystem;}
         CameraSystem& getCameraSystem(){return *m_CameraSystem;}
+        SystemManager& getSystemManager() {return *m_SystemManager;}
+        CompRegistry& getCompRegistry(){return *m_CompRegistry;}
         Scene& getScene(){return *m_Scene;}
     private:
         //Core
@@ -34,6 +38,9 @@ namespace ZEN {
         //Systems
         RenderSystem* m_RenderSystem{};
         CameraSystem* m_CameraSystem{};
+
+        std::unique_ptr<SystemManager> m_SystemManager{};
+        std::unique_ptr<CompRegistry> m_CompRegistry{};
 
         eRendererAPI m_API{};
 

@@ -1,5 +1,5 @@
 
-#include "ZeusEngineCore/FileStreamWriter.h"
+#include "ZeusEngineCore/stream/FileStreamWriter.h"
 
 ZEN::FileStreamWriter::FileStreamWriter(const std::filesystem::path &path) : m_Path(path),
 m_Stream(path, std::ios::binary | std::ios::trunc) {

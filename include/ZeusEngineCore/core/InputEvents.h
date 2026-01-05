@@ -1,6 +1,6 @@
 #pragma once
 //#include "ZeusEngineCore/Entity.h"
-#include "ZeusEngineCore/Event.h"
+#include "ZeusEngineCore/core/Event.h"
 
 namespace ZEN {
     class Entity;

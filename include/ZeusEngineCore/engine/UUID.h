@@ -4,7 +4,9 @@ namespace ZEN {
     class UUID {
     public:
         UUID();
-        UUID(uint64_t handle);
+        constexpr UUID(uint64_t handle) noexcept
+            : m_Handle(handle) {}
+        //UUID(uint64_t handle);
 
         operator uint64_t() const {
             return m_Handle;

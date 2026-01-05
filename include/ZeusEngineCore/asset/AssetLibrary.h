@@ -1,10 +1,21 @@
 #pragma once
-#include "UUID.h"
-#include "../../src/Systems/Renderer/IResourceManager.h"
-#include "ZeusEngineCore/AssetTypes.h"
+#include "ZeusEngineCore/core/Util.h"
+#include "../../../src/Systems/Renderer/IResourceManager.h"
+#include "AssetTypes.h"
 
 namespace ZEN {
     //cant remove these
+    static constexpr AssetID defaultCubeID     {1};
+    static constexpr AssetID defaultQuadID     {2};
+    static constexpr AssetID defaultSphereID     {3};
+    static constexpr AssetID defaultMaterialID {4};
+    static constexpr AssetID defaultShaderID   {5};
+    static constexpr AssetID defaultTextureID   {6};
+    static constexpr AssetID defaultSkyboxID   {7};
+    static constexpr AssetID defaultQuadShaderID   {8};
+    static constexpr AssetID defaultNormalsShaderID   {9};
+    static constexpr int minDefault {1};
+    static constexpr int maxDefault {9};
     const std::unordered_set<std::string> defaultMeshes = {
         "Cube", "Sphere", "Capsule"
     };
@@ -20,6 +31,7 @@ namespace ZEN {
     class AssetLibrary {
     public:
         explicit AssetLibrary();
+        ~AssetLibrary();
 
         template<typename T>
         AssetID createAsset(T&& asset, const std::string& name = "") {
@@ -91,21 +103,12 @@ namespace ZEN {
         MaterialRaw getMaterialRaw(const Material &material);
         MaterialRaw getMaterialRaw(const AssetID &material);
 
-        AssetID getCubeID() const { return m_CubeID; }
-        AssetID getQuadID() const { return m_QuadID; }
-        AssetID getSkyboxID() const { return m_SkyboxID; }
-        AssetID getSphereID() const { return m_SphereID; }
-        AssetID getDefaultMaterialID() const { return m_DefaultMatID; }
-
     private:
         AssetMap m_AssetMap{};
         NameMap m_NameMap{};
         IResourceManager* m_ResourceManager{};
-        AssetID m_CubeID{};
-        AssetID m_QuadID{};
-        AssetID m_SkyboxID{};
-        AssetID m_SphereID{};
-        AssetID m_DefaultMatID{};
+
+        void clearNonDefaults();
 
         // Internal generators
         MeshData createCube();

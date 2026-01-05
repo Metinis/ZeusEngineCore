@@ -13,17 +13,7 @@ using namespace ZEN;
 SystemManager::SystemManager() = default;
 
 SystemManager::~SystemManager() {
-    for (auto* s : m_Systems) {
-        s->onUnload();
-        delete s;
-    }
-#ifdef _WIN32
-    for (auto h : m_DllHandles)
-        FreeLibrary(h);
-#else
-    for (auto h : m_DllHandles)
-        dlclose(h);
-#endif
+    clearAll();
 }
 #if defined(_WIN32)
 constexpr const char* DYLIB_EXT = ".dll";
@@ -35,7 +25,7 @@ constexpr const char* DYLIB_EXT = ".so";
 
 
 
-bool SystemManager::loadSystemDLL(const std::string& path, Scene* scene) {
+bool SystemManager::loadSystemDLL(const std::string& path) {
 #ifdef _WIN32
     HMODULE handle = LoadLibraryA(path.c_str());
     if (!handle) {
@@ -66,7 +56,6 @@ bool SystemManager::loadSystemDLL(const std::string& path, Scene* scene) {
     }
 
     m_Systems.push_back(system);
-    system->onLoad(scene);
     return true;
 }
 bool SystemManager::loadAllFromDirectory(const std::string& directory, Scene* scene) {
@@ -85,7 +74,7 @@ bool SystemManager::loadAllFromDirectory(const std::string& directory, Scene* sc
 
         std::cout << "Loading system: " << path << "\n";
 
-        if (!loadSystemDLL(path.string(), scene)) {
+        if (!loadSystemDLL(path.string())) {
             std::cerr << "Failed to load: " << path << "\n";
         }
     }
@@ -98,13 +87,33 @@ void SystemManager::updateAll(float dt) {
 }
 
 void SystemManager::loadAll(Scene* scene) {
-    for (auto* s : m_Systems)
+    for (auto* s : m_Systems) {
         s->onLoad(scene);
+    }
 }
 
 void SystemManager::unloadAll() {
-    for (auto* s : m_Systems)
+    for (auto* s : m_Systems) {
         s->onUnload();
+    }
+}
+
+void SystemManager::clearAll() {
+    for (auto* s : m_Systems) {
+        s->onUnload();
+        delete s;
+    }
+    m_Systems.clear();
+    for (auto h : m_DllHandles) {
+#ifdef _WIN32
+        for (auto h : m_DllHandles)
+            FreeLibrary(h);
+#else
+        for (auto h : m_DllHandles)
+            dlclose(h);
+#endif
+    }
+    m_DllHandles.clear();
 }
 
 void SystemManager::addSystem(ISystem* system) {

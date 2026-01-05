@@ -1,9 +1,9 @@
-#include "ZeusEngineCore/CameraSystem.h"
-#include "ZeusEngineCore/Components.h"
-#include "ZeusEngineCore/Scene.h"
+#include "ZeusEngineCore/engine/CameraSystem.h"
+#include "ZeusEngineCore/engine/Components.h"
+#include "ZeusEngineCore/engine/Scene.h"
 #include <glm/gtc/matrix_transform.hpp>
-#include <ZeusEngineCore/Application.h>
-#include "ZeusEngineCore/InputEvents.h"
+#include <ZeusEngineCore/core/Application.h>
+#include "ZeusEngineCore/core/InputEvents.h"
 #include "ZeusEngineCore/input/KeyCodes.h"
 #include "ZeusEngineCore/input/MouseCodes.h"
 
@@ -16,12 +16,19 @@ CameraSystem::CameraSystem() : m_Scene(&Application::get().getEngine()->getScene
 
 void CameraSystem::onUpdate(float deltaTime) {
     if (m_PlayMode) {
+        auto gameCamView = m_Scene->getEntities<CameraComp>();
+
+        for (auto entity : gameCamView) {
+            auto &camera = entity.getComponent<CameraComp>();
+            camera.aspect = m_AspectRatio;
+            camera.projection = glm::perspective(camera.fov, camera.aspect, camera.near, camera.far);
+        }
         return;
     }
-    auto view = m_Scene->getEntities<CameraComp>();
+    auto view = m_Scene->getEntities<SceneCameraComp>();
 
     for (auto entity : view) {
-        auto &camera = entity.getComponent<CameraComp>();
+        auto &camera = entity.getComponent<SceneCameraComp>();
 
         //update position if has transform
         if (auto *transform = entity.tryGetComponent<TransformComp>()) {
@@ -66,8 +73,8 @@ void CameraSystem::onUpdate(float deltaTime) {
             camera.projection = glm::perspective(camera.fov, camera.aspect, camera.near, camera.far);
             //m_Resized = false;
         //}
-
     }
+
 
 }
 
@@ -84,6 +91,7 @@ void CameraSystem::onEvent(Event &event) {
 
 bool CameraSystem::onPlayMode(RunPlayModeEvent &e) {
     m_PlayMode = e.getPlaying();
+    return false;
 }
 
 bool CameraSystem::onKeyPressed(const KeyPressedEvent &e) {
