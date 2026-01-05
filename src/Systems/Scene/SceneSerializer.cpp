@@ -163,7 +163,7 @@ bool SceneSerializer::deserialize(const std::string &path) {
             if (transformComp) {
                 TransformComp comp {
                     .localPosition = transformComp["LocalPosition"].as<glm::vec3>(),
-                    .localRotation = transformComp["LocalRotation"].as<glm::vec3>(),
+                    .localRotation = transformComp["LocalRotation"].as<glm::quat>(),
                     .localScale = transformComp["LocalScale"].as<glm::vec3>(),
                 };
                 entityInst.getComponent<TransformComp>() = comp;
