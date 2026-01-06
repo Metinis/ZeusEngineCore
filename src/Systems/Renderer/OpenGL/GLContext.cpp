@@ -39,6 +39,11 @@ void GLContext::clear(bool shouldClearColor, bool shouldClearDepth) {
     }
 }
 
+void GLContext::clearInt() {
+    GLuint clearValue = 0;
+    glClearBufferuiv(GL_COLOR, 0, &clearValue);
+}
+
 void GLContext::depthMask(bool val) {
     glDepthMask(val);
 
@@ -75,4 +80,25 @@ void GLContext::setViewport(uint32_t xCorner, uint32_t yCorner, uint32_t width, 
 
 void GLContext::swapBuffers() {
     glfwSwapBuffers(m_WindowHandle);
+}
+
+uint32_t GLContext::readPixels(FBO fbo, float x, float y) {
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo.fboID);
+    glReadBuffer(GL_COLOR_ATTACHMENT0);
+    glDisable(GL_BLEND);
+    glEnable(GL_DEPTH_TEST);
+
+    uint32_t id;
+    glReadPixels(
+    x,
+    y,
+    1,
+    1,
+    GL_RED_INTEGER,
+    GL_UNSIGNED_INT,
+    &id
+    );
+    glEnable(GL_BLEND);
+    glEnable(GL_DEPTH_TEST);
+    return id;
 }

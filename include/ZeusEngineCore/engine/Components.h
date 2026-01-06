@@ -1,4 +1,7 @@
 #pragma once
+#define GLM_ENABLE_EXPERIMENTAL
+#include "glm/gtx/matrix_decompose.hpp"
+#include "glm/gtx/quaternion.hpp"
 #include "ZeusEngineCore/core/Vertex.h"
 #include "ZeusEngineCore/core/Util.h"
 #include "ZeusEngineCore/engine/UUID.h"
@@ -39,34 +42,39 @@ namespace ZEN {
     };
     struct TransformComp {
         glm::vec3 localPosition{0.0f, 0.0f, 0.0f};
-        glm::vec3 localRotation{0.0f, 0.0f, 0.0f};
+        glm::quat localRotation{1.0f, 0.0f, 0.0f, 0.0f};
         glm::vec3 localScale{1.0f, 1.0f, 1.0f};
 
         glm::mat4 worldMatrix{1.0f}; //needs to be computed each frame in a render system
         //because it relies on parent
 
         [[nodiscard]] glm::mat4 getLocalMatrix() const {
-            auto const [t, r, s] = toMatrices(localPosition, localRotation, localScale);
+            glm::mat4 t = glm::translate(glm::mat4(1.0f), localPosition);
+            glm::mat4 r = glm::toMat4(localRotation);
+            glm::mat4 s = glm::scale(glm::mat4(1.0f), localScale);
             return t * r * s;
         }
 
-        //world position
-        [[nodiscard]] glm::mat4 getViewMatrix() const {
-            auto const [t, r, s] = toMatrices(-glm::vec3(worldMatrix[3]), -localRotation, localScale);
-            return r * t * s;
+        glm::mat4 getViewMatrix() const {
+            glm::mat4 rot = glm::mat4_cast(glm::conjugate(localRotation)); // camera looks along -Z
+            glm::mat4 trans = glm::translate(glm::mat4(1.0f), -localPosition);
+            return rot * trans;
         }
 
         [[nodiscard]] glm::vec3 getFront() const {
-            float pitch = glm::radians(localRotation.x);
-            float yaw   = glm::radians(localRotation.y);
-
-            glm::vec3 front;
-            front.x = sin(yaw) * cos(pitch);
-            front.y = -sin(pitch);
-            front.z = cos(yaw) * cos(pitch);
-
-            return -glm::normalize(front);
+            return glm::normalize(localRotation * glm::vec3(0, 0, -1));
         }
+        void decomposeTransform(const glm::mat4& transform)
+        {
+            glm::vec3 skew;
+            glm::vec4 perspective;
+            glm::quat orientation;
+
+            glm::decompose(transform, localScale, orientation, localPosition, skew, perspective);
+
+            localRotation = orientation;
+        }
+
     };
 
     struct DirectionalLightComp {

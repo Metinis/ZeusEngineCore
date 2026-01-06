@@ -1,8 +1,10 @@
 #include "ZeusEngineCore/engine/Renderer.h"
 #define GLFW_INCLUDE_NONE
 #include "GLFW/glfw3.h"
+#include "ZeusEngineCore/asset/GPUHandle.h"
 #include "ZeusEngineCore/core/Application.h"
 #include "ZeusEngineCore/core/InputEvents.h"
+#include "ZeusEngineCore/engine/Scene.h"
 
 using namespace ZEN;
 
@@ -28,6 +30,7 @@ Renderer::Renderer() : m_Window(Application::get().getWindow()->getNativeWindow(
     m_CaptureFBO.fboID = m_ResourceManager->createFBO();
     m_ResourceManager->bindFBO(m_CaptureFBO.fboID);
     m_CaptureRBO.rboID = m_ResourceManager->createDepthBuffer(512, 512);
+    initPicking();
 }
 
 void Renderer::beginFrame() {
@@ -51,6 +54,61 @@ void Renderer::bindDefaultFBO() {
     m_Context->setViewport(xCorner, yCorner, m_Width, m_Height);
 
 }
+
+void Renderer::initPicking() {
+    int fbWidth, fbHeight;
+    glfwGetFramebufferSize(m_Window, &fbWidth, &fbHeight);
+    m_PickingFBO.fboID = m_ResourceManager->createFBO();
+    m_ResourceManager->bindFBO(m_PickingFBO.fboID);
+    auto windowWidth = Application::get().getWindow()->getHandleWidth();
+    auto windowHeight = Application::get().getWindow()->getHandleHeight();
+    m_PickingTex.textureID = m_ResourceManager->createTextureRaw(m_Width, m_Height);
+    m_PickingRBO.rboID = m_ResourceManager->createDepthBuffer(m_Width, m_Height);
+    m_ResourceManager->bindFBO(m_MainFBO.fboID);
+}
+
+void Renderer::drawToPicking() {
+    auto pickingShaderHandle = GPUHandle<GPUShader>(defaultPickingShaderID).get()->drawableID;
+    m_ResourceManager->bindShader(pickingShaderHandle);
+    m_ResourceManager->bindFBO(m_PickingFBO.fboID);
+    int fbWidth, fbHeight;
+    glfwGetFramebufferSize(m_Window, &fbWidth, &fbHeight);
+    auto windowWidth = Application::get().getWindow()->getHandleWidth();
+    auto windowHeight = Application::get().getWindow()->getHandleHeight();
+    //m_Context->setViewport(0, 0, m_Width, m_Height);
+    m_ResourceManager->bindTexture(m_PickingTex.textureID, 0);
+    m_ResourceManager->bindDepthBuffer(m_PickingRBO.rboID);
+    m_ResourceManager->updateDepthBufferDimensions(m_Width, m_Height);
+    m_Context->clear(false, true);
+    m_Context->clearInt();
+
+
+    //m_ResourceManager->bindUBO(m_ViewUBO.uboID);
+    auto& scene = Application::get().getEngine()->getScene();
+    for (auto entity : scene.getEntities<MeshComp, MaterialComp, TransformComp>()) {
+        auto& dc = entity.getComponent<MeshComp>();
+        if (auto* gpuMesh = m_ResourceManager->get<GPUMesh>(dc.handle.id())) {
+            auto transform = entity.getComponent<TransformComp>();
+            //m_ResourceManager->bindUBO(m_InstanceUBO.uboID);
+            writeToUBO(m_InstanceUBO.uboID, transform.worldMatrix);
+            uint32_t entityH = uint32_t(entt::entity(entity));
+            m_ResourceManager->pushUint(pickingShaderHandle, "u_EntityID", entityH);
+            m_Context->drawMesh(*m_ResourceManager,
+            *gpuMesh);
+        }
+    }
+    m_ResourceManager->bindFBO(m_MainFBO.fboID);
+}
+
+uint32_t Renderer::getPixels(float mouseX, float mouseY, glm::vec2 viewportSize) {
+    float mouseX_fb = mouseX * (m_Width / viewportSize.x);
+    float mouseY_fb = mouseY * (m_Height / viewportSize.y);
+    float fbX = mouseX + xCorner;
+    float fbY = yCorner + mouseY;
+
+    return m_Context->readPixels(m_PickingFBO, mouseX_fb, mouseY_fb);
+}
+
 const glm::mat4 captureProjection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
 const glm::mat4 captureViews[] =
 {

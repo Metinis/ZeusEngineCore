@@ -28,6 +28,12 @@ AssetLibrary::AssetLibrary() : m_ResourceManager(Application::get().getEngine()-
         .geoPath = "/shaders/normal-visual.geom"
     };
     addAsset(defaultNormalsShaderID, normalsShader, "NormalsShader");
+
+    ShaderData pickingShader {
+        .vertPath = "/shaders/pickingShader.vert",
+        .fragPath = "/shaders/pickingShader.frag"
+    };
+    addAsset(defaultPickingShaderID, pickingShader, "PickingShader");
     //AssetSerializer serializer(this);
     //serializer.deserialize("assets/default.zenpackage");
 }

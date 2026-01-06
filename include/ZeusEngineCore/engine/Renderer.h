@@ -44,6 +44,9 @@ namespace ZEN {
 		}
 		void beginFrame();
 		void bindDefaultFBO();
+		void initPicking();
+		void drawToPicking();
+		uint32_t getPixels(float mouseX, float mouseY, glm::vec2 viewportSize);
 
 		void renderToCubeMapHDR(uint32_t cubemapTexID, uint32_t eqToCubeMapShader, uint32_t hdrTexID, const GPUMesh& drawable);
 		void renderToIrradianceMap(uint32_t cubemapTexID, uint32_t irradianceTexID, uint32_t irradianceShader,const GPUMesh &drawable);
@@ -77,6 +80,10 @@ namespace ZEN {
 
 		Texture m_ColorTex{};
 		RBO m_DepthRBO{};
+
+		FBO m_PickingFBO{};
+		Texture m_PickingTex{};
+		RBO m_PickingRBO{};
 
 		bool m_Resized{};
 		float m_AspectRatio{};

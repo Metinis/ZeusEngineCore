@@ -49,6 +49,7 @@ namespace ZEN {
         uint32_t createHDRTexture(const std::string& texturePath) override;
         uint32_t createTextureAssimp(const aiTexture& aiTex) override;
         uint32_t createBRDFLUTTexture(uint32_t width, uint32_t height) override;
+        uint32_t createTextureRaw(uint32_t width, uint32_t height) override;
         void genMipMapCubeMap(uint32_t textureID) override;
         void bindTexture(uint32_t textureID, uint32_t binding) override;
         void deleteTexture(uint32_t textureID) override;
@@ -75,6 +76,8 @@ namespace ZEN {
         void deleteDepthBuffer(uint32_t bufferID) override;
 
         void pushFloat(uint32_t shaderID, const std::string& name, float value) override;
+        void pushUint(uint32_t shaderID, const std::string& name, uint32_t value) override;
+
 
 
     private:

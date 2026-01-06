@@ -11,13 +11,13 @@ add_library(ZeusEngineCore SHARED)
 
 target_compile_features(ZeusEngineCore PUBLIC cxx_std_23)
 
-
 add_library(imgui STATIC)
 
 target_include_directories(imgui PUBLIC
         include/imgui
         include/imgui/backends
 )
+target_compile_definitions(imgui PUBLIC IMGUI_DEFINE_MATH_OPERATORS)
 
 target_sources(imgui PRIVATE
         include/imgui/imgui.cpp
@@ -33,6 +33,22 @@ target_link_libraries(imgui
         PRIVATE
         glfw
 )
+
+add_library(ImGuizmo STATIC)
+
+target_include_directories(ImGuizmo PUBLIC
+    include/ImGuizmo
+        include/imgui
+)
+
+target_sources(ImGuizmo PRIVATE
+    include/ImGuizmo/ImGuizmo.cpp
+)
+target_link_libraries(ImGuizmo
+        PRIVATE
+        imgui
+)
+
 
 file(GLOB_RECURSE ZEUSENGINECORE_SOURCES
         src/*.cpp
@@ -83,6 +99,7 @@ target_link_libraries(ZeusEngineCore
         PUBLIC
         assimp::assimp
         imgui
+        ImGuizmo
         yaml-cpp::yaml-cpp
 )
 

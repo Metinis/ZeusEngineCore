@@ -24,6 +24,8 @@ namespace ZEN {
 		Entity createEntity(const std::string& name = "");
 		Entity createEntity(const std::string& name, UUID id);
 		Entity getEntity(UUID id);
+		Entity getEntityByRegistryID(uint32_t registryID);
+		Entity getSceneCamera();
 		bool isDescendantOf(Entity parent, Entity possibleChild);
 		void removeEntity(Entity entity);
 

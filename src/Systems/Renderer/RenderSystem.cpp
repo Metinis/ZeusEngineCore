@@ -18,7 +18,7 @@ RenderSystem::RenderSystem() :
 
     m_QuadShaderID = GPUHandle<GPUShader>(defaultQuadShaderID);
     m_NormalsShaderID = GPUHandle<GPUShader>(defaultNormalsShaderID);
-
+    //initPicking();
 }
 
 
@@ -164,6 +164,8 @@ void RenderSystem::renderDrawablesToShader(uint32_t shaderID) {
 
     }
 }
+
+
 
 void RenderSystem::initSkyboxAssets(SkyboxComp& comp) {
     auto library = Project::getActive()->getAssetLibrary();
@@ -337,6 +339,11 @@ void RenderSystem::onRender() {
 
     bindSceneUBOs();
 
+    //m_ResourceManager->bindFBO(m_Renderer->m_PickingFBO.fboID);
+    m_Renderer->drawToPicking();
+    //renderDrawablesToShader(GPUHandle<GPUShader>(defaultPickingShaderID).get()->drawableID);
+
+    m_ResourceManager->bindFBO(m_Renderer->m_MainFBO.fboID);
     //render all meshes with drawable comps
     renderDrawables();
 

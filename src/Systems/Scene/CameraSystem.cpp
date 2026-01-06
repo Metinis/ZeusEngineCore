@@ -32,11 +32,9 @@ void CameraSystem::onUpdate(float deltaTime) {
 
         //update position if has transform
         if (auto *transform = entity.tryGetComponent<TransformComp>()) {
-            glm::vec3 worldUp = glm::vec3(0.0f, 1.0f, 0.0f);
             glm::vec3 front = transform->getFront();
-            glm::vec3 flatFront = glm::normalize(glm::vec3(front.x, 0.0f, front.z));
-            glm::vec3 right = glm::normalize(glm::cross(flatFront, worldUp));
-            glm::vec3 up = worldUp;
+            glm::vec3 right = glm::normalize(glm::cross(front, glm::vec3(0.0f,1.0f,0.0f)));
+            glm::vec3 up = glm::normalize(glm::cross(right, front));
 
             glm::vec3 moveVec = {};
             if (m_KeysDown.contains(Key::W)) moveVec += front;
@@ -55,27 +53,24 @@ void CameraSystem::onUpdate(float deltaTime) {
             }
             if(m_CursorLocked) {
                 constexpr float sensitivity = 0.1f;
-                double xOffset = m_CursorPosLastX - m_CursorPosX;
-                double yOffset = m_CursorPosLastY - m_CursorPosY;
+                float xOffset = m_CursorPosX - m_CursorPosLastX;
+                float yOffset = m_CursorPosY - m_CursorPosLastY;
 
-                transform->localRotation.y += xOffset * sensitivity;
+                xOffset *= sensitivity;
+                yOffset *= sensitivity;
 
-                float rotationX = transform->localRotation.x + yOffset * sensitivity;
-                rotationX = glm::clamp(rotationX, -89.0f, 89.0f);
-                transform->localRotation.x = rotationX;
+                glm::quat yaw = glm::angleAxis(glm::radians(-xOffset), glm::vec3(0.0f, 1.0f, 0.0f));
+                glm::quat pitch = glm::angleAxis(glm::radians(-yOffset), right);
+
+                transform->localRotation = glm::normalize(yaw * pitch * transform->localRotation);
 
                 m_CursorPosLastX = m_CursorPosX;
                 m_CursorPosLastY = m_CursorPosY;
             }
         }
-        //if(m_Resized) {
-            camera.aspect = m_AspectRatio;
-            camera.projection = glm::perspective(camera.fov, camera.aspect, camera.near, camera.far);
-            //m_Resized = false;
-        //}
+        camera.aspect = m_AspectRatio;
+        camera.projection = glm::perspective(camera.fov, camera.aspect, camera.near, camera.far);
     }
-
-
 }
 
 void CameraSystem::onEvent(Event &event) {
