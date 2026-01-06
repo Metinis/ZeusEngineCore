@@ -407,6 +407,41 @@ uint32_t ZEN::GLResourceManager::createBRDFLUTTexture(uint32_t width, uint32_t h
     return nextTextureID++;
 }
 
+uint32_t ZEN::GLResourceManager::createTextureRaw(uint32_t width, uint32_t height) {
+    GLTexture texture{};
+    glGenTextures(1, &texture.textureID);
+    glBindTexture(GL_TEXTURE_2D, texture.textureID);
+
+    glTexImage2D(
+        GL_TEXTURE_2D,
+        0,
+        GL_R32UI,
+        width,
+        height,
+        0,
+        GL_RED_INTEGER,
+        GL_UNSIGNED_INT,
+        nullptr
+    );
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    glFramebufferTexture2D(
+    GL_FRAMEBUFFER,
+    GL_COLOR_ATTACHMENT0,
+    GL_TEXTURE_2D,
+    texture.textureID,
+    0
+    );
+
+    GLenum drawBuffers[1] = { GL_COLOR_ATTACHMENT0 };
+    glDrawBuffers(1, drawBuffers);
+
+    m_Textures[nextTextureID] = texture;
+    return nextTextureID++;
+}
+
 void ZEN::GLResourceManager::genMipMapCubeMap(uint32_t textureID) {
     withResource(m_Textures, textureID, [](GLTexture &t) {
         glBindTexture(GL_TEXTURE_CUBE_MAP, t.textureID);
@@ -694,6 +729,15 @@ void ZEN::GLResourceManager::pushFloat(uint32_t shaderID, const std::string &nam
         GLint loc = glGetUniformLocation(s.programID, name.c_str());
         if (loc != -1)
             glUniform1f(loc, value);
+    });
+}
+
+void ZEN::GLResourceManager::pushUint(uint32_t shaderID, const std::string& name, uint32_t value) {
+    withResource(m_Shaders, shaderID, [&](GLShader& s) {
+        glUseProgram(s.programID);
+        GLint loc = glGetUniformLocation(s.programID, name.c_str());
+        if (loc != -1)
+            glUniform1ui(loc, value);
     });
 }
 

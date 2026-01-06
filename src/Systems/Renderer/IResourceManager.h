@@ -68,6 +68,14 @@ namespace ZEN {
                     m_Mappings.emplace(id, ret);
                     return ret;
                 }
+                else if (asset.type == Texture2DRaw) {
+                    auto ret = GPUTexture {
+                        .drawableID = createTextureRaw(asset.dimensions.x, asset.dimensions.y),
+                        .type = asset.type,
+                    };
+                    m_Mappings.emplace(id, ret);
+                    return ret;
+                }
                 else if(asset.type == Texture2DAssimp) {
                     auto ret = GPUTexture {
                         .drawableID = createTextureAssimp(*asset.aiTex),
@@ -213,6 +221,7 @@ namespace ZEN {
         virtual void deleteUBO(uint32_t uboID) = 0;
 
         virtual uint32_t createTexture(const std::string& texturePath, bool isAbsPath) = 0;
+        virtual uint32_t createTextureRaw(uint32_t width, uint32_t height) = 0;
         virtual uint32_t createHDRTexture(const std::string& texturePath) = 0;
         virtual uint32_t createTextureAssimp(const aiTexture& aiTex) = 0;
         virtual uint32_t createBRDFLUTTexture(uint32_t width, uint32_t height) = 0;
@@ -242,6 +251,7 @@ namespace ZEN {
         virtual void deleteDepthBuffer(uint32_t bufferID) = 0;
 
         virtual void pushFloat(uint32_t shaderID, const std::string& name, float value) = 0;
+        virtual void pushUint(uint32_t shaderID, const std::string& name, uint32_t value) = 0;
 
         std::string fullPath(const std::string& path) {
             return m_ResourceRoot + path;

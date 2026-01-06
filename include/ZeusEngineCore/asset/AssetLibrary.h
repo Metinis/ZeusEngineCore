@@ -14,8 +14,9 @@ namespace ZEN {
     static constexpr AssetID defaultSkyboxID   {7};
     static constexpr AssetID defaultQuadShaderID   {8};
     static constexpr AssetID defaultNormalsShaderID   {9};
+    static constexpr AssetID defaultPickingShaderID   {10};
     static constexpr int minDefault {1};
-    static constexpr int maxDefault {9};
+    static constexpr int maxDefault {10};
     const std::unordered_set<std::string> defaultMeshes = {
         "Cube", "Sphere", "Capsule"
     };

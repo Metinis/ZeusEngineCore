@@ -4,6 +4,8 @@
 struct GLFWwindow;
 
 namespace ZEN {
+    struct FBO;
+
     enum eDepthModes {
         LESS,
         LEQUAL
@@ -20,6 +22,8 @@ namespace ZEN {
         virtual void setViewport(uint32_t width, uint32_t height) = 0;
 		virtual void setViewport(uint32_t xCorner, uint32_t yCorner, uint32_t width, uint32_t height) = 0;
         virtual void swapBuffers() = 0;
+        virtual void clearInt() = 0;
+        virtual uint32_t readPixels(FBO fbo, float x, float y) = 0;
         static std::unique_ptr<IContext> create();
     };
 }

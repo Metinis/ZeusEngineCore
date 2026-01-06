@@ -130,6 +130,16 @@ Entity Scene::getEntity(UUID id) {
     return Entity{};
 }
 
+Entity Scene::getEntityByRegistryID(uint32_t registryID) {
+
+    for (auto entity : m_Registry.storage<entt::entity>()) {
+        if ((uint32_t)entity == registryID) {
+            return makeEntity(entity);
+        }
+    }
+    return Entity{};
+}
+
 Entity Scene::getSceneCamera() {
     auto view = getEntities<SceneCameraComp>();
     for (auto entity : view) {

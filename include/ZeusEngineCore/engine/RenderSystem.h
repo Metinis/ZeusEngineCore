@@ -18,7 +18,6 @@ namespace ZEN {
 		void onEvent(Event& event) override;
 		void toggleDrawNormals() { m_DrawNormals = !m_DrawNormals; }
 	private:
-
 		void initSkyboxAssets(SkyboxComp& comp);
 		bool onPlayModeEvent(RunPlayModeEvent& e);
 		void writeCameraData(glm::mat4& view, glm::mat4& projection);

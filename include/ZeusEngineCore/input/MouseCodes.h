@@ -1,5 +1,5 @@
 #pragma once
-#include "GLFW/glfw3.h"
+#include "ZeusEngineCore/input/KeyCodes.h"
 
 namespace ZEN
 {
@@ -7,19 +7,19 @@ namespace ZEN
     {
         enum Button : int
         {
-            Button1      = GLFW_MOUSE_BUTTON_1,
-            Button2      = GLFW_MOUSE_BUTTON_2,
-            Button3      = GLFW_MOUSE_BUTTON_3,
-            Button4      = GLFW_MOUSE_BUTTON_4,
-            Button5      = GLFW_MOUSE_BUTTON_5,
-            Button6      = GLFW_MOUSE_BUTTON_6,
-            Button7      = GLFW_MOUSE_BUTTON_7,
-            Button8      = GLFW_MOUSE_BUTTON_8,
+            Button1      = 0,
+            Button2      = 1,
+            Button3      = 2,
+            Button4      = 3,
+            Button5      = 4,
+            Button6      = 5,
+            Button7      = 6,
+            Button8      = 7,
 
-            ButtonLast   = GLFW_MOUSE_BUTTON_LAST,
-            ButtonLeft   = GLFW_MOUSE_BUTTON_LEFT,
-            ButtonRight  = GLFW_MOUSE_BUTTON_RIGHT,
-            ButtonMiddle = GLFW_MOUSE_BUTTON_MIDDLE
+            ButtonLast   = Button8,
+            ButtonLeft   = Button1,
+            ButtonRight  = Button2,
+            ButtonMiddle = Button3
         };
     }
 }
