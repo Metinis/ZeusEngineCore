@@ -47,6 +47,7 @@ namespace ZEN {
 		entt::registry m_Registry{};
 		std::unordered_map<Entity, std::unordered_map<std::string, RuntimeComponent>> m_RuntimeComponents;
 		AssetLibrary* m_ModelLibrary{};
+		PhysicsSystem* m_PhysicsSystem{};
 
 		bool m_PlayMode{false};
 		bool m_LoadedScene{false};

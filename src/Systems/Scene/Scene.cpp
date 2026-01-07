@@ -9,7 +9,7 @@
 
 using namespace ZEN;
 
-Scene::Scene() {
+Scene::Scene() : m_PhysicsSystem(&Application::get().getEngine()->getPhysicsSystem()){
     Application::get().getEngine()->getSystemManager().loadAllFromDirectory(Project::getActive()->getActiveProjectRoot() +
         "assets/scripts/bin/", this);
     createDefaultScene();
@@ -75,6 +75,30 @@ void Scene::createDefaultScene() {
     auto cubeEntity = createEntity("Cube");
     auto assetLibrary = Project::getActive()->getAssetLibrary();
     cubeEntity.addComponent<MeshComp>(AssetHandle<MeshData>(defaultCubeID));
+    JPH::Vec3 halfExtents(0.5f, 0.5f, 0.5f); // half-size of the cube
+    JPH::Ref<JPH::Shape> boxShape = new JPH::BoxShape(halfExtents);
+    JPH::BodyCreationSettings bodySettings(
+        boxShape,
+        JPH::Vec3(0.0f, 0.0f, 0.0f),
+        JPH::Quat::sIdentity(),
+        JPH::EMotionType::Static,
+        Layers::NON_MOVING
+    );
+    cubeEntity.addComponent<PhysicsBodyComp>(bodySettings, boxShape);
+
+    auto cubeEntity2 = createEntity("Cube2");
+    cubeEntity2.addComponent<MeshComp>(AssetHandle<MeshData>(defaultCubeID));
+    JPH::Vec3 halfExtents2(0.5f, 0.5f, 0.5f); // half-size of the cube
+    JPH::Ref<JPH::Shape> boxShape2 = new JPH::BoxShape(halfExtents);
+    JPH::BodyCreationSettings bodySettings2(
+        boxShape,
+        JPH::Vec3(0.0f, 100.0f, 0.0f),
+        JPH::Quat::sIdentity(),
+        JPH::EMotionType::Dynamic,
+        Layers::MOVING
+    );
+    cubeEntity2.addComponent<PhysicsBodyComp>(bodySettings2, boxShape2);
+
 
     auto skyboxEntity = createEntity("Skybox");
     skyboxEntity.addComponent<SkyboxComp>();

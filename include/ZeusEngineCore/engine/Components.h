@@ -2,10 +2,16 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include "glm/gtx/matrix_decompose.hpp"
 #include "glm/gtx/quaternion.hpp"
+#include "Jolt/Core/Reference.h"
+#include "Jolt/Physics/Body/BodyID.h"
 #include "ZeusEngineCore/core/Vertex.h"
 #include "ZeusEngineCore/core/Util.h"
 #include "ZeusEngineCore/engine/UUID.h"
 #include "ZeusEngineCore/asset/AssetHandle.h"
+
+namespace JPH {
+    class Shape;
+}
 
 namespace entt {
     enum class entity : std::uint32_t;
@@ -13,8 +19,6 @@ namespace entt {
 
 namespace ZEN {
     class Entity;
-
-
 
     struct UUIDComp {
         UUID uuid;
@@ -75,6 +79,10 @@ namespace ZEN {
             localRotation = orientation;
         }
 
+    };
+    struct PhysicsBodyComp {
+        JPH::BodyID bodyID;
+        JPH::Ref<JPH::Shape> shape;
     };
 
     struct DirectionalLightComp {

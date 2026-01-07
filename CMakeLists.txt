@@ -93,6 +93,14 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(yaml-cpp)
 
+FetchContent_Declare(
+        JoltPhysics
+        GIT_REPOSITORY "https://github.com/jrouwe/JoltPhysics"
+        GIT_TAG "v5.5.0"
+        SOURCE_SUBDIR "Build"
+)
+FetchContent_MakeAvailable(JoltPhysics)
+
 target_link_libraries(ZeusEngineCore
         PRIVATE
         glfw
@@ -101,6 +109,7 @@ target_link_libraries(ZeusEngineCore
         imgui
         ImGuizmo
         yaml-cpp::yaml-cpp
+        Jolt::Jolt
 )
 
 if(APPLE)

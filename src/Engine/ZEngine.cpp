@@ -23,7 +23,9 @@ void ZEngine::init() {
     m_SystemManager = std::make_unique<SystemManager>();
     m_CompRegistry = std::make_unique<CompRegistry>();
 
+    m_PhysicsSystem = new PhysicsSystem();
     m_Scene = new Scene();
+    m_PhysicsSystem->init();
     m_ModelImporter = std::make_unique<ModelImporter>();
     m_RenderSystem = new RenderSystem();
     m_CameraSystem = new CameraSystem();
@@ -32,6 +34,8 @@ void ZEngine::init() {
     Application::get().pushLayer(m_RenderSystem);
     Application::get().pushLayer(m_CameraSystem);
     Application::get().pushLayer(m_Scene);
+    Application::get().pushLayer(m_PhysicsSystem);
+
 }
 
 ZEngine::~ZEngine() = default;

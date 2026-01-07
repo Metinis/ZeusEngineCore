@@ -1,10 +1,18 @@
 #pragma once
 #include <entt/entt.hpp>
+#include <utility>
 #include "Components.h"
 #include "ZeusEngineCore/scripting/CompRegistry.h"
+#include <Jolt/Physics/Collision/Shape/Shape.h>
+
+namespace JPH {
+    class BodyCreationSettings;
+}
 
 namespace ZEN {
     class Scene;
+    template<typename T>
+        concept IsPhysicsBodyComp = std::same_as<T, PhysicsBodyComp>;
     class Entity {
     public:
         explicit Entity(Scene* scene, entt::entity handle);
@@ -21,10 +29,22 @@ namespace ZEN {
             return m_Registry->any_of<T>(m_Handle);
         }
 
+
+
         template<typename T, typename... Args>
+        requires (!IsPhysicsBodyComp<T>)
         T& addComponent(Args... args) {
             return m_Registry->emplace<T>(m_Handle,
                 std::forward<Args>(args)...);
+        }
+
+        template<typename T = PhysicsBodyComp>
+        requires IsPhysicsBodyComp<T>
+        T& addComponent(const JPH::BodyCreationSettings& settings,
+                JPH::Ref<JPH::Shape> shape)
+        {
+            PhysicsBodyComp comp = addPhysicsBody(settings, shape);
+            return m_Registry->emplace<PhysicsBodyComp>(m_Handle, comp);
         }
 
         ParentComp& addParent(const ParentComp &pc);
@@ -53,6 +73,7 @@ namespace ZEN {
             return false;
         }
 
+        PhysicsBodyComp addPhysicsBody(const JPH::BodyCreationSettings& settings, JPH::Ref<JPH::Shape> shape);
         void* addRuntimeComponent(const ComponentInfo& compInfo);
         RuntimeComponent* getRuntimeComponent(const std::string& compName);
         bool hasRuntimeComponent(const std::string& compName);
