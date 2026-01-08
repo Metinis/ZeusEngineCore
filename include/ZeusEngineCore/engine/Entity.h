@@ -12,7 +12,7 @@ namespace JPH {
 namespace ZEN {
     class Scene;
     template<typename T>
-        concept IsPhysicsBodyComp = std::same_as<T, PhysicsBodyComp>;
+        concept IsColliderComp = std::same_as<T, BoxColliderComp> || std::same_as<T, SphereColliderComp>;
     class Entity {
     public:
         explicit Entity(Scene* scene, entt::entity handle);
@@ -29,23 +29,42 @@ namespace ZEN {
             return m_Registry->any_of<T>(m_Handle);
         }
 
-
-
         template<typename T, typename... Args>
-        //requires (!IsPhysicsBodyComp<T>)
+        requires (!IsColliderComp<T>)
         T& addComponent(Args... args) {
             return m_Registry->emplace<T>(m_Handle,
                 std::forward<Args>(args)...);
         }
 
-        /*template<typename T = PhysicsBodyComp>
-        requires IsPhysicsBodyComp<T>
-        T& addComponent(const JPH::BodyCreationSettings& settings,
-                JPH::Ref<JPH::Shape> shape)
-        {
-            PhysicsBodyComp comp = addPhysicsBody(settings, shape);
-            return m_Registry->emplace<PhysicsBodyComp>(m_Handle, comp);
-        }*/
+        template<typename T, typename... Args>
+        requires (IsColliderComp<T>)
+        T& addComponent(Args... args) {
+            return m_Registry->emplace<T>(m_Handle,
+                std::forward<Args>(args)...);
+        }
+
+        template<typename T>
+        requires (IsColliderComp<T>)
+        T& addComponent() {
+            if (auto* mesh = tryGetComponent<MeshComp>()) {
+                glm::vec3 center{};
+                if constexpr (std::same_as<T, BoxColliderComp>) {
+                    BoxColliderComp comp {
+                        .halfExtents = mesh->handle->getHalfExtents(center),
+                        .offset = center,
+                    };
+                    return addComponent<T>(comp);
+                }
+                if constexpr (std::same_as<T, SphereColliderComp>) {
+                    SphereColliderComp comp {
+                        .radius = mesh->handle->getRadius(center),
+                        .offset = center,
+                    };
+                    return addComponent<T>(comp);
+                }
+            }
+            return m_Registry->emplace<T>(m_Handle);
+        }
 
         ParentComp& addParent(const ParentComp &pc);
         ParentComp& addParent(UUID parentID);
