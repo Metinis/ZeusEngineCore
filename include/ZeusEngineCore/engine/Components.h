@@ -4,6 +4,7 @@
 #include "glm/gtx/quaternion.hpp"
 #include "Jolt/Core/Reference.h"
 #include "Jolt/Physics/Body/BodyID.h"
+#include "Jolt/Physics/Body/MotionType.h"
 #include "ZeusEngineCore/core/Vertex.h"
 #include "ZeusEngineCore/core/Util.h"
 #include "ZeusEngineCore/engine/UUID.h"
@@ -80,11 +81,35 @@ namespace ZEN {
         }
 
     };
-    struct PhysicsBodyComp {
-        JPH::BodyID bodyID;
-        JPH::Ref<JPH::Shape> shape;
-    };
+    struct RigidBodyComp {
+        JPH::EMotionType motionType = JPH::EMotionType::Dynamic;
 
+        float mass = 1.0f;
+        float linearDamping = 0.0f;
+        float angularDamping = 0.05f;
+
+        bool allowSleep = true;
+        bool lockPosX = false;
+        bool lockPosY = false;
+        bool lockPosZ = false;
+
+        bool lockRotX = false;
+        bool lockRotY = false;
+        bool lockRotZ = false;
+    };
+    struct PhysicsBodyComp { //runtime only
+        JPH::BodyID bodyID = JPH::BodyID();
+    };
+    struct BoxColliderComp {
+        glm::vec3 halfExtents {0.5f};
+        glm::vec3 offset {0.0f};
+        bool isTrigger = false;
+    };
+    struct SphereColliderComp {
+        float radius = 0.5f;
+        glm::vec3 offset {0.0f};
+        bool isTrigger = false;
+    };
     struct DirectionalLightComp {
         glm::vec3 ambient{};
         bool isPrimary{true};

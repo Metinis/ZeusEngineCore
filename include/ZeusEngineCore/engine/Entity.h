@@ -32,20 +32,20 @@ namespace ZEN {
 
 
         template<typename T, typename... Args>
-        requires (!IsPhysicsBodyComp<T>)
+        //requires (!IsPhysicsBodyComp<T>)
         T& addComponent(Args... args) {
             return m_Registry->emplace<T>(m_Handle,
                 std::forward<Args>(args)...);
         }
 
-        template<typename T = PhysicsBodyComp>
+        /*template<typename T = PhysicsBodyComp>
         requires IsPhysicsBodyComp<T>
         T& addComponent(const JPH::BodyCreationSettings& settings,
                 JPH::Ref<JPH::Shape> shape)
         {
             PhysicsBodyComp comp = addPhysicsBody(settings, shape);
             return m_Registry->emplace<PhysicsBodyComp>(m_Handle, comp);
-        }
+        }*/
 
         ParentComp& addParent(const ParentComp &pc);
         ParentComp& addParent(UUID parentID);

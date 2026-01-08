@@ -2,6 +2,7 @@
 #include "ZeusEngineCore/engine/Scene.h"
 #include "glm/fwd.hpp"
 #include "glm/vec3.hpp"
+#include "Jolt/Physics/Collision/Shape/StaticCompoundShape.h"
 
 using namespace ZEN;
 
@@ -81,13 +82,141 @@ void PhysicsSystem::syncECSBodyToPhysics(Entity entity, bool wake = true) {
         activation
     );
 }
+JPH::Ref<JPH::Shape> PhysicsSystem::buildShapeForEntity(Entity entity) {
+    JPH::StaticCompoundShapeSettings compound;
+    bool hasShape = false;
 
+    if (entity.hasComponent<BoxColliderComp>()) {
+        auto& box = entity.getComponent<BoxColliderComp>();
+        JPH::Vec3 halfExtents(box.halfExtents.x, box.halfExtents.y, box.halfExtents.z);
+        JPH::Ref<JPH::Shape> shape = new JPH::BoxShape(halfExtents);
+
+        compound.AddShape(
+            JPH::Vec3(box.offset.x, box.offset.y, box.offset.z),
+            JPH::Quat::sIdentity(),
+            shape
+        );
+
+        hasShape = true;
+    }
+
+    if (entity.hasComponent<SphereColliderComp>()) {
+        auto& sphere = entity.getComponent<SphereColliderComp>();
+
+        JPH::Ref<JPH::Shape> shape = new JPH::SphereShape(sphere.radius);
+
+        compound.AddShape(
+            JPH::Vec3(sphere.offset.x, sphere.offset.y, sphere.offset.z),
+            JPH::Quat::sIdentity(),
+            shape
+        );
+
+        hasShape = true;
+    }
+
+    if (!hasShape)
+        return nullptr;
+
+    return compound.Create().Get();
+}
+void PhysicsSystem::loadPlayMode() {
+    for (auto entity : m_Scene->getEntities<RigidBodyComp, TransformComp>()) {
+        auto& transform = entity.getComponent<TransformComp>();
+        auto& rigidbody = entity.getComponent<RigidBodyComp>();
+
+        //Build shape from colliders
+        JPH::Ref<JPH::Shape> shape = buildShapeForEntity(entity);
+
+        if (!shape)
+            continue; // no collider → no physics body
+
+        //Convert transform
+        JPH::Vec3 position(
+            transform.localPosition.x,
+            transform.localPosition.y,
+            transform.localPosition.z
+        );
+
+        JPH::Quat rotation(
+            transform.localRotation.x,
+            transform.localRotation.y,
+            transform.localRotation.z,
+            transform.localRotation.w
+        );
+
+        //Choose layer
+        uint8_t layer =
+            rigidbody.motionType == JPH::EMotionType::Static
+                ? Layers::NON_MOVING
+                : Layers::MOVING;
+
+        //Create body settings
+        JPH::BodyCreationSettings settings(
+            shape,
+            position,
+            rotation,
+            rigidbody.motionType,
+            layer
+        );
+
+        //Mass + damping
+        if (rigidbody.motionType == JPH::EMotionType::Dynamic) {
+            settings.mOverrideMassProperties =
+                JPH::EOverrideMassProperties::CalculateInertia;
+
+            settings.mMassPropertiesOverride.mMass = rigidbody.mass;
+        }
+
+        settings.mLinearDamping  = rigidbody.linearDamping;
+        settings.mAngularDamping = rigidbody.angularDamping;
+        settings.mAllowSleeping = rigidbody.allowSleep;
+
+        /*
+        //Axis locking
+        JPH::AllowedDOFs dofs = JPH::AllowedDOFs::All;
+
+        if (rigidbody.lockPosX) dofs &= ~JPH::AllowedDOFs::TranslationX;
+        if (rigidbody.lockPosY) dofs &= ~JPH::AllowedDOFs::TranslationY;
+        if (rigidbody.lockPosZ) dofs &= ~JPH::AllowedDOFs::TranslationZ;
+
+        if (rigidbody.lockRotX) dofs &= ~JPH::AllowedDOFs::RotationX;
+        if (rigidbody.lockRotY) dofs &= ~JPH::AllowedDOFs::RotationY;
+        if (rigidbody.lockRotZ) dofs &= ~JPH::AllowedDOFs::RotationZ;
+
+        settings.mAllowedDOFs = dofs;*/
+
+        //Create body
+        JPH::BodyID bodyID = m_BodyInterface->CreateAndAddBody(
+            settings,
+            JPH::EActivation::Activate
+        );
+
+        entity.addComponent<PhysicsBodyComp>(PhysicsBodyComp{.bodyID = bodyID});
+    }
+}
+
+void PhysicsSystem::unloadPlayMode() {
+    //unload all physics handles
+    for (auto entity : m_Scene->getEntities<PhysicsBodyComp>()) {
+        auto& phys = entity.getComponent<PhysicsBodyComp>();
+
+        if (!phys.bodyID.IsInvalid()) {
+            m_BodyInterface->RemoveBody(phys.bodyID);
+            m_BodyInterface->DestroyBody(phys.bodyID);
+        }
+        entity.removeComponent<PhysicsBodyComp>();
+    }
+}
 bool PhysicsSystem::onPlayModeRun(const RunPlayModeEvent &e) {
     m_IsPlaying = e.getPlaying();
     if (m_IsPlaying) {
         for (auto entity : m_Scene->getEntities<PhysicsBodyComp, TransformComp>()) {
             syncECSBodyToPhysics(entity, true);
         }
+        loadPlayMode();
+    }
+    else {
+        unloadPlayMode();
     }
     return false;
 }
@@ -129,3 +258,5 @@ void PhysicsSystem::shutdownJolt() {
     delete JPH::Factory::sInstance;
     JPH::Factory::sInstance = nullptr;
 }
+
+

@@ -9,7 +9,7 @@ Entity::Entity(Scene *scene, entt::entity handle) : m_Scene(scene), m_Registry(&
 PhysicsBodyComp Entity::addPhysicsBody(const JPH::BodyCreationSettings& settings, JPH::Ref<JPH::Shape> shape) {
 
     JPH::BodyID bodyID = m_Scene->m_PhysicsSystem->createAddBody(settings);
-    PhysicsBodyComp physBody(bodyID, shape);
+    PhysicsBodyComp physBody(bodyID);
 
     return physBody;
 }

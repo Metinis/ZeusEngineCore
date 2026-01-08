@@ -29,6 +29,9 @@ namespace ZEN {
     private:
         void initJolt();
         void shutdownJolt();
+        JPH::Ref<JPH::Shape> buildShapeForEntity(Entity entity);
+        void loadPlayMode();
+        void unloadPlayMode();
         bool onPlayModeRun(const RunPlayModeEvent& e);
 
         bool m_IsPlaying{};

@@ -4,22 +4,22 @@
 
 
 using namespace ZEN;
-SceneSerializer::SceneSerializer(Scene *scene) : m_Scene(scene) {
 
+SceneSerializer::SceneSerializer(Scene *scene) : m_Scene(scene) {
 }
 
-static void serializeEntity(YAML::Emitter& out, Entity entity) {
+static void serializeEntity(YAML::Emitter &out, Entity entity) {
     out << YAML::BeginMap;
     assert(entity.hasComponent<UUIDComp>());
     out << YAML::Key << "Entity" << YAML::Value << entity.getComponent<UUIDComp>().uuid;
 
-    if(entity.hasComponent<TagComp>()) {
+    if (entity.hasComponent<TagComp>()) {
         out << YAML::Key << "TagComponent";
         out << YAML::BeginMap;
         out << YAML::Key << "Tag" << YAML::Value << entity.getComponent<TagComp>().tag;
         out << YAML::EndMap;
     }
-    if(entity.hasComponent<TransformComp>()) {
+    if (entity.hasComponent<TransformComp>()) {
         out << YAML::Key << "TransformComponent";
         out << YAML::BeginMap;
         auto transformComp = entity.getComponent<TransformComp>();
@@ -28,26 +28,26 @@ static void serializeEntity(YAML::Emitter& out, Entity entity) {
         out << YAML::Key << "LocalScale" << YAML::Value << transformComp.localScale;
         out << YAML::EndMap;
     }
-    if(entity.hasComponent<MeshComp>()) {
+    if (entity.hasComponent<MeshComp>()) {
         out << YAML::Key << "MeshComponent";
         out << YAML::BeginMap;
         out << YAML::Key << "MeshID" << YAML::Value << entity.getComponent<MeshComp>().handle.id();
         out << YAML::EndMap;
     }
-    if(entity.hasComponent<MaterialComp>()) {
+    if (entity.hasComponent<MaterialComp>()) {
         out << YAML::Key << "MaterialComponent";
         out << YAML::BeginMap;
         out << YAML::Key << "MaterialID" << YAML::Value << entity.getComponent<MaterialComp>().handle.id();
         out << YAML::EndMap;
     }
-    if(entity.hasComponent<DirectionalLightComp>()) {
+    if (entity.hasComponent<DirectionalLightComp>()) {
         out << YAML::Key << "DirLightComponent";
         out << YAML::BeginMap;
         out << YAML::Key << "Ambient" << YAML::Value << entity.getComponent<DirectionalLightComp>().ambient;
         out << YAML::Key << "isPrimary" << YAML::Value << entity.getComponent<DirectionalLightComp>().isPrimary;
         out << YAML::EndMap;
     }
-    if(entity.hasComponent<SceneCameraComp>()) {
+    if (entity.hasComponent<SceneCameraComp>()) {
         out << YAML::Key << "SceneCameraComponent";
         out << YAML::BeginMap;
         out << YAML::Key << "Aspect" << YAML::Value << entity.getComponent<SceneCameraComp>().aspect;
@@ -57,7 +57,7 @@ static void serializeEntity(YAML::Emitter& out, Entity entity) {
         //out << YAML::Key << "isPrimary" << YAML::Value << entity.getComponent<SceneCameraComp>().isPrimary;
         out << YAML::EndMap;
     }
-    if(entity.hasComponent<CameraComp>()) {
+    if (entity.hasComponent<CameraComp>()) {
         out << YAML::Key << "CameraComponent";
         out << YAML::BeginMap;
         out << YAML::Key << "Aspect" << YAML::Value << entity.getComponent<CameraComp>().aspect;
@@ -67,13 +67,13 @@ static void serializeEntity(YAML::Emitter& out, Entity entity) {
         out << YAML::Key << "isPrimary" << YAML::Value << entity.getComponent<CameraComp>().isPrimary;
         out << YAML::EndMap;
     }
-    if(entity.hasComponent<ParentComp>()) {
+    if (entity.hasComponent<ParentComp>()) {
         out << YAML::Key << "ParentComponent";
         out << YAML::BeginMap;
         out << YAML::Key << "ParentID" << YAML::Value << entity.getComponent<ParentComp>().parentID;
         out << YAML::EndMap;
     }
-    if(entity.hasComponent<SkyboxComp>()) {
+    if (entity.hasComponent<SkyboxComp>()) {
         out << YAML::Key << "SkyboxComponent";
         out << YAML::BeginMap;
         auto skyboxComp = entity.getComponent<SkyboxComp>();
@@ -85,23 +85,65 @@ static void serializeEntity(YAML::Emitter& out, Entity entity) {
         out << YAML::Key << "EnvGenerated" << YAML::Value << false; //For now, just regenerate
         out << YAML::EndMap;
     }
-    auto& runtimeCompMap = Application::get().getEngine()->getCompRegistry().getComponents();
+    if (entity.hasComponent<RigidBodyComp>()) {
+        auto &rb = entity.getComponent<RigidBodyComp>();
+        out << YAML::Key << "RigidBodyComponent";
+        out << YAML::BeginMap;
+        out << YAML::Key << "MotionType" << YAML::Value << static_cast<int>(rb.motionType);
+        out << YAML::Key << "Mass" << YAML::Value << rb.mass;
+        out << YAML::Key << "LinearDamping" << YAML::Value << rb.linearDamping;
+        out << YAML::Key << "AngularDamping" << YAML::Value << rb.angularDamping;
+        out << YAML::Key << "AllowSleep" << YAML::Value << rb.allowSleep;
+        out << YAML::Key << "LockPosX" << YAML::Value << rb.lockPosX;
+        out << YAML::Key << "LockPosY" << YAML::Value << rb.lockPosY;
+        out << YAML::Key << "LockPosZ" << YAML::Value << rb.lockPosZ;
+        out << YAML::Key << "LockRotX" << YAML::Value << rb.lockRotX;
+        out << YAML::Key << "LockRotY" << YAML::Value << rb.lockRotY;
+        out << YAML::Key << "LockRotZ" << YAML::Value << rb.lockRotZ;
+        out << YAML::EndMap;
+    }
+    if (entity.hasComponent<BoxColliderComp>()) {
+        auto &box = entity.getComponent<BoxColliderComp>();
+        out << YAML::Key << "BoxColliderComponent";
+        out << YAML::BeginMap;
+        out << YAML::Key << "HalfExtents" << YAML::Value
+                << YAML::Flow << std::vector<float>{box.halfExtents.x, box.halfExtents.y, box.halfExtents.z};
+        out << YAML::Key << "Offset" << YAML::Value
+                << YAML::Flow << std::vector<float>{box.offset.x, box.offset.y, box.offset.z};
+        out << YAML::Key << "IsTrigger" << YAML::Value << box.isTrigger;
+        out << YAML::EndMap;
+    }
+
+    if (entity.hasComponent<SphereColliderComp>()) {
+        auto &sphere = entity.getComponent<SphereColliderComp>();
+        out << YAML::Key << "SphereColliderComponent";
+        out << YAML::BeginMap;
+        out << YAML::Key << "Radius" << YAML::Value << sphere.radius;
+        out << YAML::Key << "Offset" << YAML::Value
+                << YAML::Flow << std::vector<float>{sphere.offset.x, sphere.offset.y, sphere.offset.z};
+        out << YAML::Key << "IsTrigger" << YAML::Value << sphere.isTrigger;
+        out << YAML::EndMap;
+    }
+    auto &runtimeCompMap = Application::get().getEngine()->getCompRegistry().getComponents();
 
     out << YAML::Key << "RuntimeComponents";
     out << YAML::BeginMap;
 
-    for (auto& runtimeComp : runtimeCompMap) {
+    for (auto &runtimeComp: runtimeCompMap) {
         if (entity.hasRuntimeComponent(runtimeComp.name)) {
             out << YAML::Key << runtimeComp.name;
             out << YAML::BeginMap;
 
-            for (auto& field : runtimeComp.fields) {
+            for (auto &field: runtimeComp.fields) {
                 if (field.type == FieldType::Float)
-                    out << YAML::Key << field.name << YAML::Value << entity.getRuntimeField<float>(runtimeComp.name, field.name);
+                    out << YAML::Key << field.name << YAML::Value << entity.getRuntimeField<float>(
+                        runtimeComp.name, field.name);
                 else if (field.type == FieldType::Bool)
-                    out << YAML::Key << field.name << YAML::Value << entity.getRuntimeField<bool>(runtimeComp.name, field.name);
+                    out << YAML::Key << field.name << YAML::Value << entity.getRuntimeField<bool>(
+                        runtimeComp.name, field.name);
                 else if (field.type == FieldType::Int)
-                    out << YAML::Key << field.name << YAML::Value << entity.getRuntimeField<int>(runtimeComp.name, field.name);
+                    out << YAML::Key << field.name << YAML::Value << entity.getRuntimeField<int>(
+                        runtimeComp.name, field.name);
             }
 
             out << YAML::EndMap;
@@ -119,7 +161,7 @@ bool SceneSerializer::serialize(const std::string &path) {
     out << YAML::Key << "Scene" << YAML::Value << "Default";
     out << YAML::Key << "Entities" << YAML::BeginSeq;
 
-    for (auto entityID : m_Scene->m_Registry.storage<entt::entity>()) {
+    for (auto entityID: m_Scene->m_Registry.storage<entt::entity>()) {
         Entity entity = Entity(m_Scene, entityID);
         serializeEntity(out, entity);
     }
@@ -135,12 +177,9 @@ bool SceneSerializer::deserialize(const std::string &path) {
     m_Scene->m_Registry.clear();
     m_Scene->m_RuntimeComponents.clear();
     YAML::Node data;
-    try
-    {
+    try {
         data = YAML::LoadFile(Project::getActive()->getActiveProjectRoot() + path);
-    }
-    catch (YAML::Exception& e)
-    {
+    } catch (YAML::Exception &e) {
         return false;
     }
 
@@ -149,7 +188,7 @@ bool SceneSerializer::deserialize(const std::string &path) {
 
     auto entities = data["Entities"];
     if (entities) {
-        for (auto entity : entities) {
+        for (auto entity: entities) {
             auto id = entity["Entity"].as<uint64_t>();
 
             std::string name;
@@ -169,20 +208,58 @@ bool SceneSerializer::deserialize(const std::string &path) {
                 entityInst.getComponent<TransformComp>() = comp;
             }
 
+            auto rigidBodyComp = entity["RigidBodyComponent"];
+            if (rigidBodyComp) {
+                RigidBodyComp rbComp {
+                    .motionType = static_cast<JPH::EMotionType>(rigidBodyComp["MotionType"].as<int>()),
+                    .mass = rigidBodyComp["Mass"].as<float>(),
+                    .linearDamping = rigidBodyComp["LinearDamping"].as<float>(),
+                    .angularDamping = rigidBodyComp["AngularDamping"].as<float>(),
+                    .allowSleep = rigidBodyComp["AllowSleep"].as<bool>(),
+                    .lockPosX = rigidBodyComp["LockPosX"].as<bool>(),
+                    .lockPosY = rigidBodyComp["LockPosY"].as<bool>(),
+                    .lockPosZ = rigidBodyComp["LockPosZ"].as<bool>(),
+                    .lockRotX = rigidBodyComp["LockRotX"].as<bool>(),
+                    .lockRotY = rigidBodyComp["LockRotY"].as<bool>(),
+                    .lockRotZ = rigidBodyComp["LockRotZ"].as<bool>(),
+                };
+                entityInst.addComponent<RigidBodyComp>(rbComp);
+            }
+
+            auto boxColliderComp = entity["BoxColliderComponent"];
+            if (boxColliderComp) {
+                BoxColliderComp boxComp {
+                    .halfExtents = boxColliderComp["HalfExtents"].as<glm::vec3>(),
+                    .offset = boxColliderComp["Offset"].as<glm::vec3>(),
+                    .isTrigger = boxColliderComp["IsTrigger"].as<bool>(),
+                };
+                entityInst.addComponent<BoxColliderComp>(boxComp);
+            }
+
+            auto sphereColliderComp = entity["SphereColliderComponent"];
+            if (sphereColliderComp) {
+                SphereColliderComp sphereComp {
+                    .radius = sphereColliderComp["Radius"].as<float>(),
+                    .offset = sphereColliderComp["Offset"].as<glm::vec3>(),
+                    .isTrigger = sphereColliderComp["IsTrigger"].as<bool>(),
+                };
+                entityInst.addComponent<SphereColliderComp>(sphereComp);
+            }
+
             auto meshComp = entity["MeshComponent"];
-            if(meshComp) {
+            if (meshComp) {
                 MeshComp comp = {.handle = AssetID(meshComp["MeshID"].as<uint64_t>())};
                 entityInst.addComponent<MeshComp>(comp);
             }
 
             auto matComp = entity["MaterialComponent"];
-            if(matComp) {
+            if (matComp) {
                 MaterialComp comp = {.handle = AssetID(matComp["MaterialID"].as<uint64_t>())};
                 entityInst.addComponent<MaterialComp>(comp);
             }
 
             auto dirLightComp = entity["DirLightComponent"];
-            if(dirLightComp) {
+            if (dirLightComp) {
                 DirectionalLightComp comp = {
                     .ambient = dirLightComp["Ambient"].as<glm::vec3>(),
                     .isPrimary = dirLightComp["isPrimary"].as<bool>(),
@@ -190,7 +267,7 @@ bool SceneSerializer::deserialize(const std::string &path) {
                 entityInst.addComponent<DirectionalLightComp>(comp);
             }
             auto sceneCamComp = entity["SceneCameraComponent"];
-            if(sceneCamComp) {
+            if (sceneCamComp) {
                 SceneCameraComp comp = {
                     //.projection = glm::perspective(comp.fov, comp.aspect, comp.near, comp.far),
                     .aspect = sceneCamComp["Aspect"].as<float>(),
@@ -202,7 +279,7 @@ bool SceneSerializer::deserialize(const std::string &path) {
                 entityInst.addComponent<SceneCameraComp>(comp);
             }
             auto camComp = entity["CameraComponent"];
-            if(camComp) {
+            if (camComp) {
                 CameraComp comp = {
                     //.projection = glm::perspective(comp.fov, comp.aspect, comp.near, comp.far),
                     .aspect = camComp["Aspect"].as<float>(),
@@ -215,14 +292,14 @@ bool SceneSerializer::deserialize(const std::string &path) {
             }
 
             auto parentComp = entity["ParentComponent"];
-            if(parentComp) {
-                ParentComp comp = { .parentID = parentComp["ParentID"].as<uint64_t>()};
+            if (parentComp) {
+                ParentComp comp = {.parentID = parentComp["ParentID"].as<uint64_t>()};
                 entityInst.addComponent<ParentComp>(comp);
             }
 
             auto skyboxComp = entity["SkyboxComponent"];
-            if(skyboxComp) {
-                SkyboxComp comp {
+            if (skyboxComp) {
+                SkyboxComp comp{
                     .skyboxMat.handle = AssetID(skyboxComp["SkyboxMaterialID"].as<uint64_t>()),
                     .eqMat.handle = AssetID(skyboxComp["EqMaterialID"].as<uint64_t>()),
                     .conMat.handle = AssetID(skyboxComp["ConMaterialID"].as<uint64_t>()),
@@ -235,37 +312,36 @@ bool SceneSerializer::deserialize(const std::string &path) {
             auto runtimeComps = entity["RuntimeComponents"];
             if (runtimeComps && runtimeComps.IsMap()) {
                 for (auto it = runtimeComps.begin(); it != runtimeComps.end(); ++it) {
-                    const auto& compName = it->first.as<std::string>();
-                    const auto& compNode = it->second;
+                    const auto &compName = it->first.as<std::string>();
+                    const auto &compNode = it->second;
 
                     if (!compNode.IsMap()) continue;
 
-                    for (const auto& comp : Application::get().getEngine()->getCompRegistry().getComponents()) {
+                    for (const auto &comp: Application::get().getEngine()->getCompRegistry().getComponents()) {
                         if (comp.name != compName) continue;
 
                         entityInst.addRuntimeComponent(comp);
                         auto c = entityInst.getRuntimeComponent(comp.name);
 
-                        for (const auto& field : comp.fields) {
+                        for (const auto &field: comp.fields) {
                             if (!compNode[field.name]) continue;
 
-                            void* ptr = c->getFieldPtr(field.name);
+                            void *ptr = c->getFieldPtr(field.name);
                             switch (field.type) {
                                 case FieldType::Float:
-                                    *reinterpret_cast<float*>(ptr) = compNode[field.name].as<float>();
+                                    *reinterpret_cast<float *>(ptr) = compNode[field.name].as<float>();
                                     break;
                                 case FieldType::Bool:
-                                    *reinterpret_cast<bool*>(ptr) = compNode[field.name].as<bool>();
+                                    *reinterpret_cast<bool *>(ptr) = compNode[field.name].as<bool>();
                                     break;
                                 case FieldType::Int:
-                                    *reinterpret_cast<int*>(ptr) = compNode[field.name].as<int>();
+                                    *reinterpret_cast<int *>(ptr) = compNode[field.name].as<int>();
                                     break;
                             }
                         }
                     }
                 }
             }
-
         }
     }
     return true;
