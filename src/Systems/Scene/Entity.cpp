@@ -6,14 +6,6 @@ Entity::Entity(Scene *scene, entt::entity handle) : m_Scene(scene), m_Registry(&
     assert(m_Registry && "Entity constructed with null registry!");
 }
 
-PhysicsBodyComp Entity::addPhysicsBody(const JPH::BodyCreationSettings& settings, JPH::Ref<JPH::Shape> shape) {
-
-    JPH::BodyID bodyID = m_Scene->m_PhysicsSystem->createAddBody(settings);
-    PhysicsBodyComp physBody(bodyID);
-
-    return physBody;
-}
-
 void* Entity::addRuntimeComponent(const ComponentInfo &compInfo) {
     auto& entityMap = m_Scene->m_RuntimeComponents[*this];
     auto& storage = entityMap[compInfo.name];

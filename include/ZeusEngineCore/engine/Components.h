@@ -1,5 +1,6 @@
 #pragma once
 #define GLM_ENABLE_EXPERIMENTAL
+#include "PhysicsSystem.h"
 #include "glm/gtx/matrix_decompose.hpp"
 #include "glm/gtx/quaternion.hpp"
 #include "Jolt/Core/Reference.h"
@@ -50,7 +51,7 @@ namespace ZEN {
         glm::quat localRotation{1.0f, 0.0f, 0.0f, 0.0f};
         glm::vec3 localScale{1.0f, 1.0f, 1.0f};
 
-        glm::mat4 worldMatrix{1.0f}; //needs to be computed each frame in a render system
+        glm::mat4 worldMatrix{1.0f};
         //because it relies on parent
 
         [[nodiscard]] glm::mat4 getLocalMatrix() const {
@@ -65,10 +66,28 @@ namespace ZEN {
             glm::mat4 trans = glm::translate(glm::mat4(1.0f), -localPosition);
             return rot * trans;
         }
+        glm::mat4 getViewMatrixWorld() const {
+            return glm::inverse(worldMatrix);
+        }
 
         [[nodiscard]] glm::vec3 getFront() const {
             return glm::normalize(localRotation * glm::vec3(0, 0, -1));
         }
+        glm::vec3 getRightWorld() const {
+            return glm::normalize(glm::vec3(worldMatrix[0]));
+        }
+
+        glm::vec3 getUpWorld() const {
+            return glm::normalize(glm::vec3(worldMatrix[1]));
+        }
+
+        glm::vec3 getFrontWorld() const {
+            return glm::normalize(-glm::vec3(worldMatrix[2]));
+        }
+        glm::vec3 getWorldPosition() const {
+            return glm::vec3(worldMatrix[3]);
+        }
+
         void decomposeTransform(const glm::mat4& transform)
         {
             glm::vec3 skew;
@@ -98,7 +117,47 @@ namespace ZEN {
         bool lockRotZ = false;
     };
     struct PhysicsBodyComp { //runtime only
+        PhysicsBodyComp(PhysicsSystem* physicsSystem) : m_PhysicsSystem(physicsSystem){
+
+        }
+        void addImpulse(glm::vec3 force) {
+            m_PhysicsSystem->getBodyInterface()->AddImpulse(bodyID, JPH::Vec3(force.x, force.y, force.z));
+        }
+        void setVelocity(glm::vec3 velocity) {
+            JPH::Vec3 vel = m_PhysicsSystem->getBodyInterface()->GetLinearVelocity(bodyID);
+
+            vel.SetX(velocity.x);
+            vel.SetY(velocity.y);
+            vel.SetZ(velocity.z);
+
+            m_PhysicsSystem->getBodyInterface()->SetLinearVelocity(bodyID, vel);
+        }
+        glm::vec3 getVelocity() {
+            JPH::Vec3 vel = m_PhysicsSystem->getBodyInterface()->GetLinearVelocity(bodyID);
+            return {vel.GetX(), vel.GetY(), vel.GetZ()};
+        }
+        void addVelocity(const glm::vec3& delta) {
+            auto v = getVelocity();
+            v += delta;
+            setVelocity(v);
+        }
+        void setRotation(const glm::quat& rotation) {
+            //JPH uses WXYZ
+            JPH::Quat newRot(rotation.w, rotation.x, rotation.y, rotation.z);
+            m_PhysicsSystem->getBodyInterface()->SetRotation(bodyID, newRot, JPH::EActivation::Activate);
+        }
+        glm::quat getRotation() const {
+            //JPH uses WXYZ
+            auto rot = m_PhysicsSystem->getBodyInterface()->GetRotation(bodyID);
+            return {rot.GetW(), rot.GetX(), rot.GetY(), rot.GetZ()};
+        }
+        void rotate(glm::vec3 axis, float angle) {
+            //GLM uses XYZW
+            auto rot = glm::rotate(getRotation(), angle, axis);
+            setRotation({rot.x, rot.y, rot.z, rot.w});
+        }
         JPH::BodyID bodyID = JPH::BodyID();
+        PhysicsSystem* m_PhysicsSystem{};
     };
     struct BoxColliderComp {
         glm::vec3 halfExtents {0.5f};

@@ -26,6 +26,7 @@ namespace ZEN {
         void syncECSBodyToPhysics(Entity entity, bool wake);
         void onUpdate(float dt) override;
         void onEvent(Event &event) override;
+        JPH::BodyInterface* getBodyInterface() const {return m_BodyInterface;}
     private:
         void initJolt();
         void shutdownJolt();

@@ -41,6 +41,7 @@ namespace ZEN {
 
 		bool onPlayMode(RunPlayModeEvent& e);
 		void onEvent(Event& event) override;
+
 		//todo move this out of scene, probably in project or as static singletons
 
 	private:

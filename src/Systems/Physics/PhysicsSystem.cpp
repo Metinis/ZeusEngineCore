@@ -171,19 +171,19 @@ void PhysicsSystem::loadPlayMode() {
         settings.mAngularDamping = rigidbody.angularDamping;
         settings.mAllowSleeping = rigidbody.allowSleep;
 
-        /*
+
         //Axis locking
-        JPH::AllowedDOFs dofs = JPH::AllowedDOFs::All;
+        JPH::EAllowedDOFs dofs = JPH::EAllowedDOFs::All;
 
-        if (rigidbody.lockPosX) dofs &= ~JPH::AllowedDOFs::TranslationX;
-        if (rigidbody.lockPosY) dofs &= ~JPH::AllowedDOFs::TranslationY;
-        if (rigidbody.lockPosZ) dofs &= ~JPH::AllowedDOFs::TranslationZ;
+        if (rigidbody.lockPosX) dofs &= ~JPH::EAllowedDOFs::TranslationX;
+        if (rigidbody.lockPosY) dofs &= ~JPH::EAllowedDOFs::TranslationY;
+        if (rigidbody.lockPosZ) dofs &= ~JPH::EAllowedDOFs::TranslationZ;
 
-        if (rigidbody.lockRotX) dofs &= ~JPH::AllowedDOFs::RotationX;
-        if (rigidbody.lockRotY) dofs &= ~JPH::AllowedDOFs::RotationY;
-        if (rigidbody.lockRotZ) dofs &= ~JPH::AllowedDOFs::RotationZ;
+        if (rigidbody.lockRotX) dofs &= ~JPH::EAllowedDOFs::RotationX;
+        if (rigidbody.lockRotY) dofs &= ~JPH::EAllowedDOFs::RotationY;
+        if (rigidbody.lockRotZ) dofs &= ~JPH::EAllowedDOFs::RotationZ;
 
-        settings.mAllowedDOFs = dofs;*/
+        settings.mAllowedDOFs = dofs;
 
         //Create body
         JPH::BodyID bodyID = m_BodyInterface->CreateAndAddBody(
@@ -191,7 +191,9 @@ void PhysicsSystem::loadPlayMode() {
             JPH::EActivation::Activate
         );
 
-        entity.addComponent<PhysicsBodyComp>(PhysicsBodyComp{.bodyID = bodyID});
+        PhysicsBodyComp comp(this);
+        comp.bodyID = bodyID;
+        entity.addComponent<PhysicsBodyComp>(comp);
     }
 }
 

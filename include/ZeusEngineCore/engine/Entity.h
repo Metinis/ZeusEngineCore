@@ -47,17 +47,19 @@ namespace ZEN {
         requires (IsColliderComp<T>)
         T& addComponent() {
             if (auto* mesh = tryGetComponent<MeshComp>()) {
+                auto& tc = getComponent<TransformComp>();
                 glm::vec3 center{};
                 if constexpr (std::same_as<T, BoxColliderComp>) {
                     BoxColliderComp comp {
-                        .halfExtents = mesh->handle->getHalfExtents(center),
+                        .halfExtents = mesh->handle->getHalfExtents(center) * tc.localScale,
                         .offset = center,
                     };
                     return addComponent<T>(comp);
                 }
                 if constexpr (std::same_as<T, SphereColliderComp>) {
+                    float scaleFactor = glm::max(tc.localScale.x, glm::max(tc.localScale.y, tc.localScale.z));
                     SphereColliderComp comp {
-                        .radius = mesh->handle->getRadius(center),
+                        .radius = mesh->handle->getRadius(center) * scaleFactor,
                         .offset = center,
                     };
                     return addComponent<T>(comp);
@@ -92,7 +94,7 @@ namespace ZEN {
             return false;
         }
 
-        PhysicsBodyComp addPhysicsBody(const JPH::BodyCreationSettings& settings, JPH::Ref<JPH::Shape> shape);
+
         void* addRuntimeComponent(const ComponentInfo& compInfo);
         RuntimeComponent* getRuntimeComponent(const std::string& compName);
         bool hasRuntimeComponent(const std::string& compName);
