@@ -1,4 +1,5 @@
 #pragma once
+struct ImGuiContext;
 namespace ZEN {
 	enum eRendererAPI {
 		OpenGL,
@@ -13,4 +14,7 @@ namespace ZEN {
 #else
 #define ZEN_API __attribute__((visibility("default")))
 #endif
+	
+	extern "C" __declspec(dllexport) ImGuiContext* getEngineImGuiContext();
 }
+

@@ -14,3 +14,7 @@ std::unique_ptr<ImGUILayer> ImGUILayer::create(GLFWwindow* window, eRendererAPI 
         default: return nullptr;
     }
 }
+
+extern "C" __declspec(dllexport) ImGuiContext* getEngineImGuiContext() {
+    return ImGui::GetCurrentContext();
+}

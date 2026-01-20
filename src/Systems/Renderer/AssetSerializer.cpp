@@ -16,7 +16,7 @@ bool ZEN::AssetSerializer::serialize(const std::string &path) {
 
     out << YAML::Key << "Meshes" << YAML::BeginSeq;
     for(auto& ID : m_AssetLibrary->getAllIDsOfType<MeshData>()) {
-        std::string localPath = std::format("assets/meshes/{}.bin", std::to_string(ID));
+        std::string localPath = std::format("/assets/meshes/{}.bin", std::to_string(ID));
         FileStreamWriter writer(Project::getActive()->getActiveProjectRoot() + localPath);
         writer.writeVector(m_AssetLibrary->get<MeshData>(ID)->indices);
         writer.writeVector(m_AssetLibrary->get<MeshData>(ID)->vertices);

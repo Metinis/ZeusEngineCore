@@ -9,11 +9,21 @@
 
 using namespace ZEN;
 
-Scene::Scene() : m_PhysicsSystem(&Application::get().getEngine()->getPhysicsSystem()){
-    Application::get().getEngine()->getSystemManager().loadAllFromDirectory(Project::getActive()->getActiveProjectRoot() +
-        "assets/scripts/bin/", this);
+Scene::Scene()
+    : m_PhysicsSystem(&Application::get().getEngine()->getPhysicsSystem())
+{
+    std::filesystem::path scriptsBinPath =
+        std::filesystem::path(Project::getActive()->getActiveProjectRoot())
+        / "assets" / "scripts" / "bin";
+
+    Application::get()
+        .getEngine()
+        ->getSystemManager()
+        .loadAllFromDirectory(scriptsBinPath.string(), this);
+
     createDefaultScene();
 }
+
 
 Scene::~Scene() {
 
@@ -192,16 +202,6 @@ std::vector<Entity> Scene::getEntities(const std::string &name) {
 
 bool Scene::onPlayMode(RunPlayModeEvent &e) {
     m_PlayMode = e.getPlaying();
-    if (m_PlayMode) {
-        SceneSerializer serializer(this);
-        m_LoadedScene = serializer.serialize("assets/scenes/default.zen");
-        Application::get().getEngine()->getSystemManager().loadAll(this);
-    }
-    else {
-        Application::get().getEngine()->getSystemManager().unloadAll();
-        SceneSerializer serializer(this);
-        m_LoadedScene = serializer.deserialize("assets/scenes/default.zen");
-    }
 
     return false;
 }
