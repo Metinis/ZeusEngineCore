@@ -2,7 +2,7 @@
 #include "AssetLibrary.h"
 
 namespace ZEN {
-    class AssetSerializer {
+    class ZEN_API AssetSerializer {
     public:
         AssetSerializer(AssetLibrary* library);
         bool serialize(const std::string& path);

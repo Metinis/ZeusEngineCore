@@ -45,7 +45,7 @@ constexpr auto processMeshUVs = [](const aiVector3D& uvs) {
     return uv;
 };
 
-UUID ModelImporter::processTexturesEmbedded(const aiScene* aiscene, const aiString& texPath) {
+ZEN::UUID ModelImporter::processTexturesEmbedded(const aiScene* aiscene, const aiString& texPath) {
     unsigned int texIndex = std::atoi(texPath.C_Str() + 1);
     aiTexture* tex = aiscene->mTextures[texIndex];
 
@@ -60,7 +60,7 @@ UUID ModelImporter::processTexturesEmbedded(const aiScene* aiscene, const aiStri
     }
 }
 
-UUID ModelImporter::processTextureType(const aiScene* aiscene, aiTextureType type,
+ZEN::UUID ModelImporter::processTextureType(const aiScene* aiscene, aiTextureType type,
                                        const aiMaterial* aimaterial) {
     uint32_t count = aimaterial->GetTextureCount(type);
     for (uint32_t i{0}; i < count; ++i) {

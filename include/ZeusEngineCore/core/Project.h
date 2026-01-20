@@ -2,7 +2,7 @@
 #include <ZeusEngineCore/asset/AssetLibrary.h>
 
 namespace ZEN {
-    class Project {
+    class ZEN_API Project {
     public:
         static Project* getActive() { return s_ActiveProject.get(); }
         static Project* createNew();

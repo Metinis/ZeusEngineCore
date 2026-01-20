@@ -14,7 +14,7 @@ namespace ZEN {
 	struct RemoveMaterialEvent;
 	struct RemoveTextureEvent;
 
-	class Scene : public Layer {
+	class ZEN_API Scene : public Layer {
 
 	public:
 		Scene();
@@ -41,12 +41,14 @@ namespace ZEN {
 
 		bool onPlayMode(RunPlayModeEvent& e);
 		void onEvent(Event& event) override;
+
 		//todo move this out of scene, probably in project or as static singletons
 
 	private:
 		entt::registry m_Registry{};
 		std::unordered_map<Entity, std::unordered_map<std::string, RuntimeComponent>> m_RuntimeComponents;
 		AssetLibrary* m_ModelLibrary{};
+		PhysicsSystem* m_PhysicsSystem{};
 
 		bool m_PlayMode{false};
 		bool m_LoadedScene{false};

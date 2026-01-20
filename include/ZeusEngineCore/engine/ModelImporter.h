@@ -12,7 +12,7 @@ namespace ZEN {
     class Entity;
     class AssetLibrary;
 
-    class ModelImporter {
+    class ZEN_API ModelImporter {
     public:
         explicit ModelImporter();
         void loadModel(const std::string &name, const std::string& path);

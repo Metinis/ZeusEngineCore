@@ -2,6 +2,11 @@
 #include <vector>
 #include "ISystem.h"
 
+#ifdef _WIN32
+struct HINSTANCE__;
+using HMODULE = HINSTANCE__*;
+#endif
+
 namespace ZEN {
     class SystemManager {
     public:

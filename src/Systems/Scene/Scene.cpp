@@ -9,11 +9,21 @@
 
 using namespace ZEN;
 
-Scene::Scene() {
-    Application::get().getEngine()->getSystemManager().loadAllFromDirectory(Project::getActive()->getActiveProjectRoot() +
-        "assets/scripts/bin/", this);
+Scene::Scene()
+    : m_PhysicsSystem(&Application::get().getEngine()->getPhysicsSystem())
+{
+    std::filesystem::path scriptsBinPath =
+        std::filesystem::path(Project::getActive()->getActiveProjectRoot())
+        / "assets" / "scripts" / "bin";
+
+    Application::get()
+        .getEngine()
+        ->getSystemManager()
+        .loadAllFromDirectory(scriptsBinPath.string(), this);
+
     createDefaultScene();
 }
+
 
 Scene::~Scene() {
 
@@ -70,11 +80,14 @@ void Scene::createDefaultScene() {
     sceneCameraEntity.addComponent<SceneCameraComp>();
 
     auto cameraEntity = createEntity("Primary Camera");
+    cameraEntity.getComponent<TransformComp>().localPosition = glm::vec3(0.0f, 0.0f, 5.0f);
     cameraEntity.addComponent<CameraComp>();
 
     auto cubeEntity = createEntity("Cube");
     auto assetLibrary = Project::getActive()->getAssetLibrary();
     cubeEntity.addComponent<MeshComp>(AssetHandle<MeshData>(defaultCubeID));
+    cubeEntity.addComponent<BoxColliderComp>();
+    cubeEntity.addComponent<RigidBodyComp>();
 
     auto skyboxEntity = createEntity("Skybox");
     skyboxEntity.addComponent<SkyboxComp>();
@@ -189,16 +202,6 @@ std::vector<Entity> Scene::getEntities(const std::string &name) {
 
 bool Scene::onPlayMode(RunPlayModeEvent &e) {
     m_PlayMode = e.getPlaying();
-    if (m_PlayMode) {
-        SceneSerializer serializer(this);
-        m_LoadedScene = serializer.serialize("assets/scenes/default.zen");
-        Application::get().getEngine()->getSystemManager().loadAll(this);
-    }
-    else {
-        Application::get().getEngine()->getSystemManager().unloadAll();
-        SceneSerializer serializer(this);
-        m_LoadedScene = serializer.deserialize("assets/scenes/default.zen");
-    }
 
     return false;
 }

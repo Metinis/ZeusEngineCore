@@ -39,13 +39,13 @@ void RenderSystem::writeCameraData(glm::mat4& view, glm::mat4& projection) {
         for (auto entity: sceneCameraView) {
             auto& camera = entity.getComponent<SceneCameraComp>();
             auto& transform = entity.getComponent<TransformComp>();
-            view = transform.getViewMatrix();
+            view = transform.getViewMatrixWorld();
             projection = camera.projection;
             glm::mat4 vpMat = projection * view;
 
             m_Renderer->writeToUBO(m_Renderer->m_ViewUBO.uboID, vpMat);
 
-            setLightData(transform.localPosition);
+            setLightData(transform.getWorldPosition());
         }
     }
     else {
@@ -53,13 +53,13 @@ void RenderSystem::writeCameraData(glm::mat4& view, glm::mat4& projection) {
         for (auto entity: cameraView) {
             auto& camera = entity.getComponent<CameraComp>();
             auto& transform = entity.getComponent<TransformComp>();
-            view = transform.getViewMatrix();
+            view = transform.getViewMatrixWorld();
             projection = camera.projection;
             glm::mat4 vpMat = projection * view;
 
             m_Renderer->writeToUBO(m_Renderer->m_ViewUBO.uboID, vpMat);
 
-            setLightData(transform.localPosition);
+            setLightData(transform.getWorldPosition());
         }
     }
 
@@ -77,7 +77,7 @@ void RenderSystem::setLightData(glm::vec3 cameraPos) {
 
         auto& transform = entity.getComponent<TransformComp>();
         GlobalUBO globalUBO {
-            .lightPos = transform.localPosition,
+            .lightPos = transform.getWorldPosition(),
             .cameraPos = cameraPos,
             .ambientColor = dirLight.ambient,
         };
@@ -340,10 +340,11 @@ void RenderSystem::onRender() {
     bindSceneUBOs();
 
     //m_ResourceManager->bindFBO(m_Renderer->m_PickingFBO.fboID);
-    m_Renderer->drawToPicking();
+    if (!m_IsPlaying)
+        m_Renderer->drawToPicking();
     //renderDrawablesToShader(GPUHandle<GPUShader>(defaultPickingShaderID).get()->drawableID);
 
-    m_ResourceManager->bindFBO(m_Renderer->m_MainFBO.fboID);
+    //m_ResourceManager->bindFBO(m_Renderer->m_MainFBO.fboID);
     //render all meshes with drawable comps
     renderDrawables();
 

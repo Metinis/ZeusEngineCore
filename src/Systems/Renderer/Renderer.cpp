@@ -60,8 +60,6 @@ void Renderer::initPicking() {
     glfwGetFramebufferSize(m_Window, &fbWidth, &fbHeight);
     m_PickingFBO.fboID = m_ResourceManager->createFBO();
     m_ResourceManager->bindFBO(m_PickingFBO.fboID);
-    auto windowWidth = Application::get().getWindow()->getHandleWidth();
-    auto windowHeight = Application::get().getWindow()->getHandleHeight();
     m_PickingTex.textureID = m_ResourceManager->createTextureRaw(m_Width, m_Height);
     m_PickingRBO.rboID = m_ResourceManager->createDepthBuffer(m_Width, m_Height);
     m_ResourceManager->bindFBO(m_MainFBO.fboID);
@@ -73,8 +71,6 @@ void Renderer::drawToPicking() {
     m_ResourceManager->bindFBO(m_PickingFBO.fboID);
     int fbWidth, fbHeight;
     glfwGetFramebufferSize(m_Window, &fbWidth, &fbHeight);
-    auto windowWidth = Application::get().getWindow()->getHandleWidth();
-    auto windowHeight = Application::get().getWindow()->getHandleHeight();
     //m_Context->setViewport(0, 0, m_Width, m_Height);
     m_ResourceManager->bindTexture(m_PickingTex.textureID, 0);
     m_ResourceManager->bindDepthBuffer(m_PickingRBO.rboID);
@@ -82,14 +78,11 @@ void Renderer::drawToPicking() {
     m_Context->clear(false, true);
     m_Context->clearInt();
 
-
-    //m_ResourceManager->bindUBO(m_ViewUBO.uboID);
     auto& scene = Application::get().getEngine()->getScene();
     for (auto entity : scene.getEntities<MeshComp, MaterialComp, TransformComp>()) {
         auto& dc = entity.getComponent<MeshComp>();
         if (auto* gpuMesh = m_ResourceManager->get<GPUMesh>(dc.handle.id())) {
             auto transform = entity.getComponent<TransformComp>();
-            //m_ResourceManager->bindUBO(m_InstanceUBO.uboID);
             writeToUBO(m_InstanceUBO.uboID, transform.worldMatrix);
             uint32_t entityH = uint32_t(entt::entity(entity));
             m_ResourceManager->pushUint(pickingShaderHandle, "u_EntityID", entityH);

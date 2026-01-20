@@ -3,7 +3,7 @@
 #include "ZeusEngineCore/ZENPCH.h"
 
 namespace ZEN {
-    class SceneSerializer {
+    class ZEN_API SceneSerializer {
     public:
         SceneSerializer(Scene* scene);
         bool serialize(const std::string& path);

@@ -1,11 +1,19 @@
 #pragma once
 #include <entt/entt.hpp>
+#include <utility>
 #include "Components.h"
 #include "ZeusEngineCore/scripting/CompRegistry.h"
+#include <Jolt/Physics/Collision/Shape/Shape.h>
+
+namespace JPH {
+    class BodyCreationSettings;
+}
 
 namespace ZEN {
     class Scene;
-    class Entity {
+    template<typename T>
+        concept IsColliderComp = std::same_as<T, BoxColliderComp> || std::same_as<T, SphereColliderComp>;
+    class ZEN_API Entity {
     public:
         explicit Entity(Scene* scene, entt::entity handle);
         //explicit Entity(entt::registry* registry, entt::entity handle);
@@ -22,9 +30,42 @@ namespace ZEN {
         }
 
         template<typename T, typename... Args>
+        requires (!IsColliderComp<T>)
         T& addComponent(Args... args) {
             return m_Registry->emplace<T>(m_Handle,
                 std::forward<Args>(args)...);
+        }
+
+        template<typename T, typename... Args>
+        requires (IsColliderComp<T>)
+        T& addComponent(Args... args) {
+            return m_Registry->emplace<T>(m_Handle,
+                std::forward<Args>(args)...);
+        }
+
+        template<typename T>
+        requires (IsColliderComp<T>)
+        T& addComponent() {
+            if (auto* mesh = tryGetComponent<MeshComp>()) {
+                auto& tc = getComponent<TransformComp>();
+                glm::vec3 center{};
+                if constexpr (std::same_as<T, BoxColliderComp>) {
+                    BoxColliderComp comp {
+                        .halfExtents = mesh->handle->getHalfExtents(center) * tc.localScale,
+                        .offset = center,
+                    };
+                    return addComponent<T>(comp);
+                }
+                if constexpr (std::same_as<T, SphereColliderComp>) {
+                    float scaleFactor = glm::max(tc.localScale.x, glm::max(tc.localScale.y, tc.localScale.z));
+                    SphereColliderComp comp {
+                        .radius = mesh->handle->getRadius(center) * scaleFactor,
+                        .offset = center,
+                    };
+                    return addComponent<T>(comp);
+                }
+            }
+            return m_Registry->emplace<T>(m_Handle);
         }
 
         ParentComp& addParent(const ParentComp &pc);
@@ -52,6 +93,7 @@ namespace ZEN {
                 return m_Registry->valid(m_Handle);
             return false;
         }
+
 
         void* addRuntimeComponent(const ComponentInfo& compInfo);
         RuntimeComponent* getRuntimeComponent(const std::string& compName);

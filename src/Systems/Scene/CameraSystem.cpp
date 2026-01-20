@@ -32,7 +32,7 @@ void CameraSystem::onUpdate(float deltaTime) {
 
         //update position if has transform
         if (auto *transform = entity.tryGetComponent<TransformComp>()) {
-            glm::vec3 front = transform->getFront();
+            glm::vec3 front = transform->getFrontWorld();
             glm::vec3 right = glm::normalize(glm::cross(front, glm::vec3(0.0f,1.0f,0.0f)));
             glm::vec3 up = glm::normalize(glm::cross(right, front));
 

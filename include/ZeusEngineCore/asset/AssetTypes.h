@@ -71,6 +71,43 @@ namespace ZEN {
     struct MeshData {
         std::vector<uint32_t> indices{};
         std::vector<Vertex> vertices{};
+
+        glm::vec3 getHalfExtents(glm::vec3& outCenter) const {
+            if (vertices.empty()) {
+                outCenter = glm::vec3(0.0f);
+                return glm::vec3(0.5f);
+            }
+            glm::vec3 min = vertices[0].Position;
+            glm::vec3 max = vertices[0].Position;
+
+            for (auto vert : vertices) {
+                min = glm::min(min, vert.Position);
+                max = glm::max(max, vert.Position);
+            }
+            outCenter = (min + max) * 0.5f;
+            return (max - min) * 0.5f;
+        }
+        float getRadius(glm::vec3& outCenter) const {
+            if (vertices.empty()) {
+                outCenter = glm::vec3(0.0f);
+                return 0.5f;
+            }
+            glm::vec3 min = vertices[0].Position;
+            glm::vec3 max = vertices[0].Position;
+
+            for (auto vert : vertices) {
+                min = glm::min(min, vert.Position);
+                max = glm::max(max, vert.Position);
+            }
+            outCenter = (min + max) * 0.5f;
+
+            float radius = 0.0f;
+            for (const auto& vert : vertices) {
+                radius = glm::max(radius, glm::distance(outCenter, vert.Position));
+            }
+
+            return radius;
+        }
     };
 
 

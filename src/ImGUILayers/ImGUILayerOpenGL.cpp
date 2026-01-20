@@ -83,8 +83,9 @@ void setupImGuiStyle( bool bStyleDark_, float alpha_  )
     }
 ImGUILayerOpenGL::ImGUILayerOpenGL(GLFWwindow *window) {
     IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    ImGuiContext* ctx = ImGui::CreateContext();
+    ImGui::SetCurrentContext(ctx);
+    //ImGuiIO& io = ImGui::GetIO(); (void)io;
     //io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
     //io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 
@@ -111,6 +112,9 @@ ImGUILayerOpenGL::~ImGUILayerOpenGL() {
     ImGui::DestroyContext();
 }
 void ImGUILayerOpenGL::beginFrame() {
+    if (ImGui::GetCurrentContext() == nullptr)
+        return;
+
     ImGui_ImplGlfw_NewFrame();
     ImGui_ImplOpenGL3_NewFrame();
     ImGui::NewFrame();

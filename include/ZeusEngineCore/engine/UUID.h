@@ -1,7 +1,8 @@
 #pragma once
+#include "ZeusEngineCore/core/API.h"
 
 namespace ZEN {
-    class UUID {
+    class ZEN_API UUID {
     public:
         UUID();
         constexpr UUID(uint64_t handle) noexcept
