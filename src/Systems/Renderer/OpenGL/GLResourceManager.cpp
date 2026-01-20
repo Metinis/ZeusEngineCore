@@ -517,7 +517,7 @@ void ZEN::GLResourceManager::bindMaterial(const MaterialRaw &material) {
 
 }
 
-constexpr std::array<std::string, 6> cubeSides {
+constexpr std::array<std::string_view, 6> cubeSides {
     "right.jpg",
     "left.jpg",
     "top.jpg",

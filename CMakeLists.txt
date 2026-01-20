@@ -9,6 +9,10 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/include/glfw glfw)
 
 add_library(ZeusEngineCore SHARED)
 
+target_compile_definitions(ZeusEngineCore
+    PRIVATE ENGINE_EXPORTS
+)
+
 target_compile_features(ZeusEngineCore PUBLIC cxx_std_23)
 
 add_library(imgui STATIC)
@@ -79,6 +83,16 @@ target_include_directories(ZeusEngineCore
 )
 include(FetchContent)
 
+set(USE_STATIC_MSVC_RUNTIME_LIBRARY OFF CACHE BOOL "" FORCE)
+
+FetchContent_Declare(
+        JoltPhysics
+        GIT_REPOSITORY "https://github.com/jrouwe/JoltPhysics"
+        GIT_TAG "v5.5.0"
+        SOURCE_SUBDIR "Build"
+)
+FetchContent_MakeAvailable(JoltPhysics)
+
 FetchContent_Declare(
         assimp
         GIT_REPOSITORY https://github.com/assimp/assimp.git
@@ -93,13 +107,6 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(yaml-cpp)
 
-FetchContent_Declare(
-        JoltPhysics
-        GIT_REPOSITORY "https://github.com/jrouwe/JoltPhysics"
-        GIT_TAG "v5.5.0"
-        SOURCE_SUBDIR "Build"
-)
-FetchContent_MakeAvailable(JoltPhysics)
 
 target_link_libraries(ZeusEngineCore
         PRIVATE

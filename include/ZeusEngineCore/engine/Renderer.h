@@ -1,6 +1,7 @@
 #pragma once
 #include "ZeusEngineCore/core/InputEvents.h"
 #include "ZeusEngineCore/core/Layer.h"
+#include "ZeusEngineCore/core/API.h"
 #include "../src/Systems/Renderer/OpenGL/GLContext.h"
 #include "ZeusEngineCore/engine/Components.h"
 
@@ -33,7 +34,7 @@ namespace ZEN {
 		uint32_t fboID;
 	};
 
-	class Renderer : public Layer {
+	class ZEN_API Renderer : public Layer {
 	public:
 		explicit Renderer();
 

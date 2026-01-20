@@ -29,7 +29,7 @@ namespace ZEN {
     using AssetMap = std::unordered_map<AssetID, AssetVariant>;
     using NameMap = std::unordered_map<AssetID, std::string>;
 
-    class AssetLibrary {
+    class ZEN_API AssetLibrary {
     public:
         explicit AssetLibrary();
         ~AssetLibrary();

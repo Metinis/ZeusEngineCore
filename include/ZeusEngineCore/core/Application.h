@@ -7,7 +7,7 @@
 
 namespace ZEN {
 
-    class Application {
+    class ZEN_API Application {
     public:
         Application();
         virtual ~Application();

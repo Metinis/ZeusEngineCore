@@ -10,6 +10,20 @@ using namespace ZEN;
 
 GLContext::GLContext() : m_WindowHandle(Application::get().getWindow()->getNativeWindow()){
     glfwMakeContextCurrent(m_WindowHandle);
+    int major, minor;
+    glGetIntegerv(GL_MAJOR_VERSION, &major);
+    glGetIntegerv(GL_MINOR_VERSION, &minor);
+
+    const int requiredMajor = 4;
+    const int requiredMinor = 5;
+
+    if (major < requiredMajor || (major == requiredMajor && minor < requiredMinor)) {
+        char buf[128];
+        snprintf(buf, sizeof(buf),
+            "OpenGL version %d.%d unsupported. Required at least %d.%d",
+            major, minor, requiredMajor, requiredMinor);
+        throw std::runtime_error(buf);
+    }
     glfwSwapInterval(1); // Enable VSync
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
         throw std::runtime_error("Failed to initialize GLAD");

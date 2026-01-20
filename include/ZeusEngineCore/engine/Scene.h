@@ -14,7 +14,7 @@ namespace ZEN {
 	struct RemoveMaterialEvent;
 	struct RemoveTextureEvent;
 
-	class Scene : public Layer {
+	class ZEN_API Scene : public Layer {
 
 	public:
 		Scene();

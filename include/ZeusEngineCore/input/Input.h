@@ -1,7 +1,8 @@
 #pragma once
+#include "ZeusEngineCore/core/API.h"
 
 namespace ZEN {
-    class Input {
+    class ZEN_API Input {
     public:
         static bool isKeyPressed(int keycode);
         static bool isMouseButtonPressed(int keycode);

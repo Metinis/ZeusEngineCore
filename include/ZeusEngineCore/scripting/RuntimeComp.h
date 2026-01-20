@@ -70,7 +70,7 @@ inline Type##_Registrar s_##Type##_registrar;        \
         std::unordered_map<entt::entity, std::vector<uint8_t>> data;
     };
 
-    struct RuntimeComponent {
+    struct ZEN_API RuntimeComponent {
         std::vector<uint8_t> buffer;
         const ComponentInfo *info;
 

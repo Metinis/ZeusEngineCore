@@ -300,11 +300,11 @@ bool SceneSerializer::deserialize(const std::string &path) {
             auto skyboxComp = entity["SkyboxComponent"];
             if (skyboxComp) {
                 SkyboxComp comp{
-                    .skyboxMat.handle = AssetID(skyboxComp["SkyboxMaterialID"].as<uint64_t>()),
-                    .eqMat.handle = AssetID(skyboxComp["EqMaterialID"].as<uint64_t>()),
-                    .conMat.handle = AssetID(skyboxComp["ConMaterialID"].as<uint64_t>()),
-                    .prefilterMat.handle = AssetID(skyboxComp["PrefilterMaterialID"].as<uint64_t>()),
-                    .brdfLUTMat.handle = AssetID(skyboxComp["BRDFLUTMaterialID"].as<uint64_t>()),
+                    .skyboxMat = AssetID(skyboxComp["SkyboxMaterialID"].as<uint64_t>()),
+                    .eqMat = AssetID(skyboxComp["EqMaterialID"].as<uint64_t>()),
+                    .conMat = AssetID(skyboxComp["ConMaterialID"].as<uint64_t>()),
+                    .prefilterMat = AssetID(skyboxComp["PrefilterMaterialID"].as<uint64_t>()),
+                    .brdfLUTMat = AssetID(skyboxComp["BRDFLUTMaterialID"].as<uint64_t>()),
                     .envGenerated = skyboxComp["EnvGenerated"].as<bool>(),
                 };
                 entityInst.addComponent<SkyboxComp>(comp);

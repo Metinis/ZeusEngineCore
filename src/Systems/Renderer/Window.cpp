@@ -38,7 +38,7 @@ Window::Window(int width, int height, std::string title) : m_Width(width), m_Hei
     };
 }
 
-Window::Window(std::string title) {
+Window::Window(std::string title) : m_Title(std::move(title)) {
     if (!glfwInit())
         throw std::runtime_error("Failed to initialize GLFW");
 

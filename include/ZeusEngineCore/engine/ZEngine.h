@@ -15,7 +15,7 @@ namespace ZEN {
     class RenderSystem;
     class CameraSystem;
     class EventDispatcher;
-    class ZEngine {
+    class ZEN_API ZEngine {
     public:
         explicit ZEngine();
         void init();

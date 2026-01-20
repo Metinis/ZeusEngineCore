@@ -13,7 +13,7 @@ namespace ZEN {
     class Scene;
     template<typename T>
         concept IsColliderComp = std::same_as<T, BoxColliderComp> || std::same_as<T, SphereColliderComp>;
-    class Entity {
+    class ZEN_API Entity {
     public:
         explicit Entity(Scene* scene, entt::entity handle);
         //explicit Entity(entt::registry* registry, entt::entity handle);
