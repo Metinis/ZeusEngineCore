@@ -112,7 +112,9 @@ void Application::run() {
         }
         m_Engine->getRenderer().bindDefaultFBO();
 
+
         m_ImGUILayer->beginFrame();
+
         for(Layer* layer : *m_LayerStack) {
 
             layer->onUIRender();
