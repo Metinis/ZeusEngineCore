@@ -11,6 +11,7 @@ namespace ZEN {
         void pushOverlay(Layer* overlay);
         void popLayer(Layer* layer);
         void popOverlay(Layer* overlay);
+        void flush();
 
         std::vector<Layer*>::iterator begin() { return m_Layers.begin(); }
         std::vector<Layer*>::iterator end() { return m_Layers.end(); }
@@ -25,6 +26,9 @@ namespace ZEN {
     private:
 
         std::vector<Layer*> m_Layers{};
+        std::vector<Layer*> m_LayersToRemove{};
+        std::vector<Layer*> m_LayersToPushFront;
+        std::vector<Layer*> m_LayersToPushBack;
         uint32_t m_LayerInsertIndex{};
     };
 }

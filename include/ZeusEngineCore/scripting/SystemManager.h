@@ -8,7 +8,7 @@ using HMODULE = HINSTANCE__*;
 #endif
 
 namespace ZEN {
-    class SystemManager {
+    class ZEN_API SystemManager {
     public:
         SystemManager();
         ~SystemManager();

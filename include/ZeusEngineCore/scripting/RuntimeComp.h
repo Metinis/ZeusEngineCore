@@ -92,7 +92,8 @@ inline Type##_Registrar s_##Type##_registrar;        \
 
 
 #define ZEN_GET_ENTITIES(COMP) \
-m_Scene->getEntities(#COMP)
+    m_Scene->getEntities(#COMP)
+
 
 #define ZEN_GET_FIELD(COMP, ENTITY, FIELD) \
 ENTITY.getRuntimeField<decltype(COMP::FIELD)>(#COMP, #FIELD)
