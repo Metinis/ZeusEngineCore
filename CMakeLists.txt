@@ -53,11 +53,17 @@ target_link_libraries(ImGuizmo
         imgui
 )
 
+add_library(tinyfd STATIC
+    include/tinyfiledialogs/tinyfiledialogs.c
+)
+
+target_include_directories(tinyfd PUBLIC
+    include/tinyfiledialogs
+)
 
 file(GLOB_RECURSE ZEUSENGINECORE_SOURCES
         src/*.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/include/glad/src/glad.c
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/tinyfiledialogs/tinyfiledialogs.c
 )
 
 file(GLOB_RECURSE ZEUSENGINECORE_HEADERS include/*.h include/*.hpp)
@@ -121,6 +127,7 @@ target_link_libraries(ZeusEngineCore
         ImGuizmo
         yaml-cpp::yaml-cpp
         Jolt::Jolt
+        tinyfd
 )
 
 if(APPLE)
