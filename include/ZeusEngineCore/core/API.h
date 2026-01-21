@@ -14,7 +14,18 @@ namespace ZEN {
 #else
 #define ZEN_API __attribute__((visibility("default")))
 #endif
+#pragma once
+#ifdef _WIN32
+#ifdef PLUGIN_EXPORTS
+#define PLUGIN_API __declspec(dllexport) 
+#else
+#define PLUGIN_API __declspec(dllimport) 
+#endif
+#else
+#define PLUGIN_API __attribute__((visibility("default"))) 
+#endif
+
 	
-	extern "C" __declspec(dllexport) ImGuiContext* getEngineImGuiContext();
+	extern "C" ZEN_API ImGuiContext* getEngineImGuiContext();
 }
 

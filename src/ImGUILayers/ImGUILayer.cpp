@@ -15,6 +15,6 @@ std::unique_ptr<ImGUILayer> ImGUILayer::create(GLFWwindow* window, eRendererAPI 
     }
 }
 
-extern "C" __declspec(dllexport) ImGuiContext* getEngineImGuiContext() {
+extern "C" ZEN_API ImGuiContext* getEngineImGuiContext() {
     return ImGui::GetCurrentContext();
 }
