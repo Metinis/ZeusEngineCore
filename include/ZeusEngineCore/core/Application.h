@@ -32,13 +32,14 @@ namespace ZEN {
         void close();
 
         void run();
-
+    private:
+        std::unique_ptr<LayerStack> m_LayerStack{};
     protected:
         static Application* s_Instance;
 
         std::unique_ptr<Window> m_Window{};
         std::unique_ptr<ImGUILayer> m_ImGUILayer{};
-        std::unique_ptr<LayerStack> m_LayerStack{};
+        
         std::unique_ptr<ZEngine> m_Engine{};
 
         std::string m_ResourceRoot{};

@@ -188,21 +188,23 @@ void Scene::onEvent(Event &event) {
     dispatcher.dispatch<RunPlayModeEvent>([this](RunPlayModeEvent& e) {return onPlayMode(e); });
 }
 
-std::vector<Entity> Scene::getEntities(const std::string &name) {
-    std::vector<Entity> result;
+std::vector<Entity> Scene::getEntities(
+    std::string_view componentName) const {
+    std::vector<Entity> ret;
+
+    std::string n(componentName);
 
     for (auto& [entity, comps] : m_RuntimeComponents) {
-        if (comps.contains(name)) {
-            result.emplace_back(entity);
+        if (comps.contains(n)) {
+            ret.push_back(entity);
         }
     }
 
-    return result;
+    return ret;
 }
 
 bool Scene::onPlayMode(RunPlayModeEvent &e) {
     m_PlayMode = e.getPlaying();
-
     return false;
 }
 

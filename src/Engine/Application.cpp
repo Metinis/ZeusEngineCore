@@ -38,23 +38,27 @@ void Application::init() {
 }
 
 void Application::pushLayer(Layer* layer) {
-    m_LayerStack->pushLayer(layer);
     layer->onAttach();
+    m_LayerStack->pushLayer(layer);
+    
 }
 
 void Application::pushOverlay(Layer* layer) {
-    m_LayerStack->pushOverlay(layer);
     layer->onAttach();
+    m_LayerStack->pushOverlay(layer);
+    
 }
 
 void Application::popLayer(Layer *layer) {
-    m_LayerStack->popLayer(layer);
     layer->onDettach();
+    m_LayerStack->popLayer(layer);
+    
 }
 
 void Application::popOverlay(Layer *layer) {
-    m_LayerStack->popOverlay(layer);
     layer->onDettach();
+    m_LayerStack->popOverlay(layer);
+    
 }
 
 void Application::callEvent(Event &event) {
@@ -68,6 +72,8 @@ void Application::callEvent(Event &event) {
             break;
         (*it)->onEvent(event);
     }
+
+    
 }
 
 bool Application::onPlayMode(const RunPlayModeEvent &event) {
@@ -89,6 +95,7 @@ void Application::run() {
     while(m_Running && !m_Window->shouldClose()) {
 
         //---------------UPDATE LOGIC-------------------
+        m_LayerStack->flush();
         m_Window->pollEvents();
         const float dt = m_Window->getDeltaTime();
 
@@ -105,7 +112,9 @@ void Application::run() {
         }
         m_Engine->getRenderer().bindDefaultFBO();
 
+
         m_ImGUILayer->beginFrame();
+
         for(Layer* layer : *m_LayerStack) {
 
             layer->onUIRender();

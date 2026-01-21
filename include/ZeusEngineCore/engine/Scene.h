@@ -37,7 +37,7 @@ namespace ZEN {
 				[this](entt::entity entity) { return makeEntity(entity); }
 			);
 		}
-		std::vector<Entity> getEntities(const std::string& name);
+		std::vector<Entity> getEntities(std::string_view name) const;
 
 		bool onPlayMode(RunPlayModeEvent& e);
 		void onEvent(Event& event) override;

@@ -53,11 +53,17 @@ target_link_libraries(ImGuizmo
         imgui
 )
 
+add_library(tinyfd STATIC
+    include/tinyfiledialogs/tinyfiledialogs.c
+)
+
+target_include_directories(tinyfd PUBLIC
+    include/tinyfiledialogs
+)
 
 file(GLOB_RECURSE ZEUSENGINECORE_SOURCES
         src/*.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/include/glad/src/glad.c
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/tinyfiledialogs/tinyfiledialogs.c
 )
 
 file(GLOB_RECURSE ZEUSENGINECORE_HEADERS include/*.h include/*.hpp)
@@ -92,13 +98,17 @@ FetchContent_Declare(
         SOURCE_SUBDIR "Build"
 )
 FetchContent_MakeAvailable(JoltPhysics)
-
+set(ASSIMP_USE_STATIC_CRT OFF CACHE BOOL "" FORCE)
+set(BUILD_SHARED_LIBS ON CACHE BOOL "" FORCE)
+set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(ASSIMP_BUILD_ASSIMP_TOOLS OFF CACHE BOOL "" FORCE)
 FetchContent_Declare(
         assimp
         GIT_REPOSITORY https://github.com/assimp/assimp.git
         GIT_TAG v6.0.2
 )
 FetchContent_MakeAvailable(assimp)
+
 
 FetchContent_Declare(
         yaml-cpp
@@ -117,6 +127,7 @@ target_link_libraries(ZeusEngineCore
         ImGuizmo
         yaml-cpp::yaml-cpp
         Jolt::Jolt
+        tinyfd
 )
 
 if(APPLE)

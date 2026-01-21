@@ -102,10 +102,14 @@ ImGUILayerOpenGL::ImGUILayerOpenGL(GLFWwindow *window) {
     callback = [this](void* cmd) {
         this->endFrame(cmd);
     };
-    ImGuizmo::Enable(true);
+    //ImGuizmo::Enable(true);
 }
 
 ImGUILayerOpenGL::~ImGUILayerOpenGL() {
+    if (ImGui::GetCurrentContext() && ImGui::GetDrawData()) {
+        ImGuizmo::Enable(false);
+        ImGui::EndFrame();
+    }
     ImGui_ImplOpenGL3_Shutdown();
 
     ImGui_ImplGlfw_Shutdown();
@@ -118,7 +122,7 @@ void ImGUILayerOpenGL::beginFrame() {
     ImGui_ImplGlfw_NewFrame();
     ImGui_ImplOpenGL3_NewFrame();
     ImGui::NewFrame();
-    ImGuizmo::BeginFrame();
+    
 }
 void ImGUILayerOpenGL::render() {
     ImGui::Render();
@@ -126,6 +130,7 @@ void ImGUILayerOpenGL::render() {
 // commandBuffer ignored here
 void ImGUILayerOpenGL::endFrame(void* commandBuffer) {
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+    ImGui::EndFrame();
 }
 
 

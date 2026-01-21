@@ -16,6 +16,7 @@ namespace ZEN {
     class ZEN_API Entity {
     public:
         explicit Entity(Scene* scene, entt::entity handle);
+        explicit Entity(entt::entity handle);
         //explicit Entity(entt::registry* registry, entt::entity handle);
         explicit Entity() = default;
 

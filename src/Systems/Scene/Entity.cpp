@@ -5,6 +5,9 @@ using namespace ZEN;
 Entity::Entity(Scene *scene, entt::entity handle) : m_Scene(scene), m_Registry(&scene->m_Registry), m_Handle(handle){
     assert(m_Registry && "Entity constructed with null registry!");
 }
+Entity::Entity(entt::entity handle) : m_Scene(&Application::get().getEngine()->getScene()), m_Registry(&m_Scene->m_Registry), m_Handle(handle) {
+    assert(m_Registry && "Entity constructed with null registry!");
+}
 
 void* Entity::addRuntimeComponent(const ComponentInfo &compInfo) {
     auto& entityMap = m_Scene->m_RuntimeComponents[*this];
