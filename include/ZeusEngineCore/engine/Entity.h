@@ -29,6 +29,10 @@ namespace ZEN {
         bool hasComponent() {
             return m_Registry->any_of<T>(m_Handle);
         }
+        template<typename T>
+        bool hasComponent() const {
+            return m_Registry->any_of<T>(m_Handle);
+        }
 
         template<typename T, typename... Args>
         requires (!IsColliderComp<T>)

@@ -80,7 +80,8 @@ inline Type##_Registrar s_##Type##_registrar;        \
             return *reinterpret_cast<T *>(ptr);
         }
     };
-
+#define ZEN_HAS_COMP(COMP, ENTITY) \
+ENTITY.hasRuntimeComponent(#COMP)
 
 #define ZEN_GET_ENTITIES(COMP) \
     m_Scene->getEntities(#COMP)

@@ -17,6 +17,7 @@ namespace ZEN {
 	struct CollisionEvent {
 		Entity A;
 		Entity B;
+		glm::vec3 contactNormal{};
 		enum class Type { Enter, Stay, Exit } eventType;
 	};
 
@@ -27,9 +28,9 @@ namespace ZEN {
 		~Scene();
 		void onUpdate(float dt) override;
 		void createDefaultScene();
-		void onCollisionEnter(Entity a, Entity b);
-		void onCollisionStay(Entity a, Entity b);
-		void onCollisionExit(Entity a, Entity b);
+		void onCollisionEnter(Entity a, Entity b, glm::vec3 contactNormal = {});
+		void onCollisionStay(Entity a, Entity b, glm::vec3 contactNormal = {});
+		void onCollisionExit(Entity a, Entity b, glm::vec3 contactNormal = {});
 		Entity createEntity(const std::string& name = "");
 		Entity createEntity(const std::string& name, UUID id);
 		Entity getEntity(UUID id);

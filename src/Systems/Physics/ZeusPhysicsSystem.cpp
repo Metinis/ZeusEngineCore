@@ -305,9 +305,15 @@ void ZeusContactListener::OnContactAdded(
     const JPH::ContactManifold &inManifold,
     JPH::ContactSettings &ioSettings
 ) {
+    glm::vec3 normal = glm::vec3(
+        inManifold.mWorldSpaceNormal.GetX(),
+        inManifold.mWorldSpaceNormal.GetY(),
+        inManifold.mWorldSpaceNormal.GetZ()
+    );
     auto entityA = Entity((entt::entity)inBody1.GetUserData());
     auto entityB = Entity((entt::entity)inBody2.GetUserData());
-    m_Scene->onCollisionEnter(entityA, entityB);
+    m_Scene->onCollisionEnter(entityA, entityB, normal);
+    m_Scene->onCollisionEnter(entityB, entityA, normal);
 }
 
 void ZeusContactListener::OnContactPersisted(
@@ -319,6 +325,7 @@ void ZeusContactListener::OnContactPersisted(
     auto entityA = Entity((entt::entity)inBody1.GetUserData());
     auto entityB = Entity((entt::entity)inBody2.GetUserData());
     m_Scene->onCollisionStay(entityA, entityB);
+    m_Scene->onCollisionStay(entityB, entityA);
 }
 
 
@@ -326,6 +333,7 @@ void ZeusContactListener::OnContactRemoved(const JPH::SubShapeIDPair &inSubShape
     Entity entityA((entt::entity)inSubShapePair.GetBody1ID().GetIndex());
     Entity entityB((entt::entity)inSubShapePair.GetBody2ID().GetIndex());
     m_Scene->onCollisionExit(entityA, entityB);
+    m_Scene->onCollisionExit(entityB, entityA);
 }
 
 
