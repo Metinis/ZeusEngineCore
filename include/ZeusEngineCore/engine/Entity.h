@@ -78,6 +78,10 @@ namespace ZEN {
         T* tryGetComponent() {
             return m_Registry->try_get<T>(m_Handle);
         }
+        template<typename T>
+        T* tryGetComponent() const {
+            return m_Registry->try_get<T>(m_Handle);
+        }
 
         template<typename ...Args>
         auto tryGetComponents() {
@@ -98,7 +102,7 @@ namespace ZEN {
 
         void* addRuntimeComponent(const ComponentInfo& compInfo);
         RuntimeComponent* getRuntimeComponent(const std::string& compName);
-        bool hasRuntimeComponent(const std::string& compName);
+        bool hasRuntimeComponent(const std::string& compName) const;
         void removeRuntimeComponent(const std::string& compName);
 
         template<typename T>

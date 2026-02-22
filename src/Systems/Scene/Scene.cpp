@@ -100,14 +100,17 @@ void Scene::createDefaultScene() {
 
 void Scene::onCollisionEnter(Entity a, Entity b) {
     m_PendingCollisionEvents.emplace_back(CollisionEvent{a, b, CollisionEvent::Type::Enter});
+    m_PendingCollisionEvents.emplace_back(CollisionEvent{b, a, CollisionEvent::Type::Enter});
 }
 
 void Scene::onCollisionStay(Entity a, Entity b) {
     m_PendingCollisionEvents.emplace_back(CollisionEvent{a, b, CollisionEvent::Type::Stay});
+    m_PendingCollisionEvents.emplace_back(CollisionEvent{b, a, CollisionEvent::Type::Stay});
 }
 
 void Scene::onCollisionExit(Entity a, Entity b) {
     m_PendingCollisionEvents.emplace_back(CollisionEvent{a, b, CollisionEvent::Type::Exit});
+    m_PendingCollisionEvents.emplace_back(CollisionEvent{b, a, CollisionEvent::Type::Exit});
 }
 
 Entity Scene::createEntity(const std::string& name) {
