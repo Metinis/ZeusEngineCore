@@ -2,12 +2,14 @@
 #include "ZeusEngineCore/core/API.h"
 
 namespace ZEN {
+    struct CollisionEvent;
     class Scene;
 
     class ZEN_API ISystem {
     public:
         virtual ~ISystem() = default;
         virtual void onUpdate(float dt) = 0;
+        virtual void onCollision(const CollisionEvent& e) = 0;
         virtual void onLoad(Scene* scene) {
             m_Scene = scene;
         };

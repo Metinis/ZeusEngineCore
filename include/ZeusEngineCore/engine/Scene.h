@@ -14,6 +14,12 @@ namespace ZEN {
 	struct RemoveMaterialEvent;
 	struct RemoveTextureEvent;
 
+	struct CollisionEvent {
+		Entity A;
+		Entity B;
+		enum class Type { Enter, Stay, Exit } eventType;
+	};
+
 	class ZEN_API Scene : public Layer {
 
 	public:
@@ -21,6 +27,9 @@ namespace ZEN {
 		~Scene();
 		void onUpdate(float dt) override;
 		void createDefaultScene();
+		void onCollisionEnter(Entity a, Entity b);
+		void onCollisionStay(Entity a, Entity b);
+		void onCollisionExit(Entity a, Entity b);
 		Entity createEntity(const std::string& name = "");
 		Entity createEntity(const std::string& name, UUID id);
 		Entity getEntity(UUID id);
@@ -49,6 +58,8 @@ namespace ZEN {
 		std::unordered_map<Entity, std::unordered_map<std::string, RuntimeComponent>> m_RuntimeComponents;
 		AssetLibrary* m_ModelLibrary{};
 		ZeusPhysicsSystem* m_PhysicsSystem{};
+
+		std::vector<CollisionEvent> m_PendingCollisionEvents;
 
 		bool m_PlayMode{false};
 		bool m_LoadedScene{false};

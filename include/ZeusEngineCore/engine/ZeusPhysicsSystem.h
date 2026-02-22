@@ -16,9 +16,7 @@
 #include <Jolt/Physics/PhysicsSystem.h>
 #include <Jolt/Physics/Body/Body.h>
 #include <Jolt/Physics/Collision/Shape/Shape.h>
-
 #include "Entity.h"
-
 
 namespace ZEN {
     class Scene;
@@ -26,32 +24,21 @@ namespace ZEN {
     class ZeusPhysicsSystem : public Layer {
     public:
         ZeusPhysicsSystem();
-
         ~ZeusPhysicsSystem() override;
-
         void init();
-
         JPH::BodyID createAddBody(JPH::BodyCreationSettings &settings, entt::entity entity);
-
         void syncECSBodyToPhysics(Entity entity, bool wake);
-
         void onUpdate(float dt) override;
-
         void onEvent(Event &event) override;
-
         JPH::BodyInterface *getBodyInterface() const { return m_BodyInterface; }
+        JPH::PhysicsSystem &getJoltPhysicsSystem() { return m_PhysicsSystem; }
 
     private:
         void initJolt();
-
         void shutdownJolt();
-
         JPH::Ref<JPH::Shape> buildShapeForEntity(Entity entity);
-
         void loadPlayMode();
-
         void unloadPlayMode();
-
         bool onPlayModeRun(const RunPlayModeEvent &e);
 
         bool m_IsPlaying{};
@@ -80,18 +67,10 @@ namespace BroadPhaseLayers {
 
 class BPLayerInterface final : public JPH::BroadPhaseLayerInterface {
 public:
-    BPLayerInterface() {
-        m_Map[Layers::NON_MOVING] = BroadPhaseLayers::NON_MOVING;
-        m_Map[Layers::MOVING] = BroadPhaseLayers::MOVING;
-    }
+    BPLayerInterface();
+    uint32_t GetNumBroadPhaseLayers() const override;
+    JPH::BroadPhaseLayer GetBroadPhaseLayer(JPH::ObjectLayer layer) const override;
 
-    uint32_t GetNumBroadPhaseLayers() const override {
-        return BroadPhaseLayers::NUM_LAYERS;
-    }
-
-    JPH::BroadPhaseLayer GetBroadPhaseLayer(JPH::ObjectLayer layer) const override {
-        return m_Map[layer];
-    }
 #if defined(JPH_EXTERNAL_PROFILE) || defined(JPH_PROFILE_ENABLED)
     const char *GetBroadPhaseLayerName(
         JPH::BroadPhaseLayer layer
@@ -110,59 +89,30 @@ private:
 
 class ZeusObjectLayerPairFilter final : public JPH::ObjectLayerPairFilter {
 public:
-    bool ShouldCollide(JPH::ObjectLayer a, JPH::ObjectLayer b) const override {
-        if (a == Layers::NON_MOVING)
-            return b == Layers::MOVING;
-        return true;
-    }
+    bool ShouldCollide(JPH::ObjectLayer a, JPH::ObjectLayer b) const override;
 };
 
-class ObjectVsBroadPhaseLayerFilter final
-        : public JPH::ObjectVsBroadPhaseLayerFilter {
+class ObjectVsBroadPhaseLayerFilter final : public JPH::ObjectVsBroadPhaseLayerFilter {
 public:
-    bool ShouldCollide(
-        JPH::ObjectLayer layer,
-        JPH::BroadPhaseLayer bp
-    ) const override {
-        if (layer == Layers::NON_MOVING)
-            return bp == BroadPhaseLayers::MOVING;
-        return true;
-    }
+    bool ShouldCollide(JPH::ObjectLayer layer, JPH::BroadPhaseLayer bp) const override;
 };
 
 class ZeusContactListener final : public JPH::ContactListener {
 public:
-    JPH::ValidateResult OnContactValidate(
-        const JPH::Body &inBody1,
-        const JPH::Body &inBody2,
-        JPH::RVec3Arg,
+    ZeusContactListener();
+    JPH::ValidateResult OnContactValidate( const JPH::Body &inBody1, const JPH::Body &inBody2, JPH::RVec3Arg,
         const JPH::CollideShapeResult &
-    ) override {
-        return JPH::ValidateResult::AcceptAllContactsForThisBodyPair;
-    }
+    ) override;
 
-    void OnContactAdded(
-        const JPH::Body &inBody1,
-        const JPH::Body &inBody2,
-        const JPH::ContactManifold &inManifold,
+    void OnContactAdded(const JPH::Body &inBody1, const JPH::Body &inBody2, const JPH::ContactManifold &inManifold,
         JPH::ContactSettings &ioSettings
-    ) override {
-        auto entityA = ZEN::Entity((entt::entity)inBody1.GetUserData());
-        auto entityB = ZEN::Entity((entt::entity)inBody2.GetUserData());
-        std::cout << "Collision detected between " << entityA.getComponent<ZEN::TagComp>().tag  <<
-            " and " << entityB.getComponent<ZEN::TagComp>().tag << "\n";
-    }
+    ) override;
 
-    void OnContactPersisted(
-        const JPH::Body &inBody1,
-        const JPH::Body &inBody2,
-        const JPH::ContactManifold &inManifold,
+    void OnContactPersisted(const JPH::Body &inBody1, const JPH::Body &inBody2, const JPH::ContactManifold &inManifold,
         JPH::ContactSettings &ioSettings
-    ) override {
-        //Called each step while bodies are still in contact
-    }
+    ) override;
 
-    void OnContactRemoved(const JPH::SubShapeIDPair &inSubShapePair) override {
-        //Called when contact ends
-    }
+    void OnContactRemoved(const JPH::SubShapeIDPair &inSubShapePair) override;
+private:
+    ZEN::Scene* m_Scene{};
 };

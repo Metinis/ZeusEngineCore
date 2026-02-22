@@ -86,6 +86,11 @@ void SystemManager::updateAll(float dt) {
         s->onUpdate(dt);
 }
 
+void SystemManager::collisionAll(const CollisionEvent& e) {
+    for (auto* s : m_Systems)
+        s->onCollision(e);
+}
+
 void SystemManager::loadAll(Scene* scene) {
     for (auto* s : m_Systems) {
         s->onLoad(scene);

@@ -11,7 +11,7 @@ static ObjectVsBroadPhaseLayerFilter s_ObjectVsBroadPhase;
 static ZeusObjectLayerPairFilter s_ObjectLayerPair;
 
 ZeusPhysicsSystem::ZeusPhysicsSystem() {
-    initJolt();
+
 }
 
 ZeusPhysicsSystem::~ZeusPhysicsSystem() {
@@ -20,6 +20,7 @@ ZeusPhysicsSystem::~ZeusPhysicsSystem() {
 
 void ZeusPhysicsSystem::init() {
     m_Scene = &Application::get().getEngine()->getScene();
+    initJolt();
 }
 
 JPH::BodyID ZeusPhysicsSystem::createAddBody(JPH::BodyCreationSettings& settings, entt::entity entity) {
@@ -263,6 +264,68 @@ void ZeusPhysicsSystem::shutdownJolt() {
     JPH::UnregisterTypes();
     delete JPH::Factory::sInstance;
     JPH::Factory::sInstance = nullptr;
+}
+BPLayerInterface::BPLayerInterface() {
+    m_Map[Layers::NON_MOVING] = BroadPhaseLayers::NON_MOVING;
+    m_Map[Layers::MOVING] = BroadPhaseLayers::MOVING;
+}
+
+uint32_t BPLayerInterface::GetNumBroadPhaseLayers() const {
+    return BroadPhaseLayers::NUM_LAYERS;
+}
+
+JPH::BroadPhaseLayer BPLayerInterface::GetBroadPhaseLayer(JPH::ObjectLayer layer) const {
+    return m_Map[layer];
+}
+bool ZeusObjectLayerPairFilter::ShouldCollide(JPH::ObjectLayer a, JPH::ObjectLayer b) const {
+    if (a == Layers::NON_MOVING)
+        return b == Layers::MOVING;
+    return true;
+}
+bool ObjectVsBroadPhaseLayerFilter::ShouldCollide(JPH::ObjectLayer layer, JPH::BroadPhaseLayer bp) const {
+    if (layer == Layers::NON_MOVING)
+        return bp == BroadPhaseLayers::MOVING;
+    return true;
+}
+
+ZeusContactListener::ZeusContactListener() : m_Scene(&Application::get().getEngine()->getScene()){}
+
+JPH::ValidateResult ZeusContactListener::OnContactValidate(
+    const JPH::Body &inBody1,
+    const JPH::Body &inBody2,
+    JPH::RVec3Arg,
+    const JPH::CollideShapeResult &
+) {
+    return JPH::ValidateResult::AcceptAllContactsForThisBodyPair;
+}
+
+void ZeusContactListener::OnContactAdded(
+    const JPH::Body &inBody1,
+    const JPH::Body &inBody2,
+    const JPH::ContactManifold &inManifold,
+    JPH::ContactSettings &ioSettings
+) {
+    auto entityA = Entity((entt::entity)inBody1.GetUserData());
+    auto entityB = Entity((entt::entity)inBody2.GetUserData());
+    m_Scene->onCollisionEnter(entityA, entityB);
+}
+
+void ZeusContactListener::OnContactPersisted(
+    const JPH::Body &inBody1,
+    const JPH::Body &inBody2,
+    const JPH::ContactManifold &inManifold,
+    JPH::ContactSettings &ioSettings
+) {
+    auto entityA = Entity((entt::entity)inBody1.GetUserData());
+    auto entityB = Entity((entt::entity)inBody2.GetUserData());
+    m_Scene->onCollisionStay(entityA, entityB);
+}
+
+
+void ZeusContactListener::OnContactRemoved(const JPH::SubShapeIDPair &inSubShapePair) {
+    Entity entityA((entt::entity)inSubShapePair.GetBody1ID().GetIndex());
+    Entity entityB((entt::entity)inSubShapePair.GetBody2ID().GetIndex());
+    m_Scene->onCollisionExit(entityA, entityB);
 }
 
 
