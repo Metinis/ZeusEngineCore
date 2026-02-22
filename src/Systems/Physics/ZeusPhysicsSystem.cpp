@@ -116,6 +116,50 @@ JPH::Ref<JPH::Shape> ZeusPhysicsSystem::buildShapeForEntity(Entity entity) {
 
         hasShape = true;
     }
+    if (entity.hasComponent<MeshColliderComp>() && entity.hasComponent<MeshComp>()) {
+        auto& mesh = entity.getComponent<MeshComp>();
+        JPH::VertexList joltVertices;
+        JPH::IndexedTriangleList joltTriangles;
+        auto& vertices = mesh.handle->vertices;
+        auto& indices = mesh.handle->indices;
+
+        joltVertices.reserve(vertices.size());
+        for (auto& v : vertices)
+        {
+            joltVertices.push_back(JPH::Float3(v.position.x, v.position.y, v.position.z));
+        }
+
+        joltTriangles.reserve(indices.size() / 3);
+        for (size_t i = 0; i < indices.size(); i += 3)
+        {
+            JPH::IndexedTriangle tri(
+                indices[i],
+                indices[i + 1],
+                indices[i + 2]
+            );
+
+            joltTriangles.push_back(tri);
+        }
+        JPH::MeshShapeSettings settings(joltVertices, joltTriangles);
+
+        JPH::ShapeSettings::ShapeResult result = settings.Create();
+
+        if (result.HasError())
+        {
+            return nullptr;
+        }
+
+        JPH::RefConst<JPH::Shape> meshShape = result.Get();
+
+        compound.AddShape(
+            JPH::Vec3::sZero(),
+            JPH::Quat::sIdentity(),
+            meshShape
+        );
+        hasShape = true;
+
+    }
+
 
     if (!hasShape)
         return nullptr;
@@ -127,25 +171,26 @@ void ZeusPhysicsSystem::loadPlayMode() {
         auto& transform = entity.getComponent<TransformComp>();
         auto& rigidbody = entity.getComponent<RigidBodyComp>();
 
-        //Build shape from colliders
         JPH::Ref<JPH::Shape> shape = buildShapeForEntity(entity);
 
         if (!shape)
-            continue; // no collider → no physics body
+            continue;
 
         //Convert transform
         JPH::Vec3 position(
-            transform.localPosition.x,
-            transform.localPosition.y,
-            transform.localPosition.z
+            transform.getWorldPosition().x,
+            transform.getWorldPosition().y,
+            transform.getWorldPosition().z
         );
 
+        /*glm::quat rot = glm::normalize(transform.getWorldRotation());
         JPH::Quat rotation(
-            transform.localRotation.x,
-            transform.localRotation.y,
-            transform.localRotation.z,
-            transform.localRotation.w
-        );
+            rot.x,
+            rot.y,
+            rot.z,
+            rot.w
+        );*/
+        JPH::Quat rotation(transform.localRotation.x, transform.localRotation.y, transform.localRotation.z, transform.localRotation.w);
 
         //Choose layer
         uint8_t layer =
@@ -313,7 +358,7 @@ void ZeusContactListener::OnContactAdded(
     auto entityA = Entity((entt::entity)inBody1.GetUserData());
     auto entityB = Entity((entt::entity)inBody2.GetUserData());
     m_Scene->onCollisionEnter(entityA, entityB, normal);
-    m_Scene->onCollisionEnter(entityB, entityA, normal);
+    m_Scene->onCollisionEnter(entityB, entityA, -normal);
 }
 
 void ZeusContactListener::OnContactPersisted(

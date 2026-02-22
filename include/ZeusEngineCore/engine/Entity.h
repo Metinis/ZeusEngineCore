@@ -5,6 +5,8 @@
 #include "ZeusEngineCore/scripting/CompRegistry.h"
 #include <Jolt/Physics/Collision/Shape/Shape.h>
 
+#include "Jolt/Physics/Collision/Shape/MeshShape.h"
+
 namespace JPH {
     class BodyCreationSettings;
 }
@@ -67,6 +69,10 @@ namespace ZEN {
                         .radius = mesh->handle->getRadius(center) * scaleFactor,
                         .offset = center,
                     };
+                    return addComponent<T>(comp);
+                }
+                if constexpr (std::same_as<T, MeshColliderComp>) {
+                    MeshColliderComp comp {};
                     return addComponent<T>(comp);
                 }
             }

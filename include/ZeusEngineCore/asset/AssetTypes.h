@@ -77,12 +77,12 @@ namespace ZEN {
                 outCenter = glm::vec3(0.0f);
                 return glm::vec3(0.5f);
             }
-            glm::vec3 min = vertices[0].Position;
-            glm::vec3 max = vertices[0].Position;
+            glm::vec3 min = vertices[0].position;
+            glm::vec3 max = vertices[0].position;
 
             for (auto vert : vertices) {
-                min = glm::min(min, vert.Position);
-                max = glm::max(max, vert.Position);
+                min = glm::min(min, vert.position);
+                max = glm::max(max, vert.position);
             }
             outCenter = (min + max) * 0.5f;
             return (max - min) * 0.5f;
@@ -92,18 +92,18 @@ namespace ZEN {
                 outCenter = glm::vec3(0.0f);
                 return 0.5f;
             }
-            glm::vec3 min = vertices[0].Position;
-            glm::vec3 max = vertices[0].Position;
+            glm::vec3 min = vertices[0].position;
+            glm::vec3 max = vertices[0].position;
 
             for (auto vert : vertices) {
-                min = glm::min(min, vert.Position);
-                max = glm::max(max, vert.Position);
+                min = glm::min(min, vert.position);
+                max = glm::max(max, vert.position);
             }
             outCenter = (min + max) * 0.5f;
 
             float radius = 0.0f;
             for (const auto& vert : vertices) {
-                radius = glm::max(radius, glm::distance(outCenter, vert.Position));
+                radius = glm::max(radius, glm::distance(outCenter, vert.position));
             }
 
             return radius;

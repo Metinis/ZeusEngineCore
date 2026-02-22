@@ -90,6 +90,19 @@ namespace ZEN {
         glm::vec3 getWorldPosition() const {
             return glm::vec3(worldMatrix[3]);
         }
+        glm::quat getWorldRotation() const {
+            glm::vec3 worldScale;
+            worldScale.x = glm::length(glm::vec3(worldMatrix[0]));
+            worldScale.y = glm::length(glm::vec3(worldMatrix[1]));
+            worldScale.z = glm::length(glm::vec3(worldMatrix[2]));
+
+            glm::mat3 rotMat(
+                glm::vec3(worldMatrix[0]) / worldScale.x,
+                glm::vec3(worldMatrix[1]) / worldScale.y,
+                glm::vec3(worldMatrix[2]) / worldScale.z
+            );
+            glm::quat worldRotation = glm::quat_cast(rotMat);
+        }
 
         void decomposeTransform(const glm::mat4& transform)
         {
@@ -141,6 +154,9 @@ namespace ZEN {
     struct SphereColliderComp {
         float radius = 0.5f;
         glm::vec3 offset {0.0f};
+        bool isTrigger = false;
+    };
+    struct MeshColliderComp {
         bool isTrigger = false;
     };
     struct DirectionalLightComp {

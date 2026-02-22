@@ -104,7 +104,7 @@ void ModelImporter::processAiMesh(Entity& entity, aiMesh* aimesh,
     MeshData mesh{};
     for (uint32_t i{0}; i < aimesh->mNumVertices; ++i) {
         Vertex vertex{};
-        vertex.Position = processMeshPos(aimesh->mVertices[i], transform);
+        vertex.position = processMeshPos(aimesh->mVertices[i], transform);
         vertex.Normal   = glm::vec3(0.0f);
         vertex.TexCoords= glm::vec2(0.0f, 0.0f);
         vertex.Tangent.x = aimesh->mTangents[i].x;

@@ -77,6 +77,9 @@ namespace ZEN {
                     return ret;
                 }
                 else if(asset.type == Texture2DAssimp) {
+                    if (!asset.aiTex) {
+                        return GPUTexture {};
+                    }
                     auto ret = GPUTexture {
                         .drawableID = createTextureAssimp(*asset.aiTex),
                         .type = asset.type,
