@@ -1,4 +1,4 @@
-#include "ZeusEngineCore/engine/PhysicsSystem.h"
+#include "ZeusEngineCore/engine/ZeusPhysicsSystem.h"
 #include "ZeusEngineCore/engine/Scene.h"
 #include "glm/fwd.hpp"
 #include "glm/vec3.hpp"
@@ -8,22 +8,24 @@ using namespace ZEN;
 
 static BPLayerInterface s_BroadPhaseLayer;
 static ObjectVsBroadPhaseLayerFilter s_ObjectVsBroadPhase;
-static ObjectLayerPairFilter s_ObjectLayerPair;
+static ZeusObjectLayerPairFilter s_ObjectLayerPair;
 
-PhysicsSystem::PhysicsSystem() {
+ZeusPhysicsSystem::ZeusPhysicsSystem() {
     initJolt();
 }
 
-PhysicsSystem::~PhysicsSystem() {
+ZeusPhysicsSystem::~ZeusPhysicsSystem() {
     shutdownJolt();
 }
 
-void PhysicsSystem::init() {
+void ZeusPhysicsSystem::init() {
     m_Scene = &Application::get().getEngine()->getScene();
 }
 
-JPH::BodyID PhysicsSystem::createAddBody(const JPH::BodyCreationSettings& settings) {
+JPH::BodyID ZeusPhysicsSystem::createAddBody(JPH::BodyCreationSettings& settings, entt::entity entity) {
     JPH::EActivation activation = JPH::EActivation::Activate;
+
+    settings.mUserData = static_cast<uint64_t>(entity);
 
     if (settings.mMotionType == JPH::EMotionType::Static)
         activation = JPH::EActivation::DontActivate;
@@ -31,7 +33,7 @@ JPH::BodyID PhysicsSystem::createAddBody(const JPH::BodyCreationSettings& settin
     return m_BodyInterface->CreateAndAddBody(settings, activation);
 }
 
-void PhysicsSystem::onUpdate(float dt) {
+void ZeusPhysicsSystem::onUpdate(float dt) {
     if (!m_IsPlaying) {
         return;
     }
@@ -60,12 +62,12 @@ void PhysicsSystem::onUpdate(float dt) {
     }
 }
 
-void PhysicsSystem::onEvent(Event &event) {
+void ZeusPhysicsSystem::onEvent(Event &event) {
     EventDispatcher dispatcher(event);
     dispatcher.dispatch<RunPlayModeEvent>([this](RunPlayModeEvent& e) {return onPlayModeRun(e); });
 
 }
-void PhysicsSystem::syncECSBodyToPhysics(Entity entity, bool wake = true) {
+void ZeusPhysicsSystem::syncECSBodyToPhysics(Entity entity, bool wake = true) {
     if (!entity.hasComponent<PhysicsBodyComp>() || !entity.hasComponent<TransformComp>())
         return;
 
@@ -82,7 +84,7 @@ void PhysicsSystem::syncECSBodyToPhysics(Entity entity, bool wake = true) {
         activation
     );
 }
-JPH::Ref<JPH::Shape> PhysicsSystem::buildShapeForEntity(Entity entity) {
+JPH::Ref<JPH::Shape> ZeusPhysicsSystem::buildShapeForEntity(Entity entity) {
     JPH::StaticCompoundShapeSettings compound;
     bool hasShape = false;
 
@@ -119,7 +121,7 @@ JPH::Ref<JPH::Shape> PhysicsSystem::buildShapeForEntity(Entity entity) {
 
     return compound.Create().Get();
 }
-void PhysicsSystem::loadPlayMode() {
+void ZeusPhysicsSystem::loadPlayMode() {
     for (auto entity : m_Scene->getEntities<RigidBodyComp, TransformComp>()) {
         auto& transform = entity.getComponent<TransformComp>();
         auto& rigidbody = entity.getComponent<RigidBodyComp>();
@@ -186,9 +188,9 @@ void PhysicsSystem::loadPlayMode() {
         settings.mAllowedDOFs = dofs;
 
         //Create body
-        JPH::BodyID bodyID = m_BodyInterface->CreateAndAddBody(
+        JPH::BodyID bodyID = createAddBody(
             settings,
-            JPH::EActivation::Activate
+            (entt::entity)entity
         );
 
         PhysicsBodyComp comp(this);
@@ -197,7 +199,7 @@ void PhysicsSystem::loadPlayMode() {
     }
 }
 
-void PhysicsSystem::unloadPlayMode() {
+void ZeusPhysicsSystem::unloadPlayMode() {
     //unload all physics handles
     for (auto entity : m_Scene->getEntities<PhysicsBodyComp>()) {
         auto& phys = entity.getComponent<PhysicsBodyComp>();
@@ -209,7 +211,7 @@ void PhysicsSystem::unloadPlayMode() {
         entity.removeComponent<PhysicsBodyComp>();
     }
 }
-bool PhysicsSystem::onPlayModeRun(const RunPlayModeEvent &e) {
+bool ZeusPhysicsSystem::onPlayModeRun(const RunPlayModeEvent &e) {
     m_IsPlaying = e.getPlaying();
     if (m_IsPlaying) {
         for (auto entity : m_Scene->getEntities<PhysicsBodyComp, TransformComp>()) {
@@ -223,7 +225,7 @@ bool PhysicsSystem::onPlayModeRun(const RunPlayModeEvent &e) {
     return false;
 }
 
-void PhysicsSystem::initJolt() {
+void ZeusPhysicsSystem::initJolt() {
     JPH::RegisterDefaultAllocator();
 
     JPH::Factory::sInstance = new JPH::Factory();
@@ -253,9 +255,11 @@ void PhysicsSystem::initJolt() {
     );
 
     m_BodyInterface = &m_PhysicsSystem.GetBodyInterface();
+    m_ContactListener = std::make_unique<ZeusContactListener>();
+    m_PhysicsSystem.SetContactListener(m_ContactListener.get());
 }
 
-void PhysicsSystem::shutdownJolt() {
+void ZeusPhysicsSystem::shutdownJolt() {
     JPH::UnregisterTypes();
     delete JPH::Factory::sInstance;
     JPH::Factory::sInstance = nullptr;

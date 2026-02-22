@@ -23,7 +23,7 @@ void ZEngine::init() {
     m_SystemManager = std::make_unique<SystemManager>();
     m_CompRegistry = std::make_unique<CompRegistry>();
 
-    m_PhysicsSystem = new PhysicsSystem();
+    m_PhysicsSystem = new ZeusPhysicsSystem();
     m_Scene = new Scene();
     m_PhysicsSystem->init();
     m_ModelImporter = std::make_unique<ModelImporter>();

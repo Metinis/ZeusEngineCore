@@ -1,5 +1,5 @@
 #pragma once
-#include "PhysicsSystem.h"
+#include "ZeusPhysicsSystem.h"
 #include "../core/API.h"
 #include "../core/Layer.h"
 #include "ZeusEngineCore/scripting/CompRegistry.h"
@@ -27,7 +27,7 @@ namespace ZEN {
         CameraSystem& getCameraSystem(){return *m_CameraSystem;}
         SystemManager& getSystemManager() {return *m_SystemManager;}
         CompRegistry& getCompRegistry(){return *m_CompRegistry;}
-        PhysicsSystem& getPhysicsSystem(){return *m_PhysicsSystem;}
+        ZeusPhysicsSystem& getPhysicsSystem(){return *m_PhysicsSystem;}
         Scene& getScene(){return *m_Scene;}
     private:
         //Core
@@ -40,7 +40,7 @@ namespace ZEN {
         //Systems
         RenderSystem* m_RenderSystem{};
         CameraSystem* m_CameraSystem{};
-        PhysicsSystem* m_PhysicsSystem{};
+        ZeusPhysicsSystem* m_PhysicsSystem{};
 
         std::unique_ptr<SystemManager> m_SystemManager{};
         std::unique_ptr<CompRegistry> m_CompRegistry{};
