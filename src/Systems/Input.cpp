@@ -26,6 +26,10 @@ std::pair<float, float> Input::getMousePos() {
     return {xPos, yPos};
 }
 
+void Input::setMouseLock(bool lock) {
+    Application::get().getWindow()->setCursorLock(lock, getMousePos().first, getMousePos().second);
+}
+
 float Input::getMouseX() {
     return getMousePos().first;
 }

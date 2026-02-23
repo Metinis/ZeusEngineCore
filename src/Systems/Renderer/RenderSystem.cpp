@@ -1,6 +1,7 @@
 #include "ZeusEngineCore/engine/RenderSystem.h"
 #include <ZeusEngineCore/core/InputEvents.h>
 #include "../../../include/ZeusEngineCore/asset/AssetLibrary.h"
+#include "ZeusEngineCore/engine/CameraSystem.h"
 #include "ZeusEngineCore/engine/Scene.h"
 
 using namespace ZEN;
@@ -34,7 +35,7 @@ void RenderSystem::onUpdate(float deltaTime) {
     }
 }
 void RenderSystem::writeCameraData(glm::mat4& view, glm::mat4& projection) {
-    if (!m_IsPlaying) {
+    if (!m_IsPlaying && !Application::get().getEngine()->getCameraSystem().getUseMainCamera()) {
         auto sceneCameraView = m_Scene->getEntities<SceneCameraComp, TransformComp>();
         for (auto entity: sceneCameraView) {
             auto& camera = entity.getComponent<SceneCameraComp>();
