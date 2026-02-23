@@ -64,6 +64,10 @@ void Scene::onUpdate(float dt) {
     updateWorldTransforms();
     if (m_PlayMode) {
         Application::get().getEngine()->getSystemManager().updateAll(dt);
+        for (auto& e : m_PendingCollisionEvents) {
+            Application::get().getEngine()->getSystemManager().collisionAll(e);
+        }
+        m_PendingCollisionEvents.clear();
     }
 }
 
@@ -92,6 +96,18 @@ void Scene::createDefaultScene() {
     auto skyboxEntity = createEntity("Skybox");
     skyboxEntity.addComponent<SkyboxComp>();
     skyboxEntity.addComponent<MeshComp>(AssetHandle<MeshData>(defaultSkyboxID));
+}
+
+void Scene::onCollisionEnter(Entity a, Entity b, glm::vec3 contactNormal) {
+    m_PendingCollisionEvents.emplace_back(CollisionEvent{a, b, contactNormal, CollisionEvent::Type::Enter});
+}
+
+void Scene::onCollisionStay(Entity a, Entity b, glm::vec3 contactNormal) {
+    m_PendingCollisionEvents.emplace_back(CollisionEvent{a, b, contactNormal, CollisionEvent::Type::Stay});
+}
+
+void Scene::onCollisionExit(Entity a, Entity b, glm::vec3 contactNormal) {
+    m_PendingCollisionEvents.emplace_back(CollisionEvent{a, b, contactNormal, CollisionEvent::Type::Exit});
 }
 
 Entity Scene::createEntity(const std::string& name) {

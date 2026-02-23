@@ -26,7 +26,7 @@ RuntimeComponent * Entity::getRuntimeComponent(const std::string &compName) {
     return &compIt->second;
 }
 
-bool Entity::hasRuntimeComponent(const std::string &compName) {
+bool Entity::hasRuntimeComponent(const std::string &compName) const {
     auto entityIt = m_Scene->m_RuntimeComponents.find(*this);
     if (entityIt == m_Scene->m_RuntimeComponents.end()) return false;
     auto compIt = entityIt->second.find(compName);

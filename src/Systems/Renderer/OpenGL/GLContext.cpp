@@ -15,7 +15,7 @@ GLContext::GLContext() : m_WindowHandle(Application::get().getWindow()->getNativ
         throw std::runtime_error("Failed to initialize GLAD");
     }
     glEnable(GL_DEPTH_TEST);
-    //glEnable(GL_CULL_FACE);
+    glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
     glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 }
@@ -28,7 +28,7 @@ void GLContext::drawMesh(IResourceManager& resourceManager, const GPUMesh& drawa
 }
 
 void GLContext::clear(bool shouldClearColor, bool shouldClearDepth) {
-    glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     GLenum clearBit = 0;
     if(shouldClearColor)
         clearBit |= GL_COLOR_BUFFER_BIT;

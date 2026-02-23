@@ -5,6 +5,8 @@
 #include "ZeusEngineCore/scripting/CompRegistry.h"
 #include <Jolt/Physics/Collision/Shape/Shape.h>
 
+#include "Jolt/Physics/Collision/Shape/MeshShape.h"
+
 namespace JPH {
     class BodyCreationSettings;
 }
@@ -27,6 +29,10 @@ namespace ZEN {
 
         template<typename T>
         bool hasComponent() {
+            return m_Registry->any_of<T>(m_Handle);
+        }
+        template<typename T>
+        bool hasComponent() const {
             return m_Registry->any_of<T>(m_Handle);
         }
 
@@ -65,6 +71,19 @@ namespace ZEN {
                     };
                     return addComponent<T>(comp);
                 }
+                if constexpr (std::same_as<T, CapsuleColliderComp>) {
+                    float scaleFactor = glm::max(tc.localScale.x, glm::max(tc.localScale.y, tc.localScale.z));
+                    CapsuleColliderComp comp {
+                        .halfHeight = mesh->handle->getHalfExtents(center).y * tc.localScale.y,
+                        .radius = mesh->handle->getRadius(center) * scaleFactor,
+                        .offset = center,
+                    };
+                    return addComponent<T>(comp);
+                }
+                if constexpr (std::same_as<T, MeshColliderComp>) {
+                    MeshColliderComp comp {};
+                    return addComponent<T>(comp);
+                }
             }
             return m_Registry->emplace<T>(m_Handle);
         }
@@ -76,6 +95,10 @@ namespace ZEN {
 
         template<typename T>
         T* tryGetComponent() {
+            return m_Registry->try_get<T>(m_Handle);
+        }
+        template<typename T>
+        T* tryGetComponent() const {
             return m_Registry->try_get<T>(m_Handle);
         }
 
@@ -98,7 +121,7 @@ namespace ZEN {
 
         void* addRuntimeComponent(const ComponentInfo& compInfo);
         RuntimeComponent* getRuntimeComponent(const std::string& compName);
-        bool hasRuntimeComponent(const std::string& compName);
+        bool hasRuntimeComponent(const std::string& compName) const;
         void removeRuntimeComponent(const std::string& compName);
 
         template<typename T>

@@ -3,6 +3,7 @@
 #include <assimp/scene.h>
 #include <ZeusEngineCore/engine/UUID.h>
 #include <ZeusEngineCore/asset/AssetTypes.h>
+#include "ZeusEngineCore/stream/FileStreamReader.h"
 
 namespace ZEN {
 
@@ -76,11 +77,37 @@ namespace ZEN {
                     m_Mappings.emplace(id, ret);
                     return ret;
                 }
-                else if(asset.type == Texture2DAssimp) {
+                else if (asset.type == Texture2DAssimp && asset.path.length() == 0) {
                     auto ret = GPUTexture {
                         .drawableID = createTextureAssimp(*asset.aiTex),
                         .type = asset.type,
                     };
+                    m_Mappings.emplace(id, ret);
+                    return ret;
+                }
+                else if(asset.type == Texture2DAssimp && !asset.path.empty()) {
+                    FileStreamReader reader(fullPath(asset.path));
+                    if (!reader.isStreamGood()) {
+                        std::cerr << "Failed to open texture file: " << asset.path << "\n";
+                        return std::nullopt;
+                    }
+
+                    auto* textureData = new aiTexel[asset.size]; //deleted by texture assimp func
+
+                    if (asset.size > 0) {
+                        reader.readData(reinterpret_cast<char*>(textureData), asset.size);
+                    }
+
+                    aiTexture tex = {};
+                    tex.pcData = textureData;
+                    tex.mWidth = asset.dimensions.x;
+                    tex.mHeight = asset.dimensions.y;
+
+                    auto ret = GPUTexture {
+                        .drawableID = createTextureAssimp(tex),
+                        .type = asset.type,
+                    };
+
                     m_Mappings.emplace(id, ret);
                     return ret;
                 }
@@ -253,7 +280,7 @@ namespace ZEN {
         virtual void pushFloat(uint32_t shaderID, const std::string& name, float value) = 0;
         virtual void pushUint(uint32_t shaderID, const std::string& name, uint32_t value) = 0;
 
-        std::string fullPath(const std::string& path) {
+        std::string fullPathRes(const std::string& path) {
             return m_ResourceRoot + path;
         }
 

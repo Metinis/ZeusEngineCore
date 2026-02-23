@@ -15,7 +15,7 @@ CameraSystem::CameraSystem() : m_Scene(&Application::get().getEngine()->getScene
 }
 
 void CameraSystem::onUpdate(float deltaTime) {
-    if (m_PlayMode) {
+    if (m_PlayMode || m_UseMainCamera) {
         auto gameCamView = m_Scene->getEntities<CameraComp>();
 
         for (auto entity : gameCamView) {

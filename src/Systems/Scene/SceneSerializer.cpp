@@ -124,6 +124,24 @@ static void serializeEntity(YAML::Emitter &out, Entity entity) {
         out << YAML::Key << "IsTrigger" << YAML::Value << sphere.isTrigger;
         out << YAML::EndMap;
     }
+    if (entity.hasComponent<CapsuleColliderComp>()) {
+        auto &capsule = entity.getComponent<CapsuleColliderComp>();
+        out << YAML::Key << "CapsuleColliderComponent";
+        out << YAML::BeginMap;
+        out << YAML::Key << "HalfHeight" << YAML::Value << capsule.halfHeight;
+        out << YAML::Key << "Radius" << YAML::Value << capsule.radius;
+        out << YAML::Key << "Offset" << YAML::Value
+                << YAML::Flow << std::vector<float>{capsule.offset.x, capsule.offset.y, capsule.offset.z};
+        out << YAML::Key << "IsTrigger" << YAML::Value << capsule.isTrigger;
+        out << YAML::EndMap;
+    }
+    if (entity.hasComponent<MeshColliderComp>()) {
+        auto &meshCol = entity.getComponent<MeshColliderComp>();
+        out << YAML::Key << "MeshColliderComponent";
+        out << YAML::BeginMap;
+        out << YAML::Key << "IsTrigger" << YAML::Value << meshCol.isTrigger;
+        out << YAML::EndMap;
+    }
     auto &runtimeCompMap = Application::get().getEngine()->getCompRegistry().getComponents();
 
     out << YAML::Key << "RuntimeComponents";
@@ -244,6 +262,23 @@ bool SceneSerializer::deserialize(const std::string &path) {
                     .isTrigger = sphereColliderComp["IsTrigger"].as<bool>(),
                 };
                 entityInst.addComponent<SphereColliderComp>(sphereComp);
+            }
+            auto capsuleColliderComp = entity["CapsuleColliderComponent"];
+            if (capsuleColliderComp) {
+                CapsuleColliderComp capsuleComp {
+                    .halfHeight = capsuleColliderComp["HalfHeight"].as<float>(),
+                    .radius = capsuleColliderComp["Radius"].as<float>(),
+                    .offset = capsuleColliderComp["Offset"].as<glm::vec3>(),
+                    .isTrigger = capsuleColliderComp["IsTrigger"].as<bool>(),
+                };
+                entityInst.addComponent<CapsuleColliderComp>(capsuleComp);
+            }
+            auto meshColliderComp = entity["MeshColliderComponent"];
+            if (meshColliderComp) {
+                MeshColliderComp meshColComp {
+                    .isTrigger = meshColliderComp["IsTrigger"].as<bool>(),
+                };
+                entityInst.addComponent<MeshColliderComp>(meshColComp);
             }
 
             auto meshComp = entity["MeshComponent"];

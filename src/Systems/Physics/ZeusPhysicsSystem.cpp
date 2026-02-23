@@ -1,29 +1,33 @@
-#include "ZeusEngineCore/engine/PhysicsSystem.h"
+#include "ZeusEngineCore/engine/ZeusPhysicsSystem.h"
 #include "ZeusEngineCore/engine/Scene.h"
 #include "glm/fwd.hpp"
 #include "glm/vec3.hpp"
 #include "Jolt/Physics/Collision/Shape/StaticCompoundShape.h"
+#include "Jolt/Physics/Collision/Shape/CapsuleShape.h"
 
 using namespace ZEN;
 
 static BPLayerInterface s_BroadPhaseLayer;
 static ObjectVsBroadPhaseLayerFilter s_ObjectVsBroadPhase;
-static ObjectLayerPairFilter s_ObjectLayerPair;
+static ZeusObjectLayerPairFilter s_ObjectLayerPair;
 
-PhysicsSystem::PhysicsSystem() {
-    initJolt();
+ZeusPhysicsSystem::ZeusPhysicsSystem() {
+
 }
 
-PhysicsSystem::~PhysicsSystem() {
+ZeusPhysicsSystem::~ZeusPhysicsSystem() {
     shutdownJolt();
 }
 
-void PhysicsSystem::init() {
+void ZeusPhysicsSystem::init() {
     m_Scene = &Application::get().getEngine()->getScene();
+    initJolt();
 }
 
-JPH::BodyID PhysicsSystem::createAddBody(const JPH::BodyCreationSettings& settings) {
+JPH::BodyID ZeusPhysicsSystem::createAddBody(JPH::BodyCreationSettings& settings, entt::entity entity) {
     JPH::EActivation activation = JPH::EActivation::Activate;
+
+    settings.mUserData = static_cast<uint64_t>(entity);
 
     if (settings.mMotionType == JPH::EMotionType::Static)
         activation = JPH::EActivation::DontActivate;
@@ -31,7 +35,7 @@ JPH::BodyID PhysicsSystem::createAddBody(const JPH::BodyCreationSettings& settin
     return m_BodyInterface->CreateAndAddBody(settings, activation);
 }
 
-void PhysicsSystem::onUpdate(float dt) {
+void ZeusPhysicsSystem::onUpdate(float dt) {
     if (!m_IsPlaying) {
         return;
     }
@@ -60,12 +64,12 @@ void PhysicsSystem::onUpdate(float dt) {
     }
 }
 
-void PhysicsSystem::onEvent(Event &event) {
+void ZeusPhysicsSystem::onEvent(Event &event) {
     EventDispatcher dispatcher(event);
     dispatcher.dispatch<RunPlayModeEvent>([this](RunPlayModeEvent& e) {return onPlayModeRun(e); });
 
 }
-void PhysicsSystem::syncECSBodyToPhysics(Entity entity, bool wake = true) {
+void ZeusPhysicsSystem::syncECSBodyToPhysics(Entity entity, bool wake = true) {
     if (!entity.hasComponent<PhysicsBodyComp>() || !entity.hasComponent<TransformComp>())
         return;
 
@@ -82,7 +86,7 @@ void PhysicsSystem::syncECSBodyToPhysics(Entity entity, bool wake = true) {
         activation
     );
 }
-JPH::Ref<JPH::Shape> PhysicsSystem::buildShapeForEntity(Entity entity) {
+JPH::Ref<JPH::Shape> ZeusPhysicsSystem::buildShapeForEntity(Entity entity) {
     JPH::StaticCompoundShapeSettings compound;
     bool hasShape = false;
 
@@ -113,36 +117,106 @@ JPH::Ref<JPH::Shape> PhysicsSystem::buildShapeForEntity(Entity entity) {
 
         hasShape = true;
     }
+    if (entity.hasComponent<CapsuleColliderComp>()) {
+        auto& capsule = entity.getComponent<CapsuleColliderComp>();
+        JPH::Ref<JPH::Shape> shape = new JPH::CapsuleShape(capsule.halfHeight, capsule.radius);
+
+        compound.AddShape(
+            JPH::Vec3(capsule.offset.x, capsule.offset.y, capsule.offset.z),
+            JPH::Quat::sIdentity(),
+            shape
+        );
+        hasShape = true;
+    }
+    if (entity.hasComponent<MeshColliderComp>() && entity.hasComponent<MeshComp>()) {
+        auto& mesh = entity.getComponent<MeshComp>();
+        JPH::VertexList joltVertices;
+        JPH::IndexedTriangleList joltTriangles;
+        auto& vertices = mesh.handle->vertices;
+        auto& indices = mesh.handle->indices;
+
+        joltVertices.reserve(vertices.size());
+        for (auto& v : vertices)
+        {
+            joltVertices.push_back(JPH::Float3(v.position.x, v.position.y, v.position.z));
+        }
+
+        joltTriangles.reserve(indices.size() / 3);
+        for (size_t i = 0; i < indices.size(); i += 3)
+        {
+            uint32_t i0 = indices[i];
+            uint32_t i1 = indices[i + 1];
+            uint32_t i2 = indices[i + 2];
+
+            //skip identical indices
+            if (i0 == i1 || i1 == i2 || i0 == i2)
+                continue;
+
+            const auto& v0 = vertices[i0].position;
+            const auto& v1 = vertices[i1].position;
+            const auto& v2 = vertices[i2].position;
+
+            JPH::Vec3 p0(v0.x, v0.y, v0.z);
+            JPH::Vec3 p1(v1.x, v1.y, v1.z);
+            JPH::Vec3 p2(v2.x, v2.y, v2.z);
+
+            //check for zero-area triangle
+            if ((p1 - p0).Cross(p2 - p0).LengthSq() < 1e-8f)
+                continue;
+
+            joltTriangles.emplace_back(i0, i1, i2);
+        }
+        JPH::MeshShapeSettings settings(joltVertices, joltTriangles);
+
+        JPH::ShapeSettings::ShapeResult result = settings.Create();
+
+        if (result.HasError())
+        {
+            return nullptr;
+        }
+
+        JPH::RefConst<JPH::Shape> meshShape = result.Get();
+
+        compound.AddShape(
+            JPH::Vec3::sZero(),
+            JPH::Quat::sIdentity(),
+            meshShape
+        );
+        hasShape = true;
+
+    }
+
 
     if (!hasShape)
         return nullptr;
 
     return compound.Create().Get();
 }
-void PhysicsSystem::loadPlayMode() {
+void ZeusPhysicsSystem::loadPlayMode() {
     for (auto entity : m_Scene->getEntities<RigidBodyComp, TransformComp>()) {
         auto& transform = entity.getComponent<TransformComp>();
         auto& rigidbody = entity.getComponent<RigidBodyComp>();
 
-        //Build shape from colliders
         JPH::Ref<JPH::Shape> shape = buildShapeForEntity(entity);
 
         if (!shape)
-            continue; // no collider → no physics body
+            continue;
 
         //Convert transform
         JPH::Vec3 position(
-            transform.localPosition.x,
-            transform.localPosition.y,
-            transform.localPosition.z
+            transform.getWorldPosition().x,
+            transform.getWorldPosition().y,
+            transform.getWorldPosition().z
         );
 
+        /*glm::quat rot = glm::normalize(transform.getWorldRotation());
         JPH::Quat rotation(
-            transform.localRotation.x,
-            transform.localRotation.y,
-            transform.localRotation.z,
-            transform.localRotation.w
-        );
+            rot.x,
+            rot.y,
+            rot.z,
+            rot.w
+        );*/
+        JPH::Quat rotation(transform.localRotation.x, transform.localRotation.y, transform.localRotation.z, transform.localRotation.w);
 
         //Choose layer
         uint8_t layer =
@@ -186,9 +260,9 @@ void PhysicsSystem::loadPlayMode() {
         settings.mAllowedDOFs = dofs;
 
         //Create body
-        JPH::BodyID bodyID = m_BodyInterface->CreateAndAddBody(
+        JPH::BodyID bodyID = createAddBody(
             settings,
-            JPH::EActivation::Activate
+            (entt::entity)entity
         );
 
         PhysicsBodyComp comp(this);
@@ -197,7 +271,7 @@ void PhysicsSystem::loadPlayMode() {
     }
 }
 
-void PhysicsSystem::unloadPlayMode() {
+void ZeusPhysicsSystem::unloadPlayMode() {
     //unload all physics handles
     for (auto entity : m_Scene->getEntities<PhysicsBodyComp>()) {
         auto& phys = entity.getComponent<PhysicsBodyComp>();
@@ -209,7 +283,7 @@ void PhysicsSystem::unloadPlayMode() {
         entity.removeComponent<PhysicsBodyComp>();
     }
 }
-bool PhysicsSystem::onPlayModeRun(const RunPlayModeEvent &e) {
+bool ZeusPhysicsSystem::onPlayModeRun(const RunPlayModeEvent &e) {
     m_IsPlaying = e.getPlaying();
     if (m_IsPlaying) {
         for (auto entity : m_Scene->getEntities<PhysicsBodyComp, TransformComp>()) {
@@ -223,7 +297,7 @@ bool PhysicsSystem::onPlayModeRun(const RunPlayModeEvent &e) {
     return false;
 }
 
-void PhysicsSystem::initJolt() {
+void ZeusPhysicsSystem::initJolt() {
     JPH::RegisterDefaultAllocator();
 
     JPH::Factory::sInstance = new JPH::Factory();
@@ -253,12 +327,84 @@ void PhysicsSystem::initJolt() {
     );
 
     m_BodyInterface = &m_PhysicsSystem.GetBodyInterface();
+    m_ContactListener = std::make_unique<ZeusContactListener>();
+    m_PhysicsSystem.SetContactListener(m_ContactListener.get());
 }
 
-void PhysicsSystem::shutdownJolt() {
+void ZeusPhysicsSystem::shutdownJolt() {
     JPH::UnregisterTypes();
     delete JPH::Factory::sInstance;
     JPH::Factory::sInstance = nullptr;
+}
+BPLayerInterface::BPLayerInterface() {
+    m_Map[Layers::NON_MOVING] = BroadPhaseLayers::NON_MOVING;
+    m_Map[Layers::MOVING] = BroadPhaseLayers::MOVING;
+}
+
+uint32_t BPLayerInterface::GetNumBroadPhaseLayers() const {
+    return BroadPhaseLayers::NUM_LAYERS;
+}
+
+JPH::BroadPhaseLayer BPLayerInterface::GetBroadPhaseLayer(JPH::ObjectLayer layer) const {
+    return m_Map[layer];
+}
+bool ZeusObjectLayerPairFilter::ShouldCollide(JPH::ObjectLayer a, JPH::ObjectLayer b) const {
+    if (a == Layers::NON_MOVING)
+        return b == Layers::MOVING;
+    return true;
+}
+bool ObjectVsBroadPhaseLayerFilter::ShouldCollide(JPH::ObjectLayer layer, JPH::BroadPhaseLayer bp) const {
+    if (layer == Layers::NON_MOVING)
+        return bp == BroadPhaseLayers::MOVING;
+    return true;
+}
+
+ZeusContactListener::ZeusContactListener() : m_Scene(&Application::get().getEngine()->getScene()){}
+
+JPH::ValidateResult ZeusContactListener::OnContactValidate(
+    const JPH::Body &inBody1,
+    const JPH::Body &inBody2,
+    JPH::RVec3Arg,
+    const JPH::CollideShapeResult &
+) {
+    return JPH::ValidateResult::AcceptAllContactsForThisBodyPair;
+}
+
+void ZeusContactListener::OnContactAdded(
+    const JPH::Body &inBody1,
+    const JPH::Body &inBody2,
+    const JPH::ContactManifold &inManifold,
+    JPH::ContactSettings &ioSettings
+) {
+    glm::vec3 normal = glm::vec3(
+        inManifold.mWorldSpaceNormal.GetX(),
+        inManifold.mWorldSpaceNormal.GetY(),
+        inManifold.mWorldSpaceNormal.GetZ()
+    );
+    auto entityA = Entity((entt::entity)inBody1.GetUserData());
+    auto entityB = Entity((entt::entity)inBody2.GetUserData());
+    m_Scene->onCollisionEnter(entityA, entityB, normal);
+    m_Scene->onCollisionEnter(entityB, entityA, -normal);
+}
+
+void ZeusContactListener::OnContactPersisted(
+    const JPH::Body &inBody1,
+    const JPH::Body &inBody2,
+    const JPH::ContactManifold &inManifold,
+    JPH::ContactSettings &ioSettings
+) {
+    auto entityA = Entity((entt::entity)inBody1.GetUserData());
+    auto entityB = Entity((entt::entity)inBody2.GetUserData());
+    m_Scene->onCollisionStay(entityA, entityB);
+    m_Scene->onCollisionStay(entityB, entityA);
+}
+
+
+void ZeusContactListener::OnContactRemoved(const JPH::SubShapeIDPair &inSubShapePair) {
+    Entity entityA((entt::entity)inSubShapePair.GetBody1ID().GetIndex());
+    Entity entityB((entt::entity)inSubShapePair.GetBody2ID().GetIndex());
+    m_Scene->onCollisionExit(entityA, entityB);
+    m_Scene->onCollisionExit(entityB, entityA);
 }
 
 

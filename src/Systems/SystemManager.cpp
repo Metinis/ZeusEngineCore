@@ -2,6 +2,8 @@
 #include <vector>
 #include <iostream>
 
+#include "ZeusEngineCore/engine/Scene.h"
+
 #ifdef _WIN32
 #include <windows.h>
 #else
@@ -84,6 +86,20 @@ bool SystemManager::loadAllFromDirectory(const std::string& directory, Scene* sc
 void SystemManager::updateAll(float dt) {
     for (auto* s : m_Systems)
         s->onUpdate(dt);
+}
+
+void SystemManager::collisionAll(const CollisionEvent& e) {
+    for (auto* s : m_Systems) {
+        if (e.eventType == CollisionEvent::Type::Enter) {
+            s->onCollisionEnter(e);
+        }
+        else if (e.eventType == CollisionEvent::Type::Stay) {
+            s->onCollisionStay(e);
+        }
+        else if (e.eventType == CollisionEvent::Type::Exit) {
+            s->onCollisionExit(e);
+        }
+    }
 }
 
 void SystemManager::loadAll(Scene* scene) {

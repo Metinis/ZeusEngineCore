@@ -17,6 +17,7 @@ namespace ZEN {
         bool loadAllFromDirectory(const std::string& directory, Scene* scene);
 
         void updateAll(float dt);
+        void collisionAll(const CollisionEvent& e);
         void loadAll(Scene* scene);
         void unloadAll();
         void clearAll();

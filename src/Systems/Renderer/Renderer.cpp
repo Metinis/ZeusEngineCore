@@ -8,7 +8,7 @@
 
 using namespace ZEN;
 
-float xCorner = 0, yCorner = 0;
+static float xCorner = 0, yCorner = 0;
 
 Renderer::Renderer() : m_Window(Application::get().getWindow()->getNativeWindow()){
     m_Context = IContext::create();
@@ -38,16 +38,28 @@ void Renderer::beginFrame() {
     m_ResourceManager->bindDepthBuffer(m_DepthRBO.rboID);
     m_Context->clear(true, true);
 
-    if(m_Resized) {
+    if (m_Resized) {
+        int fbWidth, fbHeight;
+        glfwGetFramebufferSize(m_Window, &fbWidth, &fbHeight);
+
         m_ResourceManager->bindFBO(m_MainFBO.fboID);
-        m_Context->setViewport(xCorner, yCorner, m_Width, m_Height);
+
         m_ResourceManager->deleteTexture(m_ColorTex.textureID);
         m_ResourceManager->deleteDepthBuffer(m_DepthRBO.rboID);
-        m_ColorTex.textureID = m_ResourceManager->createColorTex(m_Width, m_Height);
-        m_DepthRBO.rboID = m_ResourceManager->createDepthBuffer(m_Width, m_Height);
+
+        m_ColorTex.textureID = m_ResourceManager->createColorTex(fbWidth, fbHeight);
+        m_DepthRBO.rboID  = m_ResourceManager->createDepthBuffer(fbWidth, fbHeight);
+
+        m_ResourceManager->bindFBO(m_PickingFBO.fboID);
+        m_ResourceManager->deleteTexture(m_PickingTex.textureID);
+        m_ResourceManager->deleteDepthBuffer(m_PickingRBO.rboID);
+
+        initPicking();
+
         m_Resized = false;
     }
 }
+
 
 void Renderer::bindDefaultFBO() {
     m_ResourceManager->bindFBO(0);
@@ -60,8 +72,9 @@ void Renderer::initPicking() {
     glfwGetFramebufferSize(m_Window, &fbWidth, &fbHeight);
     m_PickingFBO.fboID = m_ResourceManager->createFBO();
     m_ResourceManager->bindFBO(m_PickingFBO.fboID);
-    m_PickingTex.textureID = m_ResourceManager->createTextureRaw(m_Width, m_Height);
-    m_PickingRBO.rboID = m_ResourceManager->createDepthBuffer(m_Width, m_Height);
+    m_Context->setViewport(xCorner, yCorner, m_Width, m_Height);
+    m_PickingTex.textureID = m_ResourceManager->createTextureRaw(fbWidth, fbHeight);
+    m_PickingRBO.rboID = m_ResourceManager->createDepthBuffer(fbWidth, fbHeight);
     m_ResourceManager->bindFBO(m_MainFBO.fboID);
 }
 
@@ -94,12 +107,12 @@ void Renderer::drawToPicking() {
 }
 
 uint32_t Renderer::getPixels(float mouseX, float mouseY, glm::vec2 viewportSize) {
-    float mouseX_fb = mouseX * (m_Width / viewportSize.x);
-    float mouseY_fb = mouseY * (m_Height / viewportSize.y);
-    float fbX = mouseX + xCorner;
-    float fbY = yCorner + mouseY;
+    float fbX = xCorner + (mouseX / viewportSize.x) * m_Width;
+    float fbY = yCorner + (mouseY / viewportSize.y) * m_Height;
 
-    return m_Context->readPixels(m_PickingFBO, mouseX_fb, mouseY_fb);
+    return m_Context->readPixels(m_PickingFBO,
+                                 static_cast<int>(fbX),
+                                 static_cast<int>(fbY));
 }
 
 const glm::mat4 captureProjection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
@@ -254,32 +267,22 @@ void Renderer::endFrame() {
 }
 
 void Renderer::setSize(float width, float height) {
-    std::cout << "Width: "<<width<<" Height: "<<height<<"\n";
-    float requiredHeightOfViewport = width * (1.0f / m_AspectRatio);
-    if (requiredHeightOfViewport > height)
-    {
-        float requiredWidthOfViewport = height * m_AspectRatio;
-        if (requiredWidthOfViewport > width)
-        {
-            std::cout << "Error: Couldn't find dimensions that preserve the aspect ratio\n";
-        }
-        else
-        {
-            m_Width = static_cast<int>(requiredWidthOfViewport);
-            m_Height = height;
-            float widthOfTheTwoVerticalBars = width - m_Width;
-            xCorner = (int)glm::round(widthOfTheTwoVerticalBars * 0.5f);
-            yCorner = 0;
-        }
-    }
-    else
-    {
-        m_Width = width;
-        m_Height = static_cast<int>(requiredHeightOfViewport);
-        float heightOfTheTwoHorizontalBars = height - m_Height;
+    const float windowAspect = width / height;
+
+    if (windowAspect > m_AspectRatio) {
+        m_Height = static_cast<int>(height);
+        m_Width  = static_cast<int>(std::round(height * m_AspectRatio));
+
+        xCorner = static_cast<int>((width - m_Width) * 0.5f);
+        yCorner = 0;
+    } else {
+        m_Width  = static_cast<int>(width);
+        m_Height = static_cast<int>(std::round(width / m_AspectRatio));
+
         xCorner = 0;
-        yCorner = (int)glm::round(heightOfTheTwoHorizontalBars * 0.5f);
+        yCorner = static_cast<int>((height - m_Height) * 0.5f);
     }
+
     m_Resized = true;
 }
 

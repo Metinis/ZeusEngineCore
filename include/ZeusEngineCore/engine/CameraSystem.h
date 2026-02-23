@@ -12,6 +12,8 @@ namespace ZEN {
         void onUpdate(float deltaTime) override;
         void onEvent(Event& event) override;
         void setAspectRatio(float aspectRatio) { m_Resized = true; m_AspectRatio = aspectRatio; }
+        void setUseMainCamera(bool useMainCamera) { m_UseMainCamera = useMainCamera; }
+        bool getUseMainCamera() { return m_UseMainCamera; }
     private:
         bool onPlayMode(RunPlayModeEvent& e);
         bool onKeyPressed(const KeyPressedEvent& e);
@@ -29,6 +31,7 @@ namespace ZEN {
         double m_CursorPosX{};
         double m_CursorPosY{};
         bool m_PlayMode{false};
+        bool m_UseMainCamera{false};
         bool m_Resized{true};
         bool m_PanelSelected{};
         bool m_CursorLocked{};

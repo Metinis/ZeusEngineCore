@@ -7,6 +7,7 @@ namespace ZEN {
         static bool isKeyPressed(int keycode);
         static bool isMouseButtonPressed(int keycode);
         static std::pair<float, float> getMousePos();
+        static void setMouseLock(bool lock);
         static float getMouseX();
         static float getMouseY();
     private:

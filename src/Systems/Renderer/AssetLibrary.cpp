@@ -91,8 +91,8 @@ void computeTangents(MeshData &mesh) {
         Vertex &v1 = mesh.vertices[mesh.indices[i + 1]];
         Vertex &v2 = mesh.vertices[mesh.indices[i + 2]];
 
-        glm::vec3 edge1 = v1.Position - v0.Position;
-        glm::vec3 edge2 = v2.Position - v0.Position;
+        glm::vec3 edge1 = v1.position - v0.position;
+        glm::vec3 edge2 = v2.position - v0.position;
         glm::vec2 deltaUV1 = v1.TexCoords - v0.TexCoords;
         glm::vec2 deltaUV2 = v2.TexCoords - v0.TexCoords;
 
@@ -252,7 +252,7 @@ MeshData AssetLibrary::createSphere(float radius, unsigned int sectorCount, unsi
             float z = xy * sinf(sectorAngle);
 
             Vertex v{};
-            v.Position = {x, y, z};
+            v.position = {x, y, z};
             v.Normal = glm::normalize(glm::vec3{x, y, z});
             v.TexCoords = {
                 (float) j / sectorCount,
