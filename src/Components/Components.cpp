@@ -25,8 +25,10 @@ void PhysicsBodyComp::addVelocity(const glm::vec3& delta) {
     setVelocity(v);
 }
 void PhysicsBodyComp::setRotation(const glm::quat& rotation) {
-    //JPH uses WXYZ
-    JPH::Quat newRot(rotation.w, rotation.x, rotation.y, rotation.z);
+    glm::quat normalized = glm::normalize(rotation);
+
+    // JPH uses WXYZ
+    JPH::Quat newRot(normalized.w, normalized.x, normalized.y, normalized.z);
     m_PhysicsSystem->getBodyInterface()->SetRotation(bodyID, newRot, JPH::EActivation::Activate);
 }
 glm::quat PhysicsBodyComp::getRotation() const {
