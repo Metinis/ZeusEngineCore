@@ -29,7 +29,6 @@ bool ZEN::AssetSerializer::serialize(const std::string &path) {
     }
     out << YAML::EndSeq;
     out << YAML::Key << "Textures" << YAML::BeginSeq;
-
     for(auto& ID : m_AssetLibrary->getAllIDsOfType<TextureData>()) {
         out << YAML::BeginMap;
         out << YAML::Key << "Texture" << YAML::Value << ID;
@@ -37,6 +36,7 @@ bool ZEN::AssetSerializer::serialize(const std::string &path) {
         out << YAML::Key << "Path" << YAML::Value << m_AssetLibrary->get<TextureData>(ID)->path;
         out << YAML::Key << "Type" << YAML::Value << m_AssetLibrary->get<TextureData>(ID)->type;
         out << YAML::Key << "Mip" << YAML::Value << m_AssetLibrary->get<TextureData>(ID)->mip;
+        out << YAML::Key << "Size" << YAML::Value << m_AssetLibrary->get<TextureData>(ID)->size;
         out << YAML::Key << "AbsPath" << YAML::Value << m_AssetLibrary->get<TextureData>(ID)->absPath;
         out << YAML::Key << "Dimensions" << YAML::Value << m_AssetLibrary->get<TextureData>(ID)->dimensions;
 
@@ -137,6 +137,7 @@ bool ZEN::AssetSerializer::deserialize(const std::string &path) {
             auto name = texture["Name"];
             auto texpath = texture["Path"];
             auto texType = texture["Type"];
+            auto size = texture["Size"];
             auto hasMip = texture["Mip"];
             auto absPath = texture["AbsPath"];
             auto dimensions = texture["Dimensions"];
@@ -147,6 +148,7 @@ bool ZEN::AssetSerializer::deserialize(const std::string &path) {
                         .path = texpath.as<std::string>(),
                         .type = texType.as<TextureType>(),
                         .dimensions = dimensions.as<glm::vec2>(),
+                        .size = size.as<uint32_t>(),
                         .mip = hasMip.as<bool>(),
                         .absPath = absPath.as<bool>(),
                     },

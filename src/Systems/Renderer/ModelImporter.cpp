@@ -4,6 +4,8 @@
 #include <ZeusEngineCore/asset/AssetLibrary.h>
 #include <ZeusEngineCore/engine/Scene.h>
 
+#include "ZeusEngineCore/stream/FileStreamWriter.h"
+
 using namespace ZEN;
 
 ModelImporter::ModelImporter() :
@@ -53,8 +55,25 @@ ZEN::UUID ModelImporter::processTexturesEmbedded(const aiScene* aiscene, const a
     if (it != m_EmbeddedTextureCache.end()) {
         return it->second; // reuse
     } else {
+        //save texture as binary and put path
         auto texData = TextureData{.type = Texture2DAssimp, .aiTex = tex};
         auto id = m_AssetLibrary->createAsset(std::move(texData));
+
+        std::string localPath = std::format("/assets/textures/{}.bin", std::to_string(id));
+        auto* texAsset = m_AssetLibrary->get<TextureData>(id);
+        texAsset->path = localPath;
+
+        FileStreamWriter writer(Project::getActive()->getActiveProjectRoot() + localPath);
+        if (tex->mHeight == 0) {
+            writer.writeData(reinterpret_cast<const char*>(tex->pcData), tex->mWidth);
+            texAsset->size = tex->mWidth;
+        } else {
+            size_t size = tex->mWidth * tex->mHeight * sizeof(aiTexel);
+            writer.writeData(reinterpret_cast<const char*>(tex->pcData), size);
+            texAsset->size = size;
+        }
+        texAsset->dimensions = glm::vec2{tex->mWidth, tex->mHeight};
+
         m_EmbeddedTextureCache[tex] = id; // cache
         return id;
     }

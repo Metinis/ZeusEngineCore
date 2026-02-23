@@ -124,6 +124,13 @@ static void serializeEntity(YAML::Emitter &out, Entity entity) {
         out << YAML::Key << "IsTrigger" << YAML::Value << sphere.isTrigger;
         out << YAML::EndMap;
     }
+    if (entity.hasComponent<MeshColliderComp>()) {
+        auto &meshCol = entity.getComponent<MeshColliderComp>();
+        out << YAML::Key << "MeshColliderComponent";
+        out << YAML::BeginMap;
+        out << YAML::Key << "IsTrigger" << YAML::Value << meshCol.isTrigger;
+        out << YAML::EndMap;
+    }
     auto &runtimeCompMap = Application::get().getEngine()->getCompRegistry().getComponents();
 
     out << YAML::Key << "RuntimeComponents";
@@ -244,6 +251,13 @@ bool SceneSerializer::deserialize(const std::string &path) {
                     .isTrigger = sphereColliderComp["IsTrigger"].as<bool>(),
                 };
                 entityInst.addComponent<SphereColliderComp>(sphereComp);
+            }
+            auto meshColliderComp = entity["MeshColliderComponent"];
+            if (meshColliderComp) {
+                MeshColliderComp meshColComp {
+                    .isTrigger = meshColliderComp["IsTrigger"].as<bool>(),
+                };
+                entityInst.addComponent<MeshColliderComp>(meshColComp);
             }
 
             auto meshComp = entity["MeshComponent"];

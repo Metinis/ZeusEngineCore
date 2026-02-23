@@ -102,6 +102,7 @@ namespace ZEN {
                 glm::vec3(worldMatrix[2]) / worldScale.z
             );
             glm::quat worldRotation = glm::quat_cast(rotMat);
+            return worldRotation;
         }
 
         void decomposeTransform(const glm::mat4& transform)

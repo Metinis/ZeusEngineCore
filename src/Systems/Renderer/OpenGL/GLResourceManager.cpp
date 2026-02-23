@@ -114,8 +114,8 @@ uint32_t ZEN::GLResourceManager::createShader(const std::string& vertexPath, con
         return ss.str();
     };
 
-    std::string vertexSrc = loadShaderSource(fullPath(vertexPath));
-    std::string fragSrc = loadShaderSource(fullPath(fragPath));
+    std::string vertexSrc = loadShaderSource(fullPathRes(vertexPath));
+    std::string fragSrc = loadShaderSource(fullPathRes(fragPath));
 
 
     if (vertexSrc.empty() || fragSrc.empty()) {
@@ -166,7 +166,7 @@ uint32_t ZEN::GLResourceManager::createShader(const std::string& vertexPath, con
             return geoShaderProgram;
         }
         GLint success;
-        std::string geoSrc = loadShaderSource(fullPath(geoPath));
+        std::string geoSrc = loadShaderSource(fullPathRes(geoPath));
         if (geoSrc.empty()) {
             std::cerr<<"Invalid geometry shader id!"<<"\n";
             return geoShaderProgram;
@@ -279,7 +279,7 @@ uint32_t ZEN::GLResourceManager::createTexture(const std::string& texturePath, b
                                 &texHeight, &texChannels, STBI_rgb_alpha);
     }
     else {
-        pixels = stbi_load(fullPath(texturePath).data(), &texWidth,
+        pixels = stbi_load(fullPathRes(texturePath).data(), &texWidth,
                                 &texHeight, &texChannels, STBI_rgb_alpha);
     }
 
@@ -311,7 +311,7 @@ uint32_t ZEN::GLResourceManager::createTexture(const std::string& texturePath, b
 uint32_t ZEN::GLResourceManager::createHDRTexture(const std::string& texturePath) {
     int texWidth, texHeight, components;
     stbi_set_flip_vertically_on_load(true);
-    float *data = stbi_loadf(fullPath(texturePath).data(), &texWidth,
+    float *data = stbi_loadf(fullPathRes(texturePath).data(), &texWidth,
                                 &texHeight, &components, 0);
     if (!data) {
         std::cout<<"Invalid HDR Image! Assigning default texture.."<<"\n";
@@ -342,29 +342,24 @@ uint32_t ZEN::GLResourceManager::createHDRTexture(const std::string& texturePath
 uint32_t ZEN::GLResourceManager::createTextureAssimp(const aiTexture& aiTex) {
     unsigned char* imageData;
     int width, height, channels;
-    bool compressed = false;
+    bool allocatedByUs = false;
+
     if (aiTex.mHeight == 0) {
-        // Compressed (PNG/JPG) in memory
         imageData = stbi_load_from_memory(
             reinterpret_cast<unsigned char*>(aiTex.pcData),
             aiTex.mWidth,
             &width, &height, &channels, STBI_rgb_alpha
         );
-        compressed = true;
+        allocatedByUs = true;
         if (!imageData || width == 0 || height == 0) {
             std::cerr << "Failed to load compressed embedded texture!\n";
             return 0;
         }
     } else {
-        // Raw RGBA
         width = aiTex.mWidth;
         height = aiTex.mHeight;
         channels = 4;
         imageData = reinterpret_cast<unsigned char*>(aiTex.pcData);
-        if (!aiTex.pcData || width == 0 || height == 0) {
-            std::cerr << "Invalid raw embedded texture!\n";
-            return 0;
-        }
     }
 
     GLTexture texture{};
@@ -382,8 +377,13 @@ uint32_t ZEN::GLResourceManager::createTextureAssimp(const aiTexture& aiTex) {
     glGenerateMipmap(GL_TEXTURE_2D);
 
     glBindTexture(GL_TEXTURE_2D, 0);
-    if(compressed) {
-        stbi_image_free(imageData);
+
+    if (allocatedByUs) {
+        if (aiTex.mHeight == 0) {
+            stbi_image_free(imageData);
+        } else {
+            delete[] imageData;
+        }
     }
 
     m_Textures[nextTextureID] = texture;
@@ -538,7 +538,7 @@ uint32_t ZEN::GLResourceManager::createCubeMapTexture(const std::string& texture
     int texWidth, texHeight, texChannels;
     stbi_set_flip_vertically_on_load(false);
     for (unsigned int i = 0; i < cubeSides.size(); i++) {
-        std::string facePath = fullPath(texturePath);
+        std::string facePath = fullPathRes(texturePath);
         facePath += cubeSides[i];
 
         stbi_uc *pixels = stbi_load(facePath.c_str(), &texWidth,

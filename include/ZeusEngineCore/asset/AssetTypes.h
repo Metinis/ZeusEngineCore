@@ -137,6 +137,7 @@ namespace ZEN {
         TextureType type{Texture2D};
         glm::vec2 dimensions{};
         aiTexture* aiTex{nullptr};
+        uint32_t size{};
         bool mip{false};
         bool absPath{false};
     };
