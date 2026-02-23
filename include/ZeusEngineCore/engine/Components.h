@@ -157,6 +157,12 @@ namespace ZEN {
         glm::vec3 offset {0.0f};
         bool isTrigger = false;
     };
+    struct CapsuleColliderComp {
+        float halfHeight = 0.5f;
+        float radius = 0.5f;
+        glm::vec3 offset {0.0f};
+        bool isTrigger = false;
+    };
     struct MeshColliderComp {
         bool isTrigger = false;
     };

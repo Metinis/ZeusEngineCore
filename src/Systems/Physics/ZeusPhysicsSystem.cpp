@@ -3,6 +3,7 @@
 #include "glm/fwd.hpp"
 #include "glm/vec3.hpp"
 #include "Jolt/Physics/Collision/Shape/StaticCompoundShape.h"
+#include "Jolt/Physics/Collision/Shape/CapsuleShape.h"
 
 using namespace ZEN;
 
@@ -116,6 +117,17 @@ JPH::Ref<JPH::Shape> ZeusPhysicsSystem::buildShapeForEntity(Entity entity) {
 
         hasShape = true;
     }
+    if (entity.hasComponent<CapsuleColliderComp>()) {
+        auto& capsule = entity.getComponent<CapsuleColliderComp>();
+        JPH::Ref<JPH::Shape> shape = new JPH::CapsuleShape(capsule.halfHeight, capsule.radius);
+
+        compound.AddShape(
+            JPH::Vec3(capsule.offset.x, capsule.offset.y, capsule.offset.z),
+            JPH::Quat::sIdentity(),
+            shape
+        );
+        hasShape = true;
+    }
     if (entity.hasComponent<MeshColliderComp>() && entity.hasComponent<MeshComp>()) {
         auto& mesh = entity.getComponent<MeshComp>();
         JPH::VertexList joltVertices;
@@ -132,13 +144,27 @@ JPH::Ref<JPH::Shape> ZeusPhysicsSystem::buildShapeForEntity(Entity entity) {
         joltTriangles.reserve(indices.size() / 3);
         for (size_t i = 0; i < indices.size(); i += 3)
         {
-            JPH::IndexedTriangle tri(
-                indices[i],
-                indices[i + 1],
-                indices[i + 2]
-            );
+            uint32_t i0 = indices[i];
+            uint32_t i1 = indices[i + 1];
+            uint32_t i2 = indices[i + 2];
 
-            joltTriangles.push_back(tri);
+            //skip identical indices
+            if (i0 == i1 || i1 == i2 || i0 == i2)
+                continue;
+
+            const auto& v0 = vertices[i0].position;
+            const auto& v1 = vertices[i1].position;
+            const auto& v2 = vertices[i2].position;
+
+            JPH::Vec3 p0(v0.x, v0.y, v0.z);
+            JPH::Vec3 p1(v1.x, v1.y, v1.z);
+            JPH::Vec3 p2(v2.x, v2.y, v2.z);
+
+            //check for zero-area triangle
+            if ((p1 - p0).Cross(p2 - p0).LengthSq() < 1e-8f)
+                continue;
+
+            joltTriangles.emplace_back(i0, i1, i2);
         }
         JPH::MeshShapeSettings settings(joltVertices, joltTriangles);
 

@@ -71,6 +71,15 @@ namespace ZEN {
                     };
                     return addComponent<T>(comp);
                 }
+                if constexpr (std::same_as<T, CapsuleColliderComp>) {
+                    float scaleFactor = glm::max(tc.localScale.x, glm::max(tc.localScale.y, tc.localScale.z));
+                    CapsuleColliderComp comp {
+                        .halfHeight = mesh->handle->getHalfExtents(center).y * tc.localScale.y,
+                        .radius = mesh->handle->getRadius(center) * scaleFactor,
+                        .offset = center,
+                    };
+                    return addComponent<T>(comp);
+                }
                 if constexpr (std::same_as<T, MeshColliderComp>) {
                     MeshColliderComp comp {};
                     return addComponent<T>(comp);
