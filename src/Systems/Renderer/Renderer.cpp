@@ -8,6 +8,7 @@
 
 using namespace ZEN;
 
+#ifdef USE_OPENGL
 static float xCorner = 0, yCorner = 0;
 
 Renderer::Renderer() : m_Window(Application::get().getWindow()->getNativeWindow()){
@@ -290,4 +291,51 @@ void Renderer::setSize(float width, float height) {
 void* Renderer::getColorTextureHandle() {
     return reinterpret_cast<void*>(static_cast<uintptr_t>(m_ResourceManager->getTexture(m_ColorTex.textureID)));
 }
+#endif
 
+#ifdef USE_VULKAN
+Renderer::Renderer() {
+}
+
+void Renderer::beginFrame() {
+}
+
+void Renderer::bindDefaultFBO() {
+}
+
+void Renderer::initPicking() {
+}
+
+void Renderer::drawToPicking() {
+}
+
+uint32_t Renderer::getPixels(float mouseX, float mouseY, glm::vec2 viewportSize) {
+}
+
+void Renderer::renderToCubeMapHDR(uint32_t cubemapTexID, uint32_t eqToCubeMapShader, uint32_t hdrTexID,
+    const GPUMesh &drawable) {
+}
+
+void Renderer::renderToIrradianceMap(uint32_t cubemapTexID, uint32_t irradianceTexID, uint32_t irradianceShader,
+    const GPUMesh &drawable) {
+}
+
+void Renderer::renderToPrefilterMap(uint32_t cubemapTexID, uint32_t prefilterTexID, uint32_t prefilterShader,
+    const GPUMesh &drawable) {
+}
+
+void Renderer::renderToBRDFLUT(uint32_t brdfTexID, uint32_t brdfShader, const GPUMesh &drawable) {
+}
+
+void Renderer::renderToScreenQuad(uint32_t quadShader, const GPUMesh &drawable) {
+}
+
+void Renderer::endFrame() {
+}
+
+void Renderer::setSize(float width, float height) {
+}
+
+void * Renderer::getColorTextureHandle() {
+}
+#endif

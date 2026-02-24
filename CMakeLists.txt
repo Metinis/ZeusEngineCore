@@ -15,6 +15,8 @@ target_compile_definitions(ZeusEngineCore
 
 target_compile_features(ZeusEngineCore PUBLIC cxx_std_23)
 
+find_package(Vulkan REQUIRED)
+
 add_library(imgui STATIC)
 
 target_include_directories(imgui PUBLIC
@@ -117,6 +119,14 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(yaml-cpp)
 
+include(FetchContent)
+FetchContent_Declare(
+        fetch_vk_bootstrap
+        GIT_REPOSITORY https://github.com/charles-lunarg/vk-bootstrap
+        GIT_TAG        v1.4.342
+)
+FetchContent_MakeAvailable(fetch_vk_bootstrap)
+
 
 target_link_libraries(ZeusEngineCore
         PRIVATE
@@ -128,6 +138,8 @@ target_link_libraries(ZeusEngineCore
         yaml-cpp::yaml-cpp
         Jolt::Jolt
         tinyfd
+        Vulkan::Vulkan
+        vk-bootstrap::vk-bootstrap
 )
 
 if(APPLE)

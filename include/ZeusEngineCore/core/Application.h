@@ -4,6 +4,8 @@
 #include "ZeusEngineCore/core/Window.h"
 #include "../../src/Engine/LayerStack.h"
 #include "../../src/ImGUILayers/ImGUILayer.h"
+#include "ZeusEngineCore/engine/rendering/VKRenderer.h"
+#define USE_VULKAN
 
 namespace ZEN {
 
@@ -41,12 +43,16 @@ namespace ZEN {
         std::unique_ptr<ImGUILayer> m_ImGUILayer{};
         
         std::unique_ptr<ZEngine> m_Engine{};
-
-        std::string m_ResourceRoot{};
+#ifdef USE_VULKAN
+        std::unique_ptr<VKRenderer> m_VKRenderer{};
+        eRendererAPI m_API{ Vulkan };
+#endif
+#ifdef USE_OPENGL
         eRendererAPI m_API{ OpenGL };
+#endif
+        std::string m_ResourceRoot{};
         bool m_Running { false };
         bool m_IsPlaying { false };
-
     };
 
 }

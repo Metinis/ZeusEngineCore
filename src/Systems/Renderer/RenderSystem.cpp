@@ -1,11 +1,12 @@
 #include "ZeusEngineCore/engine/RenderSystem.h"
 #include <ZeusEngineCore/core/InputEvents.h>
-#include "../../../include/ZeusEngineCore/asset/AssetLibrary.h"
+#include "ZeusEngineCore/asset/AssetLibrary.h"
 #include "ZeusEngineCore/engine/CameraSystem.h"
 #include "ZeusEngineCore/engine/Scene.h"
 
 using namespace ZEN;
 
+#ifdef USE_OPENGL
 RenderSystem::RenderSystem() :
     m_Renderer(&Application::get().getEngine()->getRenderer()),
     m_ResourceManager(Application::get().getEngine()->getRenderer().getResourceManager()),
@@ -368,3 +369,44 @@ void RenderSystem::onEvent(Event &event) {
 
     dispatcher.dispatch<RunPlayModeEvent>([this](RunPlayModeEvent& e) {return onPlayModeEvent(e); });
 }
+#endif
+#ifdef USE_VULKAN
+RenderSystem::RenderSystem() {
+}
+
+void RenderSystem::onUpdate(float deltaTime) {
+    Layer::onUpdate(deltaTime);
+}
+
+void RenderSystem::onRender() {
+    Layer::onRender();
+}
+
+void RenderSystem::onEvent(Event &event) {
+    Layer::onEvent(event);
+}
+
+void RenderSystem::initSkyboxAssets(SkyboxComp &comp) {
+}
+
+bool RenderSystem::onPlayModeEvent(RunPlayModeEvent &e) {
+}
+
+void RenderSystem::writeCameraData(glm::mat4 &view, glm::mat4 &projection) {
+}
+
+void RenderSystem::setLightData(glm::vec3 cameraPos) {
+}
+
+void RenderSystem::bindSceneUBOs() {
+}
+
+void RenderSystem::renderDrawables() {
+}
+
+void RenderSystem::renderDrawablesToShader(uint32_t shaderID) {
+}
+
+void RenderSystem::renderSkybox(const glm::mat4 &view, const glm::mat4 &projection) {
+}
+#endif
