@@ -117,6 +117,9 @@ void Application::run() {
         }
         m_Engine->getRenderer().bindDefaultFBO();
 
+#ifdef USE_VULKAN
+        m_VKRenderer->draw();
+#endif
 
 #ifdef USE_OPENGL
         m_ImGUILayer->beginFrame();
