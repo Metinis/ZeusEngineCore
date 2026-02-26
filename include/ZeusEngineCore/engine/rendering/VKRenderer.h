@@ -3,6 +3,8 @@
 #include <vma/vk_mem_alloc.h>
 #include <VkBootstrap.h>
 #include <vma/vk_mem_alloc.h>
+
+#include "../../../../src/Systems/Renderer/Vulkan/VKDescriptors.h"
 #include "../../../../src/Systems/Renderer/Vulkan/VKImages.h"
 
 
@@ -44,6 +46,9 @@ namespace ZEN {
         void initSwapChain();
         void initCommands();
         void initSyncStructures();
+        void initDescriptors();
+        void initPipelines();
+        void initBackgroundPipeline();
 
         void createSwapChain(uint32_t width, uint32_t height);
         void destroySwapChain();
@@ -74,6 +79,13 @@ namespace ZEN {
 
         AllocatedImage m_DrawImage{};
         VkExtent2D m_DrawExtent{};
+
+        DescriptorAllocator m_GlobalDescriptorAllocator{};
+        VkDescriptorSet m_DrawImageDescriptors{};
+        VkDescriptorSetLayout m_DrawImageDescriptorLayout{};
+
+        VkPipeline m_GradientPipeline{};
+        VkPipelineLayout m_GradientPipelineLayout{};
 
         bool m_Initialized{};
     };

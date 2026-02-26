@@ -7,16 +7,10 @@
 #define VMA_IMPLEMENTATION
 #include <vma/vk_mem_alloc.h>
 
-using namespace ZEN;
+#include "VKPipelines.h"
+#include "ZeusEngineCore/engine/rendering/VKUtils.h"
 
-#define VK_CHECK(x)                                                     \
-    do {                                                                \
-        VkResult err = x;                                               \
-        if (err) {                                                      \
-            const std::string errMsg = "Detected Vulkan error: " + std::string(string_VkResult(err));                                                            \
-            throw std::runtime_error(errMsg);\
-        }                                                               \
-    } while (0)
+using namespace ZEN;
 
 VKRenderer::VKRenderer() {
     init();
@@ -27,6 +21,8 @@ void VKRenderer::init() {
     initSwapChain();
     initCommands();
     initSyncStructures();
+    initDescriptors();
+    initPipelines();
 
     m_Initialized = true;
 }
@@ -45,8 +41,8 @@ void VKRenderer::draw() {
 
     VkCommandBufferBeginInfo cmdBeginInfo = VKInit::cmdBufferBeginInfo(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
-    m_DrawExtent.width = m_DrawExtent.width;
-    m_DrawExtent.height = m_DrawExtent.height;
+    m_DrawExtent.width = m_DrawImage.imageExtent.width;
+    m_DrawExtent.height = m_DrawImage.imageExtent.height;
 
     VK_CHECK(vkBeginCommandBuffer(cmd, &cmdBeginInfo));
 
@@ -95,12 +91,18 @@ void VKRenderer::draw() {
 }
 
 void VKRenderer::drawBackground(VkCommandBuffer cmd) {
-    VkClearColorValue clearColorValue;
-    float flash = std::abs(std::sin(m_FrameNumber / 120.0f));
-    clearColorValue = {{0.0f, 0.0f, flash, 1.0f}};
-    VkImageSubresourceRange clearRange = VKInit::imageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT);
+    //VkClearColorValue clearColorValue;
+    //float flash = std::abs(std::sin(m_FrameNumber / 120.0f));
+    //clearColorValue = {{0.0f, 0.0f, flash, 1.0f}};
+    //VkImageSubresourceRange clearRange = VKInit::imageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT);
 
-    vkCmdClearColorImage(cmd, m_DrawImage.image, VK_IMAGE_LAYOUT_GENERAL, &clearColorValue, 1, &clearRange);
+    //vkCmdClearColorImage(cmd, m_DrawImage.image, VK_IMAGE_LAYOUT_GENERAL, &clearColorValue, 1, &clearRange);
+    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, m_GradientPipeline);
+    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, m_GradientPipelineLayout,
+        0, 1, &m_DrawImageDescriptors, 0, nullptr);
+
+    vkCmdDispatch(cmd, std::ceil(m_DrawExtent.width / 16.0),
+        std::ceil(m_DrawExtent.height / 16.0), 1);
 }
 
 void VKRenderer::cleanup() {
@@ -231,9 +233,9 @@ void VKRenderer::initSwapChain() {
 
     VK_CHECK(vkCreateImageView(m_Device, &rViewInfo, nullptr, &m_DrawImage.imageView));
 
-    m_DeletionQueue.pushFunction([&]() {
+    m_DeletionQueue.pushFunction([=]() {
         vkDestroyImageView(m_Device, m_DrawImage.imageView, nullptr);
-        vmaDestroyImage(m_Allocator, m_DrawImage.image, nullptr);
+        vmaDestroyImage(m_Allocator, m_DrawImage.image, m_DrawImage.allocation);
     });
 }
 
@@ -259,6 +261,81 @@ void VKRenderer::initSyncStructures() {
         VK_CHECK(vkCreateSemaphore(m_Device, &semaphoreCreateInfo, nullptr, &m_Frames[i].m_SwapChainSemaphore));
         VK_CHECK(vkCreateSemaphore(m_Device, &semaphoreCreateInfo, nullptr, &m_Frames[i].m_RenderSemaphore));
     }
+}
+
+void VKRenderer::initDescriptors() {
+    std::vector<DescriptorAllocator::PoolSizeRatio> sizes {
+        {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1}
+    };
+    m_GlobalDescriptorAllocator.initPool(m_Device, 10, sizes);
+    {
+        DescriptorLayoutBuilder builder;
+        builder.addBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+        m_DrawImageDescriptorLayout = builder.build(m_Device, VK_SHADER_STAGE_COMPUTE_BIT);
+    }
+    m_DrawImageDescriptors = m_GlobalDescriptorAllocator.allocate(m_Device, m_DrawImageDescriptorLayout);
+
+    VkDescriptorImageInfo imgInfo{};
+    imgInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+    imgInfo.imageView = m_DrawImage.imageView;
+
+    VkWriteDescriptorSet writeDescriptorSet{};
+    writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    writeDescriptorSet.pNext = nullptr;
+
+    writeDescriptorSet.dstBinding = 0;
+    writeDescriptorSet.dstSet = m_DrawImageDescriptors;
+    writeDescriptorSet.descriptorCount = 1;
+    writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+    writeDescriptorSet.pImageInfo = &imgInfo;
+
+    vkUpdateDescriptorSets(m_Device, 1, &writeDescriptorSet, 0, nullptr);
+
+    m_DeletionQueue.pushFunction([&]() {
+        m_GlobalDescriptorAllocator.destroyPool(m_Device);
+        vkDestroyDescriptorSetLayout(m_Device, m_DrawImageDescriptorLayout, nullptr);
+    });
+}
+
+void VKRenderer::initPipelines() {
+    initBackgroundPipeline();
+}
+
+void VKRenderer::initBackgroundPipeline() {
+    VkPipelineLayoutCreateInfo computeLayout{};
+    computeLayout.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    computeLayout.pNext = nullptr;
+    computeLayout.pSetLayouts = &m_DrawImageDescriptorLayout;
+    computeLayout.setLayoutCount = 1;
+
+    VK_CHECK(vkCreatePipelineLayout(m_Device, &computeLayout, nullptr, &m_GradientPipelineLayout));
+
+    VkShaderModule computeDrawShader;
+    if (!VKPipelines::loadShaderModule(Application::get().getResourceRoot() +
+        "/shaders/vulkan-shaders/gradient.comp.spv", m_Device, &computeDrawShader)) {
+        std::cout << "Failed to load compute draw shader" << std::endl;
+    }
+    VkPipelineShaderStageCreateInfo stageInfo{};
+    stageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    stageInfo.pNext = nullptr;
+    stageInfo.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+    stageInfo.module = computeDrawShader;
+    stageInfo.pName = "main";
+
+    VkComputePipelineCreateInfo computePipelineCreateInfo{};
+    computePipelineCreateInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+    computePipelineCreateInfo.pNext = nullptr;
+    computePipelineCreateInfo.layout = m_GradientPipelineLayout;
+    computePipelineCreateInfo.stage = stageInfo;
+
+    VK_CHECK(vkCreateComputePipelines(m_Device, VK_NULL_HANDLE, 1, &computePipelineCreateInfo, nullptr,
+        &m_GradientPipeline));
+
+    vkDestroyShaderModule(m_Device, computeDrawShader, nullptr);
+    m_DeletionQueue.pushFunction([&]() {
+        vkDestroyPipelineLayout(m_Device, m_GradientPipelineLayout, nullptr);
+        vkDestroyPipeline(m_Device, m_GradientPipeline, nullptr);
+    });
 }
 
 void VKRenderer::createSwapChain(uint32_t width, uint32_t height) {
