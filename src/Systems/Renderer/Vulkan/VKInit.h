@@ -14,5 +14,7 @@ namespace ZEN {
         static VkCommandBufferSubmitInfo cmdBufferSubmitInfo(VkCommandBuffer cmd);
         static VkSubmitInfo2 submitInfo(VkCommandBufferSubmitInfo* cmd, VkSemaphoreSubmitInfo* signalSemaphoreInfo,
             VkSemaphoreSubmitInfo* waitSemaphoreInfo);
+        static VkImageCreateInfo imageCreateInfo(VkFormat format, VkImageUsageFlags usageFlags, VkExtent3D extent);
+        static VkImageViewCreateInfo imageViewCreateInfo(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
     };
 }

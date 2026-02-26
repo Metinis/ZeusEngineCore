@@ -2,9 +2,11 @@
 #include <GLFW/glfw3.h>
 #include "ZeusEngineCore/core/Application.h"
 #include <vulkan/vk_enum_string_helper.h>
-
 #include "VKImages.h"
 #include "VKInit.h"
+#define VMA_IMPLEMENTATION
+#include <vma/vk_mem_alloc.h>
+
 using namespace ZEN;
 
 #define VK_CHECK(x)                                                     \
@@ -31,6 +33,7 @@ void VKRenderer::init() {
 
 void VKRenderer::draw() {
     VK_CHECK(vkWaitForFences(m_Device, 1, &getCurrentFrame().m_Fence, true, 1000000000));
+    getCurrentFrame().m_DeletionQueue.flush();
     VK_CHECK(vkResetFences(m_Device, 1, &getCurrentFrame().m_Fence));
 
     uint32_t swapChainImageIndex{};
@@ -41,22 +44,26 @@ void VKRenderer::draw() {
     VK_CHECK(vkResetCommandBuffer(cmd, 0));
 
     VkCommandBufferBeginInfo cmdBeginInfo = VKInit::cmdBufferBeginInfo(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+
+    m_DrawExtent.width = m_DrawExtent.width;
+    m_DrawExtent.height = m_DrawExtent.height;
+
     VK_CHECK(vkBeginCommandBuffer(cmd, &cmdBeginInfo));
 
     //make SwapChain writable
-    VKImages::transitionImage(cmd, m_SwapChainImages[swapChainImageIndex],
+    VKImages::transitionImage(cmd, m_DrawImage.image,
         VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
 
-    VkClearColorValue clearColorValue;
-    float flash = std::abs(std::sin(m_FrameNumber / 120.0f));
-    clearColorValue = {{0.0f, 0.0f, flash, 1.0f}};
-    VkImageSubresourceRange clearRange = VKInit::imageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT);
-
-    vkCmdClearColorImage(cmd, m_SwapChainImages[swapChainImageIndex],
-        VK_IMAGE_LAYOUT_GENERAL, &clearColorValue, 1, &clearRange);
+    drawBackground(cmd);
 
     //make swapchain presentable
-    VKImages::transitionImage(cmd, m_SwapChainImages[swapChainImageIndex], VK_IMAGE_LAYOUT_GENERAL,
+    VKImages::transitionImage(cmd, m_DrawImage.image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+    VKImages::transitionImage(cmd, m_SwapChainImages[swapChainImageIndex], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+    VKImages::copyImageToImage(cmd, m_DrawImage.image, m_SwapChainImages[swapChainImageIndex],
+        m_DrawExtent, m_SwapChainExtent);
+
+    VKImages::transitionImage(cmd, m_SwapChainImages[swapChainImageIndex], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
         VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
     VK_CHECK(vkEndCommandBuffer(cmd));
@@ -87,6 +94,15 @@ void VKRenderer::draw() {
     m_FrameNumber++;
 }
 
+void VKRenderer::drawBackground(VkCommandBuffer cmd) {
+    VkClearColorValue clearColorValue;
+    float flash = std::abs(std::sin(m_FrameNumber / 120.0f));
+    clearColorValue = {{0.0f, 0.0f, flash, 1.0f}};
+    VkImageSubresourceRange clearRange = VKInit::imageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT);
+
+    vkCmdClearColorImage(cmd, m_DrawImage.image, VK_IMAGE_LAYOUT_GENERAL, &clearColorValue, 1, &clearRange);
+}
+
 void VKRenderer::cleanup() {
     if (m_Initialized) {
         vkDeviceWaitIdle(m_Device);
@@ -96,7 +112,9 @@ void VKRenderer::cleanup() {
             vkDestroyFence(m_Device, m_Frames[i].m_Fence, nullptr);
             vkDestroySemaphore(m_Device, m_Frames[i].m_RenderSemaphore, nullptr);
             vkDestroySemaphore(m_Device, m_Frames[i].m_SwapChainSemaphore, nullptr);
+            m_Frames[i].m_DeletionQueue.flush();
         }
+        m_DeletionQueue.flush();
         destroySwapChain();
 
         vkDestroySurfaceKHR(m_Instance, m_Surface, nullptr);
@@ -168,13 +186,55 @@ void VKRenderer::initVulkan() {
     m_GraphicsQueue = vkbDevice.get_queue(vkb::QueueType::graphics).value();
     m_GraphicsQueueFamily = vkbDevice.get_queue_index(vkb::QueueType::graphics).value();
 
+    //allocator
+    VmaAllocatorCreateInfo allocatorCreateInfo {};
+    allocatorCreateInfo.device = m_Device;
+    allocatorCreateInfo.instance = m_Instance;
+    allocatorCreateInfo.physicalDevice = m_PhysicalDevice;
+    allocatorCreateInfo.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
 
+    vmaCreateAllocator(&allocatorCreateInfo, &m_Allocator);
+    m_DeletionQueue.pushFunction([&]() {
+        vmaDestroyAllocator(m_Allocator);
+    });
 }
 
 void VKRenderer::initSwapChain() {
     int width, height;
     glfwGetFramebufferSize(Application::get().getWindow()->getNativeWindow(), &width, &height);
     createSwapChain(width, height);
+
+    VkExtent3D drawImageExtent {
+        .width = (uint32_t)width,
+        .height = (uint32_t)height,
+        .depth = 1
+    };
+
+    m_DrawImage.imageFormat = VK_FORMAT_R16G16B16A16_SFLOAT;
+    m_DrawImage.imageExtent = drawImageExtent;
+
+    VkImageUsageFlags drawImageUsages{};
+    drawImageUsages |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+    drawImageUsages |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    drawImageUsages |= VK_IMAGE_USAGE_STORAGE_BIT;
+    drawImageUsages |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+
+    VkImageCreateInfo rImgInfo = VKInit::imageCreateInfo(m_DrawImage.imageFormat, drawImageUsages, drawImageExtent);
+
+    VmaAllocationCreateInfo rImgAllocationCreateInfo {};
+    rImgAllocationCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+    rImgAllocationCreateInfo.requiredFlags = VkMemoryPropertyFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+    vmaCreateImage(m_Allocator, &rImgInfo, &rImgAllocationCreateInfo, &m_DrawImage.image, &m_DrawImage.allocation, nullptr);
+
+    VkImageViewCreateInfo rViewInfo = VKInit::imageViewCreateInfo(m_DrawImage.image, m_DrawImage.imageFormat, VK_IMAGE_ASPECT_COLOR_BIT);
+
+    VK_CHECK(vkCreateImageView(m_Device, &rViewInfo, nullptr, &m_DrawImage.imageView));
+
+    m_DeletionQueue.pushFunction([&]() {
+        vkDestroyImageView(m_Device, m_DrawImage.imageView, nullptr);
+        vmaDestroyImage(m_Allocator, m_DrawImage.image, nullptr);
+    });
 }
 
 void VKRenderer::initCommands() {
@@ -210,6 +270,7 @@ void VKRenderer::createSwapChain(uint32_t width, uint32_t height) {
     swapChainBuilder.set_desired_present_mode(VK_PRESENT_MODE_FIFO_KHR);
     swapChainBuilder.set_desired_extent(width, height);
     swapChainBuilder.add_image_usage_flags(VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+    swapChainBuilder.set_desired_min_image_count(FRAME_OVERLAP);
     vkb::Swapchain vkbSwapChain = swapChainBuilder.build().value();
 
     m_SwapChainExtent = vkbSwapChain.extent;

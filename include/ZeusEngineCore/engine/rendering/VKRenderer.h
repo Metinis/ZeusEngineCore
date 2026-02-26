@@ -2,22 +2,41 @@
 #include <vulkan/vulkan.h>
 #include <vma/vk_mem_alloc.h>
 #include <VkBootstrap.h>
+#include <vma/vk_mem_alloc.h>
+#include "../../../../src/Systems/Renderer/Vulkan/VKImages.h"
+
 
 namespace ZEN {
+    struct DeletionQueue {
+        std::deque<std::function<void()>> deletors{};
+
+        void pushFunction(std::function<void()>&& function) {
+            deletors.push_back(function);
+        }
+
+        void flush() {
+            for (auto& deletor : std::ranges::reverse_view(deletors)) {
+                deletor();
+            }
+            deletors.clear();
+        }
+    };
     struct FrameData {
         VkCommandPool m_CommandPool{};
         VkCommandBuffer m_MainCommandBuffer{};
         VkSemaphore m_SwapChainSemaphore{}; //wait for SwapChain image request
         VkSemaphore m_RenderSemaphore{}; //presenting image to OS after drawing
         VkFence m_Fence{}; //wait for commands for a frame to finish
+        DeletionQueue m_DeletionQueue{};
     };
-    constexpr unsigned int FRAME_OVERLAP = 2;
+    constexpr unsigned int FRAME_OVERLAP = 3;
 
     class VKRenderer {
     public:
         VKRenderer();
         void init();
         void draw();
+        void drawBackground(VkCommandBuffer cmd);
         void cleanup();
         ~VKRenderer();
     private:
@@ -28,6 +47,8 @@ namespace ZEN {
 
         void createSwapChain(uint32_t width, uint32_t height);
         void destroySwapChain();
+
+        DeletionQueue m_DeletionQueue{};
 
         VkInstance m_Instance{};
         VkDebugUtilsMessengerEXT m_DebugMessenger{};
@@ -47,7 +68,13 @@ namespace ZEN {
         VkQueue m_GraphicsQueue{};
         uint32_t m_GraphicsQueueFamily{};
 
-        uint64_t m_FrameNumber{};
+        uint64_t m_FrameNumber{0};
+
+        VmaAllocator m_Allocator{};
+
+        AllocatedImage m_DrawImage{};
+        VkExtent2D m_DrawExtent{};
+
         bool m_Initialized{};
     };
 }

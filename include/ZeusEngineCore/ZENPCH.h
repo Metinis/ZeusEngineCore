@@ -17,3 +17,5 @@
 #include <filesystem>
 #include <variant>
 #include <Jolt/Jolt.h>
+#include <deque>
+#include <ranges>
