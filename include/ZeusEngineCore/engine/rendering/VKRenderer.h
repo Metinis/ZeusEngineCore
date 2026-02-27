@@ -4,6 +4,7 @@
 #include <VkBootstrap.h>
 #include <vma/vk_mem_alloc.h>
 
+#include "imgui_impl_vulkan.h"
 #include "../../../../src/Systems/Renderer/Vulkan/VKDescriptors.h"
 #include "../../../../src/Systems/Renderer/Vulkan/VKImages.h"
 
@@ -38,6 +39,7 @@ namespace ZEN {
         VKRenderer();
         void init();
         void draw();
+        ImGui_ImplVulkan_InitInfo initImgui();
         void drawBackground(VkCommandBuffer cmd);
         void cleanup();
         ~VKRenderer();
@@ -49,6 +51,8 @@ namespace ZEN {
         void initDescriptors();
         void initPipelines();
         void initBackgroundPipeline();
+        void drawImgui(VkCommandBuffer cmd, VkImageView targetImageView);
+        void immediateSubmit(std::function<void(VkCommandBuffer cmd)>&& function);
 
         void createSwapChain(uint32_t width, uint32_t height);
         void destroySwapChain();
@@ -86,6 +90,10 @@ namespace ZEN {
 
         VkPipeline m_GradientPipeline{};
         VkPipelineLayout m_GradientPipelineLayout{};
+
+        VkFence m_ImmediateFence{};
+        VkCommandBuffer m_ImmediateCommandBuffer{};
+        VkCommandPool m_ImmediateCommandPool{};
 
         bool m_Initialized{};
     };

@@ -33,6 +33,7 @@ target_sources(imgui PRIVATE
         include/imgui/imgui_demo.cpp
         include/imgui/backends/imgui_impl_glfw.cpp
         include/imgui/backends/imgui_impl_opengl3.cpp
+        include/imgui/backends/imgui_impl_vulkan.cpp
 )
 
 target_link_libraries(imgui

@@ -33,9 +33,9 @@ void Application::init() {
 
     m_Window->attachDispatcher();
 
-#ifdef USE_OPENGL
+//#ifdef USE_OPENGL
     m_ImGUILayer = ImGUILayer::create(m_Window->getNativeWindow(), m_API);
-#endif
+//#endif
     m_Running = true;
 
     m_Engine->setAspectRatio(m_Window->getHandleWidth() / m_Window->getHandleHeight());
@@ -117,11 +117,9 @@ void Application::run() {
         }
         m_Engine->getRenderer().bindDefaultFBO();
 
-#ifdef USE_VULKAN
-        m_VKRenderer->draw();
-#endif
 
-#ifdef USE_OPENGL
+
+//#ifdef USE_OPENGL
         m_ImGUILayer->beginFrame();
 
         for(Layer* layer : *m_LayerStack) {
@@ -130,6 +128,9 @@ void Application::run() {
         }
         m_ImGUILayer->render();
         m_ImGUILayer->endFrame(nullptr);
+//#endif
+#ifdef USE_VULKAN
+        m_VKRenderer->draw();
 #endif
 
         m_Engine->getRenderer().endFrame();

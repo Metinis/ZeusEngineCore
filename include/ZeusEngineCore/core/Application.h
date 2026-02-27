@@ -30,7 +30,9 @@ namespace ZEN {
         eRendererAPI getRendererAPI() const { return m_API; }
         ZEngine* getEngine() const { return m_Engine.get(); }
         std::string getResourceRoot() { return m_ResourceRoot; }
-
+#ifdef USE_VULKAN
+        VKRenderer* getVKRenderer() const { return m_VKRenderer.get(); }
+#endif
         void close();
 
         void run();
@@ -40,9 +42,8 @@ namespace ZEN {
         static Application* s_Instance;
 
         std::unique_ptr<Window> m_Window{};
+
         std::unique_ptr<ImGUILayer> m_ImGUILayer{};
-        
-        std::unique_ptr<ZEngine> m_Engine{};
 #ifdef USE_VULKAN
         std::unique_ptr<VKRenderer> m_VKRenderer{};
         eRendererAPI m_API{ Vulkan };
@@ -50,6 +51,9 @@ namespace ZEN {
 #ifdef USE_OPENGL
         eRendererAPI m_API{ OpenGL };
 #endif
+        
+        std::unique_ptr<ZEngine> m_Engine{};
+
         std::string m_ResourceRoot{};
         bool m_Running { false };
         bool m_IsPlaying { false };
