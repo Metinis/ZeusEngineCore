@@ -117,20 +117,17 @@ void Application::run() {
         }
         m_Engine->getRenderer().bindDefaultFBO();
 
-
-
-//#ifdef USE_OPENGL
         m_ImGUILayer->beginFrame();
-
         for(Layer* layer : *m_LayerStack) {
 
             layer->onUIRender();
         }
         m_ImGUILayer->render();
         m_ImGUILayer->endFrame(nullptr);
-//#endif
 #ifdef USE_VULKAN
+        m_VKRenderer->beginFrame();
         m_VKRenderer->draw();
+        m_VKRenderer->endFrame();
 #endif
 
         m_Engine->getRenderer().endFrame();

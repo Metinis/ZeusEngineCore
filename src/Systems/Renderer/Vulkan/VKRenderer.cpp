@@ -9,7 +9,7 @@
 
 #include "VKPipelines.h"
 #include "ZeusEngineCore/engine/rendering/VKUtils.h"
-
+#define IMGUI_IMG;
 using namespace ZEN;
 
 VKRenderer::VKRenderer() {
@@ -18,21 +18,23 @@ VKRenderer::VKRenderer() {
 
 void VKRenderer::init() {
     initVulkan();
+    initSampler();
     initSwapChain();
     initCommands();
     initSyncStructures();
     initDescriptors();
     initPipelines();
 
+
     m_Initialized = true;
 }
 
-void VKRenderer::draw() {
+static uint32_t swapChainImageIndex{};
+void VKRenderer::beginFrame() {
     VK_CHECK(vkWaitForFences(m_Device, 1, &getCurrentFrame().m_Fence, true, 1000000000));
     getCurrentFrame().m_DeletionQueue.flush();
     VK_CHECK(vkResetFences(m_Device, 1, &getCurrentFrame().m_Fence));
 
-    uint32_t swapChainImageIndex{};
     VK_CHECK(vkAcquireNextImageKHR(m_Device, m_SwapChain, 1000000000, getCurrentFrame().m_SwapChainSemaphore,
         nullptr, &swapChainImageIndex));
 
@@ -49,26 +51,44 @@ void VKRenderer::draw() {
     //make SwapChain writable
     VKImages::transitionImage(cmd, m_DrawImage.image,
         VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+}
+
+
+
+void VKRenderer::draw() {
+    VkCommandBuffer cmd = getCurrentFrame().m_MainCommandBuffer;
 
     drawBackground(cmd);
+}
+void VKRenderer::endFrame() {
+    VkCommandBuffer cmd = getCurrentFrame().m_MainCommandBuffer;
 
+    //we render to an image used by imgui, dont copy over to swapchain in this case
 
-    //make swapchain presentable
-    VKImages::transitionImage(cmd, m_DrawImage.image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
-    VKImages::transitionImage(cmd, m_SwapChainImages[swapChainImageIndex], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-
+    /*--------------------------------------------------------NON-IMGUI--------------------------------------------*/
+#ifndef IMGUI_IMG
+    VKImages::transitionImage(cmd, m_DrawImage.image,
+        VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+    VKImages::transitionImage(cmd, m_SwapChainImages[swapChainImageIndex], VK_IMAGE_LAYOUT_UNDEFINED,
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
     VKImages::copyImageToImage(cmd, m_DrawImage.image, m_SwapChainImages[swapChainImageIndex],
         m_DrawExtent, m_SwapChainExtent);
-
-
     VKImages::transitionImage(cmd, m_SwapChainImages[swapChainImageIndex], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+
+    /*--------------------------------------------------------NON-IMGUI--------------------------------------------*/
+
+    /*--------------------------------------------------------IMGUI------------------------------------------------*/
+#else
+    VKImages::transitionImage(cmd, m_SwapChainImages[swapChainImageIndex], VK_IMAGE_LAYOUT_UNDEFINED,
         VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
     drawImgui(cmd, m_SwapChainImageViews[swapChainImageIndex]);
-
     VKImages::transitionImage(cmd, m_SwapChainImages[swapChainImageIndex], VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
         VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
-
+    /*--------------------------------------------------------IMGUI------------------------------------------------*/
+#endif
+    //make swapchain presentable
     VK_CHECK(vkEndCommandBuffer(cmd));
 
     VkCommandBufferSubmitInfo cmdSubmitInfo = VKInit::cmdBufferSubmitInfo(cmd);
@@ -98,15 +118,13 @@ void VKRenderer::draw() {
 }
 
 void VKRenderer::drawBackground(VkCommandBuffer cmd) {
-    //VkClearColorValue clearColorValue;
-    //float flash = std::abs(std::sin(m_FrameNumber / 120.0f));
-    //clearColorValue = {{0.0f, 0.0f, flash, 1.0f}};
-    //VkImageSubresourceRange clearRange = VKInit::imageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT);
-
-    //vkCmdClearColorImage(cmd, m_DrawImage.image, VK_IMAGE_LAYOUT_GENERAL, &clearColorValue, 1, &clearRange);
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, m_GradientPipeline);
     vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, m_GradientPipelineLayout,
         0, 1, &m_DrawImageDescriptors, 0, nullptr);
+    float dt = Application::get().getWindow()->getDeltaTime();
+    static float totalTime = 0;
+    totalTime += dt;
+    vkCmdPushConstants(cmd, m_GradientPipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(float), &totalTime);
 
     vkCmdDispatch(cmd, std::ceil(m_DrawExtent.width / 16.0),
         std::ceil(m_DrawExtent.height / 16.0), 1);
@@ -227,6 +245,7 @@ void VKRenderer::initSwapChain() {
     drawImageUsages |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
     drawImageUsages |= VK_IMAGE_USAGE_STORAGE_BIT;
     drawImageUsages |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    drawImageUsages |= VK_IMAGE_USAGE_SAMPLED_BIT;
 
     VkImageCreateInfo rImgInfo = VKInit::imageCreateInfo(m_DrawImage.imageFormat, drawImageUsages, drawImageExtent);
 
@@ -239,6 +258,8 @@ void VKRenderer::initSwapChain() {
     VkImageViewCreateInfo rViewInfo = VKInit::imageViewCreateInfo(m_DrawImage.image, m_DrawImage.imageFormat, VK_IMAGE_ASPECT_COLOR_BIT);
 
     VK_CHECK(vkCreateImageView(m_Device, &rViewInfo, nullptr, &m_DrawImage.imageView));
+
+
 
     m_DeletionQueue.pushFunction([=]() {
         vkDestroyImageView(m_Device, m_DrawImage.imageView, nullptr);
@@ -324,11 +345,18 @@ void VKRenderer::initPipelines() {
 }
 
 void VKRenderer::initBackgroundPipeline() {
+    VkPushConstantRange push{};
+    push.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+    push.offset = 0;
+    push.size = sizeof(float);
+
     VkPipelineLayoutCreateInfo computeLayout{};
     computeLayout.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     computeLayout.pNext = nullptr;
     computeLayout.pSetLayouts = &m_DrawImageDescriptorLayout;
     computeLayout.setLayoutCount = 1;
+    computeLayout.pushConstantRangeCount = 1;
+    computeLayout.pPushConstantRanges = &push;
 
     VK_CHECK(vkCreatePipelineLayout(m_Device, &computeLayout, nullptr, &m_GradientPipelineLayout));
 
@@ -357,6 +385,22 @@ void VKRenderer::initBackgroundPipeline() {
     m_DeletionQueue.pushFunction([&]() {
         vkDestroyPipelineLayout(m_Device, m_GradientPipelineLayout, nullptr);
         vkDestroyPipeline(m_Device, m_GradientPipeline, nullptr);
+    });
+}
+
+void VKRenderer::initSampler() {
+    VkSamplerCreateInfo samplerInfo{};
+    //todo make these editable
+    samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+    samplerInfo.magFilter = VK_FILTER_LINEAR;
+    samplerInfo.minFilter = VK_FILTER_LINEAR;
+    samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+    samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+    samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+    samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+    VK_CHECK(vkCreateSampler(m_Device, &samplerInfo, nullptr, &m_Sampler));
+    m_DeletionQueue.pushFunction([=]() {
+        vkDestroySampler(m_Device, m_Sampler, nullptr);
     });
 }
 
@@ -404,7 +448,7 @@ ImGui_ImplVulkan_InitInfo VKRenderer::initImgui() {
         { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000 },
         { VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000 } };
 
-    VkDescriptorPoolCreateInfo poolInfo = {};
+    VkDescriptorPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
     poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
     poolInfo.maxSets = 1000;
@@ -414,7 +458,7 @@ ImGui_ImplVulkan_InitInfo VKRenderer::initImgui() {
     VkDescriptorPool imguiPool;
     VK_CHECK(vkCreateDescriptorPool(m_Device, &poolInfo, nullptr, &imguiPool));
 
-    ImGui_ImplVulkan_InitInfo initInfo = {};
+    ImGui_ImplVulkan_InitInfo initInfo{};
     initInfo.Instance = m_Instance;
     initInfo.PhysicalDevice = m_PhysicalDevice;
     initInfo.Device = m_Device;
@@ -430,9 +474,12 @@ ImGui_ImplVulkan_InitInfo VKRenderer::initImgui() {
     initInfo.PipelineInfoMain.PipelineRenderingCreateInfo.pColorAttachmentFormats = &m_SwapChainImageFormat;
     initInfo.PipelineInfoMain.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
 
+    ImGui_ImplVulkan_Init(&initInfo);
+    m_ImGuiDescriptorSet = ImGui_ImplVulkan_AddTexture(m_Sampler, m_DrawImage.imageView,
+        VK_IMAGE_LAYOUT_GENERAL
+    );
+
     m_DeletionQueue.pushFunction([=]() {
-
-
         ImGui_ImplVulkan_Shutdown();
         vkDestroyDescriptorPool(m_Device, imguiPool, nullptr);
 

@@ -15,7 +15,7 @@ ImGUILayerVulkan::ImGUILayerVulkan(GLFWwindow *window) {
 	ImGui_ImplGlfw_InitForVulkan(window, true);
 
 	ImGui_ImplVulkan_InitInfo initInfo = ZEN::Application::get().getVKRenderer()->initImgui();
-	ImGui_ImplVulkan_Init(&initInfo);
+	//ImGui_ImplVulkan_Init(&initInfo);
     //callback = [this](void* cmd) {
         //this->endFrame(cmd);
     //};

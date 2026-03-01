@@ -38,9 +38,14 @@ namespace ZEN {
     public:
         VKRenderer();
         void init();
+        void beginFrame();
         void draw();
+        void endFrame();
         ImGui_ImplVulkan_InitInfo initImgui();
+        [[nodiscard]] VkDescriptorSet getImDescSet() const {return m_ImGuiDescriptorSet;}
         void drawBackground(VkCommandBuffer cmd);
+        void drawImgui(VkCommandBuffer cmd, VkImageView targetImageView);
+        void immediateSubmit(std::function<void(VkCommandBuffer cmd)>&& function);
         void cleanup();
         ~VKRenderer();
     private:
@@ -51,8 +56,7 @@ namespace ZEN {
         void initDescriptors();
         void initPipelines();
         void initBackgroundPipeline();
-        void drawImgui(VkCommandBuffer cmd, VkImageView targetImageView);
-        void immediateSubmit(std::function<void(VkCommandBuffer cmd)>&& function);
+        void initSampler();
 
         void createSwapChain(uint32_t width, uint32_t height);
         void destroySwapChain();
@@ -94,6 +98,9 @@ namespace ZEN {
         VkFence m_ImmediateFence{};
         VkCommandBuffer m_ImmediateCommandBuffer{};
         VkCommandPool m_ImmediateCommandPool{};
+
+        VkDescriptorSet m_ImGuiDescriptorSet{};
+        VkSampler m_Sampler{};
 
         bool m_Initialized{};
     };
