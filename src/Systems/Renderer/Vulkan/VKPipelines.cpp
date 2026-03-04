@@ -38,19 +38,12 @@ bool VKPipelines::loadShaderModule(std::string_view filePath, VkDevice device, V
 
 void VKPipelineBuilder::clear() {
     inputAssembly = { .sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO };
-
     rasterizer = { .sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO };
-
     colorBlendAttachment = {};
-
     multiSampling = { .sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO };
-
     pipelineLayout = {};
-
     depthStencil = { .sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO };
-
     renderInfo = { .sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO };
-
     shaderStages.clear();
 }
 

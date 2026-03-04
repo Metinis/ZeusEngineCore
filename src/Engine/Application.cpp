@@ -128,6 +128,7 @@ void Application::run() {
         m_VKRenderer->beginFrame();
         m_VKRenderer->draw();
         m_VKRenderer->endFrame();
+
 #endif
 
         m_Engine->getRenderer().endFrame();

@@ -35,8 +35,13 @@ void VKRenderer::beginFrame() {
     getCurrentFrame().m_DeletionQueue.flush();
     VK_CHECK(vkResetFences(m_Device, 1, &getCurrentFrame().m_Fence));
 
-    VK_CHECK(vkAcquireNextImageKHR(m_Device, m_SwapChain, 1000000000, getCurrentFrame().m_SwapChainSemaphore,
-        nullptr, &swapChainImageIndex));
+    auto result = vkAcquireNextImageKHR(m_Device, m_SwapChain, 1000000000, getCurrentFrame().m_SwapChainSemaphore,
+        nullptr, &swapChainImageIndex);
+    if(result == VK_ERROR_OUT_OF_DATE_KHR) {
+            //recreate swapchain
+        m_SwapChainRecreated = true;
+        return;
+        }
 
     VkCommandBuffer cmd = getCurrentFrame().m_MainCommandBuffer;
     VK_CHECK(vkResetCommandBuffer(cmd, 0));
@@ -51,6 +56,7 @@ void VKRenderer::beginFrame() {
     //make SwapChain writable
     VKImages::transitionImage(cmd, m_DrawImage.image,
         VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+
 }
 
 
@@ -62,6 +68,7 @@ void VKRenderer::draw() {
     VKImages::transitionImage(cmd, m_DrawImage.image,
         VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
     drawGeometry(cmd);
+
 }
 void VKRenderer::endFrame() {
     VkCommandBuffer cmd = getCurrentFrame().m_MainCommandBuffer;
@@ -83,6 +90,8 @@ void VKRenderer::endFrame() {
 
     /*--------------------------------------------------------IMGUI------------------------------------------------*/
 #else
+    VKImages::transitionImage(cmd, m_DrawImage.image,
+    VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
     VKImages::transitionImage(cmd, m_SwapChainImages[swapChainImageIndex], VK_IMAGE_LAYOUT_UNDEFINED,
         VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
@@ -115,9 +124,17 @@ void VKRenderer::endFrame() {
 
     presentInfo.pImageIndices = &swapChainImageIndex;
 
-    VK_CHECK(vkQueuePresentKHR(m_GraphicsQueue, &presentInfo));
+    auto result = vkQueuePresentKHR(m_GraphicsQueue, &presentInfo);
+    if(result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
+        //recreate swapchain
+        m_SwapChainRecreated = true;
+    }
 
     m_FrameNumber++;
+
+    if (m_SwapChainRecreated) {
+        recreateSwapChain();
+    }
 }
 
 void VKRenderer::drawBackground(VkCommandBuffer cmd) {
@@ -472,8 +489,8 @@ void VKRenderer::drawGeometry(VkCommandBuffer cmd) {
     viewport.y = 0;
     viewport.width = m_DrawExtent.width;
     viewport.height = m_DrawExtent.height;
-    viewport.minDepth = 0.f;
-    viewport.maxDepth = 1.f;
+    viewport.minDepth = 0.0f;
+    viewport.maxDepth = 1.0f;
 
     vkCmdSetViewport(cmd, 0, 1, &viewport);
 
@@ -581,6 +598,17 @@ void VKRenderer::createSwapChain(uint32_t width, uint32_t height) {
     m_SwapChainImages = vkbSwapChain.get_images().value();
     m_SwapChainImageViews = vkbSwapChain.get_image_views().value();
 
+}
+
+void VKRenderer::recreateSwapChain() {
+    int width, height;
+    glfwGetFramebufferSize(Application::get().getWindow()->getNativeWindow(), &width, &height);
+    vkDeviceWaitIdle(m_Device);
+    destroySwapChain();
+    m_DrawExtent.width = width;
+    m_DrawExtent.height = height;
+    createSwapChain(width, height);
+    m_SwapChainRecreated = false;
 }
 
 void VKRenderer::destroySwapChain() {

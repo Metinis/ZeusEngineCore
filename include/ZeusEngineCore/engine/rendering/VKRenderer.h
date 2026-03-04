@@ -61,6 +61,7 @@ namespace ZEN {
         void initTrianglePipeline();
 
         void createSwapChain(uint32_t width, uint32_t height);
+        void recreateSwapChain();
         void destroySwapChain();
 
         DeletionQueue m_DeletionQueue{};
@@ -72,6 +73,7 @@ namespace ZEN {
         VkSurfaceKHR m_Surface{};
 
         VkSwapchainKHR m_SwapChain{};
+        bool m_SwapChainRecreated{false};
         VkFormat m_SwapChainImageFormat{};
         std::vector<VkImage> m_SwapChainImages{};
         std::vector<VkImageView> m_SwapChainImageViews{};
