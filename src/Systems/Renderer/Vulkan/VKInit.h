@@ -20,5 +20,7 @@ namespace ZEN {
             VkImageLayout layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
         static VkRenderingInfo renderingInfo(VkExtent2D extent, VkRenderingAttachmentInfo* colorAttachmentInfo,
             VkRenderingAttachmentInfo* depthAttachmentInfo);
+        static VkPipelineShaderStageCreateInfo pipelineShaderStageCreateInfo(VkShaderStageFlagBits flagBits, VkShaderModule shaderModule);
+        static VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo();
     };
 }

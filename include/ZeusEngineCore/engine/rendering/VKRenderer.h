@@ -45,6 +45,7 @@ namespace ZEN {
         [[nodiscard]] VkDescriptorSet getImDescSet() const {return m_ImGuiDescriptorSet;}
         void drawBackground(VkCommandBuffer cmd);
         void drawImgui(VkCommandBuffer cmd, VkImageView targetImageView);
+        void drawGeometry(VkCommandBuffer cmd);
         void immediateSubmit(std::function<void(VkCommandBuffer cmd)>&& function);
         void cleanup();
         ~VKRenderer();
@@ -57,6 +58,7 @@ namespace ZEN {
         void initPipelines();
         void initBackgroundPipeline();
         void initSampler();
+        void initTrianglePipeline();
 
         void createSwapChain(uint32_t width, uint32_t height);
         void destroySwapChain();
@@ -101,6 +103,9 @@ namespace ZEN {
 
         VkDescriptorSet m_ImGuiDescriptorSet{};
         VkSampler m_Sampler{};
+
+        VkPipelineLayout m_TrianglePipelineLayout{};
+        VkPipeline m_TrianglePipeline{};
 
         bool m_Initialized{};
     };

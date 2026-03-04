@@ -59,6 +59,9 @@ void VKRenderer::draw() {
     VkCommandBuffer cmd = getCurrentFrame().m_MainCommandBuffer;
 
     drawBackground(cmd);
+    VKImages::transitionImage(cmd, m_DrawImage.image,
+        VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    drawGeometry(cmd);
 }
 void VKRenderer::endFrame() {
     VkCommandBuffer cmd = getCurrentFrame().m_MainCommandBuffer;
@@ -68,7 +71,7 @@ void VKRenderer::endFrame() {
     /*--------------------------------------------------------NON-IMGUI--------------------------------------------*/
 #ifndef IMGUI_IMG
     VKImages::transitionImage(cmd, m_DrawImage.image,
-        VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
     VKImages::transitionImage(cmd, m_SwapChainImages[swapChainImageIndex], VK_IMAGE_LAYOUT_UNDEFINED,
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
     VKImages::copyImageToImage(cmd, m_DrawImage.image, m_SwapChainImages[swapChainImageIndex],
@@ -342,6 +345,7 @@ void VKRenderer::initDescriptors() {
 
 void VKRenderer::initPipelines() {
     initBackgroundPipeline();
+    initTrianglePipeline();
 }
 
 void VKRenderer::initBackgroundPipeline() {
@@ -350,9 +354,7 @@ void VKRenderer::initBackgroundPipeline() {
     push.offset = 0;
     push.size = sizeof(float);
 
-    VkPipelineLayoutCreateInfo computeLayout{};
-    computeLayout.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    computeLayout.pNext = nullptr;
+    VkPipelineLayoutCreateInfo computeLayout = VKInit::pipelineLayoutCreateInfo();
     computeLayout.pSetLayouts = &m_DrawImageDescriptorLayout;
     computeLayout.setLayoutCount = 1;
     computeLayout.pushConstantRangeCount = 1;
@@ -365,12 +367,8 @@ void VKRenderer::initBackgroundPipeline() {
         "/shaders/vulkan-shaders/gradient.comp.spv", m_Device, &computeDrawShader)) {
         std::cout << "Failed to load compute draw shader" << std::endl;
     }
-    VkPipelineShaderStageCreateInfo stageInfo{};
-    stageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    stageInfo.pNext = nullptr;
-    stageInfo.stage = VK_SHADER_STAGE_COMPUTE_BIT;
-    stageInfo.module = computeDrawShader;
-    stageInfo.pName = "main";
+    VkPipelineShaderStageCreateInfo stageInfo = VKInit::pipelineShaderStageCreateInfo(
+        VK_SHADER_STAGE_COMPUTE_BIT, computeDrawShader);
 
     VkComputePipelineCreateInfo computePipelineCreateInfo{};
     computePipelineCreateInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
@@ -404,6 +402,52 @@ void VKRenderer::initSampler() {
     });
 }
 
+void VKRenderer::initTrianglePipeline() {
+    VkShaderModule triangleFragShader;
+    if (!VKPipelines::loadShaderModule(Application::get().getResourceRoot() +
+        "/shaders/vulkan-shaders/testTriangle.frag.spv", m_Device, &triangleFragShader)) {
+        std::cout << "Failed to load triangle frag shader" << std::endl;
+    }
+    VkShaderModule triangleVertShader;
+    if (!VKPipelines::loadShaderModule(Application::get().getResourceRoot() +
+        "/shaders/vulkan-shaders/testTriangle.vert.spv", m_Device, &triangleVertShader)) {
+        std::cout << "Failed to load triangle vert shader" << std::endl;
+    }
+    VkPipelineLayoutCreateInfo layoutInfo = VKInit::pipelineLayoutCreateInfo();
+    layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    layoutInfo.pNext = nullptr;
+    layoutInfo.flags = 0;
+
+    layoutInfo.setLayoutCount = 0;
+    layoutInfo.pSetLayouts = nullptr;
+
+    layoutInfo.pushConstantRangeCount = 0;
+    layoutInfo.pPushConstantRanges = nullptr;
+    VK_CHECK(vkCreatePipelineLayout(m_Device, &layoutInfo, nullptr, &m_TrianglePipelineLayout));
+
+    VKPipelineBuilder builder;
+    builder.pipelineLayout = m_TrianglePipelineLayout;
+    builder.setShaders(triangleVertShader, triangleFragShader);
+    builder.setInputTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+    builder.setPolygonMode(VK_POLYGON_MODE_FILL);
+    builder.setCullMode(VK_CULL_MODE_NONE, VK_FRONT_FACE_CLOCKWISE);
+    builder.setMultiSamplingNone();
+    builder.disableBlending();
+    builder.disableDepthTest();
+    builder.setColorAttachmentFormat(m_DrawImage.imageFormat);
+    builder.setDepthFormat(VK_FORMAT_UNDEFINED);
+
+    m_TrianglePipeline = builder.buildPipeline(m_Device);
+
+    vkDestroyShaderModule(m_Device, triangleFragShader, nullptr);
+    vkDestroyShaderModule(m_Device, triangleVertShader, nullptr);
+
+    m_DeletionQueue.pushFunction([&]() {
+        vkDestroyPipelineLayout(m_Device, m_TrianglePipelineLayout, nullptr);
+        vkDestroyPipeline(m_Device, m_TrianglePipeline, nullptr);
+    });
+}
+
 void VKRenderer::drawImgui(VkCommandBuffer cmd, VkImageView targetImageView) {
     VkRenderingAttachmentInfo colorAttachment = VKInit::attachmentInfo(targetImageView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
     VkRenderingInfo renderInfo = VKInit::renderingInfo(m_SwapChainExtent, &colorAttachment, nullptr);
@@ -411,6 +455,37 @@ void VKRenderer::drawImgui(VkCommandBuffer cmd, VkImageView targetImageView) {
     vkCmdBeginRendering(cmd, &renderInfo);
 
     ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmd);
+
+    vkCmdEndRendering(cmd);
+}
+
+void VKRenderer::drawGeometry(VkCommandBuffer cmd) {
+    VkRenderingAttachmentInfo renderingAttInfo = VKInit::attachmentInfo(m_DrawImage.imageView
+        , nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    VkRenderingInfo renderInfo = VKInit::renderingInfo(m_DrawExtent,
+        &renderingAttInfo, nullptr);
+    vkCmdBeginRendering(cmd, &renderInfo);
+    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_TrianglePipeline);
+
+    VkViewport viewport = {};
+    viewport.x = 0;
+    viewport.y = 0;
+    viewport.width = m_DrawExtent.width;
+    viewport.height = m_DrawExtent.height;
+    viewport.minDepth = 0.f;
+    viewport.maxDepth = 1.f;
+
+    vkCmdSetViewport(cmd, 0, 1, &viewport);
+
+    VkRect2D scissor = {};
+    scissor.offset.x = 0;
+    scissor.offset.y = 0;
+    scissor.extent.width = m_DrawExtent.width;
+    scissor.extent.height = m_DrawExtent.height;
+
+    vkCmdSetScissor(cmd, 0, 1, &scissor);
+
+    vkCmdDraw(cmd, 3, 1, 0, 0);
 
     vkCmdEndRendering(cmd);
 }

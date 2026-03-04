@@ -179,3 +179,24 @@ VkRenderingInfo VKInit::renderingInfo(VkExtent2D extent, VkRenderingAttachmentIn
 
     return info;
 }
+
+VkPipelineShaderStageCreateInfo VKInit::pipelineShaderStageCreateInfo(VkShaderStageFlagBits flagBits,
+    VkShaderModule shaderModule) {
+
+    VkPipelineShaderStageCreateInfo info{};
+
+    info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    info.pNext = nullptr;
+    info.stage = flagBits;
+    info.module = shaderModule;
+    info.pName = "main";
+
+    return info;
+}
+
+VkPipelineLayoutCreateInfo VKInit::pipelineLayoutCreateInfo() {
+    VkPipelineLayoutCreateInfo info{};
+    info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    info.pNext = nullptr;
+    return info;
+}
