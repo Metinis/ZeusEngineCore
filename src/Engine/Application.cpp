@@ -22,14 +22,16 @@ Application::~Application() {
 
 void Application::init() {
     m_Window = std::make_unique<Window>("Zeus Editor");
-#ifdef USE_VULKAN
-    m_VKRenderer = std::make_unique<VKRenderer>();
-#endif
+
     m_LayerStack = std::make_unique<LayerStack>();
     Project::createNew();
 
     m_Engine = std::make_unique<ZEngine>();
     m_Engine->init();
+
+#ifdef USE_VULKAN
+    m_VKRenderer = std::make_unique<VKRenderer>();
+#endif
 
     m_Window->attachDispatcher();
 

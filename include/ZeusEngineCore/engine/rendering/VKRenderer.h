@@ -7,9 +7,12 @@
 #include "imgui_impl_vulkan.h"
 #include "../../../../src/Systems/Renderer/Vulkan/VKDescriptors.h"
 #include "../../../../src/Systems/Renderer/Vulkan/VKImages.h"
+#include "../../../../src/Systems/Renderer/Vulkan/VKTypes.h"
 
 
 namespace ZEN {
+    struct MeshData;
+
     struct DeletionQueue {
         std::deque<std::function<void()>> deletors{};
 
@@ -58,11 +61,15 @@ namespace ZEN {
         void initPipelines();
         void initBackgroundPipeline();
         void initSampler();
-        void initTrianglePipeline();
+        void initMeshPipeline();
 
         void createSwapChain(uint32_t width, uint32_t height);
         void recreateSwapChain();
         void destroySwapChain();
+
+        AllocatedBuffer createBuffer(size_t allocSize, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage);
+        void destroyBuffer(const AllocatedBuffer& buffer);
+        GPUMeshBuffers uploadMesh(const MeshData& mesh);
 
         DeletionQueue m_DeletionQueue{};
 
@@ -106,8 +113,8 @@ namespace ZEN {
         VkDescriptorSet m_ImGuiDescriptorSet{};
         VkSampler m_Sampler{};
 
-        VkPipelineLayout m_TrianglePipelineLayout{};
-        VkPipeline m_TrianglePipeline{};
+        VkPipelineLayout m_MeshPipelineLayout{};
+        VkPipeline m_MeshPipeline{};
 
         bool m_Initialized{};
     };
