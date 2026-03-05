@@ -6,82 +6,85 @@
 #include "ZeusEngineCore/core/InputEvents.h"
 #include "ZeusEngineCore/input/KeyCodes.h"
 #include "ZeusEngineCore/input/MouseCodes.h"
-
 using namespace ZEN;
 
-CameraSystem::CameraSystem() : m_Scene(&Application::get().getEngine()->getScene()){
-
-
+CameraSystem::CameraSystem() : m_Scene(&Application::get().getEngine()->getScene()) {
 }
 
 void CameraSystem::onUpdate(float deltaTime) {
     if (m_PlayMode || m_UseMainCamera) {
         auto gameCamView = m_Scene->getEntities<CameraComp>();
 
-        for (auto entity : gameCamView) {
+        for (auto entity: gameCamView) {
             auto &camera = entity.getComponent<CameraComp>();
             camera.aspect = m_AspectRatio;
             camera.projection = glm::perspective(camera.fov, camera.aspect, camera.near, camera.far);
+            auto &transform = entity.getComponent<TransformComp>();
+            m_CurrentVP = camera.projection * transform.getViewMatrix();
+
         }
         return;
     }
     auto view = m_Scene->getEntities<SceneCameraComp>();
 
-    for (auto entity : view) {
+    for (auto entity: view) {
         auto &camera = entity.getComponent<SceneCameraComp>();
 
         //update position if has transform
-        if (auto *transform = entity.tryGetComponent<TransformComp>()) {
-            glm::vec3 front = transform->getFrontWorld();
-            glm::vec3 right = glm::normalize(glm::cross(front, glm::vec3(0.0f,1.0f,0.0f)));
-            glm::vec3 up = glm::normalize(glm::cross(right, front));
+        auto transform = entity.getComponent<TransformComp>();
+        glm::vec3 front = transform.getFrontWorld();
+        glm::vec3 right = glm::normalize(glm::cross(front, glm::vec3(0.0f, 1.0f, 0.0f)));
+        glm::vec3 up = glm::normalize(glm::cross(right, front));
 
-            glm::vec3 moveVec = {};
-            if (m_KeysDown.contains(Key::W)) moveVec += front;
-            if (m_KeysDown.contains(Key::S)) moveVec -= front;
-            if (m_KeysDown.contains(Key::A)) moveVec -= right;
-            if (m_KeysDown.contains(Key::D)) moveVec += right;
-            if (m_KeysDown.contains(Key::Space)) moveVec += up;
-            if (m_KeysDown.contains(Key::LeftShift)) moveVec -= up;
+        glm::vec3 moveVec = {};
+        if (m_KeysDown.contains(Key::W)) moveVec += front;
+        if (m_KeysDown.contains(Key::S)) moveVec -= front;
+        if (m_KeysDown.contains(Key::A)) moveVec -= right;
+        if (m_KeysDown.contains(Key::D)) moveVec += right;
+        if (m_KeysDown.contains(Key::Space)) moveVec += up;
+        if (m_KeysDown.contains(Key::LeftShift)) moveVec -= up;
 
-            if (glm::length(moveVec) > 0.0f) {
-                glm::vec3 toMove = glm::normalize(moveVec) * deltaTime * m_MoveSpeed;
-                if(m_KeysDown.contains(Key::LeftControl)) {
-                    toMove /= 4;
-                }
-                transform->localPosition += toMove;
+        if (glm::length(moveVec) > 0.0f) {
+            glm::vec3 toMove = glm::normalize(moveVec) * deltaTime * m_MoveSpeed;
+            if (m_KeysDown.contains(Key::LeftControl)) {
+                toMove /= 4;
             }
-            if(m_CursorLocked) {
-                constexpr float sensitivity = 0.1f;
-                float xOffset = m_CursorPosX - m_CursorPosLastX;
-                float yOffset = m_CursorPosY - m_CursorPosLastY;
+            transform.localPosition += toMove;
+        }
+        if (m_CursorLocked) {
+            constexpr float sensitivity = 0.1f;
+            float xOffset = m_CursorPosX - m_CursorPosLastX;
+            float yOffset = m_CursorPosY - m_CursorPosLastY;
 
-                xOffset *= sensitivity;
-                yOffset *= sensitivity;
+            xOffset *= sensitivity;
+            yOffset *= sensitivity;
 
-                glm::quat yaw = glm::angleAxis(glm::radians(-xOffset), glm::vec3(0.0f, 1.0f, 0.0f));
-                glm::quat pitch = glm::angleAxis(glm::radians(-yOffset), right);
+            glm::quat yaw = glm::angleAxis(glm::radians(-xOffset), glm::vec3(0.0f, 1.0f, 0.0f));
+            glm::quat pitch = glm::angleAxis(glm::radians(-yOffset), right);
 
-                transform->localRotation = glm::normalize(yaw * pitch * transform->localRotation);
+            transform.localRotation = glm::normalize(yaw * pitch * transform.localRotation);
 
-                m_CursorPosLastX = m_CursorPosX;
-                m_CursorPosLastY = m_CursorPosY;
-            }
+            m_CursorPosLastX = m_CursorPosX;
+            m_CursorPosLastY = m_CursorPosY;
         }
         camera.aspect = m_AspectRatio;
         camera.projection = glm::perspective(camera.fov, camera.aspect, camera.near, camera.far);
+        m_CurrentVP = camera.projection * transform.getViewMatrix();
     }
 }
 
 void CameraSystem::onEvent(Event &event) {
     EventDispatcher dispatcher(event);
-    dispatcher.dispatch<KeyPressedEvent>([this](KeyPressedEvent& e) {return onKeyPressed(e); });
-    dispatcher.dispatch<KeyReleasedEvent>([this](KeyReleasedEvent& e) {return onKeyReleased(e); });
-    dispatcher.dispatch<MouseButtonPressedEvent>([this](MouseButtonPressedEvent& e) {return onMouseButtonPressed(e); });
-    dispatcher.dispatch<MouseButtonReleasedEvent>([this](MouseButtonReleasedEvent& e) {return onMouseButtonReleased(e); });
-    dispatcher.dispatch<MouseMovedEvent>([this](MouseMovedEvent& e) {return onMouseMove(e); });
-    dispatcher.dispatch<RunPlayModeEvent>([this](RunPlayModeEvent& e) {return onPlayMode(e); });
-
+    dispatcher.dispatch<KeyPressedEvent>([this](KeyPressedEvent &e) { return onKeyPressed(e); });
+    dispatcher.dispatch<KeyReleasedEvent>([this](KeyReleasedEvent &e) { return onKeyReleased(e); });
+    dispatcher.dispatch<MouseButtonPressedEvent>([this](MouseButtonPressedEvent &e) {
+        return onMouseButtonPressed(e);
+    });
+    dispatcher.dispatch<MouseButtonReleasedEvent>([this](MouseButtonReleasedEvent &e) {
+        return onMouseButtonReleased(e);
+    });
+    dispatcher.dispatch<MouseMovedEvent>([this](MouseMovedEvent &e) { return onMouseMove(e); });
+    dispatcher.dispatch<RunPlayModeEvent>([this](RunPlayModeEvent &e) { return onPlayMode(e); });
 }
 
 bool CameraSystem::onPlayMode(RunPlayModeEvent &e) {
@@ -104,7 +107,7 @@ bool CameraSystem::onKeyReleased(const KeyReleasedEvent &e) {
 }
 
 bool CameraSystem::onMouseButtonPressed(const MouseButtonPressedEvent &e) {
-    if(e.getKeyCode() == Mouse::Button::ButtonRight && !m_PlayMode) {
+    if (e.getKeyCode() == Mouse::Button::ButtonRight && !m_PlayMode) {
         Application::get().getWindow()->setCursorLock(true, m_CursorPosX, m_CursorPosY);
         m_CursorLocked = true;
         m_CursorPosLastX = m_CursorPosX;
@@ -114,7 +117,7 @@ bool CameraSystem::onMouseButtonPressed(const MouseButtonPressedEvent &e) {
 }
 
 bool CameraSystem::onMouseButtonReleased(const MouseButtonReleasedEvent &e) {
-    if(e.getKeyCode() == Mouse::Button::ButtonRight && !m_PlayMode) {
+    if (e.getKeyCode() == Mouse::Button::ButtonRight && !m_PlayMode) {
         Application::get().getWindow()->setCursorLock(false, m_CursorPosX, m_CursorPosY);
         m_CursorLocked = false;
     }

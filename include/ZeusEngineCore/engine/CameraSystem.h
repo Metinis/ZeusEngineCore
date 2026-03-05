@@ -1,4 +1,5 @@
 #pragma once
+#include "glm/mat4x4.hpp"
 #include "ZeusEngineCore/core/Layer.h"
 #include "ZeusEngineCore/core/InputEvents.h"
 
@@ -14,6 +15,7 @@ namespace ZEN {
         void setAspectRatio(float aspectRatio) { m_Resized = true; m_AspectRatio = aspectRatio; }
         void setUseMainCamera(bool useMainCamera) { m_UseMainCamera = useMainCamera; }
         bool getUseMainCamera() { return m_UseMainCamera; }
+        glm::mat4 getVP() const {return m_CurrentVP;}
     private:
         bool onPlayMode(RunPlayModeEvent& e);
         bool onKeyPressed(const KeyPressedEvent& e);
@@ -24,6 +26,7 @@ namespace ZEN {
         bool onMouseButtonReleased(const MouseButtonReleasedEvent& e);
         bool onMouseMove(const MouseMovedEvent& e);
 
+        glm::mat4 m_CurrentVP{};
         float m_AspectRatio{};
         float m_MoveSpeed{5.0f};
         double m_CursorPosLastX{};

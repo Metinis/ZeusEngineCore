@@ -7,6 +7,7 @@
 #define VMA_IMPLEMENTATION
 #include <vma/vk_mem_alloc.h>
 #include "VKPipelines.h"
+#include "ZeusEngineCore/engine/CameraSystem.h"
 #include "ZeusEngineCore/engine/rendering/VKUtils.h"
 #define IMGUI_IMG;
 
@@ -72,6 +73,8 @@ void VKRenderer::draw() {
     drawBackground(cmd);
     VKImages::transitionImage(cmd, m_DrawImage.image,
         VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+     VKImages::transitionImage(cmd, m_DepthImage.image, VK_IMAGE_LAYOUT_UNDEFINED,
+         VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
     drawGeometry(cmd);
 
 }
@@ -284,11 +287,25 @@ void VKRenderer::initSwapChain() {
 
     VK_CHECK(vkCreateImageView(m_Device, &rViewInfo, nullptr, &m_DrawImage.imageView));
 
+    m_DepthImage.imageFormat = VK_FORMAT_D32_SFLOAT;
+    m_DepthImage.imageExtent = drawImageExtent;
+    VkImageUsageFlags depthImageUsages{};
+    depthImageUsages |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+    VkImageCreateInfo depthImageInfo = VKInit::imageCreateInfo(m_DepthImage.imageFormat, depthImageUsages, drawImageExtent);
+    vmaCreateImage(m_Allocator, &depthImageInfo, &rImgAllocationCreateInfo, &m_DepthImage.image,
+        &m_DepthImage.allocation, nullptr);
 
+    VkImageViewCreateInfo depthViewInfo = VKInit::imageViewCreateInfo(m_DepthImage.image,
+        m_DepthImage.imageFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+
+    VK_CHECK(vkCreateImageView(m_Device, &depthViewInfo, nullptr, &m_DepthImage.imageView));
 
     m_DeletionQueue.pushFunction([=]() {
         vkDestroyImageView(m_Device, m_DrawImage.imageView, nullptr);
         vmaDestroyImage(m_Allocator, m_DrawImage.image, m_DrawImage.allocation);
+
+        vkDestroyImageView(m_Device, m_DepthImage.imageView, nullptr);
+        vmaDestroyImage(m_Allocator, m_DepthImage.image, m_DepthImage.allocation);
     });
 }
 
@@ -460,9 +477,10 @@ void VKRenderer::initMeshPipeline() {
     builder.setCullMode(VK_CULL_MODE_NONE, VK_FRONT_FACE_CLOCKWISE);
     builder.setMultiSamplingNone();
     builder.disableBlending();
-    builder.disableDepthTest();
+    //builder.disableDepthTest();
     builder.setColorAttachmentFormat(m_DrawImage.imageFormat);
-    builder.setDepthFormat(VK_FORMAT_UNDEFINED);
+    builder.enableDepthTest(true, VK_COMPARE_OP_GREATER_OR_EQUAL);
+    builder.setDepthFormat(m_DepthImage.imageFormat);
 
     m_MeshPipeline = builder.buildPipeline(m_Device);
 
@@ -487,10 +505,12 @@ void VKRenderer::drawImgui(VkCommandBuffer cmd, VkImageView targetImageView) {
 }
 
 void VKRenderer::drawGeometry(VkCommandBuffer cmd) {
-    VkRenderingAttachmentInfo renderingAttInfo = VKInit::attachmentInfo(m_DrawImage.imageView
+    VkRenderingAttachmentInfo colorAttInfo = VKInit::attachmentInfo(m_DrawImage.imageView
         , nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    VkRenderingAttachmentInfo depthAttInfo = VKInit::depthAttachmentInfo(m_DepthImage.imageView
+        , VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
     VkRenderingInfo renderInfo = VKInit::renderingInfo(m_DrawExtent,
-        &renderingAttInfo, nullptr);
+        &colorAttInfo, &depthAttInfo);
     vkCmdBeginRendering(cmd, &renderInfo);
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_MeshPipeline);
 
@@ -513,13 +533,13 @@ void VKRenderer::drawGeometry(VkCommandBuffer cmd) {
     vkCmdSetScissor(cmd, 0, 1, &scissor);
 
     GPUDrawPushConstants push_constants;
-    push_constants.worldMatrix = glm::mat4{ 1.f };
+    push_constants.worldMatrix = Application::get().getEngine()->getCameraSystem().getVP();
     push_constants.vertexBuffer = cube.vertexBufferAddress;
 
     vkCmdPushConstants(cmd, m_MeshPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
     vkCmdBindIndexBuffer(cmd, cube.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
 
-    vkCmdDrawIndexed(cmd, 6, 1, 0, 0, 0);
+    vkCmdDrawIndexed(cmd, 36, 1, 0, 0, 0);
 
     vkCmdEndRendering(cmd);
 }

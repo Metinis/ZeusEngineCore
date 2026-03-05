@@ -93,9 +93,9 @@ void Scene::createDefaultScene() {
     cubeEntity.addComponent<BoxColliderComp>();
     cubeEntity.addComponent<RigidBodyComp>();
 
-    auto skyboxEntity = createEntity("Skybox");
-    skyboxEntity.addComponent<SkyboxComp>();
-    skyboxEntity.addComponent<MeshComp>(AssetHandle<MeshData>(defaultSkyboxID));
+    //auto skyboxEntity = createEntity("Skybox");
+    //skyboxEntity.addComponent<SkyboxComp>();
+    //skyboxEntity.addComponent<MeshComp>(AssetHandle<MeshData>(defaultSkyboxID));
 }
 
 void Scene::onCollisionEnter(Entity a, Entity b, glm::vec3 contactNormal) {

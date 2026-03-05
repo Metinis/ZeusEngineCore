@@ -22,5 +22,7 @@ namespace ZEN {
             VkRenderingAttachmentInfo* depthAttachmentInfo);
         static VkPipelineShaderStageCreateInfo pipelineShaderStageCreateInfo(VkShaderStageFlagBits flagBits, VkShaderModule shaderModule);
         static VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo();
+        static VkRenderingAttachmentInfo depthAttachmentInfo(VkImageView view, VkImageLayout layout);
+
     };
 }

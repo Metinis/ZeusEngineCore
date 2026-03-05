@@ -31,6 +31,7 @@ namespace ZEN {
         void setColorAttachmentFormat(VkFormat colorAttachmentFormat);
         void setDepthFormat(VkFormat format);
         void disableDepthTest();
+        void enableDepthTest(bool depthWriteEnable, VkCompareOp op);
     };
 }
 

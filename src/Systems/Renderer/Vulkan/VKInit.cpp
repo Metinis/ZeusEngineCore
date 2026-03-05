@@ -153,6 +153,22 @@ VkRenderingAttachmentInfo VKInit::attachmentInfo(VkImageView view, VkClearValue 
     if (clear) {
         info.clearValue = *clear;
     }
+    if (layout == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL) {
+        info.clearValue.depthStencil.depth = 0.0f;
+    }
+
+    return info;
+}
+VkRenderingAttachmentInfo VKInit::depthAttachmentInfo(VkImageView view, VkImageLayout layout) {
+    VkRenderingAttachmentInfo info{};
+    info.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+    info.pNext = nullptr;
+
+    info.imageView = view;
+    info.imageLayout = layout;
+    info.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    info.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    info.clearValue.depthStencil.depth = 0.0f;
 
     return info;
 }
