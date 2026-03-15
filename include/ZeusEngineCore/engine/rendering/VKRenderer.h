@@ -34,6 +34,15 @@ namespace ZEN {
         VkSemaphore m_RenderSemaphore{}; //presenting image to OS after drawing
         VkFence m_Fence{}; //wait for commands for a frame to finish
         DeletionQueue m_DeletionQueue{};
+        DescriptorAllocatorGrowable m_FrameDescriptors;
+    };
+    struct GPUSceneData {
+        glm::mat4 view;
+        glm::mat4 proj;
+        glm::mat4 viewproj;
+        glm::vec4 ambientColor;
+        glm::vec4 sunlightDirection; // w for sun power
+        glm::vec4 sunlightColor;
     };
     constexpr unsigned int FRAME_OVERLAP = 3;
 
@@ -116,6 +125,9 @@ namespace ZEN {
 
         VkPipelineLayout m_MeshPipelineLayout{};
         VkPipeline m_MeshPipeline{};
+
+        GPUSceneData m_SceneData;
+        VkDescriptorSetLayout m_GpuSceneDataDescriptorLayout;
 
         bool m_Initialized{};
     };

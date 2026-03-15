@@ -9,7 +9,7 @@
 #include "VKPipelines.h"
 #include "ZeusEngineCore/engine/CameraSystem.h"
 #include "ZeusEngineCore/engine/rendering/VKUtils.h"
-#define IMGUI_IMG;
+#define IMGUI_IMG
 
 using namespace ZEN;
 
@@ -39,6 +39,7 @@ static uint32_t swapChainImageIndex{};
 void VKRenderer::beginFrame() {
     VK_CHECK(vkWaitForFences(m_Device, 1, &getCurrentFrame().m_Fence, true, 1000000000));
     getCurrentFrame().m_DeletionQueue.flush();
+    getCurrentFrame().m_FrameDescriptors.clearPools(m_Device);
     VK_CHECK(vkResetFences(m_Device, 1, &getCurrentFrame().m_Fence));
 
     auto result = vkAcquireNextImageKHR(m_Device, m_SwapChain, 1000000000, getCurrentFrame().m_SwapChainSemaphore,
@@ -380,6 +381,27 @@ void VKRenderer::initDescriptors() {
         m_GlobalDescriptorAllocator.destroyPool(m_Device);
         vkDestroyDescriptorSetLayout(m_Device, m_DrawImageDescriptorLayout, nullptr);
     });
+
+    for (int i{}; i < FRAME_OVERLAP; ++i) {
+        std::vector<DescriptorAllocatorGrowable::PoolSizeRatio> frameSizes {
+                { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 3 },
+                { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 3 },
+                { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 3 },
+                { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 4 },
+        };
+        m_Frames[i].m_FrameDescriptors = DescriptorAllocatorGrowable{};
+        m_Frames[i].m_FrameDescriptors.init(m_Device, 1000, frameSizes);
+        m_DeletionQueue.pushFunction([&, i]() {
+            m_Frames[i].m_FrameDescriptors.destroyPools(m_Device);
+        });
+    }
+    {
+        DescriptorLayoutBuilder builder;
+        builder.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+        m_GpuSceneDataDescriptorLayout = builder.build(m_Device,
+            VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT );
+    }
+
 }
 
 void VKRenderer::initPipelines() {
@@ -476,6 +498,7 @@ void VKRenderer::initMeshPipeline() {
     builder.setPolygonMode(VK_POLYGON_MODE_FILL);
     builder.setCullMode(VK_CULL_MODE_NONE, VK_FRONT_FACE_CLOCKWISE);
     builder.setMultiSamplingNone();
+    //builder.enableBlendingAdditive();
     builder.disableBlending();
     //builder.disableDepthTest();
     builder.setColorAttachmentFormat(m_DrawImage.imageFormat);
@@ -505,6 +528,25 @@ void VKRenderer::drawImgui(VkCommandBuffer cmd, VkImageView targetImageView) {
 }
 
 void VKRenderer::drawGeometry(VkCommandBuffer cmd) {
+    //create new uniform buff for scene data
+    AllocatedBuffer gpuSceneDataBuffer = createBuffer(sizeof(GPUSceneData),
+        VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
+    getCurrentFrame().m_DeletionQueue.pushFunction([=, this]() {
+        destroyBuffer(gpuSceneDataBuffer);
+    });
+
+    //write to buffer
+    GPUSceneData* sceneUniformData = (GPUSceneData*)gpuSceneDataBuffer.allocation->GetMappedData();
+    *sceneUniformData = m_SceneData;
+    //create descriptor set that binds this buffer and updates it
+    VkDescriptorSet globalDescriptor = getCurrentFrame().m_FrameDescriptors.
+    allocate(m_Device, m_GpuSceneDataDescriptorLayout);
+
+    DescriptorWriter writer;
+    writer.writeBuffer(0, gpuSceneDataBuffer.buffer,
+        sizeof(GPUSceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+    writer.updateSet(m_Device, globalDescriptor);
+
     VkRenderingAttachmentInfo colorAttInfo = VKInit::attachmentInfo(m_DrawImage.imageView
         , nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
     VkRenderingAttachmentInfo depthAttInfo = VKInit::depthAttachmentInfo(m_DepthImage.imageView
@@ -532,11 +574,11 @@ void VKRenderer::drawGeometry(VkCommandBuffer cmd) {
 
     vkCmdSetScissor(cmd, 0, 1, &scissor);
 
-    GPUDrawPushConstants push_constants;
-    push_constants.worldMatrix = Application::get().getEngine()->getCameraSystem().getVP();
-    push_constants.vertexBuffer = cube.vertexBufferAddress;
+    GPUDrawPushConstants pushConstants;
+    pushConstants.worldMatrix = Application::get().getEngine()->getCameraSystem().getVP();
+    pushConstants.vertexBuffer = cube.vertexBufferAddress;
 
-    vkCmdPushConstants(cmd, m_MeshPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
+    vkCmdPushConstants(cmd, m_MeshPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &pushConstants);
     vkCmdBindIndexBuffer(cmd, cube.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
 
     vkCmdDrawIndexed(cmd, 36, 1, 0, 0, 0);
@@ -608,7 +650,7 @@ ImGui_ImplVulkan_InitInfo VKRenderer::initImgui() {
         VK_IMAGE_LAYOUT_GENERAL
     );
 
-    m_DeletionQueue.pushFunction([=]() {
+    m_DeletionQueue.pushFunction([this, imguiPool]() {
         ImGui_ImplVulkan_Shutdown();
         vkDestroyDescriptorPool(m_Device, imguiPool, nullptr);
 

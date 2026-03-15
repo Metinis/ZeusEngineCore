@@ -28,6 +28,8 @@ namespace ZEN {
         void setCullMode(VkCullModeFlags cullMode, VkFrontFace frontFace);
         void setMultiSamplingNone();
         void disableBlending();
+        void enableBlendingAdditive();
+        void enableBlendingAlpha();
         void setColorAttachmentFormat(VkFormat colorAttachmentFormat);
         void setDepthFormat(VkFormat format);
         void disableDepthTest();
