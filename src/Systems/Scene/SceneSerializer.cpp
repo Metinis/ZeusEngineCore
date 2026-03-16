@@ -347,10 +347,11 @@ bool SceneSerializer::deserialize(const std::string &path) {
             auto runtimeComps = entity["RuntimeComponents"];
             if (runtimeComps && runtimeComps.IsMap()) {
                 for (auto it = runtimeComps.begin(); it != runtimeComps.end(); ++it) {
-                    const auto &compName = it->first.as<std::string>();
-                    const auto &compNode = it->second;
+                    const std::string compName = (*it).first.as<std::string>();
+                    const YAML::Node compNode = (*it).second;
 
-                    if (!compNode.IsMap()) continue;
+                    if (!compNode.IsMap())
+                        continue;
 
                     for (const auto &comp: Application::get().getEngine()->getCompRegistry().getComponents()) {
                         if (comp.name != compName) continue;
