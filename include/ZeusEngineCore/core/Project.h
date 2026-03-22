@@ -6,6 +6,7 @@ namespace ZEN {
     public:
         static Project* getActive() { return s_ActiveProject.get(); }
         static Project* createNew();
+        static void shutdown();
         void init(const std::string& projectRoot);
         std::shared_ptr<AssetLibrary> getAssetLibrary() { return m_AssetLibrary; }
         [[nodiscard]] std::string getActiveProjectRoot() const { return m_ProjectRoot; }

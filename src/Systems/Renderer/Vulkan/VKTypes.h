@@ -14,6 +14,7 @@ namespace ZEN {
         AllocatedBuffer indexBuffer{};
         AllocatedBuffer vertexBuffer{};
         VkDeviceAddress vertexBufferAddress{};
+        uint32_t indexCount{};
     };
     struct GPUDrawPushConstants {
         glm::mat4 worldMatrix{};

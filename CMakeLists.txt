@@ -128,6 +128,13 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(fetch_vk_bootstrap)
 
+FetchContent_Declare(
+        spdlog
+        GIT_REPOSITORY https://github.com/gabime/spdlog
+        GIT_TAG v1.17.0
+)
+FetchContent_MakeAvailable(spdlog)
+
 
 target_link_libraries(ZeusEngineCore
         PRIVATE
@@ -141,6 +148,7 @@ target_link_libraries(ZeusEngineCore
         tinyfd
         Vulkan::Vulkan
         vk-bootstrap::vk-bootstrap
+        spdlog::spdlog
 )
 
 if(APPLE)

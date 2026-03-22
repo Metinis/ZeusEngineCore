@@ -18,20 +18,24 @@ Application::Application() {
 }
 
 Application::~Application() {
+    Project::shutdown();
 }
 
 void Application::init() {
+    spdlog::set_level(spdlog::level::debug);
     m_Window = std::make_unique<Window>("Zeus Editor");
 
     m_LayerStack = std::make_unique<LayerStack>();
     Project::createNew();
 
-    m_Engine = std::make_unique<ZEngine>();
-    m_Engine->init();
-
 #ifdef USE_VULKAN
     m_VKRenderer = std::make_unique<VKRenderer>();
 #endif
+
+    m_Engine = std::make_unique<ZEngine>();
+    m_Engine->init();
+
+
 
     m_Window->attachDispatcher();
 

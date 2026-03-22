@@ -7,6 +7,10 @@ Project* Project::createNew() {
     return s_ActiveProject.get();
 }
 
+void Project::shutdown() {
+    s_ActiveProject.reset();
+}
+
 constexpr std::filesystem::path getEngineDLLPath() {
     std::filesystem::path exePath = std::filesystem::current_path();
 #ifdef _WIN32

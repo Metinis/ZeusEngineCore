@@ -27,10 +27,12 @@ namespace ZEN {
 		Scene();
 		~Scene();
 		void onUpdate(float dt) override;
+		void onRender() override;
 		void createDefaultScene();
 		void onCollisionEnter(Entity a, Entity b, glm::vec3 contactNormal = {});
 		void onCollisionStay(Entity a, Entity b, glm::vec3 contactNormal = {});
 		void onCollisionExit(Entity a, Entity b, glm::vec3 contactNormal = {});
+		std::vector<Entity> getDrawEntities();
 		Entity createEntity(const std::string& name = "");
 		Entity createEntity(const std::string& name, UUID id);
 		Entity getEntity(UUID id);

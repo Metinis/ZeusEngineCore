@@ -32,7 +32,7 @@ namespace ZEN {
         AssetHandle<MeshData> handle;
     };
     struct MeshDrawableComp {
-        AssetHandle<GPUMesh> handle;
+        //AssetHandle<GPUMesh> handle;
     };
     struct MaterialComp {
         AssetHandle<Material> handle;

@@ -8,6 +8,8 @@
 #include "../../../../src/Systems/Renderer/Vulkan/VKDescriptors.h"
 #include "../../../../src/Systems/Renderer/Vulkan/VKImages.h"
 #include "../../../../src/Systems/Renderer/Vulkan/VKTypes.h"
+#include "ZeusEngineCore/asset/AssetTypes.h"
+
 
 
 namespace ZEN {
@@ -53,11 +55,15 @@ namespace ZEN {
         void beginFrame();
         void draw();
         void endFrame();
+        //will create mapping between assetID and GPU mesh to be used by renderer
+        GPUMeshBuffers uploadMesh(AssetID id, const MeshData& mesh);
+        void deleteMesh(AssetID id);
+        //void createMesh()
         ImGui_ImplVulkan_InitInfo initImgui();
         [[nodiscard]] VkDescriptorSet getImDescSet() const {return m_ImGuiDescriptorSet;}
         void drawBackground(VkCommandBuffer cmd);
         void drawImgui(VkCommandBuffer cmd, VkImageView targetImageView);
-        void drawGeometry(VkCommandBuffer cmd);
+        void drawGeometry(VkCommandBuffer);
         void immediateSubmit(std::function<void(VkCommandBuffer cmd)>&& function);
         void cleanup();
         ~VKRenderer();
@@ -78,7 +84,6 @@ namespace ZEN {
 
         AllocatedBuffer createBuffer(size_t allocSize, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage);
         void destroyBuffer(const AllocatedBuffer& buffer);
-        GPUMeshBuffers uploadMesh(const MeshData& mesh);
 
         DeletionQueue m_DeletionQueue{};
 
@@ -126,8 +131,10 @@ namespace ZEN {
         VkPipelineLayout m_MeshPipelineLayout{};
         VkPipeline m_MeshPipeline{};
 
-        GPUSceneData m_SceneData;
-        VkDescriptorSetLayout m_GpuSceneDataDescriptorLayout;
+        GPUSceneData m_SceneData{};
+        VkDescriptorSetLayout m_GpuSceneDataDescriptorLayout{};
+
+        std::unordered_map<AssetID, GPUMeshBuffers> m_MeshMap{};
 
         bool m_Initialized{};
     };

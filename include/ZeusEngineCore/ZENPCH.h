@@ -19,3 +19,4 @@
 #include <Jolt/Jolt.h>
 #include <deque>
 #include <ranges>
+#include <spdlog/spdlog.h>

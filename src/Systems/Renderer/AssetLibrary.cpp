@@ -6,12 +6,12 @@
 
 using namespace ZEN;
 
-AssetLibrary::AssetLibrary() : m_ResourceManager(Application::get().getEngine()->getRenderer().getResourceManager()) {
+AssetLibrary::AssetLibrary() : m_Renderer(Application::get().getVKRenderer()){
     addAsset<Material>(defaultMaterialID,
         createDefaultMaterial("/shaders/pbr.vert", "/shaders/pbr.frag", ""),
         "Default");
     addAsset<MeshData>(defaultCubeID, createCube(), "Cube");
-    addAsset<MeshData>(defaultSkyboxID, createSkybox(), "Skybox");
+    //addAsset<MeshData>(defaultSkyboxID, createSkybox(), "Skybox");
     addAsset<MeshData>(defaultQuadID, createQuad(), "Quad");
     addAsset<MeshData>(defaultSphereID, createSphere(1.0f, 32, 16), "Sphere");
 
@@ -41,10 +41,13 @@ AssetLibrary::AssetLibrary() : m_ResourceManager(Application::get().getEngine()-
 AssetLibrary::~AssetLibrary() {
     //AssetSerializer serializer(this);
     //serializer.serialize("assets/default.zenpackage");
+    //for (const auto &id: m_AssetMap | std::views::keys) {
+        //remove(id);
+    //}
 }
 
 MaterialRaw AssetLibrary::getMaterialRaw(const Material &material) {
-    AssetHandle<Material> def = defaultMaterialID;
+    /*AssetHandle<Material> def = defaultMaterialID;
     uint32_t shaderID = m_ResourceManager->get<GPUShader>(def->shader)->drawableID;
     if (m_ResourceManager->get<GPUShader>(material.shader)) {
         auto shader = m_ResourceManager->get<GPUShader>(material.shader);
@@ -67,7 +70,7 @@ MaterialRaw AssetLibrary::getMaterialRaw(const Material &material) {
         .useNormal = material.useNormal,
         .useAO = material.useAO,
     };
-    return ret;
+    return ret;*/
 }
 
 MaterialRaw AssetLibrary::getMaterialRaw(const AssetID &material) {

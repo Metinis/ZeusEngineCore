@@ -71,6 +71,11 @@ void Scene::onUpdate(float dt) {
     }
 }
 
+void Scene::onRender() {
+    Layer::onRender();
+
+}
+
 
 void Scene::createDefaultScene() {
     auto dirLightEntity = createEntity("Directional Light");
@@ -108,6 +113,10 @@ void Scene::onCollisionStay(Entity a, Entity b, glm::vec3 contactNormal) {
 
 void Scene::onCollisionExit(Entity a, Entity b, glm::vec3 contactNormal) {
     m_PendingCollisionEvents.emplace_back(CollisionEvent{a, b, contactNormal, CollisionEvent::Type::Exit});
+}
+
+std::vector<Entity> Scene::getDrawEntities() {
+    //return getEntities<MeshComp, TransformComp>();
 }
 
 Entity Scene::createEntity(const std::string& name) {

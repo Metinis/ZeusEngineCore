@@ -8,7 +8,9 @@
 #include <vma/vk_mem_alloc.h>
 #include "VKPipelines.h"
 #include "ZeusEngineCore/engine/CameraSystem.h"
+#include "ZeusEngineCore/engine/Scene.h"
 #include "ZeusEngineCore/engine/rendering/VKUtils.h"
+#include "ZeusEngineCore/engine/Components.h"
 #define IMGUI_IMG
 
 using namespace ZEN;
@@ -16,7 +18,7 @@ using namespace ZEN;
 VKRenderer::VKRenderer() {
     init();
 }
-static GPUMeshBuffers cube;
+//static GPUMeshBuffers cube;
 void VKRenderer::init() {
     initVulkan();
     initSampler();
@@ -26,12 +28,12 @@ void VKRenderer::init() {
     initDescriptors();
     initPipelines();
 
-    const auto* mesh = Project::getActive()->getAssetLibrary()->get<MeshData>(ZEN::defaultCubeID);
-    cube = uploadMesh(*mesh);
+    /*const auto* mesh = Project::getActive()->getAssetLibrary()->get<MeshData>(ZEN::defaultCubeID);
+    cube = uploadMesh(ZEN::defaultCubeID, *mesh);
     m_DeletionQueue.pushFunction([&] {
         destroyBuffer(cube.indexBuffer);
         destroyBuffer(cube.vertexBuffer);
-    });
+    });*/
     m_Initialized = true;
 }
 
@@ -170,7 +172,12 @@ void VKRenderer::cleanup() {
             vkDestroySemaphore(m_Device, m_Frames[i].m_SwapChainSemaphore, nullptr);
             m_Frames[i].m_DeletionQueue.flush();
         }
+        for (auto &buf: m_MeshMap | std::views::values) {
+            destroyBuffer(buf.indexBuffer);
+            destroyBuffer(buf.vertexBuffer);
+        }
         m_DeletionQueue.flush();
+
         destroySwapChain();
 
         vkDestroySurfaceKHR(m_Instance, m_Surface, nullptr);
@@ -400,6 +407,9 @@ void VKRenderer::initDescriptors() {
         builder.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
         m_GpuSceneDataDescriptorLayout = builder.build(m_Device,
             VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT );
+        m_DeletionQueue.pushFunction([&]() {
+            vkDestroyDescriptorSetLayout(m_Device, m_GpuSceneDataDescriptorLayout, nullptr);
+        });
     }
 
 }
@@ -536,7 +546,7 @@ void VKRenderer::drawGeometry(VkCommandBuffer cmd) {
     });
 
     //write to buffer
-    GPUSceneData* sceneUniformData = (GPUSceneData*)gpuSceneDataBuffer.allocation->GetMappedData();
+    auto* sceneUniformData = (GPUSceneData*)gpuSceneDataBuffer.allocation->GetMappedData();
     *sceneUniformData = m_SceneData;
     //create descriptor set that binds this buffer and updates it
     VkDescriptorSet globalDescriptor = getCurrentFrame().m_FrameDescriptors.
@@ -558,9 +568,9 @@ void VKRenderer::drawGeometry(VkCommandBuffer cmd) {
 
     VkViewport viewport = {};
     viewport.x = 0;
-    viewport.y = 0;
+    viewport.y = m_DrawExtent.height;
     viewport.width = m_DrawExtent.width;
-    viewport.height = m_DrawExtent.height;
+    viewport.height = -(float)(m_DrawExtent.height);
     viewport.minDepth = 0.0f;
     viewport.maxDepth = 1.0f;
 
@@ -575,13 +585,24 @@ void VKRenderer::drawGeometry(VkCommandBuffer cmd) {
     vkCmdSetScissor(cmd, 0, 1, &scissor);
 
     GPUDrawPushConstants pushConstants;
-    pushConstants.worldMatrix = Application::get().getEngine()->getCameraSystem().getVP();
-    pushConstants.vertexBuffer = cube.vertexBufferAddress;
 
-    vkCmdPushConstants(cmd, m_MeshPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &pushConstants);
-    vkCmdBindIndexBuffer(cmd, cube.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
+    //todo -> need to find out model matrix per mesh from ecs
+    //this should be per entity with mesh
+    for (auto entity : Application::get().getEngine()->getScene().getEntities<TransformComp, MeshComp>()) {
+        auto meshID = entity.getComponent<MeshComp>().handle.id();
+        //if (m_MeshMap[meshID])
+        auto buf = m_MeshMap[meshID];
 
-    vkCmdDrawIndexed(cmd, 36, 1, 0, 0, 0);
+        auto model = entity.getComponent<TransformComp>().worldMatrix;
+        pushConstants.worldMatrix = Application::get().getEngine()->getCameraSystem().getVP() * model;
+
+        pushConstants.vertexBuffer = buf.vertexBufferAddress;
+
+        vkCmdPushConstants(cmd, m_MeshPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &pushConstants);
+        vkCmdBindIndexBuffer(cmd, buf.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
+
+        vkCmdDrawIndexed(cmd, buf.indexCount, 1, 0, 0, 0);
+    }
 
     vkCmdEndRendering(cmd);
 }
@@ -720,7 +741,13 @@ void VKRenderer::destroyBuffer(const AllocatedBuffer &buffer) {
     vmaDestroyBuffer(m_Allocator, buffer.buffer, buffer.allocation);
 }
 
-GPUMeshBuffers VKRenderer::uploadMesh(const MeshData &mesh) {
+GPUMeshBuffers VKRenderer::uploadMesh(AssetID id, const MeshData &mesh) {
+
+    if (m_MeshMap.find(id) != m_MeshMap.end()) {
+        spdlog::warn("AssetID already exists in GPU, overwriting..");
+        deleteMesh(id);
+    }
+
     const size_t vertexBufferSize = mesh.vertices.size() * sizeof(Vertex);
     const size_t indexBufferSize = mesh.indices.size() * sizeof(uint32_t);
 
@@ -767,7 +794,25 @@ GPUMeshBuffers VKRenderer::uploadMesh(const MeshData &mesh) {
         vkCmdCopyBuffer(cmd, staging.buffer,
             newSurface.indexBuffer.buffer, 1, &indexCopy);
     });
+    newSurface.indexCount = mesh.indices.size();
 
     destroyBuffer(staging);
+    m_MeshMap[id] = newSurface;
+
+    spdlog::debug("Created GPU Mesh ID: {} of index count: {}", (uint64_t)id, newSurface.indexCount);
     return newSurface;
+}
+
+void VKRenderer::deleteMesh(AssetID id) {
+    if (m_MeshMap.find(id) != m_MeshMap.end()) {
+        auto meshBuf = m_MeshMap[id];
+        getCurrentFrame().m_DeletionQueue.pushFunction([=]() {
+            destroyBuffer(meshBuf.indexBuffer);
+            destroyBuffer(meshBuf.vertexBuffer);
+        });
+        m_MeshMap.erase(id);
+        spdlog::debug("Deleted GPU Mesh ID: {}", (uint64_t)id);
+        return;
+    }
+    spdlog::error("Attempt to delete non-existing GPU Mesh! ID: {}", (uint64_t)id);
 }
