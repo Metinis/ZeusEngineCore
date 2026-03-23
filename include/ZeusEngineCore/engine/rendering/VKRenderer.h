@@ -5,9 +5,9 @@
 #include <vma/vk_mem_alloc.h>
 
 #include "imgui_impl_vulkan.h"
-#include "../../../../src/Systems/Renderer/Vulkan/VKDescriptors.h"
-#include "../../../../src/Systems/Renderer/Vulkan/VKImages.h"
-#include "../../../../src/Systems/Renderer/Vulkan/VKTypes.h"
+#include "Systems/Renderer/Vulkan/VKDescriptors.h"
+#include "Systems/Renderer/Vulkan/VKImages.h"
+#include "Systems/Renderer/Vulkan/VKTypes.h"
 #include "ZeusEngineCore/asset/AssetTypes.h"
 
 
@@ -39,8 +39,6 @@ namespace ZEN {
         DescriptorAllocatorGrowable m_FrameDescriptors;
     };
     struct GPUSceneData {
-        glm::mat4 view;
-        glm::mat4 proj;
         glm::mat4 viewProj;
         glm::vec4 ambientColor;
         glm::vec4 sunlightDirection; // w for sun power

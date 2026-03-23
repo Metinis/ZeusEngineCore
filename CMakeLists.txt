@@ -84,6 +84,7 @@ target_precompile_headers(ZeusEngineCore
 
 target_include_directories(ZeusEngineCore
         PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
         ${CMAKE_CURRENT_SOURCE_DIR}/include
         ${CMAKE_CURRENT_SOURCE_DIR}/include/entt
         ${CMAKE_CURRENT_SOURCE_DIR}/include/glad/include

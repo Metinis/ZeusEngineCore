@@ -115,8 +115,15 @@ void Scene::onCollisionExit(Entity a, Entity b, glm::vec3 contactNormal) {
     m_PendingCollisionEvents.emplace_back(CollisionEvent{a, b, contactNormal, CollisionEvent::Type::Exit});
 }
 
-std::vector<Entity> Scene::getDrawEntities() {
-    //return getEntities<MeshComp, TransformComp>();
+glm::vec3 Scene::getLightDir() {
+    auto view = getEntities<DirectionalLightComp, TransformComp>();
+    for (auto entity : view) {
+        if (entity.getComponent<DirectionalLightComp>().isPrimary) {
+            return entity.getComponent<TransformComp>().getWorldPosition();
+        }
+    }
+    spdlog::warn("No light entity found!");
+    return {};
 }
 
 Entity Scene::createEntity(const std::string& name) {

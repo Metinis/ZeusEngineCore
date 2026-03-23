@@ -498,7 +498,7 @@ void VKRenderer::initMeshPipeline() {
     builder.setShaders(triangleVertShader, triangleFragShader);
     builder.setInputTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
     builder.setPolygonMode(VK_POLYGON_MODE_FILL);
-    builder.setCullMode(VK_CULL_MODE_NONE, VK_FRONT_FACE_CLOCKWISE);
+    builder.setCullMode(VK_CULL_MODE_FRONT_BIT, VK_FRONT_FACE_CLOCKWISE);
     builder.setMultiSamplingNone();
     //builder.enableBlendingAdditive();
     builder.disableBlending();
@@ -541,6 +541,9 @@ void VKRenderer::drawGeometry(VkCommandBuffer cmd) {
     auto* sceneUniformData = (GPUSceneData*)gpuSceneDataBuffer.allocation->GetMappedData();
     m_SceneData = {};
     m_SceneData.viewProj = Application::get().getEngine()->getCameraSystem().getVP();
+    auto lightDir = Application::get().getEngine()->getScene().getLightDir();
+    glm::vec4 light = glm::vec4(lightDir.x, lightDir.y, lightDir.z, 1);
+    m_SceneData.sunlightDirection = light;
     *sceneUniformData = m_SceneData;
 
     //create descriptor set that binds this buffer and updates it
@@ -565,9 +568,9 @@ void VKRenderer::drawGeometry(VkCommandBuffer cmd) {
 
     VkViewport viewport = {};
     viewport.x = 0;
-    viewport.y = m_DrawExtent.height;
+    viewport.y = 0;
     viewport.width = m_DrawExtent.width;
-    viewport.height = -(float)(m_DrawExtent.height);
+    viewport.height = m_DrawExtent.height;
     viewport.minDepth = 0.0f;
     viewport.maxDepth = 1.0f;
 
