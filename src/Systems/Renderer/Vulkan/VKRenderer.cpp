@@ -358,7 +358,8 @@ void VKRenderer::initSyncStructures() {
 
 void VKRenderer::initDescriptors() {
     std::vector<DescriptorAllocator::PoolSizeRatio> sizes {
-        {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1}
+        {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1},
+        {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 }
     };
     m_GlobalDescriptorAllocator.initPool(m_Device, 10, sizes);
     {
@@ -366,23 +367,22 @@ void VKRenderer::initDescriptors() {
         builder.addBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
         m_DrawImageDescriptorLayout = builder.build(m_Device, VK_SHADER_STAGE_COMPUTE_BIT);
     }
+    {
+        DescriptorLayoutBuilder builder;
+        builder.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+        m_GpuSceneDataDescriptorLayout = builder.build(m_Device,
+            VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT );
+        m_DeletionQueue.pushFunction([&]() {
+            vkDestroyDescriptorSetLayout(m_Device, m_GpuSceneDataDescriptorLayout, nullptr);
+        });
+    }
     m_DrawImageDescriptors = m_GlobalDescriptorAllocator.allocate(m_Device, m_DrawImageDescriptorLayout);
 
-    VkDescriptorImageInfo imgInfo{};
-    imgInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-    imgInfo.imageView = m_DrawImage.imageView;
-
-    VkWriteDescriptorSet writeDescriptorSet{};
-    writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    writeDescriptorSet.pNext = nullptr;
-
-    writeDescriptorSet.dstBinding = 0;
-    writeDescriptorSet.dstSet = m_DrawImageDescriptors;
-    writeDescriptorSet.descriptorCount = 1;
-    writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-    writeDescriptorSet.pImageInfo = &imgInfo;
-
-    vkUpdateDescriptorSets(m_Device, 1, &writeDescriptorSet, 0, nullptr);
+    {
+        DescriptorWriter writer;
+        writer.writeImage(0, m_DrawImage.imageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+        writer.updateSet(m_Device, m_DrawImageDescriptors);
+    }
 
     m_DeletionQueue.pushFunction([&]() {
         m_GlobalDescriptorAllocator.destroyPool(m_Device);
@@ -402,15 +402,7 @@ void VKRenderer::initDescriptors() {
             m_Frames[i].m_FrameDescriptors.destroyPools(m_Device);
         });
     }
-    {
-        DescriptorLayoutBuilder builder;
-        builder.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-        m_GpuSceneDataDescriptorLayout = builder.build(m_Device,
-            VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT );
-        m_DeletionQueue.pushFunction([&]() {
-            vkDestroyDescriptorSetLayout(m_Device, m_GpuSceneDataDescriptorLayout, nullptr);
-        });
-    }
+
 
 }
 
@@ -494,8 +486,8 @@ void VKRenderer::initMeshPipeline() {
     layoutInfo.pNext = nullptr;
     layoutInfo.flags = 0;
 
-    layoutInfo.setLayoutCount = 0;
-    layoutInfo.pSetLayouts = nullptr;
+    layoutInfo.setLayoutCount = 1;
+    layoutInfo.pSetLayouts = &m_GpuSceneDataDescriptorLayout;
 
     layoutInfo.pushConstantRangeCount = 1;
     layoutInfo.pPushConstantRanges = &bufferRange;
@@ -547,7 +539,10 @@ void VKRenderer::drawGeometry(VkCommandBuffer cmd) {
 
     //write to buffer
     auto* sceneUniformData = (GPUSceneData*)gpuSceneDataBuffer.allocation->GetMappedData();
+    m_SceneData = {};
+    m_SceneData.viewProj = Application::get().getEngine()->getCameraSystem().getVP();
     *sceneUniformData = m_SceneData;
+
     //create descriptor set that binds this buffer and updates it
     VkDescriptorSet globalDescriptor = getCurrentFrame().m_FrameDescriptors.
     allocate(m_Device, m_GpuSceneDataDescriptorLayout);
@@ -565,6 +560,8 @@ void VKRenderer::drawGeometry(VkCommandBuffer cmd) {
         &colorAttInfo, &depthAttInfo);
     vkCmdBeginRendering(cmd, &renderInfo);
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_MeshPipeline);
+    vkCmdBindDescriptorSets(cmd,VK_PIPELINE_BIND_POINT_GRAPHICS,
+        m_MeshPipelineLayout,0, 1, &globalDescriptor,0,nullptr);
 
     VkViewport viewport = {};
     viewport.x = 0;
@@ -586,16 +583,15 @@ void VKRenderer::drawGeometry(VkCommandBuffer cmd) {
 
     GPUDrawPushConstants pushConstants;
 
-    //todo -> need to find out model matrix per mesh from ecs
-    //this should be per entity with mesh
+    //todo probably move this logic out of here and have some sort of scene renderer submit render info
+    //involving material etc
     for (auto entity : Application::get().getEngine()->getScene().getEntities<TransformComp, MeshComp>()) {
         auto meshID = entity.getComponent<MeshComp>().handle.id();
-        //if (m_MeshMap[meshID])
         auto buf = m_MeshMap[meshID];
 
         auto model = entity.getComponent<TransformComp>().worldMatrix;
-        pushConstants.worldMatrix = Application::get().getEngine()->getCameraSystem().getVP() * model;
-
+        //todo move this out to uniform
+        pushConstants.worldMatrix = model;
         pushConstants.vertexBuffer = buf.vertexBufferAddress;
 
         vkCmdPushConstants(cmd, m_MeshPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &pushConstants);
