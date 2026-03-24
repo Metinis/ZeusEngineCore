@@ -541,6 +541,8 @@ void VKRenderer::drawGeometry(VkCommandBuffer cmd) {
     auto* sceneUniformData = (GPUSceneData*)gpuSceneDataBuffer.allocation->GetMappedData();
     m_SceneData = {};
     m_SceneData.viewProj = Application::get().getEngine()->getCameraSystem().getVP();
+    m_SceneData.ambientColor = {0.3f, 0.3f, 0.3f, 0.3f};
+    m_SceneData.sunlightColor = {1.0f, 1.0f, 1.0f, 1.0f};
     auto lightDir = Application::get().getEngine()->getScene().getLightDir();
     glm::vec4 light = glm::vec4(lightDir.x, lightDir.y, lightDir.z, 1);
     m_SceneData.sunlightDirection = light;
