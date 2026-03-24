@@ -153,9 +153,6 @@ VkRenderingAttachmentInfo VKInit::attachmentInfo(VkImageView view, VkClearValue 
     if (clear) {
         info.clearValue = *clear;
     }
-    if (layout == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL) {
-        info.clearValue.depthStencil.depth = 0.0f;
-    }
 
     return info;
 }

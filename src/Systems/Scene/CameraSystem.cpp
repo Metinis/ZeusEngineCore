@@ -1,13 +1,12 @@
 #include "ZeusEngineCore/engine/CameraSystem.h"
 #include "ZeusEngineCore/engine/Components.h"
 #include "ZeusEngineCore/engine/Scene.h"
-#include <glm/gtc/matrix_transform.hpp>
 #include <ZeusEngineCore/core/Application.h>
 #include "ZeusEngineCore/core/InputEvents.h"
 #include "ZeusEngineCore/input/KeyCodes.h"
 #include "ZeusEngineCore/input/MouseCodes.h"
+#include <glm/gtc/matrix_transform.hpp>
 using namespace ZEN;
-
 CameraSystem::CameraSystem() : m_Scene(&Application::get().getEngine()->getScene()) {
 }
 

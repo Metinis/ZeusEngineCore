@@ -498,7 +498,7 @@ void VKRenderer::initMeshPipeline() {
     builder.setShaders(triangleVertShader, triangleFragShader);
     builder.setInputTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
     builder.setPolygonMode(VK_POLYGON_MODE_FILL);
-    builder.setCullMode(VK_CULL_MODE_FRONT_BIT, VK_FRONT_FACE_CLOCKWISE);
+    builder.setCullMode(VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE);
     builder.setMultiSamplingNone();
     //builder.enableBlendingAdditive();
     builder.disableBlending();
@@ -563,18 +563,21 @@ void VKRenderer::drawGeometry(VkCommandBuffer cmd) {
         , VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
     VkRenderingInfo renderInfo = VKInit::renderingInfo(m_DrawExtent,
         &colorAttInfo, &depthAttInfo);
+
     vkCmdBeginRendering(cmd, &renderInfo);
+
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_MeshPipeline);
     vkCmdBindDescriptorSets(cmd,VK_PIPELINE_BIND_POINT_GRAPHICS,
         m_MeshPipelineLayout,0, 1, &globalDescriptor,0,nullptr);
+
 
     VkViewport viewport = {};
     viewport.x = 0;
     viewport.y = 0;
     viewport.width = m_DrawExtent.width;
     viewport.height = m_DrawExtent.height;
-    viewport.minDepth = 0.0f;
-    viewport.maxDepth = 1.0f;
+    viewport.minDepth = 1.0f;
+    viewport.maxDepth = 0.0f;
 
     vkCmdSetViewport(cmd, 0, 1, &viewport);
 

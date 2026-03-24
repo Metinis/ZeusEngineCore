@@ -1,13 +1,11 @@
 #include "ZeusEngineCore/core/Application.h"
-
-#include "ImGuizmo.h"
 #include "LayerStack.h"
-#include "glm/gtc/type_ptr.hpp"
 #include "ZeusEngineCore/engine/Scene.h"
 #include "ZeusEngineCore/core/InputEvents.h"
 #include "ZeusEngineCore/core/Event.h"
 #include "ZeusEngineCore/engine/CameraSystem.h"
 #include "ZeusEngineCore/core/Project.h"
+
 
 using namespace ZEN;
 
