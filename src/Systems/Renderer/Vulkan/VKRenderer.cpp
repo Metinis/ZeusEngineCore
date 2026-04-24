@@ -27,6 +27,49 @@ void VKRenderer::init() {
     initSyncStructures();
     initDescriptors();
     initPipelines();
+    uint32_t white = glm::packUnorm4x8(glm::vec4(1, 1, 1, 1));
+    m_WhiteImage = createImage((void*)&white, VkExtent3D{ 1, 1, 1 }, VK_FORMAT_R8G8B8A8_UNORM,
+        VK_IMAGE_USAGE_SAMPLED_BIT);
+
+    uint32_t grey = glm::packUnorm4x8(glm::vec4(0.66f, 0.66f, 0.66f, 1));
+    m_GreyImage = createImage((void*)&grey, VkExtent3D{ 1, 1, 1 }, VK_FORMAT_R8G8B8A8_UNORM,
+        VK_IMAGE_USAGE_SAMPLED_BIT);
+
+    uint32_t black = glm::packUnorm4x8(glm::vec4(0, 0, 0, 0));
+    m_BlackImage = createImage((void*)&black, VkExtent3D{ 1, 1, 1 }, VK_FORMAT_R8G8B8A8_UNORM,
+        VK_IMAGE_USAGE_SAMPLED_BIT);
+
+    //checkerboard image
+    uint32_t magenta = glm::packUnorm4x8(glm::vec4(1, 0, 1, 1));
+    std::array<uint32_t, 16 *16 > pixels; //for 16x16 checkerboard texture
+    for (int x = 0; x < 16; x++) {
+        for (int y = 0; y < 16; y++) {
+            pixels[y*16 + x] = ((x % 2) ^ (y % 2)) ? magenta : black;
+        }
+    }
+    m_ErrorCheckerboardImage = createImage(pixels.data(), VkExtent3D{16, 16, 1}, VK_FORMAT_R8G8B8A8_UNORM,
+        VK_IMAGE_USAGE_SAMPLED_BIT);
+
+    VkSamplerCreateInfo sampl = {.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
+
+    sampl.magFilter = VK_FILTER_NEAREST;
+    sampl.minFilter = VK_FILTER_NEAREST;
+
+    vkCreateSampler(m_Device, &sampl, nullptr, &m_DefaultSamplerNearest);
+
+    sampl.magFilter = VK_FILTER_LINEAR;
+    sampl.minFilter = VK_FILTER_LINEAR;
+    vkCreateSampler(m_Device, &sampl, nullptr, &m_DefaultSamplerLinear);
+
+    m_DeletionQueue.pushFunction([&](){
+        vkDestroySampler(m_Device,m_DefaultSamplerNearest,nullptr);
+        vkDestroySampler(m_Device,m_DefaultSamplerLinear,nullptr);
+
+        destroyImage(m_WhiteImage);
+        destroyImage(m_GreyImage);
+        destroyImage(m_BlackImage);
+        destroyImage(m_ErrorCheckerboardImage);
+    });
 
     /*const auto* mesh = Project::getActive()->getAssetLibrary()->get<MeshData>(ZEN::defaultCubeID);
     cube = uploadMesh(ZEN::defaultCubeID, *mesh);
@@ -376,6 +419,15 @@ void VKRenderer::initDescriptors() {
             vkDestroyDescriptorSetLayout(m_Device, m_GpuSceneDataDescriptorLayout, nullptr);
         });
     }
+    {
+        DescriptorLayoutBuilder builder;
+        builder.addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+        builder.addBinding(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+        m_SingleImageDescriptorLayout = builder.build(m_Device, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT );
+        m_DeletionQueue.pushFunction([&]() {
+            vkDestroyDescriptorSetLayout(m_Device, m_SingleImageDescriptorLayout, nullptr);
+        });
+    }
     m_DrawImageDescriptors = m_GlobalDescriptorAllocator.allocate(m_Device, m_DrawImageDescriptorLayout);
 
     {
@@ -487,7 +539,7 @@ void VKRenderer::initMeshPipeline() {
     layoutInfo.flags = 0;
 
     layoutInfo.setLayoutCount = 1;
-    layoutInfo.pSetLayouts = &m_GpuSceneDataDescriptorLayout;
+    layoutInfo.pSetLayouts = &m_SingleImageDescriptorLayout;
 
     layoutInfo.pushConstantRangeCount = 1;
     layoutInfo.pPushConstantRanges = &bufferRange;
@@ -498,7 +550,7 @@ void VKRenderer::initMeshPipeline() {
     builder.setShaders(triangleVertShader, triangleFragShader);
     builder.setInputTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
     builder.setPolygonMode(VK_POLYGON_MODE_FILL);
-    builder.setCullMode(VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE);
+    builder.setCullMode(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE);
     builder.setMultiSamplingNone();
     //builder.enableBlendingAdditive();
     builder.disableBlending();
@@ -550,10 +602,10 @@ void VKRenderer::drawGeometry(VkCommandBuffer cmd) {
 
     //create descriptor set that binds this buffer and updates it
     VkDescriptorSet globalDescriptor = getCurrentFrame().m_FrameDescriptors.
-    allocate(m_Device, m_GpuSceneDataDescriptorLayout);
+    allocate(m_Device, m_SingleImageDescriptorLayout);
 
     DescriptorWriter writer;
-    writer.writeBuffer(0, gpuSceneDataBuffer.buffer,
+    writer.writeBuffer(1, gpuSceneDataBuffer.buffer,
         sizeof(GPUSceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
     writer.updateSet(m_Device, globalDescriptor);
 
@@ -567,6 +619,10 @@ void VKRenderer::drawGeometry(VkCommandBuffer cmd) {
     vkCmdBeginRendering(cmd, &renderInfo);
 
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_MeshPipeline);
+    writer.writeImage(0, m_ErrorCheckerboardImage.imageView, m_DefaultSamplerNearest,
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+
+    writer.updateSet(m_Device, globalDescriptor);
     vkCmdBindDescriptorSets(cmd,VK_PIPELINE_BIND_POINT_GRAPHICS,
         m_MeshPipelineLayout,0, 1, &globalDescriptor,0,nullptr);
 
@@ -629,6 +685,75 @@ void VKRenderer::immediateSubmit(std::function<void(VkCommandBuffer cmd)> &&func
 
     VK_CHECK(vkQueueSubmit2(m_GraphicsQueue, 1, &submitInfo, m_ImmediateFence));
     VK_CHECK(vkWaitForFences(m_Device, 1, &m_ImmediateFence, VK_TRUE, UINT64_MAX));
+}
+
+AllocatedImage VKRenderer::createImage(VkExtent3D size, VkFormat format, VkImageUsageFlags usage, bool mipmapped) {
+    AllocatedImage newImage;
+    newImage.imageFormat = format;
+    newImage.imageExtent = size;
+
+    VkImageCreateInfo imgInfo = VKInit::imageCreateInfo(format, usage, size);
+    if (mipmapped) {
+        imgInfo.mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(size.width, size.height)))) + 1;
+    }
+
+    VmaAllocationCreateInfo allocInfo{};
+    allocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+    allocInfo.requiredFlags = VkMemoryPropertyFlagBits(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+    VK_CHECK(vmaCreateImage(m_Allocator, &imgInfo, &allocInfo, &newImage.image, &newImage.allocation, nullptr));
+
+    VkImageAspectFlags aspectFlag = VK_IMAGE_ASPECT_COLOR_BIT;
+    if (format == VK_FORMAT_D32_SFLOAT) {
+        aspectFlag = VK_IMAGE_ASPECT_DEPTH_BIT;
+    }
+
+    VkImageViewCreateInfo viewInfo = VKInit::imageViewCreateInfo(newImage.image, format, aspectFlag);
+    viewInfo.subresourceRange.levelCount = imgInfo.mipLevels;
+
+    VK_CHECK(vkCreateImageView(m_Device, &viewInfo, nullptr, &newImage.imageView));
+
+    return newImage;
+}
+
+AllocatedImage VKRenderer::createImage(void *data, VkExtent3D size, VkFormat format, VkImageUsageFlags usage,
+    bool mipmapped) {
+    size_t dataSize = size.depth * size.width * size.height * 4; //todo check if can use sizeof here
+    AllocatedBuffer uploadBuffer = createBuffer(dataSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
+
+    memcpy(uploadBuffer.allocationInfo.pMappedData, data, dataSize);
+
+    AllocatedImage newImage = createImage(size, format,
+        usage | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, mipmapped);
+
+    immediateSubmit([&](VkCommandBuffer cmd) {
+        VKImages::transitionImage(cmd, newImage.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+        VkBufferImageCopy copyRegion{};
+        copyRegion.bufferOffset = 0;
+        copyRegion.bufferRowLength = 0;
+        copyRegion.bufferImageHeight = 0;
+
+        copyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        copyRegion.imageSubresource.mipLevel = 0;
+        copyRegion.imageSubresource.baseArrayLayer = 0;
+        copyRegion.imageSubresource.layerCount = 1;
+        copyRegion.imageExtent = size;
+
+        vkCmdCopyBufferToImage(cmd, uploadBuffer.buffer, newImage.image,  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1,
+            &copyRegion);
+
+        VKImages::transitionImage(cmd, newImage.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    });
+
+    destroyBuffer(uploadBuffer);
+    return newImage;
+}
+
+void VKRenderer::destroyImage(const AllocatedImage &img) {
+    vkDestroyImageView(m_Device, img.imageView, nullptr);
+    vmaDestroyImage(m_Allocator, img.image, img.allocation);
 }
 
 ImGui_ImplVulkan_InitInfo VKRenderer::initImgui() {

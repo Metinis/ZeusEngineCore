@@ -73,7 +73,6 @@ void Scene::onUpdate(float dt) {
 
 void Scene::onRender() {
     Layer::onRender();
-
 }
 
 

@@ -63,6 +63,9 @@ namespace ZEN {
         void drawImgui(VkCommandBuffer cmd, VkImageView targetImageView);
         void drawGeometry(VkCommandBuffer);
         void immediateSubmit(std::function<void(VkCommandBuffer cmd)>&& function);
+        AllocatedImage createImage(VkExtent3D size, VkFormat format, VkImageUsageFlags usage, bool mipmapped = false);
+        AllocatedImage createImage(void* data, VkExtent3D size, VkFormat format, VkImageUsageFlags usage, bool mipmapped = false);
+        void destroyImage(const AllocatedImage& img);
         void cleanup();
         ~VKRenderer();
     private:
@@ -131,6 +134,15 @@ namespace ZEN {
 
         GPUSceneData m_SceneData{};
         VkDescriptorSetLayout m_GpuSceneDataDescriptorLayout{};
+
+        AllocatedImage m_WhiteImage;
+        AllocatedImage m_BlackImage;
+        AllocatedImage m_GreyImage;
+        AllocatedImage m_ErrorCheckerboardImage;
+
+        VkSampler m_DefaultSamplerLinear;
+        VkSampler m_DefaultSamplerNearest;
+        VkDescriptorSetLayout m_SingleImageDescriptorLayout{};
 
         std::unordered_map<AssetID, GPUMeshBuffers> m_MeshMap{};
 
