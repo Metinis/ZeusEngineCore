@@ -7,6 +7,7 @@
 #define VMA_IMPLEMENTATION
 #include <vma/vk_mem_alloc.h>
 #include "VKPipelines.h"
+#include "example/stb_image.h"
 #include "ZeusEngineCore/engine/CameraSystem.h"
 #include "ZeusEngineCore/engine/Scene.h"
 #include "ZeusEngineCore/engine/rendering/VKUtils.h"
@@ -71,12 +72,6 @@ void VKRenderer::init() {
         destroyImage(m_ErrorCheckerboardImage);
     });
 
-    /*const auto* mesh = Project::getActive()->getAssetLibrary()->get<MeshData>(ZEN::defaultCubeID);
-    cube = uploadMesh(ZEN::defaultCubeID, *mesh);
-    m_DeletionQueue.pushFunction([&] {
-        destroyBuffer(cube.indexBuffer);
-        destroyBuffer(cube.vertexBuffer);
-    });*/
     m_Initialized = true;
 }
 
@@ -412,20 +407,11 @@ void VKRenderer::initDescriptors() {
     }
     {
         DescriptorLayoutBuilder builder;
-        builder.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-        m_GpuSceneDataDescriptorLayout = builder.build(m_Device,
-            VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT );
-        m_DeletionQueue.pushFunction([&]() {
-            vkDestroyDescriptorSetLayout(m_Device, m_GpuSceneDataDescriptorLayout, nullptr);
-        });
-    }
-    {
-        DescriptorLayoutBuilder builder;
         builder.addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
         builder.addBinding(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-        m_SingleImageDescriptorLayout = builder.build(m_Device, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT );
+        m_MainDescriptorLayout = builder.build(m_Device, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT );
         m_DeletionQueue.pushFunction([&]() {
-            vkDestroyDescriptorSetLayout(m_Device, m_SingleImageDescriptorLayout, nullptr);
+            vkDestroyDescriptorSetLayout(m_Device, m_MainDescriptorLayout, nullptr);
         });
     }
     m_DrawImageDescriptors = m_GlobalDescriptorAllocator.allocate(m_Device, m_DrawImageDescriptorLayout);
@@ -539,7 +525,7 @@ void VKRenderer::initMeshPipeline() {
     layoutInfo.flags = 0;
 
     layoutInfo.setLayoutCount = 1;
-    layoutInfo.pSetLayouts = &m_SingleImageDescriptorLayout;
+    layoutInfo.pSetLayouts = &m_MainDescriptorLayout;
 
     layoutInfo.pushConstantRangeCount = 1;
     layoutInfo.pPushConstantRanges = &bufferRange;
@@ -602,12 +588,14 @@ void VKRenderer::drawGeometry(VkCommandBuffer cmd) {
 
     //create descriptor set that binds this buffer and updates it
     VkDescriptorSet globalDescriptor = getCurrentFrame().m_FrameDescriptors.
-    allocate(m_Device, m_SingleImageDescriptorLayout);
+    allocate(m_Device, m_MainDescriptorLayout);
 
     DescriptorWriter writer;
     writer.writeBuffer(1, gpuSceneDataBuffer.buffer,
         sizeof(GPUSceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
     writer.updateSet(m_Device, globalDescriptor);
+    vkCmdBindDescriptorSets(cmd,VK_PIPELINE_BIND_POINT_GRAPHICS,
+        m_MeshPipelineLayout,0, 1, &globalDescriptor,0,nullptr);
 
     VkRenderingAttachmentInfo colorAttInfo = VKInit::attachmentInfo(m_DrawImage.imageView
         , nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
@@ -619,13 +607,6 @@ void VKRenderer::drawGeometry(VkCommandBuffer cmd) {
     vkCmdBeginRendering(cmd, &renderInfo);
 
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_MeshPipeline);
-    writer.writeImage(0, m_ErrorCheckerboardImage.imageView, m_DefaultSamplerNearest,
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-
-    writer.updateSet(m_Device, globalDescriptor);
-    vkCmdBindDescriptorSets(cmd,VK_PIPELINE_BIND_POINT_GRAPHICS,
-        m_MeshPipelineLayout,0, 1, &globalDescriptor,0,nullptr);
-
 
     VkViewport viewport = {};
     viewport.x = 0;
@@ -649,7 +630,7 @@ void VKRenderer::drawGeometry(VkCommandBuffer cmd) {
 
     //todo probably move this logic out of here and have some sort of scene renderer submit render info
     //involving material etc
-    for (auto entity : Application::get().getEngine()->getScene().getEntities<TransformComp, MeshComp>()) {
+    for (auto entity : Application::get().getEngine()->getScene().getEntities<TransformComp, MeshComp, MaterialComp>()) {
         auto meshID = entity.getComponent<MeshComp>().handle.id();
         auto buf = m_MeshMap[meshID];
 
@@ -657,6 +638,12 @@ void VKRenderer::drawGeometry(VkCommandBuffer cmd) {
         //todo move this out to uniform
         pushConstants.worldMatrix = model;
         pushConstants.vertexBuffer = buf.vertexBufferAddress;
+
+        //todo use bindless texture/move out of this set
+        auto mat = m_TextureMap[entity.getComponent<MaterialComp>().handle->texture];
+        writer.writeImage(0, mat.image.imageView, mat.sampler,
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+        writer.updateSet(m_Device, globalDescriptor);
 
         vkCmdPushConstants(cmd, m_MeshPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &pushConstants);
         vkCmdBindIndexBuffer(cmd, buf.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
@@ -930,6 +917,33 @@ GPUMeshBuffers VKRenderer::uploadMesh(AssetID id, const MeshData &mesh) {
 
     spdlog::debug("Created GPU Mesh ID: {} of index count: {}", (uint64_t)id, newSurface.indexCount);
     return newSurface;
+}
+
+GPUTexture VKRenderer::uploadTexture(AssetID id, const TextureData &texture) {
+    int texWidth, texHeight, texChannels;
+    stbi_set_flip_vertically_on_load(true);
+
+    stbi_uc *pixels = stbi_load(texture.path.data(), &texWidth,
+                                &texHeight, &texChannels, STBI_rgb_alpha);
+
+    if (!pixels) {
+        std::cout<<"Invalid Image! Assigning default texture.."<<"\n";
+        return {};
+    }
+
+    AllocatedImage newTexture = createImage((void*)pixels, VkExtent3D{(unsigned int)texWidth, (unsigned int)texHeight, 1}, VK_FORMAT_R8G8B8A8_UNORM,
+        VK_IMAGE_USAGE_SAMPLED_BIT);
+
+    GPUTexture ret = {
+        .image = std::move(newTexture),
+        .sampler = m_DefaultSamplerNearest
+    };
+
+    stbi_image_free(pixels);
+
+    m_TextureMap[id] = ret;
+
+    return ret;
 }
 
 void VKRenderer::deleteMesh(AssetID id) {

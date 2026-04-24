@@ -1,7 +1,7 @@
 #pragma once
 #include <vulkan/vulkan.h>
 #include <vma/vk_mem_alloc.h>
-
+#include "VKImages.h"
 #include "glm/mat4x4.hpp"
 
 namespace ZEN {
@@ -15,6 +15,10 @@ namespace ZEN {
         AllocatedBuffer vertexBuffer{};
         VkDeviceAddress vertexBufferAddress{};
         uint32_t indexCount{};
+    };
+    struct GPUTexture {
+        AllocatedImage image{};
+        VkSampler sampler{};
     };
     struct GPUDrawPushConstants {
         glm::mat4 worldMatrix{};

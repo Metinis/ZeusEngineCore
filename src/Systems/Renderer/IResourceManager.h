@@ -13,7 +13,7 @@ namespace ZEN {
         uint32_t uboID{};
     };
 
-    struct GPUTexture {
+    struct GPUTex {
         uint32_t drawableID{0};
         TextureType type{};
 
@@ -29,7 +29,7 @@ namespace ZEN {
 
     using GPUVariant = std::variant<
         GPUMesh,
-        GPUTexture,
+        GPUTex,
         GPUShader
     //Add to this for more asset types
     >;
@@ -54,7 +54,7 @@ namespace ZEN {
             if constexpr (std::is_same_v<T, TextureData>) {
                 //todo change this to be more generic
                 if(asset.type == Texture2D && asset.absPath) {
-                    auto ret = GPUTexture {
+                    auto ret = GPUTex {
                         .drawableID = createTexture(asset.path, true),
                         .type = asset.type,
                     };
@@ -62,7 +62,7 @@ namespace ZEN {
                     return ret;
                 }
                 else if(asset.type == Texture2D && !asset.absPath) {
-                    auto ret = GPUTexture {
+                    auto ret = GPUTex {
                         .drawableID = createTexture(asset.path, false),
                         .type = asset.type,
                     };
@@ -70,7 +70,7 @@ namespace ZEN {
                     return ret;
                 }
                 else if (asset.type == Texture2DRaw) {
-                    auto ret = GPUTexture {
+                    auto ret = GPUTex {
                         .drawableID = createTextureRaw(asset.dimensions.x, asset.dimensions.y),
                         .type = asset.type,
                     };
@@ -78,7 +78,7 @@ namespace ZEN {
                     return ret;
                 }
                 else if (asset.type == Texture2DAssimp && asset.path.length() == 0) {
-                    auto ret = GPUTexture {
+                    auto ret = GPUTex {
                         .drawableID = createTextureAssimp(*asset.aiTex),
                         .type = asset.type,
                     };
@@ -103,7 +103,7 @@ namespace ZEN {
                     tex.mWidth = asset.dimensions.x;
                     tex.mHeight = asset.dimensions.y;
 
-                    auto ret = GPUTexture {
+                    auto ret = GPUTex {
                         .drawableID = createTextureAssimp(tex),
                         .type = asset.type,
                     };
@@ -112,7 +112,7 @@ namespace ZEN {
                     return ret;
                 }
                 else if(asset.type == CubemapHDR && asset.mip) {
-                    auto ret = GPUTexture {
+                    auto ret = GPUTex {
                         .drawableID = createCubeMapTextureHDRMip(
                         asset.dimensions.x, asset.dimensions.y),
                         .type = asset.type,
@@ -121,7 +121,7 @@ namespace ZEN {
                     return ret;
                 }
                 else if(asset.type == CubemapHDR) {
-                    auto ret = GPUTexture {
+                    auto ret = GPUTex {
                         .drawableID = createCubeMapTextureHDR(
                         asset.dimensions.x, asset.dimensions.y),
                         .type = asset.type,
@@ -130,7 +130,7 @@ namespace ZEN {
                     return ret;
                 }
                 else if(asset.type == Cubemap) {
-                    auto ret = GPUTexture {
+                    auto ret = GPUTex {
                         .drawableID = createCubeMapTexture(asset.path),
                         .type = asset.type,
                     };
@@ -138,7 +138,7 @@ namespace ZEN {
                     return ret;
                 }
                 else if(asset.type == HDR) {
-                    auto ret = GPUTexture {
+                    auto ret = GPUTex {
                         .drawableID = createHDRTexture(asset.path),
                         .type = asset.type,
                     };
@@ -146,7 +146,7 @@ namespace ZEN {
                     return ret;
                 }
                 else if(asset.type == Prefilter) {
-                    auto ret = GPUTexture {
+                    auto ret = GPUTex {
                         .drawableID = createPrefilterMap(asset.dimensions.x, asset.dimensions.y),
                         .type = asset.type,
                     };
@@ -154,7 +154,7 @@ namespace ZEN {
                     return ret;
                 }
                 else if(asset.type == BRDF) {
-                    auto ret = GPUTexture {
+                    auto ret = GPUTex {
                         .drawableID = createBRDFLUTTexture(asset.dimensions.x, asset.dimensions.y),
                         .type = asset.type,
                     };
@@ -187,8 +187,8 @@ namespace ZEN {
         T* get(AssetID id) {
             auto it = m_Mappings.find(id);
             if (it == m_Mappings.end()) {
-                if constexpr (std::is_same_v<T, GPUTexture>) {
-                  static GPUTexture defaultTexture{.drawableID = 0};
+                if constexpr (std::is_same_v<T, GPUTex>) {
+                  static GPUTex defaultTexture{.drawableID = 0};
                 return &defaultTexture;
                 }
                 std::cout<<"GPU Resource not found! returning nullptr: "<<id<<"\n";
@@ -206,7 +206,7 @@ namespace ZEN {
         void remove(AssetID id) {
             if (has(id)) {
                 GPUVariant asset = m_Mappings.at(id);
-                if (auto* a = std::get_if<GPUTexture>(&asset)) {
+                if (auto* a = std::get_if<GPUTex>(&asset)) {
                     deleteTexture(a->drawableID);
                 }
                 else if (auto* a = std::get_if<GPUShader>(&asset)) {

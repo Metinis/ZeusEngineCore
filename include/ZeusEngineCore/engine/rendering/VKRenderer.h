@@ -55,6 +55,7 @@ namespace ZEN {
         void endFrame();
         //will create mapping between assetID and GPU mesh to be used by renderer
         GPUMeshBuffers uploadMesh(AssetID id, const MeshData& mesh);
+        GPUTexture uploadTexture(AssetID id, const TextureData& texture);
         void deleteMesh(AssetID id);
         //void createMesh()
         ImGui_ImplVulkan_InitInfo initImgui();
@@ -132,9 +133,6 @@ namespace ZEN {
         VkPipelineLayout m_MeshPipelineLayout{};
         VkPipeline m_MeshPipeline{};
 
-        GPUSceneData m_SceneData{};
-        VkDescriptorSetLayout m_GpuSceneDataDescriptorLayout{};
-
         AllocatedImage m_WhiteImage;
         AllocatedImage m_BlackImage;
         AllocatedImage m_GreyImage;
@@ -142,9 +140,11 @@ namespace ZEN {
 
         VkSampler m_DefaultSamplerLinear;
         VkSampler m_DefaultSamplerNearest;
-        VkDescriptorSetLayout m_SingleImageDescriptorLayout{};
+        GPUSceneData m_SceneData{};
+        VkDescriptorSetLayout m_MainDescriptorLayout{};
 
         std::unordered_map<AssetID, GPUMeshBuffers> m_MeshMap{};
+        std::unordered_map<AssetID, GPUTexture> m_TextureMap{};
 
         bool m_Initialized{};
     };
