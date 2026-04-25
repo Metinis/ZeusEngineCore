@@ -3,14 +3,11 @@
 #include <vma/vk_mem_alloc.h>
 #include <VkBootstrap.h>
 #include <vma/vk_mem_alloc.h>
-
 #include "imgui_impl_vulkan.h"
 #include "Systems/Renderer/Vulkan/VKDescriptors.h"
 #include "Systems/Renderer/Vulkan/VKImages.h"
 #include "Systems/Renderer/Vulkan/VKTypes.h"
 #include "ZeusEngineCore/asset/AssetTypes.h"
-
-
 
 namespace ZEN {
     class Scene;
@@ -49,6 +46,16 @@ namespace ZEN {
     };
     constexpr unsigned int FRAME_OVERLAP = 3;
 
+    struct TextureAllocator {
+        std::vector<uint32_t> availableList;
+        std::vector<uint32_t> freeList;
+
+        uint32_t allocate();
+        void free(uint32_t idx);
+        void init(uint32_t maxTextures);
+        void flush();
+    };
+
     class VKRenderer {
     public:
         VKRenderer();
@@ -60,6 +67,7 @@ namespace ZEN {
         GPUMeshBuffers uploadMesh(AssetID id, const MeshData& mesh);
         GPUTexture uploadTexture(AssetID id, const TextureData& texture);
         void deleteMesh(AssetID id);
+        void removeTexture(AssetID id);
         //void createMesh()
         ImGui_ImplVulkan_InitInfo initImgui();
         [[nodiscard]] VkDescriptorSet getImDescSet() const {return m_ImGuiDescriptorSet;}
@@ -136,9 +144,6 @@ namespace ZEN {
         VkPipelineLayout m_MeshPipelineLayout{};
         VkPipeline m_MeshPipeline{};
 
-        AllocatedImage m_WhiteImage;
-        AllocatedImage m_BlackImage;
-        AllocatedImage m_GreyImage;
         AllocatedImage m_ErrorCheckerboardImage;
 
         VkSampler m_DefaultSamplerLinear;
@@ -148,6 +153,9 @@ namespace ZEN {
 
         std::unordered_map<AssetID, GPUMeshBuffers> m_MeshMap{};
         std::unordered_map<AssetID, GPUTexture> m_TextureMap{};
+
+        TextureAllocator m_TextureAllocator{};
+
 
         bool m_Initialized{};
 

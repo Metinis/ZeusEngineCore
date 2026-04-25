@@ -19,10 +19,12 @@ namespace ZEN {
     struct GPUTexture {
         AllocatedImage image{};
         VkSampler sampler{};
+        uint32_t index{};
     };
     struct GPUDrawPushConstants {
         glm::mat4 worldMatrix{};
         VkDeviceAddress vertexBuffer{};
+        uint32_t albedoIndex{};
     };
 }
 

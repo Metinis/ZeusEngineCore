@@ -3,11 +3,13 @@
 #include "ZeusEngineCore/engine/rendering/VKUtils.h"
 
 using namespace ZEN;
-void DescriptorLayoutBuilder::addBinding(uint32_t binding, VkDescriptorType type) {
+void DescriptorLayoutBuilder::addBinding(uint32_t binding, VkDescriptorType type, uint32_t count,
+    VkDescriptorBindingFlags flags) {
     VkDescriptorSetLayoutBinding newBinding{};
     newBinding.binding = binding;
-    newBinding.descriptorCount = 1;
+    newBinding.descriptorCount = count;
     newBinding.descriptorType = type;
+    bindingFlags.push_back(flags);
 
     bindings.push_back(newBinding);
 }
@@ -26,7 +28,17 @@ VkDescriptorSetLayout DescriptorLayoutBuilder::build(VkDevice device, VkShaderSt
     VkDescriptorSetLayoutCreateInfo info { .sType =
         VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO};
 
-    info.pNext = pNext;
+    VkDescriptorSetLayoutBindingFlagsCreateInfo bindingFlagsInfo{};
+    bindingFlagsInfo.sType =
+        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO;
+    bindingFlagsInfo.bindingCount = (uint32_t)bindingFlags.size();
+    bindingFlagsInfo.pBindingFlags = bindingFlags.data();
+
+    if (!pNext) {
+        info.pNext = &bindingFlagsInfo;
+    } else {
+        info.pNext = pNext;
+    }
     info.pBindings = bindings.data();
     info.bindingCount = (uint32_t)bindings.size();
     info.flags = flags;
@@ -120,7 +132,7 @@ VkDescriptorPool DescriptorAllocatorGrowable::createPool(VkDevice device, uint32
     }
     VkDescriptorPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-    poolInfo.flags = 0;
+    poolInfo.flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT;
     poolInfo.maxSets = setCount;
     poolInfo.poolSizeCount = (uint32_t)poolSizes.size();
     poolInfo.pPoolSizes = poolSizes.data();
@@ -131,7 +143,7 @@ VkDescriptorPool DescriptorAllocatorGrowable::createPool(VkDevice device, uint32
 }
 
 void DescriptorWriter::writeImage(int binding, VkImageView image, VkSampler sampler, VkImageLayout layout,
-    VkDescriptorType type) {
+    VkDescriptorType type, uint32_t arrayIndex) {
     VkDescriptorImageInfo& info = imageInfos.emplace_back();
     info.sampler = sampler;
     info.imageView = image;
@@ -140,6 +152,7 @@ void DescriptorWriter::writeImage(int binding, VkImageView image, VkSampler samp
     VkWriteDescriptorSet write = {.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
     write.dstBinding = binding;
     write.dstSet = VK_NULL_HANDLE;
+    write.dstArrayElement = arrayIndex;
     write.descriptorType = type;
     write.descriptorCount = 1;
     write.pImageInfo = &info;
@@ -188,7 +201,7 @@ void DescriptorAllocator::initPool(VkDevice device, uint32_t maxSets, std::span<
         });
     }
     VkDescriptorPoolCreateInfo poolInfo {.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO};
-    poolInfo.flags = 0;
+    poolInfo.flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT;
     poolInfo.maxSets = maxSets;
     poolInfo.poolSizeCount = (uint32_t)poolSizes.size();
     poolInfo.pPoolSizes = poolSizes.data();

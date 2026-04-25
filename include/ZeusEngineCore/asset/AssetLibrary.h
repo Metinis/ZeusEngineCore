@@ -97,6 +97,9 @@ namespace ZEN {
             if (std::holds_alternative<MeshData>(m_AssetMap[id])) {
                 m_Renderer->deleteMesh(id);
             }
+            if (std::holds_alternative<TextureData>(m_AssetMap[id])) {
+                m_Renderer->removeTexture(id);
+            }
             m_AssetMap.erase(id);
             //if (m_ResourceManager->has(id)) {
             //    m_ResourceManager->remove(id);

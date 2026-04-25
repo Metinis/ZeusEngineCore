@@ -4,7 +4,8 @@
 namespace ZEN {
     struct DescriptorLayoutBuilder {
         std::vector<VkDescriptorSetLayoutBinding> bindings;
-        void addBinding(uint32_t binding, VkDescriptorType type);
+        std::vector<VkDescriptorBindingFlags> bindingFlags;
+        void addBinding(uint32_t binding, VkDescriptorType type, uint32_t count = 1, VkDescriptorBindingFlags flags = 0);
         void clear();
         VkDescriptorSetLayout build(VkDevice device, VkShaderStageFlags shaderStages, void* pNext = nullptr,
             VkDescriptorSetLayoutCreateFlags flags = 0);
@@ -35,7 +36,7 @@ namespace ZEN {
         std::vector<VkWriteDescriptorSet> writes;
 
         void writeImage(int binding, VkImageView image,
-            VkSampler sampler, VkImageLayout layout, VkDescriptorType type);
+            VkSampler sampler, VkImageLayout layout, VkDescriptorType type, uint32_t arrayIndex = 0);
         void writeBuffer(int binding, VkBuffer buffer,
             size_t size, size_t offset, VkDescriptorType type);
         void clear();

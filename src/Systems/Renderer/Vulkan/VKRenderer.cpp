@@ -17,12 +17,39 @@
 
 using namespace ZEN;
 
+uint32_t TextureAllocator::allocate() {
+    if (!availableList.empty()) {
+        uint32_t idx = availableList.back();
+        availableList.pop_back();
+        return idx;
+    }
+    spdlog::warn("Renderer: No available slot for texture!");
+    return 0;
+}
+
+void TextureAllocator::free(uint32_t idx) {
+    freeList.push_back(idx);
+}
+
+void TextureAllocator::init(uint32_t maxTextures) {
+    availableList.resize(maxTextures);
+    for (uint32_t i = 0; i < maxTextures; i++) {
+        availableList[i] = maxTextures - 1 - i;
+    }
+}
+
+void TextureAllocator::flush() {
+    availableList.insert(availableList.end(), freeList.begin(), freeList.end());
+    freeList.clear();
+}
+
 VKRenderer::VKRenderer() {
 }
 //static GPUMeshBuffers cube;
 void VKRenderer::init(EngineContext* ctx) {
     m_Scene = ctx->scene;
     m_CameraSystem = ctx->cameraSystem;
+
     initVulkan();
     initSampler();
     initSwapChain();
@@ -30,19 +57,9 @@ void VKRenderer::init(EngineContext* ctx) {
     initSyncStructures();
     initDescriptors();
     initPipelines();
-    uint32_t white = glm::packUnorm4x8(glm::vec4(1, 1, 1, 1));
-    m_WhiteImage = createImage((void*)&white, VkExtent3D{ 1, 1, 1 }, VK_FORMAT_R8G8B8A8_UNORM,
-        VK_IMAGE_USAGE_SAMPLED_BIT);
-
-    uint32_t grey = glm::packUnorm4x8(glm::vec4(0.66f, 0.66f, 0.66f, 1));
-    m_GreyImage = createImage((void*)&grey, VkExtent3D{ 1, 1, 1 }, VK_FORMAT_R8G8B8A8_UNORM,
-        VK_IMAGE_USAGE_SAMPLED_BIT);
-
-    uint32_t black = glm::packUnorm4x8(glm::vec4(0, 0, 0, 0));
-    m_BlackImage = createImage((void*)&black, VkExtent3D{ 1, 1, 1 }, VK_FORMAT_R8G8B8A8_UNORM,
-        VK_IMAGE_USAGE_SAMPLED_BIT);
 
     //checkerboard image
+    uint32_t black = glm::packUnorm4x8(glm::vec4(0, 0, 0, 0));
     uint32_t magenta = glm::packUnorm4x8(glm::vec4(1, 0, 1, 1));
     std::array<uint32_t, 16 *16 > pixels; //for 16x16 checkerboard texture
     for (int x = 0; x < 16; x++) {
@@ -52,6 +69,7 @@ void VKRenderer::init(EngineContext* ctx) {
     }
     m_ErrorCheckerboardImage = createImage(pixels.data(), VkExtent3D{16, 16, 1}, VK_FORMAT_R8G8B8A8_UNORM,
         VK_IMAGE_USAGE_SAMPLED_BIT);
+    m_TextureAllocator.allocate(); //reserve 0
 
     VkSamplerCreateInfo sampl = {.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
 
@@ -65,6 +83,7 @@ void VKRenderer::init(EngineContext* ctx) {
     vkCreateSampler(m_Device, &sampl, nullptr, &m_DefaultSamplerLinear);
 
     m_DeletionQueue.pushFunction([&](){
+        destroyImage(m_ErrorCheckerboardImage);
         vkDestroySampler(m_Device,m_DefaultSamplerNearest,nullptr);
         vkDestroySampler(m_Device,m_DefaultSamplerLinear,nullptr);
     });
@@ -100,7 +119,6 @@ void VKRenderer::beginFrame() {
     //make SwapChain writable
     VKImages::transitionImage(cmd, m_DrawImage.image,
         VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-
 }
 
 
@@ -211,6 +229,9 @@ void VKRenderer::cleanup() {
             destroyBuffer(buf.indexBuffer);
             destroyBuffer(buf.vertexBuffer);
         }
+        for (auto &tex : m_TextureMap | std::views::values) {
+            destroyImage(tex.image);
+        }
         m_DeletionQueue.flush();
 
         destroySwapChain();
@@ -266,6 +287,10 @@ void VKRenderer::initVulkan() {
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES };
     features12.bufferDeviceAddress = true;
     features12.descriptorIndexing = true;
+    features12.descriptorBindingPartiallyBound = true;
+    features12.descriptorBindingUpdateUnusedWhilePending = true;
+    features12.descriptorBindingSampledImageUpdateAfterBind = true;
+    features12.runtimeDescriptorArray = true;
 
     vkb::PhysicalDeviceSelector selector {vkbInst};
     selector.set_minimum_version(1, 3);
@@ -408,9 +433,19 @@ void VKRenderer::initDescriptors() {
     }
     {
         DescriptorLayoutBuilder builder;
-        builder.addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+        VkPhysicalDeviceProperties props;
+        vkGetPhysicalDeviceProperties(m_PhysicalDevice, &props);
+
+        m_TextureAllocator.init(props.limits.maxDescriptorSetSampledImages);
+
+        builder.addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, props.limits.maxDescriptorSetSampledImages,
+            VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT |
+                VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT);
+
         builder.addBinding(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-        m_MainDescriptorLayout = builder.build(m_Device, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT );
+        m_MainDescriptorLayout = builder.build(m_Device, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+            nullptr, VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT);
+
         m_DeletionQueue.pushFunction([&]() {
             vkDestroyDescriptorSetLayout(m_Device, m_MainDescriptorLayout, nullptr);
         });
@@ -632,6 +667,15 @@ void VKRenderer::drawGeometry(VkCommandBuffer cmd) {
 
     GPUDrawPushConstants pushConstants;
 
+    for (auto& [id, tex] : m_TextureMap) {
+        writer.writeImage(0, tex.image.imageView, tex.sampler,
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, tex.index);
+    }
+    writer.writeImage(0, m_ErrorCheckerboardImage.imageView, m_DefaultSamplerNearest,
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0);
+
+    writer.updateSet(m_Device, globalDescriptor);
+
     //todo probably move this logic out of here and have some sort of scene renderer submit render info
     //involving material etc
     for (auto entity : m_Scene->getEntities<TransformComp, MeshComp, MaterialComp>()) {
@@ -649,12 +693,11 @@ void VKRenderer::drawGeometry(VkCommandBuffer cmd) {
         if (m_TextureMap.contains(texID)) {
             tex = m_TextureMap[texID];
         } else {
-            tex = GPUTexture{.image = m_ErrorCheckerboardImage, .sampler = m_DefaultSamplerNearest};
+            tex = GPUTexture{.image = m_ErrorCheckerboardImage, .sampler = m_DefaultSamplerNearest, .index = 0};
         }
+        pushConstants.albedoIndex = tex.index;
 
-        writer.writeImage(0, tex.image.imageView, tex.sampler,
-                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-        writer.updateSet(m_Device, globalDescriptor);
+
 
         vkCmdPushConstants(cmd, m_MeshPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &pushConstants);
         vkCmdBindIndexBuffer(cmd, buf.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
@@ -710,10 +753,6 @@ AllocatedImage VKRenderer::createImage(VkExtent3D size, VkFormat format, VkImage
     viewInfo.subresourceRange.levelCount = imgInfo.mipLevels;
 
     VK_CHECK(vkCreateImageView(m_Device, &viewInfo, nullptr, &newImage.imageView));
-
-    m_DeletionQueue.pushFunction([=]() {
-        destroyImage(newImage);
-    });
 
     spdlog::debug("Renderer: Created Image");
 
@@ -961,9 +1000,12 @@ GPUTexture VKRenderer::uploadTexture(AssetID id, const TextureData &texture) {
     AllocatedImage newTexture = createImage((void*)pixels, VkExtent3D{(unsigned int)texWidth, (unsigned int)texHeight, 1}, VK_FORMAT_R8G8B8A8_UNORM,
         VK_IMAGE_USAGE_SAMPLED_BIT);
 
+    uint32_t index = m_TextureAllocator.allocate();
+
     GPUTexture ret = {
-        .image = std::move(newTexture),
-        .sampler = m_DefaultSamplerNearest
+        .image = newTexture,
+        .sampler = m_DefaultSamplerNearest,
+        .index = index,
     };
 
     stbi_image_free(pixels);
@@ -981,6 +1023,21 @@ void VKRenderer::deleteMesh(AssetID id) {
         getCurrentFrame().m_DeletionQueue.pushFunction([=]() {
             destroyBuffer(meshBuf.indexBuffer);
             destroyBuffer(meshBuf.vertexBuffer);
+        });
+        m_MeshMap.erase(id);
+        spdlog::debug("Deleted GPU Mesh ID: {}", (uint64_t)id);
+        return;
+    }
+    spdlog::error("Attempt to delete non-existing GPU Mesh! ID: {}", (uint64_t)id);
+}
+
+void VKRenderer::removeTexture(AssetID id) {
+    if (m_TextureMap.find(id) != m_TextureMap.end()) {
+        auto tex = m_TextureMap[id];
+        getCurrentFrame().m_DeletionQueue.pushFunction([=]() {
+            m_TextureAllocator.free(tex.index);
+            destroyImage(tex.image);
+            vkDestroySampler(m_Device, tex.sampler, nullptr);
         });
         m_MeshMap.erase(id);
         spdlog::debug("Deleted GPU Mesh ID: {}", (uint64_t)id);
