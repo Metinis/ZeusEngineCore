@@ -40,8 +40,12 @@ namespace ZEN {
 
             spdlog::debug("Creating asset id: {}", (uint64_t)id);
 
+            //todo move to ref counting
             if constexpr (std::is_same_v<T, MeshData>) {
                 m_Renderer->uploadMesh(id, asset);
+            }
+            if constexpr (std::is_same_v<T, TextureData>) {
+                m_Renderer->uploadTexture(id, asset);
             }
 
             m_AssetMap.emplace(id, std::forward<T>(asset));
@@ -54,6 +58,9 @@ namespace ZEN {
             spdlog::debug("Adding asset id: {}", (uint64_t)id);
             if constexpr (std::is_same_v<T, MeshData>) {
                 m_Renderer->uploadMesh(id, asset);
+            }
+            if constexpr (std::is_same_v<T, TextureData>) {
+                m_Renderer->uploadTexture(id, asset);
             }
             m_AssetMap[id] = std::forward<T>(asset);
             m_NameMap.emplace(id, name);

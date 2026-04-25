@@ -99,8 +99,6 @@ void Scene::createDefaultScene() {
     };
     auto texId = Project::getActive()->getAssetLibrary()->createAsset<TextureData>(std::move(texData));
     //auto matId = Project::getActive()->getAssetLibrary()->createAsset<Material>(std::move(matComp));
-    m_Renderer->uploadTexture(texId,
-        *Project::getActive()->getAssetLibrary()->get<TextureData>(texId));
     matComp.texture = texId;
     cubeEntity.addComponent<MaterialComp>(matComp);
 
