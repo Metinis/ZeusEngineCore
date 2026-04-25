@@ -51,9 +51,8 @@ void Application::init() {
 
     m_Ctx.scene->init(&m_Ctx);
 
-    m_Ctx.modelImporter = std::make_unique<ModelImporter>();
+    m_Ctx.modelImporter->init(&m_Ctx);
     m_Ctx.cameraSystem->init(&m_Ctx);
-    m_Ctx.cameraSystem->setAspectRatio(16.0f/9.0f);
     m_Ctx.physicsSystem->init(&m_Ctx);
     m_Ctx.systemManager->init(&m_Ctx);
     m_Ctx.compRegistry->init(&m_Ctx);

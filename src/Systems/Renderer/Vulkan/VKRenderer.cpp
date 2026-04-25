@@ -67,11 +67,6 @@ void VKRenderer::init(EngineContext* ctx) {
     m_DeletionQueue.pushFunction([&](){
         vkDestroySampler(m_Device,m_DefaultSamplerNearest,nullptr);
         vkDestroySampler(m_Device,m_DefaultSamplerLinear,nullptr);
-
-        destroyImage(m_WhiteImage);
-        destroyImage(m_GreyImage);
-        destroyImage(m_BlackImage);
-        destroyImage(m_ErrorCheckerboardImage);
     });
 
     m_Initialized = true;
@@ -300,6 +295,7 @@ void VKRenderer::initVulkan() {
     m_DeletionQueue.pushFunction([&]() {
         vmaDestroyAllocator(m_Allocator);
     });
+    spdlog::debug("Renderer: Initialized State");
 }
 
 void VKRenderer::initSwapChain() {
@@ -355,6 +351,7 @@ void VKRenderer::initSwapChain() {
         vkDestroyImageView(m_Device, m_DepthImage.imageView, nullptr);
         vmaDestroyImage(m_Allocator, m_DepthImage.image, m_DepthImage.allocation);
     });
+    spdlog::debug("Renderer: Initialized Swapchain");
 }
 
 void VKRenderer::initCommands() {
@@ -379,6 +376,7 @@ void VKRenderer::initCommands() {
     m_DeletionQueue.pushFunction([=]() {
     vkDestroyCommandPool(m_Device, m_ImmediateCommandPool, nullptr);
     });
+    spdlog::debug("Renderer: Initialized Commands");
 }
 
 void VKRenderer::initSyncStructures() {
@@ -394,6 +392,7 @@ void VKRenderer::initSyncStructures() {
     m_DeletionQueue.pushFunction([=]() {
         vkDestroyFence(m_Device, m_ImmediateFence, nullptr);
     });
+    spdlog::debug("Renderer: Initialized Sync Structures");
 }
 
 void VKRenderer::initDescriptors() {
@@ -442,6 +441,7 @@ void VKRenderer::initDescriptors() {
             m_Frames[i].m_FrameDescriptors.destroyPools(m_Device);
         });
     }
+    spdlog::debug("Renderer: Initialized Descriptors");
 
 
 }
@@ -487,6 +487,7 @@ void VKRenderer::initBackgroundPipeline() {
         vkDestroyPipelineLayout(m_Device, m_GradientPipelineLayout, nullptr);
         vkDestroyPipeline(m_Device, m_GradientPipeline, nullptr);
     });
+    spdlog::debug("Renderer: Initialized Background Compute Pipeline");
 }
 
 void VKRenderer::initSampler() {
@@ -556,6 +557,7 @@ void VKRenderer::initMeshPipeline() {
         vkDestroyPipelineLayout(m_Device, m_MeshPipelineLayout, nullptr);
         vkDestroyPipeline(m_Device, m_MeshPipeline, nullptr);
     });
+    spdlog::debug("Renderer: Initialized Mesh Pipeline");
 }
 
 void VKRenderer::drawImgui(VkCommandBuffer cmd, VkImageView targetImageView) {
@@ -642,8 +644,15 @@ void VKRenderer::drawGeometry(VkCommandBuffer cmd) {
         pushConstants.vertexBuffer = buf.vertexBufferAddress;
 
         //todo use bindless texture/move out of this set
-        auto mat = m_TextureMap[entity.getComponent<MaterialComp>().handle->texture];
-        writer.writeImage(0, mat.image.imageView, mat.sampler,
+        GPUTexture tex;
+        auto texID = entity.getComponent<MaterialComp>().handle->texture;
+        if (m_TextureMap.contains(texID)) {
+            tex = m_TextureMap[texID];
+        } else {
+            tex = GPUTexture{.image = m_ErrorCheckerboardImage, .sampler = m_DefaultSamplerNearest};
+        }
+
+        writer.writeImage(0, tex.image.imageView, tex.sampler,
                 VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
         writer.updateSet(m_Device, globalDescriptor);
 
@@ -702,6 +711,12 @@ AllocatedImage VKRenderer::createImage(VkExtent3D size, VkFormat format, VkImage
 
     VK_CHECK(vkCreateImageView(m_Device, &viewInfo, nullptr, &newImage.imageView));
 
+    m_DeletionQueue.pushFunction([=]() {
+        destroyImage(newImage);
+    });
+
+    spdlog::debug("Renderer: Created Image");
+
     return newImage;
 }
 
@@ -734,6 +749,7 @@ AllocatedImage VKRenderer::createImage(void *data, VkExtent3D size, VkFormat for
 
         VKImages::transitionImage(cmd, newImage.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
             VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        spdlog::debug("Renderer: Uploaded Image");
     });
 
     destroyBuffer(uploadBuffer);
@@ -743,6 +759,7 @@ AllocatedImage VKRenderer::createImage(void *data, VkExtent3D size, VkFormat for
 void VKRenderer::destroyImage(const AllocatedImage &img) {
     vkDestroyImageView(m_Device, img.imageView, nullptr);
     vmaDestroyImage(m_Allocator, img.image, img.allocation);
+    spdlog::debug("Renderer: Deleted Image");
 }
 
 ImGui_ImplVulkan_InitInfo VKRenderer::initImgui() {
@@ -794,6 +811,7 @@ ImGui_ImplVulkan_InitInfo VKRenderer::initImgui() {
         vkDestroyDescriptorPool(m_Device, imguiPool, nullptr);
 
     });
+    spdlog::debug("Renderer: ImGUI Initialized");
 
     return initInfo;
 }
@@ -816,6 +834,8 @@ void VKRenderer::createSwapChain(uint32_t width, uint32_t height) {
     m_SwapChainImages = vkbSwapChain.get_images().value();
     m_SwapChainImageViews = vkbSwapChain.get_image_views().value();
 
+    spdlog::debug("Renderer: Swapchain Created");
+
 }
 
 void VKRenderer::recreateSwapChain() {
@@ -827,6 +847,7 @@ void VKRenderer::recreateSwapChain() {
     m_DrawExtent.height = height;
     createSwapChain(width, height);
     m_SwapChainRecreated = false;
+    spdlog::debug("Renderer: Swapchain Recreated");
 }
 
 void VKRenderer::destroySwapChain() {
@@ -835,6 +856,7 @@ void VKRenderer::destroySwapChain() {
     for (size_t i{}; i < m_SwapChainImageViews.size(); ++i) {
         vkDestroyImageView(m_Device, m_SwapChainImageViews[i], nullptr);
     }
+    spdlog::debug("Renderer: Swapchain Destroyed");
 }
 
 AllocatedBuffer VKRenderer::createBuffer(size_t allocSize, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage) {
@@ -852,11 +874,14 @@ AllocatedBuffer VKRenderer::createBuffer(size_t allocSize, VkBufferUsageFlags us
     VK_CHECK(vmaCreateBuffer(m_Allocator, &bufferInfo, &allocInfo, &buffer.buffer,
         &buffer.allocation, &buffer.allocationInfo));
 
+    //spdlog::debug("Renderer: Buffer Created");
+
     return buffer;
 }
 
 void VKRenderer::destroyBuffer(const AllocatedBuffer &buffer) {
     vmaDestroyBuffer(m_Allocator, buffer.buffer, buffer.allocation);
+    //spdlog::debug("Renderer: Buffer Destroyed");
 }
 
 GPUMeshBuffers VKRenderer::uploadMesh(AssetID id, const MeshData &mesh) {
@@ -917,7 +942,7 @@ GPUMeshBuffers VKRenderer::uploadMesh(AssetID id, const MeshData &mesh) {
     destroyBuffer(staging);
     m_MeshMap[id] = newSurface;
 
-    spdlog::debug("Created GPU Mesh ID: {} of index count: {}", (uint64_t)id, newSurface.indexCount);
+    spdlog::debug("Renderer: Created GPU Mesh ID: {} of index count: {}", (uint64_t)id, newSurface.indexCount);
     return newSurface;
 }
 
@@ -944,6 +969,8 @@ GPUTexture VKRenderer::uploadTexture(AssetID id, const TextureData &texture) {
     stbi_image_free(pixels);
 
     m_TextureMap[id] = ret;
+
+    spdlog::debug("Renderer: Created Texture ID: {}", (uint64_t)id);
 
     return ret;
 }

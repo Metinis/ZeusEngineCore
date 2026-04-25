@@ -13,6 +13,7 @@ CameraSystem::CameraSystem(){
 
 void CameraSystem::init(EngineContext *ctx) {
     m_Scene = ctx->scene;
+    m_AspectRatio = ctx->window->getHandleWidth() / ctx->window->getHandleHeight();
 }
 
 void CameraSystem::onUpdate(float deltaTime) {
