@@ -4,30 +4,27 @@
 #include <ZeusEngineCore/engine/Entity.h>
 #include <ZeusEngineCore/core/InputEvents.h>
 #include <ZeusEngineCore/asset/AssetLibrary.h>
-#include <ZeusEngineCore/engine/ZEngine.h>
 #include "ZeusEngineCore/engine/SceneSerializer.h"
+#include "ZeusEngineCore/engine/rendering/VKRenderer.h"
 
 using namespace ZEN;
 
-Scene::Scene()
-    : m_PhysicsSystem(&Application::get().getEngine()->getPhysicsSystem())
-{
-    std::filesystem::path scriptsBinPath =
-        std::filesystem::path(Project::getActive()->getActiveProjectRoot())
-        / "assets" / "scripts" / "bin";
-
-    Application::get()
-        .getEngine()
-        ->getSystemManager()
-        .loadAllFromDirectory(scriptsBinPath.string(), this);
-
-    createDefaultScene();
+Scene::Scene(){
 }
-
-
 Scene::~Scene() {
 
 }
+
+void Scene::init(EngineContext *ctx) {
+    m_PhysicsSystem = ctx->physicsSystem;
+    m_Renderer = ctx->vkRenderer.get();
+    m_SystemManager = ctx->systemManager.get();
+    std::filesystem::path scriptsBinPath =
+        std::filesystem::path(Project::getActive()->getActiveProjectRoot())
+        / "assets" / "scripts" / "bin";
+    ctx->systemManager->loadAllFromDirectory(scriptsBinPath.string(), this);
+}
+
 int Scene::computeDepth(Entity e) {
     int depth = 0;
     while (e.hasComponent<ParentComp>()) {
@@ -63,9 +60,9 @@ void Scene::updateWorldTransforms() {
 void Scene::onUpdate(float dt) {
     updateWorldTransforms();
     if (m_PlayMode) {
-        Application::get().getEngine()->getSystemManager().updateAll(dt);
+        m_SystemManager->updateAll(dt);
         for (auto& e : m_PendingCollisionEvents) {
-            Application::get().getEngine()->getSystemManager().collisionAll(e);
+            m_SystemManager->collisionAll(e);
         }
         m_PendingCollisionEvents.clear();
     }
@@ -102,7 +99,7 @@ void Scene::createDefaultScene() {
     };
     auto texId = Project::getActive()->getAssetLibrary()->createAsset<TextureData>(std::move(texData));
     //auto matId = Project::getActive()->getAssetLibrary()->createAsset<Material>(std::move(matComp));
-    Application::get().getVKRenderer()->uploadTexture(texId,
+    m_Renderer->uploadTexture(texId,
         *Project::getActive()->getAssetLibrary()->get<TextureData>(texId));
     matComp.texture = texId;
     cubeEntity.addComponent<MaterialComp>(matComp);

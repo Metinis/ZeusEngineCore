@@ -1,7 +1,9 @@
 #pragma once
 #include <yaml-cpp/yaml.h>
-
+#include <glm/glm.hpp>
+#include <glm/gtx/quaternion.hpp>
 #include "ZeusEngineCore/asset/AssetTypes.h"
+#define GLM_ENABLE_EXPERIMENTAL
 
 /* Add operators for glm */
 namespace YAML {

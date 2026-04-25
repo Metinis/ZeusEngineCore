@@ -1,6 +1,5 @@
 #include "ZeusEngineCore/core/Window.h"
 #include "GLFW/glfw3.h"
-#include <ZeusEngineCore/core/API.h>
 #include <ZeusEngineCore/core/Application.h>
 #include <ZeusEngineCore/core/InputEvents.h>
 #include <ZeusEngineCore/core/Event.h>
@@ -11,20 +10,7 @@ using namespace ZEN;
 Window::Window(int width, int height, std::string title) : m_Width(width), m_Height(height), m_Title(std::move(title)) {
     if (!glfwInit())
         throw std::runtime_error("Failed to initialize GLFW");
-
-    if (Application::get().getRendererAPI() != ZEN::OpenGL) {
-        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    }
-    else {
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-#ifdef __APPLE__
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
-        glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // Required on macOS
-#else
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
-#endif
-        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    }
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
     m_Window = glfwCreateWindow(m_Width, m_Height, m_Title.c_str(), nullptr, nullptr);
 
@@ -32,29 +18,13 @@ Window::Window(int width, int height, std::string title) : m_Width(width), m_Hei
         throw std::runtime_error("Failed to create window");
 
     m_LastTime = static_cast<float>(glfwGetTime());
-
-    m_SubmitEventFn = [](Event& event) {
-        Application::get().callEvent(event);
-    };
 }
 
 Window::Window(std::string title) : m_Title(std::move(title)) {
     if (!glfwInit())
         throw std::runtime_error("Failed to initialize GLFW");
 
-    if (Application::get().getRendererAPI() != ZEN::OpenGL) {
-        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    }
-    else {
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-#ifdef __APPLE__
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
-        glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // Required on macOS
-#else
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
-#endif
-        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    }
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     GLFWmonitor* monitor = glfwGetPrimaryMonitor();
     const GLFWvidmode* mode = glfwGetVideoMode(monitor);
 
@@ -66,17 +36,13 @@ Window::Window(std::string title) : m_Title(std::move(title)) {
         throw std::runtime_error("Failed to create window");
 
     m_LastTime = static_cast<float>(glfwGetTime());
-
-    m_SubmitEventFn = [](Event& event) {
-        Application::get().callEvent(event);
-    };
 }
 
-void Window::attachDispatcher() {
+void Window::attachDispatcher(Application* app) {
+    m_SubmitEventFn = [app](Event& event) {
+        app->callEvent(event);
+    };
     glfwSetWindowUserPointer(m_Window, &m_SubmitEventFn);
-    //m_Dispatcher->attach<SceneViewResizeEvent>(this, &CameraSystem::onResize);
-
-    //dispatcher.attach<CursorLockEvent, Window, &Window::onCursorLockChange>(this);
 
     glfwSetFramebufferSizeCallback(m_Window, [](GLFWwindow* window, int width, int height) {
         auto* submitEventFn = static_cast<std::function<void(Event&)>*>(

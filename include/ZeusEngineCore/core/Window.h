@@ -1,10 +1,10 @@
 #pragma once
-#include <ZeusEngineCore/core/API.h>
 #include "Event.h"
 
 struct GLFWwindow;
 
 namespace ZEN {
+    class Application;
     struct CursorLockEvent;
     class EventDispatcher;
     class Window {
@@ -13,7 +13,7 @@ namespace ZEN {
 
         Window(std::string title);
 
-        void attachDispatcher();
+        void attachDispatcher(Application* app);
 
         ~Window();
 

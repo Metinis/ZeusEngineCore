@@ -1,13 +1,39 @@
 #pragma once
 #include "Application.h"
-#include "ZeusEngineCore/engine/ZEngine.h"
 #include "ZeusEngineCore/core/Window.h"
 #include "../../src/Engine/LayerStack.h"
-#include "../../src/ImGUILayers/ImGUILayer.h"
 #include "ZeusEngineCore/engine/rendering/VKRenderer.h"
 #define USE_VULKAN
 
 namespace ZEN {
+    class ImGUILayerVulkan;
+    class WindowResizeEvent;
+    class RunPlayModeEvent;
+    class CompRegistry;
+    class ZeusPhysicsSystem;
+    class CameraSystem;
+    class RenderSystem;
+    class ModelImporter;
+    class Renderer;
+    class Scene;
+    class SystemManager;
+
+    struct EngineContext {
+        //Core
+        Scene* scene{};
+        std::unique_ptr<VKRenderer> vkRenderer{};
+        std::unique_ptr<Window> window{};
+
+        //Libraries/Loaders
+        std::unique_ptr<ModelImporter> modelImporter{};
+
+        //Systems
+        CameraSystem* cameraSystem{};
+        ZeusPhysicsSystem* physicsSystem{};
+
+        std::unique_ptr<SystemManager> systemManager{};
+        std::unique_ptr<CompRegistry> compRegistry{};
+    };
 
     class ZEN_API Application {
     public:
@@ -22,37 +48,20 @@ namespace ZEN {
         void callEvent(Event& event);
 
         bool onPlayMode(const RunPlayModeEvent &event);
-
         bool onWindowResize(const WindowResizeEvent& event);
 
-        Window* getWindow() const { return m_Window.get(); }
+        Window* getWindow() {return m_Ctx.window.get();}
         static Application& get() { return *s_Instance; }
-        eRendererAPI getRendererAPI() const { return m_API; }
-        ZEngine* getEngine() const { return m_Engine.get(); }
         std::string getResourceRoot() { return m_ResourceRoot; }
-#ifdef USE_VULKAN
-        VKRenderer* getVKRenderer() const { return m_VKRenderer.get(); }
-#endif
         void close();
-
         void run();
     private:
         std::unique_ptr<LayerStack> m_LayerStack{};
     protected:
         static Application* s_Instance;
 
-        std::unique_ptr<Window> m_Window{};
-
-        std::unique_ptr<ImGUILayer> m_ImGUILayer{};
-#ifdef USE_VULKAN
-        std::unique_ptr<VKRenderer> m_VKRenderer{};
-        eRendererAPI m_API{ Vulkan };
-#endif
-#ifdef USE_OPENGL
-        eRendererAPI m_API{ OpenGL };
-#endif
-        
-        std::unique_ptr<ZEngine> m_Engine{};
+        std::unique_ptr<ImGUILayerVulkan> m_ImGUILayer{};
+        EngineContext m_Ctx;
 
         std::string m_ResourceRoot{};
         bool m_Running { false };

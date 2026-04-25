@@ -1,5 +1,6 @@
 #pragma once
 #include "AssetLibrary.h"
+#define GLM_ENABLE_EXPERIMENTAL
 
 namespace ZEN {
     class ZEN_API AssetSerializer {

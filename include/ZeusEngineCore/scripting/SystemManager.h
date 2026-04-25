@@ -8,10 +8,13 @@ using HMODULE = HINSTANCE__*;
 #endif
 
 namespace ZEN {
+    struct EngineContext;
     class ZEN_API SystemManager {
     public:
         SystemManager();
         ~SystemManager();
+
+        void init(EngineContext* ctx);
 
         bool loadSystemDLL(const std::string& path);
         bool loadAllFromDirectory(const std::string& directory, Scene* scene);

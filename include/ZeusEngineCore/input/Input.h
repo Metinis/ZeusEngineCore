@@ -1,6 +1,7 @@
 #pragma once
 #include "ZeusEngineCore/core/API.h"
 
+struct GLFWwindow;
 namespace ZEN {
     class ZEN_API Input {
     public:

@@ -1,8 +1,10 @@
 #include "ZeusEngineCore/asset/AssetSerializer.h"
 #include "ZeusEngineCore/core/Application.h"
+#include "ZeusEngineCore/core/Project.h"
 #include "ZeusEngineCore/stream/FileStreamReader.h"
 #include "ZeusEngineCore/stream/FileStreamWriter.h"
 #include "ZeusEngineCore/stream/SerializerCommon.h"
+
 
 ZEN::AssetSerializer::AssetSerializer(AssetLibrary *library) : m_AssetLibrary(library){
 

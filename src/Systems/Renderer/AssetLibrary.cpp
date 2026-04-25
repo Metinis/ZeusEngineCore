@@ -1,12 +1,17 @@
 #include "ZeusEngineCore/asset/AssetLibrary.h"
-#include "IResourceManager.h"
 #include "ZeusEngineCore/core/Application.h"
 #include "ZeusEngineCore/asset/AssetSerializer.h"
 #include "ZeusEngineCore/engine/Components.h"
 
 using namespace ZEN;
 
-AssetLibrary::AssetLibrary() : m_Renderer(Application::get().getVKRenderer()){
+AssetLibrary::AssetLibrary() {
+
+}
+
+void AssetLibrary::init(EngineContext *ctx) {
+    m_Renderer = ctx->vkRenderer.get();
+
     addAsset<Material>(defaultMaterialID,
         createDefaultMaterial("/shaders/pbr.vert", "/shaders/pbr.frag", ""),
         "Default");

@@ -11,9 +11,11 @@ namespace ZEN {
     class IResourceManager;
     class Entity;
     class AssetLibrary;
+    struct EngineContext;
 
     class ZEN_API ModelImporter {
     public:
+        void init(EngineContext* ctx);
         explicit ModelImporter();
         void loadModel(const std::string &name, const std::string& path);
         void loadTexture(const std::string &name, const std::string& path);
@@ -30,7 +32,6 @@ namespace ZEN {
                          const glm::mat4& parentTransform, Entity& parent);
 
         Scene* m_Scene{};
-        IResourceManager* m_ResourceManager{};
         std::shared_ptr<AssetLibrary> m_AssetLibrary{};
         std::unordered_map<const aiTexture*, UUID> m_EmbeddedTextureCache{};
         std::unordered_map<const char*, UUID> m_ExternalTextureCache{};

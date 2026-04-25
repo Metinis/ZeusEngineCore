@@ -7,20 +7,22 @@
 #define VMA_IMPLEMENTATION
 #include <vma/vk_mem_alloc.h>
 #include "VKPipelines.h"
-#include "example/stb_image.h"
 #include "ZeusEngineCore/engine/CameraSystem.h"
 #include "ZeusEngineCore/engine/Scene.h"
 #include "ZeusEngineCore/engine/rendering/VKUtils.h"
 #include "ZeusEngineCore/engine/Components.h"
 #define IMGUI_IMG
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image/stb_image.h>
 
 using namespace ZEN;
 
 VKRenderer::VKRenderer() {
-    init();
 }
 //static GPUMeshBuffers cube;
-void VKRenderer::init() {
+void VKRenderer::init(EngineContext* ctx) {
+    m_Scene = ctx->scene;
+    m_CameraSystem = ctx->cameraSystem;
     initVulkan();
     initSampler();
     initSwapChain();
@@ -578,10 +580,10 @@ void VKRenderer::drawGeometry(VkCommandBuffer cmd) {
     //write to buffer
     auto* sceneUniformData = (GPUSceneData*)gpuSceneDataBuffer.allocation->GetMappedData();
     m_SceneData = {};
-    m_SceneData.viewProj = Application::get().getEngine()->getCameraSystem().getVP();
+    m_SceneData.viewProj = m_CameraSystem->getVP();
     m_SceneData.ambientColor = {0.3f, 0.3f, 0.3f, 0.3f};
     m_SceneData.sunlightColor = {1.0f, 1.0f, 1.0f, 1.0f};
-    auto lightDir = Application::get().getEngine()->getScene().getLightDir();
+    auto lightDir = m_Scene->getLightDir();
     glm::vec4 light = glm::vec4(lightDir.x, lightDir.y, lightDir.z, 1);
     m_SceneData.sunlightDirection = light;
     *sceneUniformData = m_SceneData;
@@ -630,7 +632,7 @@ void VKRenderer::drawGeometry(VkCommandBuffer cmd) {
 
     //todo probably move this logic out of here and have some sort of scene renderer submit render info
     //involving material etc
-    for (auto entity : Application::get().getEngine()->getScene().getEntities<TransformComp, MeshComp, MaterialComp>()) {
+    for (auto entity : m_Scene->getEntities<TransformComp, MeshComp, MaterialComp>()) {
         auto meshID = entity.getComponent<MeshComp>().handle.id();
         auto buf = m_MeshMap[meshID];
 

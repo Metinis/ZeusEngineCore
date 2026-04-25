@@ -6,10 +6,12 @@
 namespace ZEN {
     class Scene;
     class EventDispatcher;
+    struct EngineContext;
 
     class CameraSystem : public Layer {
     public:
         explicit CameraSystem();
+        void init(EngineContext* ctx);
         void onUpdate(float deltaTime) override;
         void onEvent(Event& event) override;
         void setAspectRatio(float aspectRatio) { m_Resized = true; m_AspectRatio = aspectRatio; }

@@ -4,6 +4,7 @@
 #include "glm/vec3.hpp"
 #include "Jolt/Physics/Collision/Shape/StaticCompoundShape.h"
 #include "Jolt/Physics/Collision/Shape/CapsuleShape.h"
+#include "ZeusEngineCore/core/Application.h"
 
 using namespace ZEN;
 
@@ -19,8 +20,8 @@ ZeusPhysicsSystem::~ZeusPhysicsSystem() {
     shutdownJolt();
 }
 
-void ZeusPhysicsSystem::init() {
-    m_Scene = &Application::get().getEngine()->getScene();
+void ZeusPhysicsSystem::init(EngineContext* ctx) {
+    m_Scene = ctx->scene;
     initJolt();
 }
 
@@ -327,7 +328,7 @@ void ZeusPhysicsSystem::initJolt() {
     );
 
     m_BodyInterface = &m_PhysicsSystem.GetBodyInterface();
-    m_ContactListener = std::make_unique<ZeusContactListener>();
+    m_ContactListener = std::make_unique<ZeusContactListener>(m_Scene);
     m_PhysicsSystem.SetContactListener(m_ContactListener.get());
 }
 
@@ -359,7 +360,7 @@ bool ObjectVsBroadPhaseLayerFilter::ShouldCollide(JPH::ObjectLayer layer, JPH::B
     return true;
 }
 
-ZeusContactListener::ZeusContactListener() : m_Scene(&Application::get().getEngine()->getScene()){}
+ZeusContactListener::ZeusContactListener(Scene* scene) : m_Scene(scene){}
 
 JPH::ValidateResult ZeusContactListener::OnContactValidate(
     const JPH::Body &inBody1,
@@ -381,8 +382,8 @@ void ZeusContactListener::OnContactAdded(
         inManifold.mWorldSpaceNormal.GetY(),
         inManifold.mWorldSpaceNormal.GetZ()
     );
-    auto entityA = Entity((entt::entity)inBody1.GetUserData());
-    auto entityB = Entity((entt::entity)inBody2.GetUserData());
+    auto entityA = Entity(m_Scene, (entt::entity)inBody1.GetUserData());
+    auto entityB = Entity(m_Scene, (entt::entity)inBody2.GetUserData());
     m_Scene->onCollisionEnter(entityA, entityB, normal);
     m_Scene->onCollisionEnter(entityB, entityA, -normal);
 }
@@ -393,16 +394,16 @@ void ZeusContactListener::OnContactPersisted(
     const JPH::ContactManifold &inManifold,
     JPH::ContactSettings &ioSettings
 ) {
-    auto entityA = Entity((entt::entity)inBody1.GetUserData());
-    auto entityB = Entity((entt::entity)inBody2.GetUserData());
+    auto entityA = Entity(m_Scene, (entt::entity)inBody1.GetUserData());
+    auto entityB = Entity(m_Scene, (entt::entity)inBody2.GetUserData());
     m_Scene->onCollisionStay(entityA, entityB);
     m_Scene->onCollisionStay(entityB, entityA);
 }
 
 
 void ZeusContactListener::OnContactRemoved(const JPH::SubShapeIDPair &inSubShapePair) {
-    Entity entityA((entt::entity)inSubShapePair.GetBody1ID().GetIndex());
-    Entity entityB((entt::entity)inSubShapePair.GetBody2ID().GetIndex());
+    Entity entityA(m_Scene, (entt::entity)inSubShapePair.GetBody1ID().GetIndex());
+    Entity entityB(m_Scene, (entt::entity)inSubShapePair.GetBody2ID().GetIndex());
     m_Scene->onCollisionExit(entityA, entityB);
     m_Scene->onCollisionExit(entityB, entityA);
 }

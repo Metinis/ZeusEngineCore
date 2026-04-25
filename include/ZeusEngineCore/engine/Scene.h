@@ -1,15 +1,16 @@
 #pragma once
 #include <entt/entt.hpp>
 #include "ZeusEngineCore/core/InputEvents.h"
+#include "ZeusEngineCore/core/Layer.h"
 #include "ZeusEngineCore/scripting/CompRegistry.h"
 #include "ZeusEngineCore/scripting/SystemManager.h"
-#include "ZeusEngineCore/engine/RenderSystem.h"
 #include "ZeusEngineCore/engine/Entity.h"
 
 namespace ZEN {
 	class AssetLibrary;
 	class ModelImporter;
 	class ZEngine;
+	class VKRenderer;
 	struct RemoveMeshEvent;
 	struct RemoveMaterialEvent;
 	struct RemoveTextureEvent;
@@ -26,6 +27,7 @@ namespace ZEN {
 	public:
 		Scene();
 		~Scene();
+		void init(EngineContext* ctx);
 		void onUpdate(float dt) override;
 		void onRender() override;
 		void createDefaultScene();
@@ -61,6 +63,8 @@ namespace ZEN {
 		std::unordered_map<Entity, std::unordered_map<std::string, RuntimeComponent>> m_RuntimeComponents;
 		AssetLibrary* m_ModelLibrary{};
 		ZeusPhysicsSystem* m_PhysicsSystem{};
+		SystemManager* m_SystemManager{};
+		VKRenderer* m_Renderer{};
 
 		std::vector<CollisionEvent> m_PendingCollisionEvents;
 

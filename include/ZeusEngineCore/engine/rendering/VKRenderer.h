@@ -13,6 +13,9 @@
 
 
 namespace ZEN {
+    class Scene;
+    class CameraSystem;
+    struct EngineContext;
     struct MeshData;
 
     struct DeletionQueue {
@@ -49,7 +52,7 @@ namespace ZEN {
     class VKRenderer {
     public:
         VKRenderer();
-        void init();
+        void init(EngineContext* ctx);
         void beginFrame();
         void draw();
         void endFrame();
@@ -147,5 +150,8 @@ namespace ZEN {
         std::unordered_map<AssetID, GPUTexture> m_TextureMap{};
 
         bool m_Initialized{};
+
+        Scene* m_Scene;
+        CameraSystem* m_CameraSystem;
     };
 }

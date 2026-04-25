@@ -19,13 +19,14 @@
 #include "Entity.h"
 
 namespace ZEN {
+    struct EngineContext;
     class Scene;
 
     class ZeusPhysicsSystem : public Layer {
     public:
         ZeusPhysicsSystem();
         ~ZeusPhysicsSystem() override;
-        void init();
+        void init(EngineContext* ctx);
         JPH::BodyID createAddBody(JPH::BodyCreationSettings &settings, entt::entity entity);
         void syncECSBodyToPhysics(Entity entity, bool wake);
         void onUpdate(float dt) override;
@@ -99,7 +100,7 @@ public:
 
 class ZeusContactListener final : public JPH::ContactListener {
 public:
-    ZeusContactListener();
+    ZeusContactListener(ZEN::Scene* scene);
     JPH::ValidateResult OnContactValidate( const JPH::Body &inBody1, const JPH::Body &inBody2, JPH::RVec3Arg,
         const JPH::CollideShapeResult &
     ) override;

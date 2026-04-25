@@ -3,15 +3,17 @@
 #include <ZeusEngineCore/engine/Components.h>
 #include <ZeusEngineCore/asset/AssetLibrary.h>
 #include <ZeusEngineCore/engine/Scene.h>
-
+#include "ZeusEngineCore/core/Application.h"
 #include "ZeusEngineCore/stream/FileStreamWriter.h"
 
 using namespace ZEN;
 
-ModelImporter::ModelImporter() :
-m_Scene(&Application::get().getEngine()->getScene()),
-m_ResourceManager(Application::get().getEngine()->getRenderer().getResourceManager()),
-m_AssetLibrary(Project::getActive()->getAssetLibrary()) {
+void ModelImporter::init(EngineContext *ctx) {
+    m_Scene = ctx->scene;
+    m_AssetLibrary = Project::getActive()->getAssetLibrary();
+}
+
+ModelImporter::ModelImporter(){
 
 }
 

@@ -1,5 +1,4 @@
 #include "ZeusEngineCore/input/Input.h"
-
 #include "GLFW/glfw3.h"
 #include "ZeusEngineCore/core/Application.h"
 

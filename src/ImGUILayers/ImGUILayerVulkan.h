@@ -1,17 +1,13 @@
 #pragma once
-#include "ImGUILayer.h"
 
 namespace ZEN {
-    class ImGUILayerVulkan : public ImGUILayer {
+    struct EngineContext;
+    class ImGUILayerVulkan{
     public:
-        ImGUILayerVulkan(GLFWwindow *window);
-
-        ~ImGUILayerVulkan() override;
-
-        void beginFrame() override;
-
-        void render() override;
-
-        void endFrame(void *commandBuffer) override;
+        ImGUILayerVulkan();
+        void init(EngineContext* ctx);
+        ~ImGUILayerVulkan();
+        void beginFrame();
+        void render();
     };
 }

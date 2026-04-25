@@ -7,7 +7,12 @@
 #include "ZeusEngineCore/input/MouseCodes.h"
 #include <glm/gtc/matrix_transform.hpp>
 using namespace ZEN;
-CameraSystem::CameraSystem() : m_Scene(&Application::get().getEngine()->getScene()) {
+CameraSystem::CameraSystem(){
+
+}
+
+void CameraSystem::init(EngineContext *ctx) {
+    m_Scene = ctx->scene;
 }
 
 void CameraSystem::onUpdate(float deltaTime) {

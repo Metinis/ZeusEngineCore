@@ -5,10 +5,11 @@
 
 using namespace ZEN;
 
-SceneSerializer::SceneSerializer(Scene *scene) : m_Scene(scene) {
+SceneSerializer::SceneSerializer(Scene *scene, CompRegistry* compRegistry) :
+m_Scene(scene), m_CompRegistry(compRegistry) {
 }
 
-static void serializeEntity(YAML::Emitter &out, Entity entity) {
+static void serializeEntity(CompRegistry* reg, YAML::Emitter &out, Entity entity) {
     out << YAML::BeginMap;
     assert(entity.hasComponent<UUIDComp>());
     out << YAML::Key << "Entity" << YAML::Value << entity.getComponent<UUIDComp>().uuid;
@@ -142,7 +143,7 @@ static void serializeEntity(YAML::Emitter &out, Entity entity) {
         out << YAML::Key << "IsTrigger" << YAML::Value << meshCol.isTrigger;
         out << YAML::EndMap;
     }
-    auto &runtimeCompMap = Application::get().getEngine()->getCompRegistry().getComponents();
+    auto &runtimeCompMap = reg->getComponents();
 
     out << YAML::Key << "RuntimeComponents";
     out << YAML::BeginMap;
@@ -181,7 +182,7 @@ bool SceneSerializer::serialize(const std::string &path) {
 
     for (auto entityID: m_Scene->m_Registry.storage<entt::entity>()) {
         Entity entity = Entity(m_Scene, entityID);
-        serializeEntity(out, entity);
+        serializeEntity(m_CompRegistry, out, entity);
     }
 
     out << YAML::EndSeq;
@@ -352,7 +353,7 @@ bool SceneSerializer::deserialize(const std::string &path) {
 
                     if (!compNode.IsMap()) continue;
 
-                    for (const auto &comp: Application::get().getEngine()->getCompRegistry().getComponents()) {
+                    for (const auto &comp: m_CompRegistry->getComponents()) {
                         if (comp.name != compName) continue;
 
                         entityInst.addRuntimeComponent(comp);

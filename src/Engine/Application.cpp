@@ -1,11 +1,14 @@
 #include "ZeusEngineCore/core/Application.h"
 #include "LayerStack.h"
+#include "tinyfiledialogs.h"
+#include "ImGUILayers/ImGUILayerVulkan.h"
 #include "ZeusEngineCore/engine/Scene.h"
 #include "ZeusEngineCore/core/InputEvents.h"
 #include "ZeusEngineCore/core/Event.h"
 #include "ZeusEngineCore/engine/CameraSystem.h"
 #include "ZeusEngineCore/core/Project.h"
-
+#include "ZeusEngineCore/engine/ModelImporter.h"
+#include "ZeusEngineCore/engine/ZeusPhysicsSystem.h"
 
 using namespace ZEN;
 
@@ -13,6 +16,23 @@ Application* Application::s_Instance = nullptr;
 
 Application::Application() {
     s_Instance = this;
+
+    m_Ctx.window = std::make_unique<Window>("Zeus Editor");
+    m_Ctx.physicsSystem = new ZeusPhysicsSystem();
+    m_Ctx.scene = new Scene();
+    m_Ctx.cameraSystem = new CameraSystem();
+    m_Ctx.modelImporter = std::make_unique<ModelImporter>();
+    m_Ctx.systemManager = std::make_unique<SystemManager>();
+    m_Ctx.compRegistry = std::make_unique<CompRegistry>();
+    m_LayerStack = std::make_unique<LayerStack>();
+    m_Ctx.vkRenderer = std::make_unique<VKRenderer>();
+    Project::createNew();
+
+    m_ImGUILayer = std::make_unique<ImGUILayerVulkan>();
+
+    pushLayer(m_Ctx.cameraSystem);
+    pushLayer(m_Ctx.scene);
+    pushLayer(m_Ctx.physicsSystem);
 }
 
 Application::~Application() {
@@ -21,29 +41,31 @@ Application::~Application() {
 
 void Application::init() {
     spdlog::set_level(spdlog::level::debug);
-    m_Window = std::make_unique<Window>("Zeus Editor");
 
-    m_LayerStack = std::make_unique<LayerStack>();
-    Project::createNew();
+    const char* title = "Select a project";
+    const char* defaultPath = nullptr;
+    const char* folderPath = tinyfd_selectFolderDialog(title, defaultPath);
+    Project::getActive()->init(folderPath);
+    m_Ctx.vkRenderer->init(&m_Ctx);
+    Project::getActive()->getAssetLibrary()->init(&m_Ctx); //todo check this sketch
 
-#ifdef USE_VULKAN
-    m_VKRenderer = std::make_unique<VKRenderer>();
-#endif
+    m_Ctx.scene->init(&m_Ctx);
 
-    m_Engine = std::make_unique<ZEngine>();
-    m_Engine->init();
+    m_Ctx.modelImporter = std::make_unique<ModelImporter>();
+    m_Ctx.cameraSystem->init(&m_Ctx);
+    m_Ctx.cameraSystem->setAspectRatio(16.0f/9.0f);
+    m_Ctx.physicsSystem->init(&m_Ctx);
+    m_Ctx.systemManager->init(&m_Ctx);
+    m_Ctx.compRegistry->init(&m_Ctx);
+
+    m_Ctx.window->attachDispatcher(this);
+
+    m_ImGUILayer->init(&m_Ctx);
 
 
+    m_Ctx.scene->createDefaultScene();
 
-    m_Window->attachDispatcher();
-
-//#ifdef USE_OPENGL
-    m_ImGUILayer = ImGUILayer::create(m_Window->getNativeWindow(), m_API);
-//#endif
     m_Running = true;
-
-    m_Engine->setAspectRatio(m_Window->getHandleWidth() / m_Window->getHandleHeight());
-
 }
 
 void Application::pushLayer(Layer* layer) {
@@ -81,8 +103,6 @@ void Application::callEvent(Event &event) {
             break;
         (*it)->onEvent(event);
     }
-
-    
 }
 
 bool Application::onPlayMode(const RunPlayModeEvent &event) {
@@ -93,7 +113,7 @@ bool Application::onPlayMode(const RunPlayModeEvent &event) {
 }
 
 bool Application::onWindowResize(const WindowResizeEvent &event) {
-    m_Engine->getRenderer().setSize(event.getWidth(), event.getHeight());
+    //m_Engine->getRenderer().setSize(event.getWidth(), event.getHeight());
     return true;
 }
 
@@ -101,25 +121,22 @@ void Application::close() {
     m_Running = false;
 }
 void Application::run() {
-    while(m_Running && !m_Window->shouldClose()) {
+    while(m_Running && !m_Ctx.window->shouldClose()) {
 
         //---------------UPDATE LOGIC-------------------
         m_LayerStack->flush();
-        m_Window->pollEvents();
-        const float dt = m_Window->getDeltaTime();
+        m_Ctx.window->pollEvents();
+        const float dt = m_Ctx.window->getDeltaTime();
 
         for(Layer* layer : *m_LayerStack) {
             layer->onUpdate(dt);
         }
         //----------------------------------------------
 
-
         //---------------RENDER LOGIC-------------------
-        m_Engine->getRenderer().beginFrame();
         for(Layer* layer : *m_LayerStack) {
             layer->onRender();
         }
-        m_Engine->getRenderer().bindDefaultFBO();
 
         m_ImGUILayer->beginFrame();
         for(Layer* layer : *m_LayerStack) {
@@ -127,15 +144,9 @@ void Application::run() {
             layer->onUIRender();
         }
         m_ImGUILayer->render();
-        m_ImGUILayer->endFrame(nullptr);
-#ifdef USE_VULKAN
-        m_VKRenderer->beginFrame();
-        m_VKRenderer->draw();
-        m_VKRenderer->endFrame();
-
-#endif
-
-        m_Engine->getRenderer().endFrame();
+        m_Ctx.vkRenderer->beginFrame();
+        m_Ctx.vkRenderer->draw();
+        m_Ctx.vkRenderer->endFrame();
         //----------------------------------------------
 
     }
