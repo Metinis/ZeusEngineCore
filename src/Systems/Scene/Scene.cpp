@@ -19,6 +19,7 @@ void Scene::init(EngineContext *ctx) {
     m_PhysicsSystem = ctx->physicsSystem;
     m_Renderer = ctx->vkRenderer.get();
     m_SystemManager = ctx->systemManager.get();
+    m_ModelLibrary = Project::getActive()->getAssetLibrary().get();
     std::filesystem::path scriptsBinPath =
         std::filesystem::path(Project::getActive()->getActiveProjectRoot())
         / "assets" / "scripts" / "bin";
@@ -89,7 +90,6 @@ void Scene::createDefaultScene() {
     cameraEntity.addComponent<CameraComp>();
 
     auto cubeEntity = createEntity("Cube");
-    auto assetLibrary = Project::getActive()->getAssetLibrary();
     cubeEntity.addComponent<MeshComp>(AssetHandle<MeshData>(defaultCubeID));
     cubeEntity.addComponent<BoxColliderComp>();
     cubeEntity.addComponent<RigidBodyComp>();
@@ -97,8 +97,7 @@ void Scene::createDefaultScene() {
     TextureData texData{
         .path = Project::getActive()->getActiveProjectRoot() + "assets/textures/wall.jpg"
     };
-    auto texId = Project::getActive()->getAssetLibrary()->createAsset<TextureData>(std::move(texData));
-    //auto matId = Project::getActive()->getAssetLibrary()->createAsset<Material>(std::move(matComp));
+    auto texId = m_ModelLibrary->createAsset<TextureData>(std::move(texData));
     matComp.texture = texId;
     cubeEntity.addComponent<MaterialComp>(matComp);
 

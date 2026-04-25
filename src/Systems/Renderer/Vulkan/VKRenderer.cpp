@@ -11,7 +11,6 @@
 #include "ZeusEngineCore/engine/Scene.h"
 #include "ZeusEngineCore/engine/rendering/VKUtils.h"
 #include "ZeusEngineCore/engine/Components.h"
-#define IMGUI_IMG
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image/stb_image.h>
 
@@ -137,33 +136,34 @@ void VKRenderer::draw() {
 void VKRenderer::endFrame() {
     VkCommandBuffer cmd = getCurrentFrame().m_MainCommandBuffer;
 
-    //we render to an image used by imgui, dont copy over to swapchain in this case
+    if (!m_RenderToIMGUITexture) {
+        VKImages::transitionImage(cmd, m_DrawImage.image,
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+        VKImages::transitionImage(cmd, m_SwapChainImages[swapChainImageIndex], VK_IMAGE_LAYOUT_UNDEFINED,
+            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+        VKImages::copyImageToImage(cmd, m_DrawImage.image, m_SwapChainImages[swapChainImageIndex],
+            m_DrawExtent, m_SwapChainExtent);
 
-    /*--------------------------------------------------------NON-IMGUI--------------------------------------------*/
-#ifndef IMGUI_IMG
-    VKImages::transitionImage(cmd, m_DrawImage.image,
-        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
-    VKImages::transitionImage(cmd, m_SwapChainImages[swapChainImageIndex], VK_IMAGE_LAYOUT_UNDEFINED,
-        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-    VKImages::copyImageToImage(cmd, m_DrawImage.image, m_SwapChainImages[swapChainImageIndex],
-        m_DrawExtent, m_SwapChainExtent);
-    VKImages::transitionImage(cmd, m_SwapChainImages[swapChainImageIndex], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-        VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+        //we still draw imgui stuff, but we dont render to an imgui texture
+        VKImages::transitionImage(cmd, m_DrawImage.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+        );
+        VKImages::transitionImage(cmd, m_SwapChainImages[swapChainImageIndex], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+        drawImgui(cmd, m_SwapChainImageViews[swapChainImageIndex]);
+        VKImages::transitionImage(cmd, m_SwapChainImages[swapChainImageIndex], VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+    } else {
+        VKImages::transitionImage(cmd, m_DrawImage.image,
+        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        VKImages::transitionImage(cmd, m_SwapChainImages[swapChainImageIndex], VK_IMAGE_LAYOUT_UNDEFINED,
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
-    /*--------------------------------------------------------NON-IMGUI--------------------------------------------*/
-
-    /*--------------------------------------------------------IMGUI------------------------------------------------*/
-#else
-    VKImages::transitionImage(cmd, m_DrawImage.image,
-    VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
-    VKImages::transitionImage(cmd, m_SwapChainImages[swapChainImageIndex], VK_IMAGE_LAYOUT_UNDEFINED,
-        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-
-    drawImgui(cmd, m_SwapChainImageViews[swapChainImageIndex]);
-    VKImages::transitionImage(cmd, m_SwapChainImages[swapChainImageIndex], VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-        VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
-    /*--------------------------------------------------------IMGUI------------------------------------------------*/
-#endif
+        drawImgui(cmd, m_SwapChainImageViews[swapChainImageIndex]);
+        VKImages::transitionImage(cmd, m_SwapChainImages[swapChainImageIndex], VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+        /*--------------------------------------------------------IMGUI------------------------------------------------*/
+    }
     //make swapchain presentable
     VK_CHECK(vkEndCommandBuffer(cmd));
 
@@ -840,8 +840,13 @@ ImGui_ImplVulkan_InitInfo VKRenderer::initImgui() {
 
     ImGui_ImplVulkan_Init(&initInfo);
     m_ImGuiDescriptorSet = ImGui_ImplVulkan_AddTexture(m_Sampler, m_DrawImage.imageView,
-        VK_IMAGE_LAYOUT_GENERAL
+        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
     );
+
+    m_ImGUIErrorSet = ImGui_ImplVulkan_AddTexture(m_Sampler, m_ErrorCheckerboardImage.imageView,
+        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+    );
+
 
     m_DeletionQueue.pushFunction([=]() {
         ImGui_ImplVulkan_Shutdown();
@@ -919,6 +924,21 @@ AllocatedBuffer VKRenderer::createBuffer(size_t allocSize, VkBufferUsageFlags us
 void VKRenderer::destroyBuffer(const AllocatedBuffer &buffer) {
     vmaDestroyBuffer(m_Allocator, buffer.buffer, buffer.allocation);
     //spdlog::debug("Renderer: Buffer Destroyed");
+}
+
+VkDescriptorSet VKRenderer::getImGUIDescSet(AssetID id) {
+    if (m_ImGUIDescSetMap.contains(id)) {
+        return m_ImGUIDescSetMap[id];
+    }
+    //if not found, add this id for cache
+    if (m_TextureMap.contains(id)) {
+        spdlog::debug("Renderer: Cached Thumbnail Tex: {}", (uint64_t)id);
+        auto& tex = m_TextureMap[id];
+        m_ImGUIDescSetMap.insert({id, ImGui_ImplVulkan_AddTexture(m_Sampler, tex.image.imageView,
+        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)});
+        return m_ImGUIDescSetMap[id];
+    }
+    return m_ImGUIErrorSet;
 }
 
 GPUMeshBuffers VKRenderer::uploadMesh(AssetID id, const MeshData &mesh) {
@@ -1052,6 +1072,10 @@ void VKRenderer::removeTexture(AssetID id) {
         getCurrentFrame().m_DeletionQueue.pushFunction([=]() {
             m_TextureAllocator.free(tex.index);
             destroyImage(tex.image);
+            if (m_ImGUIDescSetMap.contains(id)) {
+                ImGui_ImplVulkan_RemoveTexture(m_ImGUIDescSetMap[id]);
+                m_ImGUIDescSetMap.erase(id);
+            }
             //vkDestroySampler(m_Device, tex.sampler, nullptr);
         });
         m_MeshMap.erase(id);

@@ -31,7 +31,7 @@ namespace ZEN {
     class ZEN_API AssetLibrary {
     public:
         explicit AssetLibrary();
-        void init(EngineContext* ctx);
+        void init(VKRenderer* renderer);
         ~AssetLibrary();
 
         template<typename T>

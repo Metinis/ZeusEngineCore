@@ -22,8 +22,7 @@ constexpr std::filesystem::path getEngineDLLPath() {
 #endif
 }
 
-void Project::init(const std::string& projectRoot) {
-    m_AssetLibrary = std::make_shared<AssetLibrary>();
+void Project::init(const std::string& projectRoot, VKRenderer* renderer) {
     std::cout<<getEngineDLLPath()<<std::endl;
     std::filesystem::path root(projectRoot);
     std::filesystem::path assets = root / "assets";
@@ -38,4 +37,6 @@ void Project::init(const std::string& projectRoot) {
     std::filesystem::create_directories(assets / "scripts/bin");
     std::filesystem::create_directories(assets / "scripts/components");
     m_ProjectRoot = projectRoot;
+    m_AssetLibrary = std::make_shared<AssetLibrary>();
+    m_AssetLibrary->init(renderer);
 }

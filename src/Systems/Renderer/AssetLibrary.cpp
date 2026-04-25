@@ -9,9 +9,8 @@ AssetLibrary::AssetLibrary() {
 
 }
 
-void AssetLibrary::init(EngineContext *ctx) {
-    m_Renderer = ctx->vkRenderer.get();
-
+void AssetLibrary::init(VKRenderer* renderer) {
+    m_Renderer = renderer;
     addAsset<Material>(defaultMaterialID,
         createDefaultMaterial("/shaders/pbr.vert", "/shaders/pbr.frag", ""),
         "Default");

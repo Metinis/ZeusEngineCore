@@ -63,6 +63,8 @@ namespace ZEN {
         void beginFrame();
         void draw();
         void endFrame();
+        void setImGUIMode(const bool mode) {m_RenderToIMGUITexture = mode;}
+        VkDescriptorSet getImGUIDescSet(AssetID id);
         //will create mapping between assetID and GPU mesh to be used by renderer
         GPUMeshBuffers uploadMesh(AssetID id, const MeshData& mesh);
         GPUTexture uploadTexture(AssetID id, const TextureData& texture);
@@ -138,7 +140,9 @@ namespace ZEN {
         VkCommandBuffer m_ImmediateCommandBuffer{};
         VkCommandPool m_ImmediateCommandPool{};
 
-        VkDescriptorSet m_ImGuiDescriptorSet{};
+        VkDescriptorSet m_ImGuiDescriptorSet{}; //used for color image
+        VkDescriptorSet m_ImGUIErrorSet{}; //no texture found
+        std::unordered_map<AssetID, VkDescriptorSet> m_ImGUIDescSetMap{}; //used for thumbnails since imgui doesnt support bindless
         VkSampler m_Sampler{};
 
         VkPipelineLayout m_MeshPipelineLayout{};
@@ -156,10 +160,10 @@ namespace ZEN {
 
         TextureAllocator m_TextureAllocator{};
 
-
         bool m_Initialized{};
+        bool m_RenderToIMGUITexture{true};
 
-        Scene* m_Scene;
-        CameraSystem* m_CameraSystem;
+        Scene* m_Scene{};
+        CameraSystem* m_CameraSystem{};
     };
 }

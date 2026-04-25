@@ -45,9 +45,8 @@ void Application::init() {
     const char* title = "Select a project";
     const char* defaultPath = nullptr;
     const char* folderPath = tinyfd_selectFolderDialog(title, defaultPath);
-    Project::getActive()->init(folderPath);
     m_Ctx.vkRenderer->init(&m_Ctx);
-    Project::getActive()->getAssetLibrary()->init(&m_Ctx); //todo check this sketch
+    Project::getActive()->init(folderPath, m_Ctx.vkRenderer.get());
 
     m_Ctx.scene->init(&m_Ctx);
 
