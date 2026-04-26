@@ -33,10 +33,6 @@ void VKRenderer::init(EngineContext* ctx) {
             pixels[y*16 + x] = ((x % 2) ^ (y % 2)) ? magenta : black;
         }
     }
-    m_ErrorCheckerboardImage = createImage(pixels.data(), VkExtent3D{16, 16, 1}, VK_FORMAT_R8G8B8A8_UNORM,
-        VK_IMAGE_USAGE_SAMPLED_BIT);
-    m_TextureAllocator.allocate(); //reserve 0
-
 
     VkSamplerCreateInfo sampl = {.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
 
@@ -49,14 +45,20 @@ void VKRenderer::init(EngineContext* ctx) {
     sampl.minFilter = VK_FILTER_LINEAR;
     vkCreateSampler(m_Device, &sampl, nullptr, &m_DefaultSamplerLinear);
 
+    m_ErrorTexture = GPUTexture {
+        .image = createImage(pixels.data(), VkExtent3D{16, 16, 1}, VK_FORMAT_R8G8B8A8_UNORM,
+        VK_IMAGE_USAGE_SAMPLED_BIT),
+        .sampler = m_DefaultSamplerNearest,
+        .index = m_TextureAllocator.allocate()
+    };
     DescriptorWriter writer;
-    writer.writeImage(0, m_ErrorCheckerboardImage.imageView, m_DefaultSamplerNearest,
-                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0);
+    writer.writeImage(0, m_ErrorTexture.image.imageView, m_DefaultSamplerNearest,
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, m_ErrorTexture.index);
 
     writer.updateSet(m_Device, m_TextureDescriptorSet);
 
     m_DeletionQueue.pushFunction([=](){
-        destroyImage(m_ErrorCheckerboardImage);
+        destroyImage(m_ErrorTexture.image);
         vkDestroySampler(m_Device,m_DefaultSamplerNearest,nullptr);
         vkDestroySampler(m_Device,m_DefaultSamplerLinear,nullptr);
     });
@@ -416,7 +418,7 @@ void VKRenderer::initMeshPipeline() {
     VkPushConstantRange bufferRange{};
     bufferRange.offset = 0;
     bufferRange.size = sizeof(GPUDrawPushConstants);
-    bufferRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+    bufferRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 
     VkPipelineLayoutCreateInfo layoutInfo = VKInit::pipelineLayoutCreateInfo();
     layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;

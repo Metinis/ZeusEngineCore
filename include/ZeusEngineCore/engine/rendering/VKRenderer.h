@@ -41,6 +41,7 @@ namespace ZEN {
         glm::vec4 ambientColor;
         glm::vec4 sunlightDirection; // w for sun power
         glm::vec4 sunlightColor;
+        glm::vec4 cameraPosition;
     };
     constexpr unsigned int FRAME_OVERLAP = 3;
 
@@ -144,12 +145,13 @@ namespace ZEN {
         VkDescriptorSet m_ImGuiDescriptorSet{}; //used for color image
         VkDescriptorSet m_ImGUIErrorSet{}; //no texture found
         std::unordered_map<AssetID, VkDescriptorSet> m_ImGUIDescSetMap{}; //used for thumbnails since imgui doesnt support bindless
+
         VkSampler m_Sampler{};
 
         VkPipelineLayout m_MeshPipelineLayout{};
         VkPipeline m_MeshPipeline{};
 
-        AllocatedImage m_ErrorCheckerboardImage;
+        GPUTexture m_ErrorTexture{};
 
         VkSampler m_DefaultSamplerLinear;
         VkSampler m_DefaultSamplerNearest;

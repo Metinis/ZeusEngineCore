@@ -193,6 +193,8 @@ void VKRenderer::drawGeometry(VkCommandBuffer cmd) {
     auto lightDir = m_Scene->getLightDir();
     glm::vec4 light = glm::vec4(lightDir.x, lightDir.y, lightDir.z, 1);
     m_SceneData.sunlightDirection = light;
+    auto cameraPos = m_Scene->getSceneCamera().getComponent<TransformComp>().getWorldPosition();
+    m_SceneData.cameraPosition = glm::vec4(cameraPos.x, cameraPos.y, cameraPos.z, 1);
     *sceneUniformData = m_SceneData;
 
     //create descriptor set that binds this buffer and updates it
@@ -250,17 +252,23 @@ void VKRenderer::drawGeometry(VkCommandBuffer cmd) {
         pushConstants.worldMatrix = model;
         pushConstants.vertexBuffer = buf.vertexBufferAddress;
 
-        auto tex = GPUTexture{.image = m_ErrorCheckerboardImage, .sampler = m_DefaultSamplerNearest, .index = 0};
+        auto tex = m_ErrorTexture;
         auto mat = entity.tryGetComponent<MaterialComp>();
         if (mat) {
             auto texID = mat->handle->texture;
+            pushConstants.u_Albedo = glm::vec4(mat->handle->albedo.x, mat->handle->albedo.y, mat->handle->albedo.z, 1);
+            pushConstants.u_Params = glm::vec4(mat->handle->metallic, mat->handle->roughness, mat->handle->ao, 1.0f);
             if (m_TextureMap.contains(texID)) {
                 tex = m_TextureMap[texID];
             }
         }
         pushConstants.albedoIndex = tex.index;
 
-        vkCmdPushConstants(cmd, m_MeshPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &pushConstants);
+        //pushConstants.metallicTex =
+
+        vkCmdPushConstants(cmd, m_MeshPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+            0, sizeof(GPUDrawPushConstants), &pushConstants);
+
         vkCmdBindIndexBuffer(cmd, buf.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
 
         vkCmdDrawIndexed(cmd, buf.indexCount, 1, 0, 0, 0);
@@ -333,7 +341,7 @@ ImGui_ImplVulkan_InitInfo VKRenderer::initImgui() {
         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
     );
 
-    m_ImGUIErrorSet = ImGui_ImplVulkan_AddTexture(m_Sampler, m_ErrorCheckerboardImage.imageView,
+    m_ImGUIErrorSet = ImGui_ImplVulkan_AddTexture(m_Sampler, m_ErrorTexture.image.imageView,
         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
     );
 
