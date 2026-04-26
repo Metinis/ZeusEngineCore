@@ -1,8 +1,6 @@
 #pragma once
 #include <vulkan/vulkan.h>
-#include <vma/vk_mem_alloc.h>
 #include <VkBootstrap.h>
-#include <vma/vk_mem_alloc.h>
 #include "imgui_impl_vulkan.h"
 #include "Systems/Renderer/Vulkan/VKDescriptors.h"
 #include "Systems/Renderer/Vulkan/VKImages.h"
