@@ -9,5 +9,6 @@ namespace ZEN {
         ~ImGUILayerVulkan();
         void beginFrame();
         void render();
+        void endFrame();
     };
 }

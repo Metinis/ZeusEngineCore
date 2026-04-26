@@ -70,6 +70,7 @@ void VKRenderer::init(EngineContext* ctx) {
         VK_IMAGE_USAGE_SAMPLED_BIT);
     m_TextureAllocator.allocate(); //reserve 0
 
+
     VkSamplerCreateInfo sampl = {.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
 
     sampl.magFilter = VK_FILTER_NEAREST;
@@ -80,6 +81,12 @@ void VKRenderer::init(EngineContext* ctx) {
     sampl.magFilter = VK_FILTER_LINEAR;
     sampl.minFilter = VK_FILTER_LINEAR;
     vkCreateSampler(m_Device, &sampl, nullptr, &m_DefaultSamplerLinear);
+
+    DescriptorWriter writer;
+    writer.writeImage(0, m_ErrorCheckerboardImage.imageView, m_DefaultSamplerNearest,
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0);
+
+    writer.updateSet(m_Device, m_TextureDescriptorSet);
 
     m_DeletionQueue.pushFunction([=](){
         destroyImage(m_ErrorCheckerboardImage);
@@ -424,13 +431,28 @@ void VKRenderer::initSyncStructures() {
 void VKRenderer::initDescriptors() {
     std::vector<DescriptorAllocator::PoolSizeRatio> sizes {
         {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1},
-        {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 }
+        {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 },
     };
     m_GlobalDescriptorAllocator.initPool(m_Device, 10, sizes);
+
+    std::vector<DescriptorAllocator::PoolSizeRatio> textureSizes {
+        {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000},
+    };
+    m_TextureDescriptorAllocator.initPool(m_Device, 1000, textureSizes);
     {
         DescriptorLayoutBuilder builder;
         builder.addBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
         m_DrawImageDescriptorLayout = builder.build(m_Device, VK_SHADER_STAGE_COMPUTE_BIT);
+    }
+    {
+        DescriptorLayoutBuilder builder;
+        builder.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+        m_MainDescriptorLayout = builder.build(m_Device, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+            nullptr, VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT);
+
+        m_DeletionQueue.pushFunction([=]() {
+            vkDestroyDescriptorSetLayout(m_Device, m_MainDescriptorLayout, nullptr);
+        });
     }
     {
         DescriptorLayoutBuilder builder;
@@ -442,17 +464,15 @@ void VKRenderer::initDescriptors() {
         builder.addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, props.limits.maxDescriptorSetSampledImages,
             VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT |
                 VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT);
-
-        builder.addBinding(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-        m_MainDescriptorLayout = builder.build(m_Device, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+        m_TextureDescriptorSetLayout = builder.build(m_Device, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
             nullptr, VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT);
 
         m_DeletionQueue.pushFunction([=]() {
-            vkDestroyDescriptorSetLayout(m_Device, m_MainDescriptorLayout, nullptr);
+            vkDestroyDescriptorSetLayout(m_Device, m_TextureDescriptorSetLayout, nullptr);
         });
     }
     m_DrawImageDescriptors = m_GlobalDescriptorAllocator.allocate(m_Device, m_DrawImageDescriptorLayout);
-
+    m_TextureDescriptorSet = m_TextureDescriptorAllocator.allocate(m_Device, m_TextureDescriptorSetLayout);
     {
         DescriptorWriter writer;
         writer.writeImage(0, m_DrawImage.imageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
@@ -460,6 +480,7 @@ void VKRenderer::initDescriptors() {
     }
 
     m_DeletionQueue.pushFunction([=]() {
+        m_TextureDescriptorAllocator.destroyPool(m_Device);
         m_GlobalDescriptorAllocator.destroyPool(m_Device);
         vkDestroyDescriptorSetLayout(m_Device, m_DrawImageDescriptorLayout, nullptr);
     });
@@ -563,8 +584,13 @@ void VKRenderer::initMeshPipeline() {
     layoutInfo.pNext = nullptr;
     layoutInfo.flags = 0;
 
-    layoutInfo.setLayoutCount = 1;
-    layoutInfo.pSetLayouts = &m_MainDescriptorLayout;
+    std::array<VkDescriptorSetLayout, 2> setLayouts = {
+        m_MainDescriptorLayout,
+        m_TextureDescriptorSetLayout
+    };
+
+    layoutInfo.pSetLayouts = setLayouts.data();
+    layoutInfo.setLayoutCount = static_cast<uint32_t>(setLayouts.size());
 
     layoutInfo.pushConstantRangeCount = 1;
     layoutInfo.pPushConstantRanges = &bufferRange;
@@ -631,11 +657,14 @@ void VKRenderer::drawGeometry(VkCommandBuffer cmd) {
     allocate(m_Device, m_MainDescriptorLayout);
 
     DescriptorWriter writer;
-    writer.writeBuffer(1, gpuSceneDataBuffer.buffer,
+    writer.writeBuffer(0, gpuSceneDataBuffer.buffer,
         sizeof(GPUSceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
     writer.updateSet(m_Device, globalDescriptor);
+
     vkCmdBindDescriptorSets(cmd,VK_PIPELINE_BIND_POINT_GRAPHICS,
         m_MeshPipelineLayout,0, 1, &globalDescriptor,0,nullptr);
+    vkCmdBindDescriptorSets(cmd,VK_PIPELINE_BIND_POINT_GRAPHICS,
+        m_MeshPipelineLayout,1, 1, &m_TextureDescriptorSet,0,nullptr);
 
     VkRenderingAttachmentInfo colorAttInfo = VKInit::attachmentInfo(m_DrawImage.imageView
         , nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
@@ -667,15 +696,6 @@ void VKRenderer::drawGeometry(VkCommandBuffer cmd) {
     vkCmdSetScissor(cmd, 0, 1, &scissor);
 
     GPUDrawPushConstants pushConstants;
-
-    for (auto& [id, tex] : m_TextureMap) {
-        writer.writeImage(0, tex.image.imageView, tex.sampler,
-                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, tex.index);
-    }
-    writer.writeImage(0, m_ErrorCheckerboardImage.imageView, m_DefaultSamplerNearest,
-                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0);
-
-    writer.updateSet(m_Device, globalDescriptor);
 
     //todo probably move this logic out of here and have some sort of scene renderer submit render info
     //involving material etc
@@ -1042,6 +1062,11 @@ GPUTexture VKRenderer::uploadTexture(AssetID id, const TextureData &texture) {
         .sampler = m_DefaultSamplerNearest,
         .index = index,
     };
+    DescriptorWriter writer;
+
+    writer.writeImage(0, ret.image.imageView, ret.sampler,
+        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, ret.index);
+    writer.updateSet(m_Device, m_TextureDescriptorSet);
 
     stbi_image_free(pixels);
 
@@ -1069,16 +1094,16 @@ void VKRenderer::deleteMesh(AssetID id) {
 void VKRenderer::removeTexture(AssetID id) {
     if (m_TextureMap.find(id) != m_TextureMap.end()) {
         auto tex = m_TextureMap[id];
-        getCurrentFrame().m_DeletionQueue.pushFunction([=]() {
-            m_TextureAllocator.free(tex.index);
-            destroyImage(tex.image);
+        uint32_t frameIndex = (m_FrameNumber + FRAME_OVERLAP) % FRAME_OVERLAP;
+        m_Frames[frameIndex].m_DeletionQueue.pushFunction([=]() {
             if (m_ImGUIDescSetMap.contains(id)) {
                 ImGui_ImplVulkan_RemoveTexture(m_ImGUIDescSetMap[id]);
                 m_ImGUIDescSetMap.erase(id);
             }
-            //vkDestroySampler(m_Device, tex.sampler, nullptr);
+            m_TextureMap.erase(id);
+            m_TextureAllocator.free(tex.index);
+            destroyImage(tex.image);
         });
-        m_MeshMap.erase(id);
         spdlog::debug("Deleted Texture ID: {}", (uint64_t)id);
         return;
     }

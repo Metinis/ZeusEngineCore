@@ -28,6 +28,10 @@ void ImGUILayerVulkan::render() {
 	ImGui::Render();
 }
 
+void ImGUILayerVulkan::endFrame() {
+	ImGui::EndFrame();
+}
+
 extern "C" ZEN_API ImGuiContext* getEngineImGuiContext() {
 	return ImGui::GetCurrentContext();
 }

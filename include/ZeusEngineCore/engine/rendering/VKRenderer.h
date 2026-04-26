@@ -130,6 +130,9 @@ namespace ZEN {
         AllocatedImage m_DepthImage{};
 
         DescriptorAllocator m_GlobalDescriptorAllocator{};
+        DescriptorAllocator m_TextureDescriptorAllocator{};
+        VkDescriptorSet m_TextureDescriptorSet{};
+        VkDescriptorSetLayout m_TextureDescriptorSetLayout{};
         VkDescriptorSet m_DrawImageDescriptors{};
         VkDescriptorSetLayout m_DrawImageDescriptorLayout{};
 
