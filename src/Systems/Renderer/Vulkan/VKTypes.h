@@ -19,7 +19,6 @@ namespace ZEN {
     struct GPUTexture {
         AllocatedImage image{};
         VkSampler sampler{};
-        uint32_t index{};
     };
     struct alignas(16) GPUMaterial {
         glm::vec4 u_Albedo{};   // xyz = color
@@ -30,10 +29,6 @@ namespace ZEN {
         uint32_t roughnessIndex{};
         uint32_t normalIndex{};
         uint32_t aoIndex{};
-
-        uint32_t idx;
-        uint32_t pad0;
-        uint32_t pad1;
     };
     struct alignas(16) GPUDrawPushConstants{
         uint32_t matIndex{1};

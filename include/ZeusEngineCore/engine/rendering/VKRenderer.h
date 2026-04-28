@@ -51,7 +51,7 @@ namespace ZEN {
 
         uint32_t allocate();
         void free(uint32_t idx);
-        void init(uint32_t maxTextures);
+        void init(uint32_t max);
         void flush();
     };
 
@@ -167,8 +167,8 @@ namespace ZEN {
         AllocatedBuffer m_MaterialBuffer{};
 
         std::unordered_map<AssetID, GPUMeshBuffers> m_MeshMap{};
-        std::unordered_map<AssetID, GPUTexture> m_TextureMap{};
-        std::unordered_map<AssetID, GPUMaterial> m_MaterialMap{};
+        std::unordered_map<AssetID, std::pair<GPUTexture, uint32_t>> m_TextureMap{}; //texture and index into bindless
+        std::unordered_map<AssetID, std::pair<GPUMaterial, uint32_t>> m_MaterialMap{}; //material and index into material buff
 
         IndexAllocator m_TextureAllocator{};
         IndexAllocator m_MaterialAllocator{};

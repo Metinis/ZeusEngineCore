@@ -105,29 +105,28 @@ GPUTexture VKRenderer::uploadTexture(AssetID id, const TextureData &texture) {
 
     uint32_t index = m_TextureAllocator.allocate();
 
-    GPUTexture ret = {
+    GPUTexture gpuTex = {
         .image = newTexture,
         .sampler = m_DefaultSamplerNearest,
-        .index = index,
     };
     DescriptorWriter writer;
 
-    writer.writeImage(0, ret.image.imageView, ret.sampler,
-        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, ret.index);
+    writer.writeImage(0, gpuTex.image.imageView, gpuTex.sampler,
+        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, index);
     writer.updateSet(m_Device, m_TextureDescriptorSet);
 
     stbi_image_free(pixels);
 
-    m_TextureMap[id] = ret;
+    m_TextureMap[id] = {gpuTex, index};
 
     spdlog::debug("Renderer: Created Texture ID: {}", (uint64_t)id);
 
-    return ret;
+    return gpuTex;
 }
 
 GPUMaterial VKRenderer::uploadMaterial(AssetID id, const Material &material) {
     if (m_MaterialMap.find(id) != m_MaterialMap.end()) {
-        spdlog::warn("Attempt to upload material ID that exists: {}", (uint64_t)id);
+        spdlog::warn("Attempt to upload material ID that exists, updateting: {}", (uint64_t)id);
     }
 
     GPUMaterial gpuMat = {
@@ -136,27 +135,26 @@ GPUMaterial VKRenderer::uploadMaterial(AssetID id, const Material &material) {
     };
 
     if (m_TextureMap.contains(material.texture)) {
-        gpuMat.albedoIndex = m_TextureMap[material.texture].index;
+        gpuMat.albedoIndex = m_TextureMap[material.texture].second;
     }
     if (m_TextureMap.contains(material.metallicTex)) {
-        gpuMat.metallicIndex = m_TextureMap[material.metallicTex].index;
+        gpuMat.metallicIndex = m_TextureMap[material.metallicTex].second;
     }
     if (m_TextureMap.contains(material.roughnessTex)) {
-        gpuMat.roughnessIndex = m_TextureMap[material.roughnessTex].index;
+        gpuMat.roughnessIndex = m_TextureMap[material.roughnessTex].second;
     }
     if (m_TextureMap.contains(material.normalTex)) {
-        gpuMat.normalIndex = m_TextureMap[material.normalTex].index;
+        gpuMat.normalIndex = m_TextureMap[material.normalTex].second;
     }
     if (m_TextureMap.contains(material.aoTex)) {
-        gpuMat.aoIndex = m_TextureMap[material.aoTex].index;
+        gpuMat.aoIndex = m_TextureMap[material.aoTex].second;
     }
 
     DescriptorWriter writer;
 
     uint32_t idx = m_MaterialAllocator.allocate();
 
-    gpuMat.idx = idx;
-    m_MaterialMap[id] = gpuMat;
+    m_MaterialMap[id] = {gpuMat, idx};
 
     auto* mapped = (GPUMaterial*)m_MaterialBuffer.allocationInfo.pMappedData;
     mapped[idx] = gpuMat;
@@ -164,8 +162,8 @@ GPUMaterial VKRenderer::uploadMaterial(AssetID id, const Material &material) {
 
 void VKRenderer::deleteMaterial(AssetID id) {
     if (m_MaterialMap.find(id) != m_MaterialMap.end()) {
-        auto& material = m_MaterialMap[id];//todo free associated index
-        //m_MaterialAllocator.free();
+        auto& material = m_MaterialMap[id];
+        m_MaterialAllocator.free(material.second);
         m_MaterialMap.erase(id);
     }
 }
@@ -194,8 +192,9 @@ void VKRenderer::removeTexture(AssetID id) {
                 m_ImGUIDescSetMap.erase(id);
             }
             m_TextureMap.erase(id);
-            m_TextureAllocator.free(tex.index);
-            destroyImage(tex.image);
+            m_TextureAllocator.free(tex.second);
+            //todo check sampler freeing
+            destroyImage(tex.first.image);
         });
         spdlog::debug("Deleted Texture ID: {}", (uint64_t)id);
         return;

@@ -49,11 +49,11 @@ void VKRenderer::init(EngineContext* ctx) {
         .image = createImage(pixels.data(), VkExtent3D{16, 16, 1}, VK_FORMAT_R8G8B8A8_UNORM,
         VK_IMAGE_USAGE_SAMPLED_BIT),
         .sampler = m_DefaultSamplerNearest,
-        .index = m_TextureAllocator.allocate()
     };
     DescriptorWriter writer;
     writer.writeImage(0, m_ErrorTexture.image.imageView, m_DefaultSamplerNearest,
-                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, m_ErrorTexture.index);
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, m_TextureAllocator.allocate());
+    //index 0 reserved for error
 
     writer.updateSet(m_Device, m_TextureDescriptorSet);
 
@@ -103,7 +103,7 @@ void VKRenderer::cleanup() {
             destroyBuffer(buf.vertexBuffer);
         }
         for (auto &tex : m_TextureMap | std::views::values) {
-            destroyImage(tex.image);
+            destroyImage(tex.first.image);
             //vkDestroySampler(m_Device, tex.sampler, nullptr);
         }
 
@@ -296,12 +296,12 @@ void VKRenderer::initDescriptors() {
     std::vector<DescriptorAllocator::PoolSizeRatio> sizes {
         {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1},
         {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 },
+{       VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1},
     };
     m_GlobalDescriptorAllocator.initPool(m_Device, 10, sizes);
 
     std::vector<DescriptorAllocator::PoolSizeRatio> textureSizes {
         {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000},
-        {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000},
     };
     m_TextureDescriptorAllocator.initPool(m_Device, 1000, textureSizes);
     {
@@ -343,17 +343,14 @@ void VKRenderer::initDescriptors() {
 
         m_MaterialAllocator.init(1000);
 
-        builder.addBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000,
-        VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT |
-            VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT);
-        m_MaterialDescriptorSetLayout = builder.build(m_Device, VK_SHADER_STAGE_FRAGMENT_BIT,
-            nullptr, VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT);
+        builder.addBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+        m_MaterialDescriptorSetLayout = builder.build(m_Device, VK_SHADER_STAGE_FRAGMENT_BIT);
         m_DeletionQueue.pushFunction([=]() {
             vkDestroyDescriptorSetLayout(m_Device, m_MaterialDescriptorSetLayout, nullptr);
         });
     }
     m_DrawImageDescriptors = m_GlobalDescriptorAllocator.allocate(m_Device, m_DrawImageDescriptorLayout);
-    m_MaterialDescriptorSet = m_TextureDescriptorAllocator.allocate(m_Device, m_MaterialDescriptorSetLayout);
+    m_MaterialDescriptorSet = m_GlobalDescriptorAllocator.allocate(m_Device, m_MaterialDescriptorSetLayout);
     m_TextureDescriptorSet = m_TextureDescriptorAllocator.allocate(m_Device, m_TextureDescriptorSetLayout);
     {
         DescriptorWriter writer;

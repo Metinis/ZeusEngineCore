@@ -27,10 +27,10 @@ void IndexAllocator::free(uint32_t idx) {
     freeList.push_back(idx);
 }
 
-void IndexAllocator::init(uint32_t maxTextures) {
-    availableList.resize(maxTextures);
-    for (uint32_t i = 0; i < maxTextures; i++) {
-        availableList[i] = maxTextures - 1 - i;
+void IndexAllocator::init(uint32_t max) {
+    availableList.resize(max);
+    for (uint32_t i = 0; i < max; i++) {
+        availableList[i] = max - 1 - i;
     }
 }
 
@@ -256,7 +256,7 @@ void VKRenderer::drawGeometry(VkCommandBuffer cmd) {
 
         auto mat = entity.tryGetComponent<MaterialComp>();
         if (m_MaterialMap.contains(mat->handle.id())) {
-            pushConstants.matIndex = m_MaterialMap[mat->handle.id()].idx;
+            pushConstants.matIndex = m_MaterialMap[mat->handle.id()].second;
         } else {
             spdlog::warn("Renderer: Attempting to render unuploaded material!");
             pushConstants.matIndex = 0;
@@ -360,7 +360,7 @@ VkDescriptorSet VKRenderer::getImGUIDescSet(AssetID id) {
     if (m_TextureMap.contains(id)) {
         spdlog::debug("Renderer: Cached Thumbnail Tex: {}", (uint64_t)id);
         auto& tex = m_TextureMap[id];
-        m_ImGUIDescSetMap.insert({id, ImGui_ImplVulkan_AddTexture(m_Sampler, tex.image.imageView,
+        m_ImGUIDescSetMap.insert({id, ImGui_ImplVulkan_AddTexture(m_Sampler, tex.first.image.imageView,
         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)});
         return m_ImGUIDescSetMap[id];
     }
