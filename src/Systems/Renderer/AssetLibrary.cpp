@@ -49,38 +49,6 @@ AssetLibrary::~AssetLibrary() {
         //remove(id);
     //}
 }
-
-MaterialRaw AssetLibrary::getMaterialRaw(const Material &material) {
-    /*AssetHandle<Material> def = defaultMaterialID;
-    uint32_t shaderID = m_ResourceManager->get<GPUShader>(def->shader)->drawableID;
-    if (m_ResourceManager->get<GPUShader>(material.shader)) {
-        auto shader = m_ResourceManager->get<GPUShader>(material.shader);
-        shaderID = shader->drawableID;
-    }
-    MaterialRaw ret {
-        .shaderID = shaderID,
-        .textureID = m_ResourceManager->get<GPUTexture>(material.texture)->drawableID,
-        .metallicTexID = m_ResourceManager->get<GPUTexture>(material.metallicTex)->drawableID,
-        .roughnessTexID = m_ResourceManager->get<GPUTexture>(material.roughnessTex)->drawableID,
-        .normalTexID = m_ResourceManager->get<GPUTexture>(material.normalTex)->drawableID,
-        .aoTexID = m_ResourceManager->get<GPUTexture>(material.aoTex)->drawableID,
-        .albedo = material.albedo,
-        .metallic = material.metallic,
-        .roughness = material.roughness,
-        .metal = material.metal,
-        .useAlbedo = material.useAlbedo,
-        .useMetallic = material.useMetallic,
-        .useRoughness = material.useRoughness,
-        .useNormal = material.useNormal,
-        .useAO = material.useAO,
-    };
-    return ret;*/
-}
-
-MaterialRaw AssetLibrary::getMaterialRaw(const AssetID &material) {
-    auto mat = get<Material>(material);
-    return getMaterialRaw(*mat);
-}
 std::string removePrefix(const std::string& full, const std::string& prefix) {
     if (full.starts_with(prefix)) {
         return full.substr(prefix.size());
@@ -244,7 +212,7 @@ Material AssetLibrary::createDefaultMaterial(const std::string &vertPath,
         .geoPath = geoPath
     };
     addAsset<ShaderData>(defaultShaderID, std::move(defaultShader), "Default");
-    Material defaultMat{.shader = defaultShaderID, .texture = defaultTextureID};
+    Material defaultMat{.texture = defaultTextureID};
     return defaultMat;
 }
 

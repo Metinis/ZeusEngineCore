@@ -47,6 +47,9 @@ namespace ZEN {
             if constexpr (std::is_same_v<T, TextureData>) {
                 m_Renderer->uploadTexture(id, asset);
             }
+            if constexpr (std::is_same_v<T, Material>) {
+                m_Renderer->uploadMaterial(id, asset);
+            }
 
             m_AssetMap.emplace(id, std::forward<T>(asset));
             m_NameMap.emplace(id, name);
@@ -61,6 +64,9 @@ namespace ZEN {
             }
             if constexpr (std::is_same_v<T, TextureData>) {
                 m_Renderer->uploadTexture(id, asset);
+            }
+            if constexpr (std::is_same_v<T, Material>) {
+                m_Renderer->uploadMaterial(id, asset);
             }
             m_AssetMap[id] = std::forward<T>(asset);
             m_NameMap.emplace(id, name);
@@ -107,10 +113,10 @@ namespace ZEN {
             if (std::holds_alternative<TextureData>(m_AssetMap[id])) {
                 m_Renderer->removeTexture(id);
             }
+            if (std::holds_alternative<Material>(m_AssetMap[id])) {
+                m_Renderer->deleteMaterial(id);
+            }
             m_AssetMap.erase(id);
-            //if (m_ResourceManager->has(id)) {
-            //    m_ResourceManager->remove(id);
-            //}
         }
 
         const AssetMap& getAll() const { return m_AssetMap; }
@@ -121,9 +127,6 @@ namespace ZEN {
             }
             return "";
         }
-
-        MaterialRaw getMaterialRaw(const Material &material);
-        MaterialRaw getMaterialRaw(const AssetID &material);
 
     private:
         AssetMap m_AssetMap{};

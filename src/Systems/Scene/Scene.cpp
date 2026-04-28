@@ -93,13 +93,16 @@ void Scene::createDefaultScene() {
     cubeEntity.addComponent<MeshComp>(AssetHandle<MeshData>(defaultCubeID));
     cubeEntity.addComponent<BoxColliderComp>();
     cubeEntity.addComponent<RigidBodyComp>();
-    Material matComp{};
+
     TextureData texData{
         .path = Project::getActive()->getActiveProjectRoot() + "assets/textures/wall.jpg"
     };
     auto texId = m_ModelLibrary->createAsset<TextureData>(std::move(texData));
-    matComp.texture = texId;
-    cubeEntity.addComponent<MaterialComp>(matComp);
+    Material mat {
+        .texture = texId,
+    };
+    auto matID = m_ModelLibrary->createAsset<Material>(std::move(mat));
+    cubeEntity.addComponent<MaterialComp>(MaterialComp{matID});
 
     //auto skyboxEntity = createEntity("Skybox");
     //skyboxEntity.addComponent<SkyboxComp>();

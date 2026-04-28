@@ -45,9 +45,9 @@ namespace ZEN {
     };
     constexpr unsigned int FRAME_OVERLAP = 3;
 
-    struct TextureAllocator {
-        std::vector<uint32_t> availableList;
-        std::vector<uint32_t> freeList;
+    struct IndexAllocator {
+        std::vector<uint32_t> availableList{};
+        std::vector<uint32_t> freeList{};
 
         uint32_t allocate();
         void free(uint32_t idx);
@@ -67,8 +67,10 @@ namespace ZEN {
         //will create mapping between assetID and GPU mesh to be used by renderer
         GPUMeshBuffers uploadMesh(AssetID id, const MeshData& mesh);
         GPUTexture uploadTexture(AssetID id, const TextureData& texture);
+        GPUMaterial uploadMaterial(AssetID id, const Material& material);
         void deleteMesh(AssetID id);
         void removeTexture(AssetID id);
+        void deleteMaterial(AssetID id);
         //void createMesh()
         ImGui_ImplVulkan_InitInfo initImgui();
         [[nodiscard]] VkDescriptorSet getImDescSet() const {return m_ImGuiDescriptorSet;}
@@ -132,6 +134,10 @@ namespace ZEN {
         DescriptorAllocator m_TextureDescriptorAllocator{};
         VkDescriptorSet m_TextureDescriptorSet{};
         VkDescriptorSetLayout m_TextureDescriptorSetLayout{};
+
+        VkDescriptorSet m_MaterialDescriptorSet{};
+        VkDescriptorSetLayout m_MaterialDescriptorSetLayout{};
+
         VkDescriptorSet m_DrawImageDescriptors{};
         VkDescriptorSetLayout m_DrawImageDescriptorLayout{};
 
@@ -158,10 +164,14 @@ namespace ZEN {
         GPUSceneData m_SceneData{};
         VkDescriptorSetLayout m_MainDescriptorLayout{};
 
+        AllocatedBuffer m_MaterialBuffer{};
+
         std::unordered_map<AssetID, GPUMeshBuffers> m_MeshMap{};
         std::unordered_map<AssetID, GPUTexture> m_TextureMap{};
+        std::unordered_map<AssetID, GPUMaterial> m_MaterialMap{};
 
-        TextureAllocator m_TextureAllocator{};
+        IndexAllocator m_TextureAllocator{};
+        IndexAllocator m_MaterialAllocator{};
 
         bool m_Initialized{};
         bool m_RenderToIMGUITexture{true};

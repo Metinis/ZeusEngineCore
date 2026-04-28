@@ -32,7 +32,7 @@ return false; \
 namespace ZEN {
     using AssetID = UUID;
     struct Material {
-        AssetID shader{0};
+        //AssetID shader{0};
         AssetID texture{0};
         AssetID metallicTex{0};
         AssetID roughnessTex{0};
@@ -42,25 +42,6 @@ namespace ZEN {
         float metallic{1.0f};
         float roughness{1.0f};
         float ao{1.0f};
-        bool metal{false};
-        bool useAlbedo{false};
-        bool useMetallic{false};
-        bool useRoughness{false};
-        bool useNormal{false};
-        bool useAO{false};
-    };
-    struct MaterialRaw {
-        uint32_t shaderID{0};
-        uint32_t textureID{0};
-        uint32_t metallicTexID{0};
-        uint32_t roughnessTexID{0};
-        uint32_t normalTexID{0};
-        uint32_t aoTexID{0};
-        glm::vec3 albedo{1.0f, 1.0f, 1.0f};
-        float metallic{1.0f};
-        float roughness{1.0f};
-        float ao{1.0f};
-        bool metal{false};
         bool useAlbedo{false};
         bool useMetallic{false};
         bool useRoughness{false};

@@ -63,6 +63,27 @@ void VKRenderer::init(EngineContext* ctx) {
         vkDestroySampler(m_Device,m_DefaultSamplerLinear,nullptr);
     });
 
+    {
+        DescriptorWriter writer;
+        m_MaterialBuffer = createBuffer(
+        sizeof(GPUMaterial) * 1000,
+        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+        VMA_MEMORY_USAGE_CPU_TO_GPU
+        );
+        writer.writeBuffer(
+        0,
+        m_MaterialBuffer.buffer,
+        sizeof(GPUMaterial) * 1000,
+        0,
+        VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+        writer.updateSet(m_Device, m_MaterialDescriptorSet);
+
+        m_DeletionQueue.pushFunction([=]() {
+            destroyBuffer(m_MaterialBuffer);
+        });
+    }
+
+
     m_Initialized = true;
 }
 
@@ -85,6 +106,7 @@ void VKRenderer::cleanup() {
             destroyImage(tex.image);
             //vkDestroySampler(m_Device, tex.sampler, nullptr);
         }
+
         m_DeletionQueue.flush();
 
         destroySwapChain();
@@ -139,6 +161,7 @@ void VKRenderer::initVulkan() {
     features12.descriptorBindingPartiallyBound = true;
     features12.descriptorBindingUpdateUnusedWhilePending = true;
     features12.descriptorBindingSampledImageUpdateAfterBind = true;
+    features12.descriptorBindingStorageBufferUpdateAfterBind = true;
     features12.runtimeDescriptorArray = true;
 
     vkb::PhysicalDeviceSelector selector {vkbInst};
@@ -278,6 +301,7 @@ void VKRenderer::initDescriptors() {
 
     std::vector<DescriptorAllocator::PoolSizeRatio> textureSizes {
         {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000},
+        {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000},
     };
     m_TextureDescriptorAllocator.initPool(m_Device, 1000, textureSizes);
     {
@@ -312,7 +336,24 @@ void VKRenderer::initDescriptors() {
             vkDestroyDescriptorSetLayout(m_Device, m_TextureDescriptorSetLayout, nullptr);
         });
     }
+    {
+        DescriptorLayoutBuilder builder;
+        VkPhysicalDeviceProperties props;
+        vkGetPhysicalDeviceProperties(m_PhysicalDevice, &props);
+
+        m_MaterialAllocator.init(1000);
+
+        builder.addBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000,
+        VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT |
+            VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT);
+        m_MaterialDescriptorSetLayout = builder.build(m_Device, VK_SHADER_STAGE_FRAGMENT_BIT,
+            nullptr, VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT);
+        m_DeletionQueue.pushFunction([=]() {
+            vkDestroyDescriptorSetLayout(m_Device, m_MaterialDescriptorSetLayout, nullptr);
+        });
+    }
     m_DrawImageDescriptors = m_GlobalDescriptorAllocator.allocate(m_Device, m_DrawImageDescriptorLayout);
+    m_MaterialDescriptorSet = m_TextureDescriptorAllocator.allocate(m_Device, m_MaterialDescriptorSetLayout);
     m_TextureDescriptorSet = m_TextureDescriptorAllocator.allocate(m_Device, m_TextureDescriptorSetLayout);
     {
         DescriptorWriter writer;
@@ -418,16 +459,17 @@ void VKRenderer::initMeshPipeline() {
     VkPushConstantRange bufferRange{};
     bufferRange.offset = 0;
     bufferRange.size = sizeof(GPUDrawPushConstants);
-    bufferRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+    bufferRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
     VkPipelineLayoutCreateInfo layoutInfo = VKInit::pipelineLayoutCreateInfo();
     layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     layoutInfo.pNext = nullptr;
     layoutInfo.flags = 0;
 
-    std::array<VkDescriptorSetLayout, 2> setLayouts = {
+    std::array<VkDescriptorSetLayout, 3> setLayouts = {
         m_MainDescriptorLayout,
-        m_TextureDescriptorSetLayout
+        m_TextureDescriptorSetLayout,
+        m_MaterialDescriptorSetLayout
     };
 
     layoutInfo.pSetLayouts = setLayouts.data();

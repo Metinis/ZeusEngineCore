@@ -13,7 +13,7 @@
 
 using namespace ZEN;
 
-uint32_t TextureAllocator::allocate() {
+uint32_t IndexAllocator::allocate() {
     if (!availableList.empty()) {
         uint32_t idx = availableList.back();
         availableList.pop_back();
@@ -23,18 +23,18 @@ uint32_t TextureAllocator::allocate() {
     return 0;
 }
 
-void TextureAllocator::free(uint32_t idx) {
+void IndexAllocator::free(uint32_t idx) {
     freeList.push_back(idx);
 }
 
-void TextureAllocator::init(uint32_t maxTextures) {
+void IndexAllocator::init(uint32_t maxTextures) {
     availableList.resize(maxTextures);
     for (uint32_t i = 0; i < maxTextures; i++) {
         availableList[i] = maxTextures - 1 - i;
     }
 }
 
-void TextureAllocator::flush() {
+void IndexAllocator::flush() {
     availableList.insert(availableList.end(), freeList.begin(), freeList.end());
     freeList.clear();
 }
@@ -210,6 +210,8 @@ void VKRenderer::drawGeometry(VkCommandBuffer cmd) {
         m_MeshPipelineLayout,0, 1, &globalDescriptor,0,nullptr);
     vkCmdBindDescriptorSets(cmd,VK_PIPELINE_BIND_POINT_GRAPHICS,
         m_MeshPipelineLayout,1, 1, &m_TextureDescriptorSet,0,nullptr);
+    vkCmdBindDescriptorSets(cmd,VK_PIPELINE_BIND_POINT_GRAPHICS,
+        m_MeshPipelineLayout,2, 1, &m_MaterialDescriptorSet,0,nullptr);
 
     VkRenderingAttachmentInfo colorAttInfo = VKInit::attachmentInfo(m_DrawImage.imageView
         , nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
@@ -252,21 +254,15 @@ void VKRenderer::drawGeometry(VkCommandBuffer cmd) {
         pushConstants.worldMatrix = model;
         pushConstants.vertexBuffer = buf.vertexBufferAddress;
 
-        auto tex = m_ErrorTexture;
         auto mat = entity.tryGetComponent<MaterialComp>();
-        if (mat) {
-            auto texID = mat->handle->texture;
-            pushConstants.u_Albedo = glm::vec4(mat->handle->albedo.x, mat->handle->albedo.y, mat->handle->albedo.z, 1);
-            pushConstants.u_Params = glm::vec4(mat->handle->metallic, mat->handle->roughness, mat->handle->ao, 1.0f);
-            if (m_TextureMap.contains(texID)) {
-                tex = m_TextureMap[texID];
-            }
+        if (m_MaterialMap.contains(mat->handle.id())) {
+            pushConstants.matIndex = m_MaterialMap[mat->handle.id()].idx;
+        } else {
+            spdlog::warn("Renderer: Attempting to render unuploaded material!");
+            pushConstants.matIndex = 0;
         }
-        pushConstants.albedoIndex = tex.index;
 
-        //pushConstants.metallicTex =
-
-        vkCmdPushConstants(cmd, m_MeshPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+        vkCmdPushConstants(cmd, m_MeshPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT,
             0, sizeof(GPUDrawPushConstants), &pushConstants);
 
         vkCmdBindIndexBuffer(cmd, buf.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);

@@ -125,6 +125,51 @@ GPUTexture VKRenderer::uploadTexture(AssetID id, const TextureData &texture) {
     return ret;
 }
 
+GPUMaterial VKRenderer::uploadMaterial(AssetID id, const Material &material) {
+    if (m_MaterialMap.find(id) != m_MaterialMap.end()) {
+        spdlog::warn("Attempt to upload material ID that exists: {}", (uint64_t)id);
+    }
+
+    GPUMaterial gpuMat = {
+        .u_Albedo = glm::vec4(material.albedo.x, material.albedo.y, material.albedo.z, 1.0f),
+        .u_Params = glm::vec4(material.metallic, material.roughness, material.ao, 1.0),
+    };
+
+    if (m_TextureMap.contains(material.texture)) {
+        gpuMat.albedoIndex = m_TextureMap[material.texture].index;
+    }
+    if (m_TextureMap.contains(material.metallicTex)) {
+        gpuMat.metallicIndex = m_TextureMap[material.metallicTex].index;
+    }
+    if (m_TextureMap.contains(material.roughnessTex)) {
+        gpuMat.roughnessIndex = m_TextureMap[material.roughnessTex].index;
+    }
+    if (m_TextureMap.contains(material.normalTex)) {
+        gpuMat.normalIndex = m_TextureMap[material.normalTex].index;
+    }
+    if (m_TextureMap.contains(material.aoTex)) {
+        gpuMat.aoIndex = m_TextureMap[material.aoTex].index;
+    }
+
+    DescriptorWriter writer;
+
+    uint32_t idx = m_MaterialAllocator.allocate();
+
+    gpuMat.idx = idx;
+    m_MaterialMap[id] = gpuMat;
+
+    auto* mapped = (GPUMaterial*)m_MaterialBuffer.allocationInfo.pMappedData;
+    mapped[idx] = gpuMat;
+}
+
+void VKRenderer::deleteMaterial(AssetID id) {
+    if (m_MaterialMap.find(id) != m_MaterialMap.end()) {
+        auto& material = m_MaterialMap[id];//todo free associated index
+        //m_MaterialAllocator.free();
+        m_MaterialMap.erase(id);
+    }
+}
+
 void VKRenderer::deleteMesh(AssetID id) {
     if (m_MeshMap.find(id) != m_MeshMap.end()) {
         auto meshBuf = m_MeshMap[id];

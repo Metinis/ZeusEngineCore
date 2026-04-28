@@ -21,22 +21,26 @@ namespace ZEN {
         VkSampler sampler{};
         uint32_t index{};
     };
+    struct alignas(16) GPUMaterial {
+        glm::vec4 u_Albedo{};   // xyz = color
+        glm::vec4 u_Params{};   // x=metallic, y=roughness, z=ao, w=unused
+
+        uint32_t albedoIndex{};
+        uint32_t metallicIndex{};
+        uint32_t roughnessIndex{};
+        uint32_t normalIndex{};
+        uint32_t aoIndex{};
+
+        uint32_t idx;
+        uint32_t pad0;
+        uint32_t pad1;
+    };
     struct alignas(16) GPUDrawPushConstants{
+        uint32_t matIndex{1};
+        glm::vec3 pad;
         glm::mat4 worldMatrix;
-
         VkDeviceAddress vertexBuffer;
-        glm::vec2 pad;
 
-        glm::vec4 u_Albedo;
-        glm::vec4 u_Params;
-
-        uint32_t albedoIndex;
-        /*uint32_t metallicIndex;
-        uint32_t roughnessIndex;
-        uint32_t normalIndex;
-        uint32_t aoIndex;*/
-
-        //uint32_t _pad[3];
     };
 }
 

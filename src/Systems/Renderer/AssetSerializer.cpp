@@ -72,7 +72,6 @@ bool ZEN::AssetSerializer::serialize(const std::string &path) {
         out << YAML::Key << "Name" << YAML::Value << m_AssetLibrary->getName(ID);
         auto mat = m_AssetLibrary->get<Material>(ID);
 
-        out << YAML::Key << "Shader" << YAML::Value << mat->shader;
         out << YAML::Key << "Texture" << YAML::Value << mat->texture;
         out << YAML::Key << "MetallicTexture" << YAML::Value << mat->metallicTex;
         out << YAML::Key << "RoughnessTexture" << YAML::Value << mat->roughnessTex;
@@ -82,7 +81,6 @@ bool ZEN::AssetSerializer::serialize(const std::string &path) {
         out << YAML::Key << "Metallic" << YAML::Value << mat->metallic;
         out << YAML::Key << "Roughness" << YAML::Value << mat->roughness;
         out << YAML::Key << "AO" << YAML::Value << mat->ao;
-        out << YAML::Key << "Metal" << YAML::Value << mat->metal;
         out << YAML::Key << "UseAlbedo" << YAML::Value << mat->useAlbedo;
         out << YAML::Key << "UseMetallic" << YAML::Value << mat->useMetallic;
         out << YAML::Key << "UseRoughness" << YAML::Value << mat->useRoughness;
@@ -184,7 +182,6 @@ bool ZEN::AssetSerializer::deserialize(const std::string &path) {
             auto name = material["Name"];
             if(id) {
                 Material mat {
-                    .shader = AssetID(material["Shader"].as<uint64_t>()),
                     .texture = AssetID(material["Texture"].as<uint64_t>()),
                     .metallicTex = AssetID(material["MetallicTexture"].as<uint64_t>()),
                     .roughnessTex = AssetID(material["RoughnessTexture"].as<uint64_t>()),
@@ -194,7 +191,6 @@ bool ZEN::AssetSerializer::deserialize(const std::string &path) {
                     .metallic = material["Metallic"].as<float>(),
                     .roughness = material["Roughness"].as<float>(),
                     .ao = material["AO"].as<float>(),
-                    .metal = material["Metal"].as<bool>(),
                     .useAlbedo = material["UseAlbedo"].as<bool>(),
                     .useMetallic = material["UseMetallic"].as<bool>(),
                     .useRoughness = material["UseRoughness"].as<bool>(),
