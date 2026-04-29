@@ -152,6 +152,10 @@ void VKRenderer::endFrame() {
     }
 }
 
+void VKRenderer::submitDrawCall(const DrawCall &call) {
+    m_DrawCalls.push_back(call);
+}
+
 void VKRenderer::drawBackground(VkCommandBuffer cmd) {
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, m_GradientPipeline);
     vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, m_GradientPipelineLayout,
@@ -175,51 +179,42 @@ void VKRenderer::drawImgui(VkCommandBuffer cmd, VkImageView targetImageView) {
 
     vkCmdEndRendering(cmd);
 }
-void VKRenderer::drawGeometry(VkCommandBuffer cmd) {
-    //write to scene data buffer
-    auto* sceneUniformData = (GPUSceneData*)getCurrentFrame().m_SceneBuffer.allocationInfo.pMappedData;
-    m_SceneData = {};
-    m_SceneData.viewProj = m_CameraSystem->getVP();
-    m_SceneData.ambientColor = {0.5f, 0.5f, 0.5f, 1.0f};
-    m_SceneData.sunlightColor = {1.0f, 1.0f, 1.0f, 1.0f};
-    auto lightDir = m_Scene->getLightDir();
-    glm::vec4 light = glm::vec4(lightDir.x, lightDir.y, lightDir.z, 1);
-    m_SceneData.sunlightDirection = light;
-    auto cameraPos = m_Scene->getSceneCamera().getComponent<TransformComp>().getWorldPosition();
-    m_SceneData.cameraPosition = glm::vec4(cameraPos.x, cameraPos.y, cameraPos.z, 1);
-    *sceneUniformData = m_SceneData;
 
-    //object buffer stores matrices for each entity
+std::vector<IndirectDrawCall> VKRenderer::processDrawCalls() {
+    std::sort(m_DrawCalls.begin(), m_DrawCalls.end(), [](const DrawCall &a, const DrawCall &b) {
+        if (a.meshID != b.meshID)
+            return a.meshID < b.meshID;
+
+        return a.materialID< b.materialID;
+    });
+
     auto* objectUniformData = (GPUObjectData*)getCurrentFrame().m_ObjectBuffer.allocationInfo.pMappedData;
 
     auto* indirectData = (VkDrawIndexedIndirectCommand*)getCurrentFrame().m_IndirectBuffer.allocationInfo.pMappedData;
 
     int i = 0;
     std::vector<IndirectDrawCall> indirectDrawCalls{};
-    //todo submit draw calls throguh interface, not like this
-    for (auto entity : m_Scene->getEntities<TransformComp, MeshComp, MaterialComp>()) {
-        auto& mat = entity.getComponent<MaterialComp>();
-        auto meshID = entity.getComponent<MeshComp>().handle.id();
-        auto& buf = m_MeshMap[meshID];
-        auto& gpuMat = m_MaterialMap[mat.handle.id()];
+    for (auto& call : m_DrawCalls) {
+        auto& buf = m_MeshMap[call.meshID];
+        auto& gpuMat = m_MaterialMap[call.materialID];
 
         if (!indirectDrawCalls.empty() && &buf == indirectDrawCalls.back().mesh &&
             &gpuMat.first == indirectDrawCalls.back().material) {
             indirectDrawCalls.back().count++;
-        } else {
-            IndirectDrawCall indirectDrawCall = {
-                .mesh = &buf,
-                .material = &gpuMat.first,
-                .drawIndex = i,
-                .count = 1,
-            };
+            } else {
+                IndirectDrawCall indirectDrawCall = {
+                    .mesh = &buf,
+                    .material = &gpuMat.first,
+                    .drawIndex = i,
+                    .count = 1,
+                };
 
-            indirectDrawCalls.push_back(indirectDrawCall);
-        }
+                indirectDrawCalls.push_back(indirectDrawCall);
+            }
 
         objectUniformData[i] = {
-            .matIndex = m_MaterialMap[mat.handle.id()].second,
-            .model = entity.getComponent<TransformComp>().worldMatrix,
+            .matIndex = m_MaterialMap[call.materialID].second,
+            .model = call.model,
             .vertexBuffer = buf.vertexBufferAddress
         };
 
@@ -230,8 +225,49 @@ void VKRenderer::drawGeometry(VkCommandBuffer cmd) {
 
         i++;
     }
+    m_DrawCalls.clear();
 
-    //create descriptor set that binds this buffer and updates it
+    return indirectDrawCalls;
+}
+
+
+
+static void prepareViewport(VkCommandBuffer cmd, VkExtent2D extent) {
+    VkViewport viewport = {};
+    viewport.x = 0;
+    viewport.y = 0;
+    viewport.width = extent.width;
+    viewport.height = extent.height;
+    viewport.minDepth = 1.0f;
+    viewport.maxDepth = 0.0f;
+
+    vkCmdSetViewport(cmd, 0, 1, &viewport);
+
+    VkRect2D scissor = {};
+    scissor.offset.x = 0;
+    scissor.offset.y = 0;
+    scissor.extent.width = extent.width;
+    scissor.extent.height = extent.height;
+
+    vkCmdSetScissor(cmd, 0, 1, &scissor);
+}
+
+void VKRenderer::prepareDescriptors(VkCommandBuffer cmd) {
+    //write to scene data buffer
+    auto lightDir = m_Scene->getLightDir();
+    glm::vec4 light = glm::vec4(lightDir.x, lightDir.y, lightDir.z, 1);
+    auto cameraPos = m_Scene->getSceneCamera().getComponent<TransformComp>().getWorldPosition();
+
+    auto* sceneUniformData = (GPUSceneData*)getCurrentFrame().m_SceneBuffer.allocationInfo.pMappedData;
+    m_SceneData = {};
+    m_SceneData.viewProj = m_CameraSystem->getVP();
+    m_SceneData.ambientColor = {0.5f, 0.5f, 0.5f, 1.0f};
+    m_SceneData.sunlightColor = {1.0f, 1.0f, 1.0f, 1.0f};
+    m_SceneData.sunlightDirection = light;
+    m_SceneData.cameraPosition = glm::vec4(cameraPos.x, cameraPos.y, cameraPos.z, 1);
+
+    *sceneUniformData = m_SceneData;
+
     VkDescriptorSet globalDescriptor = getCurrentFrame().m_FrameDescriptors.
     allocate(m_Device, m_FrameDescriptorLayout);
 
@@ -244,11 +280,18 @@ void VKRenderer::drawGeometry(VkCommandBuffer cmd) {
     writer.updateSet(m_Device, globalDescriptor);
 
     vkCmdBindDescriptorSets(cmd,VK_PIPELINE_BIND_POINT_GRAPHICS,
-        m_MeshPipelineLayout,0, 1, &globalDescriptor,0,nullptr);
+    m_MeshPipelineLayout,0, 1, &globalDescriptor,0,nullptr);
     vkCmdBindDescriptorSets(cmd,VK_PIPELINE_BIND_POINT_GRAPHICS,
         m_MeshPipelineLayout,1, 1, &m_TextureDescriptorSet,0,nullptr);
     vkCmdBindDescriptorSets(cmd,VK_PIPELINE_BIND_POINT_GRAPHICS,
         m_MeshPipelineLayout,2, 1, &m_MaterialDescriptorSet,0,nullptr);
+
+}
+
+void VKRenderer::drawGeometry(VkCommandBuffer cmd) {
+    prepareDescriptors(cmd);
+
+    const std::vector<IndirectDrawCall> indirectDrawCalls = processDrawCalls();
 
     VkRenderingAttachmentInfo colorAttInfo = VKInit::attachmentInfo(m_DrawImage.imageView
         , nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
@@ -261,23 +304,7 @@ void VKRenderer::drawGeometry(VkCommandBuffer cmd) {
 
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_MeshPipeline);
 
-    VkViewport viewport = {};
-    viewport.x = 0;
-    viewport.y = 0;
-    viewport.width = m_DrawExtent.width;
-    viewport.height = m_DrawExtent.height;
-    viewport.minDepth = 1.0f;
-    viewport.maxDepth = 0.0f;
-
-    vkCmdSetViewport(cmd, 0, 1, &viewport);
-
-    VkRect2D scissor = {};
-    scissor.offset.x = 0;
-    scissor.offset.y = 0;
-    scissor.extent.width = m_DrawExtent.width;
-    scissor.extent.height = m_DrawExtent.height;
-
-    vkCmdSetScissor(cmd, 0, 1, &scissor);
+    prepareViewport(cmd, m_DrawExtent);
 
     for (auto& draw : indirectDrawCalls) {
         vkCmdBindIndexBuffer(cmd, draw.mesh->indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);

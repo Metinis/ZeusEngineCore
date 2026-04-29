@@ -517,7 +517,8 @@ void VKRenderer::createSwapChain(uint32_t width, uint32_t height) {
     m_SwapChainImageFormat = VK_FORMAT_B8G8R8A8_UNORM;
 
     swapChainBuilder.set_desired_format(VkSurfaceFormatKHR{.format = m_SwapChainImageFormat});
-    swapChainBuilder.set_desired_present_mode(VK_PRESENT_MODE_FIFO_KHR);
+    //swapChainBuilder.set_desired_present_mode(VK_PRESENT_MODE_FIFO_KHR);
+    swapChainBuilder.set_desired_present_mode(VK_PRESENT_MODE_IMMEDIATE_KHR);
     swapChainBuilder.set_desired_extent(width, height);
     swapChainBuilder.add_image_usage_flags(VK_IMAGE_USAGE_TRANSFER_DST_BIT);
     swapChainBuilder.set_desired_min_image_count(FRAME_OVERLAP);

@@ -52,7 +52,8 @@ void Scene::updateWorldTransforms() {
 
         if (auto parent = e.tryGetComponent<ParentComp>()) {
             auto parentEntity = getEntity(parent->parentID);
-            tc.worldMatrix = parentEntity.getComponent<TransformComp>().worldMatrix * local;
+            if (parentEntity.isValid())
+                tc.worldMatrix = parentEntity.getComponent<TransformComp>().worldMatrix * local;
         } else {
             tc.worldMatrix = local;
         }
@@ -70,7 +71,12 @@ void Scene::onUpdate(float dt) {
 }
 
 void Scene::onRender() {
-    Layer::onRender();
+    for (auto e : getEntities<TransformComp, MeshComp, MaterialComp>()) {
+        const auto& tc = e.getComponent<TransformComp>();
+        const auto& mc = e.getComponent<MeshComp>();
+        const auto& mat = e.getComponent<MaterialComp>();
+        m_Renderer->submitDrawCall({mc.handle.id(), mat.handle.id(), tc.worldMatrix});
+    }
 }
 
 

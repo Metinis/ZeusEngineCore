@@ -192,7 +192,17 @@ void VKRenderer::deleteMaterial(AssetID id) {
 
 void VKRenderer::deleteMesh(AssetID id) {
     if (m_MeshMap.contains(id)) {
-        auto meshBuf = m_MeshMap[id];
+        auto& meshBuf = m_MeshMap[id];
+        for (auto & frame : m_Frames) {
+            frame.m_DeletionQueue.pushFunction([this, &frame]() {
+                destroyBuffer(frame.m_IndirectBuffer);
+                frame.m_IndirectBuffer = createBuffer(
+            sizeof(VkDrawIndexedIndirectCommand) * 1000,
+         VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT,
+         VMA_MEMORY_USAGE_CPU_TO_GPU
+                );
+            });
+        }
         getCurrentFrame().m_DeletionQueue.pushFunction([=]() {
             destroyBuffer(meshBuf.indexBuffer);
             destroyBuffer(meshBuf.vertexBuffer);

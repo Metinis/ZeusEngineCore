@@ -58,6 +58,12 @@ namespace ZEN {
         void flush();
     };
 
+    struct DrawCall {
+        AssetID meshID;
+        AssetID materialID;
+        glm::mat4 model;
+    };
+
     struct IndirectDrawCall {
         GPUMeshBuffers* mesh{};
         GPUMaterial* material{};
@@ -72,6 +78,7 @@ namespace ZEN {
         void beginFrame();
         void draw();
         void endFrame();
+        void submitDrawCall(const DrawCall& call);
         void setImGUIMode(const bool mode) {m_RenderToIMGUITexture = mode;}
         VkDescriptorSet getImGUIDescSet(AssetID id);
         //will create mapping between assetID and GPU mesh to be used by renderer
@@ -103,6 +110,9 @@ namespace ZEN {
         void initBackgroundPipeline();
         void initSampler();
         void initMeshPipeline();
+
+        std::vector<IndirectDrawCall> processDrawCalls();
+        void prepareDescriptors(VkCommandBuffer cmd);
 
         void createSwapChain(uint32_t width, uint32_t height);
         void recreateSwapChain();
@@ -182,6 +192,8 @@ namespace ZEN {
 
         IndexAllocator m_TextureAllocator{};
         IndexAllocator m_MaterialAllocator{};
+
+        std::vector<DrawCall> m_DrawCalls{};
 
         bool m_Initialized{};
         bool m_RenderToIMGUITexture{true};
