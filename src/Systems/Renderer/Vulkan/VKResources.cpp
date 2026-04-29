@@ -146,6 +146,25 @@ GPUMaterial VKRenderer::uploadMaterial(const AssetID id, const Material &materia
         gpuMat.aoIndex = m_TextureMap[material.aoTex].second;
     }
 
+    uint32_t flags{};
+    if (material.useAlbedo) {
+        flags |= USE_ALBEDO;
+    }
+    if (material.useMetallic) {
+        flags |= USE_METALLIC;
+    }
+    if (material.useRoughness) {
+        flags |= USE_ROUGHNESS;
+    }
+    if (material.useNormal) {
+        flags |= USE_NORMAL;
+    }
+    if (material.useAO) {
+        flags |= USE_AO;
+    }
+
+    gpuMat.flags = flags;
+
     DescriptorWriter writer;
 
     uint32_t idx{};

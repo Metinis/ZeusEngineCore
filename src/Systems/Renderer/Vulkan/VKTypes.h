@@ -5,6 +5,13 @@
 #include "glm/mat4x4.hpp"
 
 namespace ZEN {
+    enum MaterialFlags : uint32_t {
+        USE_ALBEDO   = 1 << 0,
+        USE_METALLIC = 1 << 1,
+        USE_ROUGHNESS= 1 << 2,
+        USE_NORMAL   = 1 << 3,
+        USE_AO       = 1 << 4
+    };
     struct AllocatedBuffer {
         VkBuffer buffer{};
         VmaAllocation allocation{};
@@ -29,6 +36,8 @@ namespace ZEN {
         uint32_t roughnessIndex{};
         uint32_t normalIndex{};
         uint32_t aoIndex{};
+
+        uint32_t flags{};
     };
     struct alignas(16) GPUObjectData {
         uint32_t matIndex;
