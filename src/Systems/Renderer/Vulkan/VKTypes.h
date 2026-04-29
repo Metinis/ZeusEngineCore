@@ -30,11 +30,19 @@ namespace ZEN {
         uint32_t normalIndex{};
         uint32_t aoIndex{};
     };
-    struct alignas(16) GPUDrawPushConstants{
-        uint32_t matIndex{1};
+    struct alignas(16) GPUObjectData {
+        uint32_t matIndex;
         glm::vec3 pad;
-        glm::mat4 worldMatrix;
+        glm::mat4 model;
         VkDeviceAddress vertexBuffer;
+    };
+
+    struct GPUIndirectCommand {
+        VkDrawIndexedIndirectCommand draw;
+        uint32_t objectIndex;
+    };
+
+    struct alignas(16) GPUDrawPushConstants{
 
     };
 }

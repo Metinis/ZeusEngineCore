@@ -296,14 +296,10 @@ void VKRenderer::initDescriptors() {
     std::vector<DescriptorAllocator::PoolSizeRatio> sizes {
         {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1},
         {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 },
-{       VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1},
-    };
-    m_GlobalDescriptorAllocator.initPool(m_Device, 10, sizes);
-
-    std::vector<DescriptorAllocator::PoolSizeRatio> textureSizes {
+        {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1},
         {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000},
     };
-    m_TextureDescriptorAllocator.initPool(m_Device, 1000, textureSizes);
+    m_GlobalDescriptorAllocator.initPool(m_Device, 10, sizes);
     {
         DescriptorLayoutBuilder builder;
         builder.addBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
@@ -312,11 +308,12 @@ void VKRenderer::initDescriptors() {
     {
         DescriptorLayoutBuilder builder;
         builder.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-        m_MainDescriptorLayout = builder.build(m_Device, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+        builder.addBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+        m_FrameDescriptorLayout = builder.build(m_Device, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
             nullptr, VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT);
 
         m_DeletionQueue.pushFunction([=]() {
-            vkDestroyDescriptorSetLayout(m_Device, m_MainDescriptorLayout, nullptr);
+            vkDestroyDescriptorSetLayout(m_Device, m_FrameDescriptorLayout, nullptr);
         });
     }
     {
@@ -351,7 +348,7 @@ void VKRenderer::initDescriptors() {
     }
     m_DrawImageDescriptors = m_GlobalDescriptorAllocator.allocate(m_Device, m_DrawImageDescriptorLayout);
     m_MaterialDescriptorSet = m_GlobalDescriptorAllocator.allocate(m_Device, m_MaterialDescriptorSetLayout);
-    m_TextureDescriptorSet = m_TextureDescriptorAllocator.allocate(m_Device, m_TextureDescriptorSetLayout);
+    m_TextureDescriptorSet = m_GlobalDescriptorAllocator.allocate(m_Device, m_TextureDescriptorSetLayout);
     {
         DescriptorWriter writer;
         writer.writeImage(0, m_DrawImage.imageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
@@ -373,7 +370,19 @@ void VKRenderer::initDescriptors() {
         };
         m_Frames[i].m_FrameDescriptors = DescriptorAllocatorGrowable{};
         m_Frames[i].m_FrameDescriptors.init(m_Device, 1000, frameSizes);
+        m_Frames[i].m_SceneBuffer = createBuffer(sizeof(GPUSceneData),
+        VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
+        m_Frames[i].m_ObjectBuffer = createBuffer(sizeof(GPUObjectData) * 1000,
+        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
+        m_Frames[i].m_IndirectBuffer = createBuffer(
+        sizeof(VkDrawIndexedIndirectCommand) * 1000,
+        VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT,
+        VMA_MEMORY_USAGE_CPU_TO_GPU
+        );
         m_DeletionQueue.pushFunction([=]() {
+            destroyBuffer(m_Frames[i].m_IndirectBuffer);
+            destroyBuffer(m_Frames[i].m_ObjectBuffer);
+            destroyBuffer(m_Frames[i].m_SceneBuffer);
             m_Frames[i].m_FrameDescriptors.destroyPools(m_Device);
         });
     }
@@ -464,7 +473,7 @@ void VKRenderer::initMeshPipeline() {
     layoutInfo.flags = 0;
 
     std::array<VkDescriptorSetLayout, 3> setLayouts = {
-        m_MainDescriptorLayout,
+        m_FrameDescriptorLayout,
         m_TextureDescriptorSetLayout,
         m_MaterialDescriptorSetLayout
     };

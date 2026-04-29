@@ -175,17 +175,9 @@ void VKRenderer::drawImgui(VkCommandBuffer cmd, VkImageView targetImageView) {
 
     vkCmdEndRendering(cmd);
 }
-
 void VKRenderer::drawGeometry(VkCommandBuffer cmd) {
-    //create new uniform buff for scene data
-    AllocatedBuffer gpuSceneDataBuffer = createBuffer(sizeof(GPUSceneData),
-        VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
-    getCurrentFrame().m_DeletionQueue.pushFunction([=]() {
-        destroyBuffer(gpuSceneDataBuffer);
-    });
-
-    //write to buffer
-    auto* sceneUniformData = (GPUSceneData*)gpuSceneDataBuffer.allocationInfo.pMappedData;;
+    //write to scene data buffer
+    auto* sceneUniformData = (GPUSceneData*)getCurrentFrame().m_SceneBuffer.allocationInfo.pMappedData;
     m_SceneData = {};
     m_SceneData.viewProj = m_CameraSystem->getVP();
     m_SceneData.ambientColor = {0.3f, 0.3f, 0.3f, 0.3f};
@@ -197,13 +189,50 @@ void VKRenderer::drawGeometry(VkCommandBuffer cmd) {
     m_SceneData.cameraPosition = glm::vec4(cameraPos.x, cameraPos.y, cameraPos.z, 1);
     *sceneUniformData = m_SceneData;
 
+    //object buffer stores matrices for each entity
+    auto* objectUniformData = (GPUObjectData*)getCurrentFrame().m_ObjectBuffer.allocationInfo.pMappedData;
+
+    auto* indirectData = (VkDrawIndexedIndirectCommand*)getCurrentFrame().m_IndirectBuffer.allocationInfo.pMappedData;
+
+    int i = 0;
+    for (auto entity : m_Scene->getEntities<TransformComp, MeshComp>()) {
+
+        auto mat = entity.tryGetComponent<MaterialComp>();
+        uint32_t matIdx = 0;
+        if (mat && m_MaterialMap.contains(mat->handle.id())) {
+            matIdx = m_MaterialMap[mat->handle.id()].second;
+        } else {
+            spdlog::warn("Renderer: Attempting to render unuploaded material!");
+            matIdx = 0;
+        }
+
+        auto meshID = entity.getComponent<MeshComp>().handle.id();
+        auto buf = m_MeshMap[meshID];
+
+        objectUniformData[i] = {
+            .matIndex = matIdx,
+            .model = entity.getComponent<TransformComp>().worldMatrix,
+            .vertexBuffer = buf.vertexBufferAddress
+        };
+
+        indirectData[i].firstInstance = i;
+        indirectData[i].firstIndex = 0;
+        indirectData[i].instanceCount = 1;
+        indirectData[i].indexCount = buf.indexCount;
+
+        i++;
+    }
+
     //create descriptor set that binds this buffer and updates it
     VkDescriptorSet globalDescriptor = getCurrentFrame().m_FrameDescriptors.
-    allocate(m_Device, m_MainDescriptorLayout);
+    allocate(m_Device, m_FrameDescriptorLayout);
 
     DescriptorWriter writer;
-    writer.writeBuffer(0, gpuSceneDataBuffer.buffer,
+    writer.writeBuffer(0, getCurrentFrame().m_SceneBuffer.buffer,
         sizeof(GPUSceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+
+    writer.writeBuffer(1, getCurrentFrame().m_ObjectBuffer.buffer,
+        sizeof(GPUObjectData) * 1000, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
     writer.updateSet(m_Device, globalDescriptor);
 
     vkCmdBindDescriptorSets(cmd,VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -242,34 +271,20 @@ void VKRenderer::drawGeometry(VkCommandBuffer cmd) {
 
     vkCmdSetScissor(cmd, 0, 1, &scissor);
 
-    GPUDrawPushConstants pushConstants;
-
     //todo probably move this logic out of here and have some sort of scene renderer submit render info
-    //involving material etc
+    //todo accumulate into batches
+    int j = 0;
     for (auto entity : m_Scene->getEntities<TransformComp, MeshComp>()) {
+
         auto meshID = entity.getComponent<MeshComp>().handle.id();
         auto buf = m_MeshMap[meshID];
 
-        auto model = entity.getComponent<TransformComp>().worldMatrix;
-        pushConstants.worldMatrix = model;
-        pushConstants.vertexBuffer = buf.vertexBufferAddress;
-
-        auto mat = entity.tryGetComponent<MaterialComp>();
-        if (m_MaterialMap.contains(mat->handle.id())) {
-            pushConstants.matIndex = m_MaterialMap[mat->handle.id()].second;
-        } else {
-            spdlog::warn("Renderer: Attempting to render unuploaded material!");
-            pushConstants.matIndex = 0;
-        }
-
-        vkCmdPushConstants(cmd, m_MeshPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT,
-            0, sizeof(GPUDrawPushConstants), &pushConstants);
-
         vkCmdBindIndexBuffer(cmd, buf.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
 
-        vkCmdDrawIndexed(cmd, buf.indexCount, 1, 0, 0, 0);
+        vkCmdDrawIndexedIndirect(cmd, getCurrentFrame().m_IndirectBuffer.buffer, sizeof(VkDrawIndexedIndirectCommand) * j, 1,
+            sizeof(VkDrawIndexedIndirectCommand));
+        j++;
     }
-
     vkCmdEndRendering(cmd);
 }
 

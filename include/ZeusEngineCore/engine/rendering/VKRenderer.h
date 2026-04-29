@@ -35,6 +35,9 @@ namespace ZEN {
         VkFence m_Fence{}; //wait for commands for a frame to finish
         DeletionQueue m_DeletionQueue{};
         DescriptorAllocatorGrowable m_FrameDescriptors;
+        AllocatedBuffer m_IndirectBuffer;
+        AllocatedBuffer m_ObjectBuffer;
+        AllocatedBuffer m_SceneBuffer;
     };
     struct GPUSceneData {
         glm::mat4 viewProj;
@@ -162,7 +165,7 @@ namespace ZEN {
         VkSampler m_DefaultSamplerLinear;
         VkSampler m_DefaultSamplerNearest;
         GPUSceneData m_SceneData{};
-        VkDescriptorSetLayout m_MainDescriptorLayout{};
+        VkDescriptorSetLayout m_FrameDescriptorLayout{};
 
         AllocatedBuffer m_MaterialBuffer{};
 
