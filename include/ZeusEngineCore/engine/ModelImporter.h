@@ -35,6 +35,8 @@ namespace ZEN {
         std::shared_ptr<AssetLibrary> m_AssetLibrary{};
         std::unordered_map<const aiTexture*, UUID> m_EmbeddedTextureCache{};
         std::unordered_map<const char*, UUID> m_ExternalTextureCache{};
+        std::unordered_map<const aiMaterial*, UUID> m_MaterialCache{};
+        std::unordered_map<const aiMesh*, UUID> m_MeshCache{};
     };
 }
 
