@@ -46,7 +46,7 @@ void Scene::updateWorldTransforms() {
                           return computeDepth(a) < computeDepth(b);
                       });
 
-    for (auto e : entities) {
+    for (auto e : getEntities<TransformComp>()) {
         auto& tc = e.getComponent<TransformComp>();
         glm::mat4 local = tc.getLocalMatrix();
 
@@ -134,7 +134,8 @@ glm::vec3 Scene::getLightDir() {
 
 Entity Scene::createEntity(const std::string& name) {
 	auto ret = Entity{this, m_Registry.create()};
-    ret.addComponent<UUIDComp>();
+    auto id = ret.addComponent<UUIDComp>();
+    m_UUIDToEntityMap.emplace(id.uuid, ret);
     ret.addComponent<TransformComp>();
     auto view = getEntities<SceneCameraComp>();
     for (auto entity : view) {
@@ -154,6 +155,7 @@ Entity Scene::createEntity(const std::string& name) {
 Entity Scene::createEntity(const std::string& name, UUID id) {
     auto ret = Entity{this, m_Registry.create()};
     ret.addComponent<UUIDComp>(id);
+    m_UUIDToEntityMap.emplace(id, ret);
     ret.addComponent<TransformComp>();
     auto view = getEntities<SceneCameraComp>();
     for (auto entity : view) {
@@ -172,12 +174,17 @@ Entity Scene::createEntity(const std::string& name, UUID id) {
 }
 
 Entity Scene::getEntity(UUID id) {
+    if (m_UUIDToEntityMap.contains(id)) {
+        return m_UUIDToEntityMap.at(id);
+    }
     auto view = getEntities<UUIDComp>();
     for (auto entity : view) {
         if (entity.getComponent<UUIDComp>().uuid == id) {
+            m_UUIDToEntityMap.emplace(id, entity);
             return entity;
         }
     }
+    spdlog::warn("No entity found for UUID!: {}", (uint64_t)id);
     return Entity{};
 }
 
@@ -200,6 +207,9 @@ Entity Scene::getSceneCamera() {
 }
 
 void Scene::removeEntity(Entity entity) {
+    if (m_UUIDToEntityMap.contains(entity.getComponent<UUIDComp>().uuid)) {
+        m_UUIDToEntityMap.erase(entity.getComponent<UUIDComp>().uuid);
+    }
     m_Registry.destroy((entt::entity)entity);
 }
 

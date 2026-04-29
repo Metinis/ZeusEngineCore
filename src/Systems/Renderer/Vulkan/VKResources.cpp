@@ -124,11 +124,7 @@ GPUTexture VKRenderer::uploadTexture(AssetID id, const TextureData &texture) {
     return gpuTex;
 }
 
-GPUMaterial VKRenderer::uploadMaterial(AssetID id, const Material &material) {
-    if (m_MaterialMap.find(id) != m_MaterialMap.end()) {
-        spdlog::warn("Attempt to upload material ID that exists, updateting: {}", (uint64_t)id);
-    }
-
+GPUMaterial VKRenderer::uploadMaterial(const AssetID id, const Material &material) {
     GPUMaterial gpuMat = {
         .u_Albedo = glm::vec4(material.albedo.x, material.albedo.y, material.albedo.z, 1.0f),
         .u_Params = glm::vec4(material.metallic, material.roughness, material.ao, 1.0),
@@ -152,7 +148,14 @@ GPUMaterial VKRenderer::uploadMaterial(AssetID id, const Material &material) {
 
     DescriptorWriter writer;
 
-    uint32_t idx = m_MaterialAllocator.allocate();
+    uint32_t idx{};
+
+    //create new, otherwise replace
+    if (!m_MaterialMap.contains(id)) {
+        idx = m_MaterialAllocator.allocate();
+    } else {
+        idx = m_MaterialMap[id].second;
+    }
 
     m_MaterialMap[id] = {gpuMat, idx};
 
@@ -161,7 +164,7 @@ GPUMaterial VKRenderer::uploadMaterial(AssetID id, const Material &material) {
 }
 
 void VKRenderer::deleteMaterial(AssetID id) {
-    if (m_MaterialMap.find(id) != m_MaterialMap.end()) {
+    if (m_MaterialMap.contains(id)) {
         auto& material = m_MaterialMap[id];
         m_MaterialAllocator.free(material.second);
         m_MaterialMap.erase(id);
@@ -169,7 +172,7 @@ void VKRenderer::deleteMaterial(AssetID id) {
 }
 
 void VKRenderer::deleteMesh(AssetID id) {
-    if (m_MeshMap.find(id) != m_MeshMap.end()) {
+    if (m_MeshMap.contains(id)) {
         auto meshBuf = m_MeshMap[id];
         getCurrentFrame().m_DeletionQueue.pushFunction([=]() {
             destroyBuffer(meshBuf.indexBuffer);

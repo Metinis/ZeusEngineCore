@@ -70,7 +70,7 @@ namespace ZEN {
         //will create mapping between assetID and GPU mesh to be used by renderer
         GPUMeshBuffers uploadMesh(AssetID id, const MeshData& mesh);
         GPUTexture uploadTexture(AssetID id, const TextureData& texture);
-        GPUMaterial uploadMaterial(AssetID id, const Material& material);
+        GPUMaterial uploadMaterial(const AssetID id, const Material& material);
         void deleteMesh(AssetID id);
         void removeTexture(AssetID id);
         void deleteMaterial(AssetID id);

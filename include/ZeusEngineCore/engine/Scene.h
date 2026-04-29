@@ -61,6 +61,7 @@ namespace ZEN {
 	private:
 		entt::registry m_Registry{};
 		std::unordered_map<Entity, std::unordered_map<std::string, RuntimeComponent>> m_RuntimeComponents;
+		std::unordered_map<UUID, Entity> m_UUIDToEntityMap; //for cache
 		AssetLibrary* m_ModelLibrary{};
 		ZeusPhysicsSystem* m_PhysicsSystem{};
 		SystemManager* m_SystemManager{};
