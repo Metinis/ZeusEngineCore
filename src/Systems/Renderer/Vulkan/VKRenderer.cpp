@@ -180,7 +180,7 @@ void VKRenderer::drawGeometry(VkCommandBuffer cmd) {
     auto* sceneUniformData = (GPUSceneData*)getCurrentFrame().m_SceneBuffer.allocationInfo.pMappedData;
     m_SceneData = {};
     m_SceneData.viewProj = m_CameraSystem->getVP();
-    m_SceneData.ambientColor = {0.3f, 0.3f, 0.3f, 0.3f};
+    m_SceneData.ambientColor = {0.5f, 0.5f, 0.5f, 1.0f};
     m_SceneData.sunlightColor = {1.0f, 1.0f, 1.0f, 1.0f};
     auto lightDir = m_Scene->getLightDir();
     glm::vec4 light = glm::vec4(lightDir.x, lightDir.y, lightDir.z, 1);
@@ -195,22 +195,30 @@ void VKRenderer::drawGeometry(VkCommandBuffer cmd) {
     auto* indirectData = (VkDrawIndexedIndirectCommand*)getCurrentFrame().m_IndirectBuffer.allocationInfo.pMappedData;
 
     int i = 0;
-    for (auto entity : m_Scene->getEntities<TransformComp, MeshComp>()) {
+    std::vector<IndirectDrawCall> indirectDrawCalls{};
+    //todo submit draw calls throguh interface, not like this
+    for (auto entity : m_Scene->getEntities<TransformComp, MeshComp, MaterialComp>()) {
+        auto& mat = entity.getComponent<MaterialComp>();
+        auto meshID = entity.getComponent<MeshComp>().handle.id();
+        auto& buf = m_MeshMap[meshID];
+        auto& gpuMat = m_MaterialMap[mat.handle.id()];
 
-        auto mat = entity.tryGetComponent<MaterialComp>();
-        uint32_t matIdx = 0;
-        if (mat && m_MaterialMap.contains(mat->handle.id())) {
-            matIdx = m_MaterialMap[mat->handle.id()].second;
+        if (!indirectDrawCalls.empty() && &buf == indirectDrawCalls.back().mesh &&
+            &gpuMat.first == indirectDrawCalls.back().material) {
+            indirectDrawCalls.back().count++;
         } else {
-            spdlog::warn("Renderer: Attempting to render unuploaded material!");
-            matIdx = 0;
+            IndirectDrawCall indirectDrawCall = {
+                .mesh = &buf,
+                .material = &gpuMat.first,
+                .drawIndex = i,
+                .count = 1,
+            };
+
+            indirectDrawCalls.push_back(indirectDrawCall);
         }
 
-        auto meshID = entity.getComponent<MeshComp>().handle.id();
-        auto buf = m_MeshMap[meshID];
-
         objectUniformData[i] = {
-            .matIndex = matIdx,
+            .matIndex = m_MaterialMap[mat.handle.id()].second,
             .model = entity.getComponent<TransformComp>().worldMatrix,
             .vertexBuffer = buf.vertexBufferAddress
         };
@@ -271,19 +279,12 @@ void VKRenderer::drawGeometry(VkCommandBuffer cmd) {
 
     vkCmdSetScissor(cmd, 0, 1, &scissor);
 
-    //todo probably move this logic out of here and have some sort of scene renderer submit render info
-    //todo accumulate into batches
-    int j = 0;
-    for (auto entity : m_Scene->getEntities<TransformComp, MeshComp>()) {
+    for (auto& draw : indirectDrawCalls) {
+        vkCmdBindIndexBuffer(cmd, draw.mesh->indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
 
-        auto meshID = entity.getComponent<MeshComp>().handle.id();
-        auto buf = m_MeshMap[meshID];
-
-        vkCmdBindIndexBuffer(cmd, buf.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
-
-        vkCmdDrawIndexedIndirect(cmd, getCurrentFrame().m_IndirectBuffer.buffer, sizeof(VkDrawIndexedIndirectCommand) * j, 1,
+        vkCmdDrawIndexedIndirect(cmd, getCurrentFrame().m_IndirectBuffer.buffer,
+            sizeof(VkDrawIndexedIndirectCommand) * draw.drawIndex, draw.count,
             sizeof(VkDrawIndexedIndirectCommand));
-        j++;
     }
     vkCmdEndRendering(cmd);
 }

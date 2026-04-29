@@ -58,6 +58,13 @@ namespace ZEN {
         void flush();
     };
 
+    struct IndirectDrawCall {
+        GPUMeshBuffers* mesh{};
+        GPUMaterial* material{};
+        int drawIndex{};
+        int count{};
+    };
+
     class VKRenderer {
     public:
         VKRenderer();
@@ -70,7 +77,7 @@ namespace ZEN {
         //will create mapping between assetID and GPU mesh to be used by renderer
         GPUMeshBuffers uploadMesh(AssetID id, const MeshData& mesh);
         GPUTexture uploadTexture(AssetID id, const TextureData& texture);
-        GPUMaterial uploadMaterial(const AssetID id, const Material& material);
+        GPUMaterial uploadMaterial(AssetID id, const Material& material);
         void deleteMesh(AssetID id);
         void removeTexture(AssetID id);
         void deleteMaterial(AssetID id);

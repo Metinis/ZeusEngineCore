@@ -77,7 +77,7 @@ void Scene::onRender() {
 void Scene::createDefaultScene() {
     auto dirLightEntity = createEntity("Directional Light");
     DirectionalLightComp comp {
-        .ambient = {0.1f, 0.1f, 0.1f},
+        .ambient = {0.5f, 0.5f, 0.5f},
         .isPrimary = true,
     };
     dirLightEntity.addComponent<DirectionalLightComp>(comp);
