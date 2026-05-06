@@ -130,10 +130,11 @@ void ModelImporter::processAiMesh(Entity& entity, aiMesh* aimesh,
             vertex.position = processMeshPos(aimesh->mVertices[i], transform);
             vertex.Normal   = glm::vec3(0.0f);
             vertex.TexCoords= glm::vec2(0.0f, 0.0f);
-            vertex.Tangent.x = aimesh->mTangents[i].x;
-            vertex.Tangent.y = aimesh->mTangents[i].y;
-            vertex.Tangent.z = aimesh->mTangents[i].z;
-
+            if (aimesh->HasTangentsAndBitangents()) {
+                vertex.Tangent.x = aimesh->mTangents[i].x;
+                vertex.Tangent.y = aimesh->mTangents[i].y;
+                vertex.Tangent.z = aimesh->mTangents[i].z;
+            }
             if (aimesh->HasNormals())
                 vertex.Normal = processMeshNormals(aimesh->mNormals[i], transform);
 

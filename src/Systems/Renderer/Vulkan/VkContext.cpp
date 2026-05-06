@@ -83,7 +83,7 @@ void VKRenderer::init(EngineContext* ctx) {
         });
     }
 
-
+    initFrameGraph();
     m_Initialized = true;
 }
 
@@ -164,10 +164,14 @@ void VKRenderer::initVulkan() {
     features12.descriptorBindingStorageBufferUpdateAfterBind = true;
     features12.runtimeDescriptorArray = true;
 
+    VkPhysicalDeviceFeatures features {};
+    features.multiDrawIndirect = true;
+
     vkb::PhysicalDeviceSelector selector {vkbInst};
     selector.set_minimum_version(1, 3);
     selector.set_required_features_13(features13);
     selector.set_required_features_12(features12);
+    selector.set_required_features(features);
     selector.set_surface(m_Surface);
 
     vkb::PhysicalDevice physicalDevice = selector.select().value();
@@ -372,10 +376,10 @@ void VKRenderer::initDescriptors() {
         m_Frames[i].m_FrameDescriptors.init(m_Device, 1000, frameSizes);
         m_Frames[i].m_SceneBuffer = createBuffer(sizeof(GPUSceneData),
         VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
-        m_Frames[i].m_ObjectBuffer = createBuffer(sizeof(GPUObjectData) * 1000,
+        m_Frames[i].m_ObjectBuffer = createBuffer(sizeof(GPUObjectData) * 10000,
         VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
         m_Frames[i].m_IndirectBuffer = createBuffer(
-        sizeof(VkDrawIndexedIndirectCommand) * 1000,
+        sizeof(VkDrawIndexedIndirectCommand) * 10000,
         VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT,
         VMA_MEMORY_USAGE_CPU_TO_GPU
         );

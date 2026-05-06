@@ -99,29 +99,32 @@ GPUTexture VKRenderer::uploadTexture(AssetID id, const TextureData &texture) {
         std::cout<<"Invalid Image! Assigning default texture.."<<"\n";
         return {};
     }
+    if (m_TextureMap.contains(id)) {
+        //todo replace texture data, then return
+        stbi_image_free(pixels);
+        //removeTexture(id);
+        return m_TextureMap[id].first;
 
-    AllocatedImage newTexture = createImage((void*)pixels, VkExtent3D{(unsigned int)texWidth, (unsigned int)texHeight, 1}, VK_FORMAT_R8G8B8A8_UNORM,
+    }
+        AllocatedImage newTexture = createImage((void*)pixels, VkExtent3D{(unsigned int)texWidth, (unsigned int)texHeight, 1}, VK_FORMAT_R8G8B8A8_UNORM,
         VK_IMAGE_USAGE_SAMPLED_BIT);
 
-    uint32_t index = m_TextureAllocator.allocate();
+        uint32_t index = m_TextureAllocator.allocate();
 
-    GPUTexture gpuTex = {
-        .image = newTexture,
-        .sampler = m_DefaultSamplerNearest,
-    };
-    DescriptorWriter writer;
+        GPUTexture gpuTex = {
+            .image = newTexture,
+            .sampler = m_DefaultSamplerNearest,
+        };
+        DescriptorWriter writer;
 
-    writer.writeImage(0, gpuTex.image.imageView, gpuTex.sampler,
-        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, index);
-    writer.updateSet(m_Device, m_TextureDescriptorSet);
-
-    stbi_image_free(pixels);
-
-    m_TextureMap[id] = {gpuTex, index};
-
+        writer.writeImage(0, gpuTex.image.imageView, gpuTex.sampler,
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, index);
+        writer.updateSet(m_Device, m_TextureDescriptorSet);
+        stbi_image_free(pixels);
+        m_TextureMap[id] = {gpuTex, index};
     spdlog::debug("Renderer: Created Texture ID: {}", (uint64_t)id);
+        return gpuTex;
 
-    return gpuTex;
 }
 
 GPUMaterial VKRenderer::uploadMaterial(const AssetID id, const Material &material) {
@@ -193,16 +196,6 @@ void VKRenderer::deleteMaterial(AssetID id) {
 void VKRenderer::deleteMesh(AssetID id) {
     if (m_MeshMap.contains(id)) {
         auto& meshBuf = m_MeshMap[id];
-        for (auto & frame : m_Frames) {
-            frame.m_DeletionQueue.pushFunction([this, &frame]() {
-                destroyBuffer(frame.m_IndirectBuffer);
-                frame.m_IndirectBuffer = createBuffer(
-            sizeof(VkDrawIndexedIndirectCommand) * 1000,
-         VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT,
-         VMA_MEMORY_USAGE_CPU_TO_GPU
-                );
-            });
-        }
         getCurrentFrame().m_DeletionQueue.pushFunction([=]() {
             destroyBuffer(meshBuf.indexBuffer);
             destroyBuffer(meshBuf.vertexBuffer);

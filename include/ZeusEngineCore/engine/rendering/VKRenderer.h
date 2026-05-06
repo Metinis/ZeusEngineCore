@@ -2,6 +2,7 @@
 #include <vulkan/vulkan.h>
 #include <VkBootstrap.h>
 #include "imgui_impl_vulkan.h"
+#include "Systems/Renderer/FrameGraph.h"
 #include "Systems/Renderer/Vulkan/VKDescriptors.h"
 #include "Systems/Renderer/Vulkan/VKImages.h"
 #include "Systems/Renderer/Vulkan/VKTypes.h"
@@ -75,11 +76,12 @@ namespace ZEN {
     public:
         VKRenderer();
         void init(EngineContext* ctx);
+        void initFrameGraph();
         void beginFrame();
         void draw();
         void endFrame();
         void submitDrawCall(const DrawCall& call);
-        void setImGUIMode(const bool mode) {m_RenderToIMGUITexture = mode;}
+        void setImGUIMode(const bool mode);
         VkDescriptorSet getImGUIDescSet(AssetID id);
         //will create mapping between assetID and GPU mesh to be used by renderer
         GPUMeshBuffers uploadMesh(AssetID id, const MeshData& mesh);
@@ -88,6 +90,7 @@ namespace ZEN {
         void deleteMesh(AssetID id);
         void removeTexture(AssetID id);
         void deleteMaterial(AssetID id);
+        const FrameGraph& getFrameGraph() {return m_FrameGraph;}
         //void createMesh()
         ImGui_ImplVulkan_InitInfo initImgui();
         [[nodiscard]] VkDescriptorSet getImDescSet() const {return m_ImGuiDescriptorSet;}
@@ -186,9 +189,12 @@ namespace ZEN {
 
         AllocatedBuffer m_MaterialBuffer{};
 
+        FrameGraph m_FrameGraph{};
+
         std::unordered_map<AssetID, GPUMeshBuffers> m_MeshMap{};
         std::unordered_map<AssetID, std::pair<GPUTexture, uint32_t>> m_TextureMap{}; //texture and index into bindless
         std::unordered_map<AssetID, std::pair<GPUMaterial, uint32_t>> m_MaterialMap{}; //material and index into material buff
+        //todo lazy load pipelines and samplers
 
         IndexAllocator m_TextureAllocator{};
         IndexAllocator m_MaterialAllocator{};

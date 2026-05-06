@@ -107,8 +107,18 @@ void Scene::createDefaultScene() {
     Material mat {
         .texture = texId,
     };
+    mat.useAlbedo = true;
     auto matID = m_ModelLibrary->createAsset<Material>(std::move(mat));
     cubeEntity.addComponent<MaterialComp>(MaterialComp{matID});
+
+    /*for (int i{}; i < 999; ++i) {
+        auto cubeEntity = createEntity("Cube " + std::to_string(i));
+        cubeEntity.getComponent<TransformComp>().localPosition = glm::vec3(i, 0.0f, i);
+        cubeEntity.addComponent<MeshComp>(AssetHandle<MeshData>(defaultCubeID));
+        cubeEntity.addComponent<BoxColliderComp>();
+        cubeEntity.addComponent<RigidBodyComp>();
+        cubeEntity.addComponent<MaterialComp>(MaterialComp{matID});
+    }*/
 
     //auto skyboxEntity = createEntity("Skybox");
     //skyboxEntity.addComponent<SkyboxComp>();
