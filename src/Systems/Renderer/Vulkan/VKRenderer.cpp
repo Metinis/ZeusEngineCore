@@ -272,7 +272,7 @@ void VKRenderer::prepareDescriptors(VkCommandBuffer cmd) {
     //write to scene data buffer
     auto lightDir = m_Scene->getLightDir();
     glm::vec4 light = glm::vec4(lightDir.x, lightDir.y, lightDir.z, 1);
-    auto cameraPos = m_Scene->getSceneCamera().getComponent<TransformComp>().getWorldPosition();
+    auto cameraPos = m_Scene->getCamera().getComponent<TransformComp>().getWorldPosition();
 
     auto* sceneUniformData = (GPUSceneData*)getCurrentFrame().m_SceneBuffer.allocationInfo.pMappedData;
     m_SceneData = {};

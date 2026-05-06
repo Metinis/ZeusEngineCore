@@ -4,6 +4,8 @@
 #include <ZeusEngineCore/engine/Entity.h>
 #include <ZeusEngineCore/core/InputEvents.h>
 #include <ZeusEngineCore/asset/AssetLibrary.h>
+
+#include "ZeusEngineCore/engine/CameraSystem.h"
 #include "ZeusEngineCore/engine/SceneSerializer.h"
 #include "ZeusEngineCore/engine/rendering/VKRenderer.h"
 
@@ -20,6 +22,7 @@ void Scene::init(EngineContext *ctx) {
     m_Renderer = ctx->vkRenderer.get();
     m_SystemManager = ctx->systemManager.get();
     m_ModelLibrary = Project::getActive()->getAssetLibrary().get();
+    m_CameraSystem = ctx->cameraSystem;
     std::filesystem::path scriptsBinPath =
         std::filesystem::path(Project::getActive()->getActiveProjectRoot())
         / "assets" / "scripts" / "bin";
@@ -212,6 +215,16 @@ Entity Scene::getEntityByRegistryID(uint32_t registryID) {
         }
     }
     return Entity{};
+}
+
+Entity Scene::getCamera() {
+    if (m_CameraSystem->getUseMainCamera()) {
+        auto view = getEntities<CameraComp>();
+        for (auto entity : view) {
+            return entity;
+        }
+    }
+    return getSceneCamera();
 }
 
 Entity Scene::getSceneCamera() {

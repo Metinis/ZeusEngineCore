@@ -39,6 +39,7 @@ namespace ZEN {
 		Entity createEntity(const std::string& name, UUID id);
 		Entity getEntity(UUID id);
 		Entity getEntityByRegistryID(uint32_t registryID);
+		Entity getCamera(); //returns current active camera
 		Entity getSceneCamera();
 		bool isDescendantOf(Entity parent, Entity possibleChild);
 		void removeEntity(Entity entity);
@@ -66,6 +67,7 @@ namespace ZEN {
 		ZeusPhysicsSystem* m_PhysicsSystem{};
 		SystemManager* m_SystemManager{};
 		VKRenderer* m_Renderer{};
+		CameraSystem* m_CameraSystem{};
 
 		std::vector<CollisionEvent> m_PendingCollisionEvents;
 
