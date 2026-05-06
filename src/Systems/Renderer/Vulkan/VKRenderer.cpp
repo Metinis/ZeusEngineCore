@@ -43,29 +43,49 @@ static uint32_t swapChainImageIndex{};
 
 void VKRenderer::initFrameGraph() {
     RenderPass computePass{.name = "computePass"};
-    computePass.m_WriteResources.push_back({"DrawImage", ResourceUsage::COMPUTE_READ_WRITE});
+    computePass.m_WriteResources.push_back({"DrawImageCompute", ResourceUsage::COMPUTE_READ_WRITE});
     computePass.execute = [this](VkCommandBuffer cmd) {
         drawBackground(cmd);
     };
     RenderPass geometryPass{.name = "geometryPass"};
-    geometryPass.m_WriteResources.push_back({"DrawImage", ResourceUsage::COLOR_ATTACHMENT_WRITE});
+    geometryPass.m_ReadResources.push_back({"DrawImageCompute", ResourceUsage::SHADER_READ});
+    geometryPass.m_WriteResources.push_back({"DrawImageGeometry", ResourceUsage::COLOR_ATTACHMENT_WRITE});
     geometryPass.m_WriteResources.push_back({"DepthImage", ResourceUsage::DEPTH_STENCIL_WRITE});
     geometryPass.execute = [this](VkCommandBuffer cmd) {
         drawGeometry(cmd);
     };
     RenderPass imguiPass{.name = "imguiPass"};
-    imguiPass.m_ReadResources.push_back({"DrawImage", ResourceUsage::SHADER_READ});
+    imguiPass.m_ReadResources.push_back({"SwapChainImageCopy", ResourceUsage::TRANSFER_DESTINATION});
+    imguiPass.m_ReadResources.push_back({"DrawImageGeometry", ResourceUsage::SHADER_READ});
     imguiPass.m_WriteResources.push_back({"SwapChainImage", ResourceUsage::COLOR_ATTACHMENT_WRITE});
     imguiPass.execute = [this](VkCommandBuffer cmd) {
         drawImgui(cmd, m_SwapChainImageViews[swapChainImageIndex]);
     };
+    RenderPass copyPass{.name = "copyPass"};
+    copyPass.m_ReadResources.push_back({"DrawImageGeometry", ResourceUsage::TRANSFER_SOURCE});
+    copyPass.m_WriteResources.push_back({"SwapChainImageCopy", ResourceUsage::TRANSFER_DESTINATION});
+    copyPass.execute = [this](VkCommandBuffer cmd) {
+        if (!m_RenderToIMGUITexture) {
+            VKImages::copyImageToImage(cmd, m_DrawImage.image, m_SwapChainImages[swapChainImageIndex],
+                m_DrawExtent, m_SwapChainExtent);
+        }
+    };
 
-    m_FrameGraph.registerDependency("DrawImage", m_DrawImage.image);
+    RenderPass presentPass{.name = "presentPass"};
+    presentPass.m_ReadResources.push_back({"SwapChainImage", ResourceUsage::PRESENT_SRC});
+    presentPass.execute = [this](VkCommandBuffer cmd) {
+    };
+
+    m_FrameGraph.registerDependency("DrawImageCompute", m_DrawImage.image);
+    m_FrameGraph.registerDependency("DrawImageGeometry", m_DrawImage.image);
     m_FrameGraph.registerDependency("DepthImage", m_DepthImage.image);
-    m_FrameGraph.addRenderPass(std::move(computePass));
+
+    //No need for order since topologically sorted
+    m_FrameGraph.addRenderPass(std::move(presentPass));
     m_FrameGraph.addRenderPass(std::move(geometryPass));
     m_FrameGraph.addRenderPass(std::move(imguiPass));
-
+    m_FrameGraph.addRenderPass(std::move(computePass));
+    m_FrameGraph.addRenderPass(std::move(copyPass));
 }
 
 
@@ -92,9 +112,6 @@ void VKRenderer::beginFrame() {
     m_DrawExtent.height = m_DrawImage.imageExtent.height;
 
     VK_CHECK(vkBeginCommandBuffer(cmd, &cmdBeginInfo));
-
-    //VKImages::transitionImage(cmd, m_DrawImage.image,
-    //    VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
 }
 
 
@@ -102,6 +119,7 @@ void VKRenderer::beginFrame() {
 void VKRenderer::draw() {
     VkCommandBuffer cmd = getCurrentFrame().m_MainCommandBuffer;
 
+    m_FrameGraph.registerDependency("SwapChainImageCopy", m_SwapChainImages[swapChainImageIndex]);
     m_FrameGraph.registerDependency("SwapChainImage", m_SwapChainImages[swapChainImageIndex]);
 
     m_FrameGraph.compileAndExecute(cmd);
@@ -109,15 +127,6 @@ void VKRenderer::draw() {
 void VKRenderer::endFrame() {
     VkCommandBuffer cmd = getCurrentFrame().m_MainCommandBuffer;
 
-    if (!m_RenderToIMGUITexture) {
-        //todo move these to frame graph
-        VKImages::transitionImage(cmd, m_SwapChainImages[swapChainImageIndex], VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-            VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
-    } else {
-        VKImages::transitionImage(cmd, m_SwapChainImages[swapChainImageIndex], VK_IMAGE_LAYOUT_UNDEFINED,
-            VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
-    }
-    //make swapchain presentable
     VK_CHECK(vkEndCommandBuffer(cmd));
 
     VkCommandBufferSubmitInfo cmdSubmitInfo = VKInit::cmdBufferSubmitInfo(cmd);
@@ -160,27 +169,6 @@ void VKRenderer::submitDrawCall(const DrawCall &call) {
 
 void VKRenderer::setImGUIMode(const bool mode) {
     m_RenderToIMGUITexture = mode;
-    if (!m_RenderToIMGUITexture) {
-        m_FrameGraph.removeRenderPass("imguiPass");
-        RenderPass copyPass{.name = "copyPass"};
-        copyPass.m_ReadResources.push_back({"DrawImage", ResourceUsage::TRANSFER_SOURCE});
-        copyPass.m_WriteResources.push_back({"SwapChainImage", ResourceUsage::TRANSFER_DESTINATION});
-        copyPass.execute = [this](VkCommandBuffer cmd) {
-            VKImages::copyImageToImage(cmd, m_DrawImage.image, m_SwapChainImages[swapChainImageIndex],
-                m_DrawExtent, m_SwapChainExtent);
-        };
-        m_FrameGraph.addRenderPass(std::move(copyPass));
-
-        RenderPass imguiPass{.name = "imguiPass"};
-        imguiPass.m_ReadResources.push_back({"DrawImage", ResourceUsage::SHADER_READ});
-        imguiPass.m_WriteResources.push_back({"SwapChainImage", ResourceUsage::COLOR_ATTACHMENT_WRITE});
-        imguiPass.execute = [this](VkCommandBuffer cmd) {
-            drawImgui(cmd, m_SwapChainImageViews[swapChainImageIndex]);
-        };
-        m_FrameGraph.addRenderPass(std::move(imguiPass));
-    } else {
-        m_FrameGraph.removeRenderPass("copyPass");
-    }
 }
 
 void VKRenderer::drawBackground(VkCommandBuffer cmd) {
@@ -321,8 +309,6 @@ void VKRenderer::drawGeometry(VkCommandBuffer cmd) {
 
     const std::vector<IndirectDrawCall> indirectDrawCalls = processDrawCalls();
 
-    //would i replace these with frame pass images?
-
     VkRenderingAttachmentInfo colorAttInfo = VKInit::attachmentInfo(m_DrawImage.imageView
         , nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
     VkRenderingAttachmentInfo depthAttInfo = VKInit::depthAttachmentInfo(m_DepthImage.imageView
@@ -332,7 +318,6 @@ void VKRenderer::drawGeometry(VkCommandBuffer cmd) {
 
     vkCmdBeginRendering(cmd, &renderInfo);
 
-    //would i bind here the render pass pipeline, should render pass be solely responsible for resource transitions?
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_MeshPipeline);
 
     prepareViewport(cmd, m_DrawExtent);

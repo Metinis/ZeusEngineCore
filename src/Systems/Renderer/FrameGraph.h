@@ -10,7 +10,8 @@ namespace ZEN {
         SHADER_READ,
         COMPUTE_READ_WRITE,
         TRANSFER_DESTINATION,
-        TRANSFER_SOURCE
+        TRANSFER_SOURCE,
+        PRESENT_SRC,
     };
     struct PhysicalResourceState {
         VkImageLayout layout{VK_IMAGE_LAYOUT_UNDEFINED};
