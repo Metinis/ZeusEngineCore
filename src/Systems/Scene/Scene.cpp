@@ -99,7 +99,7 @@ void Scene::createDefaultScene() {
     cameraEntity.addComponent<CameraComp>();
 
     auto cubeEntity = createEntity("Cube");
-    cubeEntity.addComponent<MeshComp>(AssetHandle<MeshData>(defaultCubeID));
+    cubeEntity.addComponent<MeshComp>(AssetHandle<MeshData>(defaultSkyboxID));
     cubeEntity.addComponent<BoxColliderComp>();
     cubeEntity.addComponent<RigidBodyComp>();
 
@@ -112,6 +112,8 @@ void Scene::createDefaultScene() {
         .pipelineInfo = PipelineInfo{
             .vertexShader = "/shaders/vulkan-shaders/testTriangle copy.vert.spv",
             .fragmentShader = "/shaders/vulkan-shaders/testTriangle copy.frag.spv",
+            .depthTestEnabled = false,
+            .depthWriteEnabled = false,
         }
     };
     mat.useAlbedo = true;

@@ -172,6 +172,7 @@ GPUMaterial VKRenderer::uploadMaterial(const AssetID id, const Material &materia
     } else {
         gpuMat.pipeline = createMainPipeline(material.pipelineInfo);
     }
+    gpuMat.useDepth = material.pipelineInfo.depthTestEnabled;
 
     DescriptorWriter writer;
 

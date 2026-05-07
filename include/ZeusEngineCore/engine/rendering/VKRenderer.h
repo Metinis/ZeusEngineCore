@@ -42,7 +42,8 @@ namespace ZEN {
         AllocatedBuffer m_SceneBuffer;
     };
     struct GPUSceneData {
-        glm::mat4 viewProj;
+        glm::mat4 proj;
+        glm::mat4 view;
         glm::vec4 ambientColor;
         glm::vec4 sunlightDirection; // w for sun power
         glm::vec4 sunlightColor;
@@ -82,6 +83,7 @@ namespace ZEN {
         void draw();
         void endFrame();
         void submitDrawCall(const DrawCall& call);
+        void executeDrawCalls(VkCommandBuffer cmd, const std::vector<IndirectDrawCall>& draws);
         void setImGUIMode(const bool mode);
         VkDescriptorSet getImGUIDescSet(AssetID id);
         //will create mapping between assetID and GPU mesh to be used by renderer

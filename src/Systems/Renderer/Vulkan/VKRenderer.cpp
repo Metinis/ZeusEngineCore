@@ -276,7 +276,8 @@ void VKRenderer::prepareDescriptors(VkCommandBuffer cmd) {
 
     auto* sceneUniformData = (GPUSceneData*)getCurrentFrame().m_SceneBuffer.allocationInfo.pMappedData;
     m_SceneData = {};
-    m_SceneData.viewProj = m_CameraSystem->getVP();
+    m_SceneData.view = m_CameraSystem->getView();
+    m_SceneData.proj = m_CameraSystem->getProjection();
     m_SceneData.ambientColor = {0.5f, 0.5f, 0.5f, 1.0f};
     m_SceneData.sunlightColor = {1.0f, 1.0f, 1.0f, 1.0f};
     m_SceneData.sunlightDirection = light;
@@ -309,30 +310,61 @@ void VKRenderer::drawGeometry(VkCommandBuffer cmd) {
 
     const std::vector<IndirectDrawCall> indirectDrawCalls = processDrawCalls();
 
-    VkRenderingAttachmentInfo colorAttInfo = VKInit::attachmentInfo(m_DrawImage.imageView
-        , nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-    VkRenderingAttachmentInfo depthAttInfo = VKInit::depthAttachmentInfo(m_DepthImage.imageView
-        , VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
-    VkRenderingInfo renderInfo = VKInit::renderingInfo(m_DrawExtent,
-        &colorAttInfo, &depthAttInfo);
+    // Split draws into two groups
+    std::vector<IndirectDrawCall> depthDraws;
+    std::vector<IndirectDrawCall> noDepthDraws;
 
-    vkCmdBeginRendering(cmd, &renderInfo);
-
-    prepareViewport(cmd, m_DrawExtent);
-
-    VkPipeline prevPipeline{};
     for (auto& draw : indirectDrawCalls) {
+        if (draw.material->useDepth) {
+            depthDraws.push_back(draw);
+        } else {
+            noDepthDraws.push_back(draw);
+        }
+    }
+
+    // Second pass: Render without depth (transparent/overlay)
+    if (!noDepthDraws.empty()) {
+        VkRenderingAttachmentInfo colorAttInfo = VKInit::attachmentInfo(
+            m_DrawImage.imageView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+        // No depth attachment for this pass!
+        VkRenderingInfo renderInfo = VKInit::renderingInfo(m_DrawExtent, &colorAttInfo, nullptr);
+
+        vkCmdBeginRendering(cmd, &renderInfo);
+        prepareViewport(cmd, m_DrawExtent);
+
+        // Optional: Disable depth testing in pipeline or use a separate pipeline
+        executeDrawCalls(cmd, noDepthDraws);
+        vkCmdEndRendering(cmd);
+    }
+    // First pass: Render with depth testing
+    if (!depthDraws.empty()) {
+        VkRenderingAttachmentInfo colorAttInfo = VKInit::attachmentInfo(
+            m_DrawImage.imageView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+        VkRenderingAttachmentInfo depthAttInfo = VKInit::depthAttachmentInfo(
+            m_DepthImage.imageView, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+        VkRenderingInfo renderInfo = VKInit::renderingInfo(m_DrawExtent, &colorAttInfo, &depthAttInfo);
+
+        vkCmdBeginRendering(cmd, &renderInfo);
+        prepareViewport(cmd, m_DrawExtent);
+        executeDrawCalls(cmd, depthDraws);
+        vkCmdEndRendering(cmd);
+    }
+
+
+}
+
+void VKRenderer::executeDrawCalls(VkCommandBuffer cmd, const std::vector<IndirectDrawCall>& draws) {
+    VkPipeline prevPipeline{};
+    for (auto& draw : draws) {
         if (prevPipeline != draw.material->pipeline) {
             prevPipeline = draw.material->pipeline;
             vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, draw.material->pipeline);
         }
         vkCmdBindIndexBuffer(cmd, draw.mesh->indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
-
         vkCmdDrawIndexedIndirect(cmd, getCurrentFrame().m_IndirectBuffer.buffer,
             sizeof(VkDrawIndexedIndirectCommand) * draw.drawIndex, draw.count,
             sizeof(VkDrawIndexedIndirectCommand));
     }
-    vkCmdEndRendering(cmd);
 }
 
 void VKRenderer::immediateSubmit(std::function<void(VkCommandBuffer cmd)> &&function) {

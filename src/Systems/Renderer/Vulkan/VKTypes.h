@@ -40,6 +40,7 @@ namespace ZEN {
         uint32_t flags{};
         //todo move this out
         VkPipeline pipeline{};
+        bool useDepth{true};
     };
     struct alignas(16) GPUObjectData {
         uint32_t matIndex;

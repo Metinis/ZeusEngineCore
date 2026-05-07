@@ -18,6 +18,8 @@ namespace ZEN {
         void setUseMainCamera(bool useMainCamera) { m_UseMainCamera = useMainCamera; }
         bool getUseMainCamera() { return m_UseMainCamera; }
         glm::mat4 getVP() const {return m_CurrentVP;}
+        glm::mat4 getView() const {return m_View;};
+        glm::mat4 getProjection() const {return m_Projection;};
     private:
         bool onPlayMode(RunPlayModeEvent& e);
         bool onKeyPressed(const KeyPressedEvent& e);
@@ -29,6 +31,8 @@ namespace ZEN {
         bool onMouseMove(const MouseMovedEvent& e);
 
         glm::mat4 m_CurrentVP{};
+        glm::mat4 m_View{};
+        glm::mat4 m_Projection{};
         float m_AspectRatio{};
         float m_MoveSpeed{5.0f};
         double m_CursorPosLastX{};

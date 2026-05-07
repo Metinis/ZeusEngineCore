@@ -15,7 +15,7 @@ void AssetLibrary::init(VKRenderer* renderer) {
         createDefaultMaterial("/shaders/pbr.vert", "/shaders/pbr.frag", ""),
         "Default");
     addAsset<MeshData>(defaultCubeID, createCube(), "Cube");
-    //addAsset<MeshData>(defaultSkyboxID, createSkybox(), "Skybox");
+    addAsset<MeshData>(defaultSkyboxID, createSkybox(), "Skybox");
     addAsset<MeshData>(defaultQuadID, createQuad(), "Quad");
     addAsset<MeshData>(defaultSphereID, createSphere(1.0f, 32, 16), "Sphere");
 }
@@ -156,26 +156,76 @@ MeshData AssetLibrary::createQuad() {
 
 
 MeshData AssetLibrary::createSkybox() {
-    /*MeshData skyboxMesh{};
+    MeshData skyboxMesh{};
+
+    // Skybox vertices: position, normal (unused for skybox but kept for format), UV (unused)
+    // Using a cube from -1 to 1 in all directions
     skyboxMesh.vertices = {
-        V({-1.0f, 1.0f, -1.0f}}, {{-1.0f, -1.0f, -1.0f}}, {{1.0f, -1.0f, -1.0f}}, {{1.0f, 1.0f, -1.0f}), // Back
-        V({-1.0f, -1.0f, 1.0f}}, {{-1.0f, 1.0f, 1.0f}}, {{1.0f, 1.0f, 1.0f}}, {{1.0f, -1.0f, 1.0f}), // Front
-        V({-1.0f, 1.0f, 1.0f}}, {{-1.0f, -1.0f, 1.0f}}, {{-1.0f, -1.0f, -1.0f}}, {{-1.0f, 1.0f, -1.0f}), // Left
-        V({1.0f, 1.0f, -1.0f}}, {{1.0f, -1.0f, -1.0f}}, {{1.0f, -1.0f, 1.0f}}, {{1.0f, 1.0f, 1.0f}), // Right
-        V({-1.0f, 1.0f, 1.0f}}, {{-1.0f, 1.0f, -1.0f}}, {{1.0f, 1.0f, -1.0f}}, {{1.0f, 1.0f, 1.0f}), // Top
-        V({-1.0f, -1.0f, -1.0f}}, {{-1.0f, -1.0f, 1.0f}}, {{1.0f, -1.0f, 1.0f}}, {{1.0f, -1.0f, -1.0f}) // Bottom
+        // Back face (z = -1)
+        V({-1.0f, -1.0f, -1.0f}, {0, 0, 1}, {0.0f, 0.0f}), // Bottom-left
+        V({ 1.0f, -1.0f, -1.0f}, {0, 0, 1}, {1.0f, 0.0f}), // Bottom-right
+        V({ 1.0f,  1.0f, -1.0f}, {0, 0, 1}, {1.0f, 1.0f}), // Top-right
+        V({-1.0f,  1.0f, -1.0f}, {0, 0, 1}, {0.0f, 1.0f}), // Top-left
+
+        // Front face (z = 1) - alternate ordering
+        V({-1.0f,  1.0f,  1.0f}, {0, 0, -1}, {0.0f, 1.0f}), // 4: Top-left
+        V({ 1.0f,  1.0f,  1.0f}, {0, 0, -1}, {1.0f, 1.0f}), // 5: Top-right
+        V({ 1.0f, -1.0f,  1.0f}, {0, 0, -1}, {1.0f, 0.0f}), // 6: Bottom-right
+        V({-1.0f, -1.0f,  1.0f}, {0, 0, -1}, {0.0f, 0.0f}), // 7: Bottom-left
+
+        // Left face (x = -1)
+        V({-1.0f, -1.0f,  1.0f}, {0, 0, 1}, {0.0f, 0.0f}), // Front-bottom
+        V({-1.0f, -1.0f, -1.0f}, {0, 0, 1}, {1.0f, 0.0f}), // Back-bottom
+        V({-1.0f,  1.0f, -1.0f}, {0, 0, 1}, {1.0f, 1.0f}), // Back-top
+        V({-1.0f,  1.0f,  1.0f}, {0, 0, 1}, {0.0f, 1.0f}), // Front-top
+
+        // Right face (x = 1)
+        V({ 1.0f, -1.0f, -1.0f}, {0, 0, 1}, {0.0f, 0.0f}), // Back-bottom
+        V({ 1.0f, -1.0f,  1.0f}, {0, 0, 1}, {1.0f, 0.0f}), // Front-bottom
+        V({ 1.0f,  1.0f,  1.0f}, {0, 0, 1}, {1.0f, 1.0f}), // Front-top
+        V({ 1.0f,  1.0f, -1.0f}, {0, 0, 1}, {0.0f, 1.0f}), // Back-top
+
+        // Top face (y = 1)
+        V({-1.0f,  1.0f, -1.0f}, {0, 0, 1}, {0.0f, 0.0f}),
+        V({ 1.0f,  1.0f, -1.0f}, {0, 0, 1}, {1.0f, 0.0f}),
+        V({ 1.0f,  1.0f,  1.0f}, {0, 0, 1}, {1.0f, 1.0f}),
+        V({-1.0f,  1.0f,  1.0f}, {0, 0, 1}, {0.0f, 1.0f}),
+
+        // Bottom face (y = -1)
+        V({-1.0f, -1.0f,  1.0f}, {0, 0, 1}, {0.0f, 0.0f}),
+        V({ 1.0f, -1.0f,  1.0f}, {0, 0, 1}, {1.0f, 0.0f}),
+        V({ 1.0f, -1.0f, -1.0f}, {0, 0, 1}, {1.0f, 1.0f}),
+        V({-1.0f, -1.0f, -1.0f}, {0, 0, 1}, {0.0f, 1.0f})
     };
 
+    // Indices for 6 faces * 2 triangles per face = 12 triangles * 3 indices = 36 indices
     skyboxMesh.indices = {
-        0, 1, 2, 0, 2, 3, // Back (flipped)
-        4, 5, 6, 4, 6, 7, // Front
-        8, 9, 10, 8, 10, 11, // Left
-        12, 13, 14, 12, 14, 15, // Right
-        16, 17, 18, 16, 18, 19, // Top
-        20, 21, 22, 20, 22, 23 // Bottom
+        // Back face
+        0, 1, 2,
+        2, 3, 0,
+
+        // Front face
+        4, 5, 6,
+        6, 7, 4,
+
+        // Left face
+        8, 9, 10,
+        10, 11, 8,
+
+        // Right face
+        12, 13, 14,
+        14, 15, 12,
+
+        // Top face
+        16, 17, 18,
+        18, 19, 16,
+
+        // Bottom face
+        20, 21, 22,
+        22, 23, 20
     };
-    return skyboxMesh;*/
-    return MeshData{};
+
+    return skyboxMesh;
 }
 
 Material AssetLibrary::createDefaultMaterial(const std::string &vertPath,
