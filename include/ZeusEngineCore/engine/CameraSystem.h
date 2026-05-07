@@ -17,7 +17,6 @@ namespace ZEN {
         void setAspectRatio(float aspectRatio) { m_Resized = true; m_AspectRatio = aspectRatio; }
         void setUseMainCamera(bool useMainCamera) { m_UseMainCamera = useMainCamera; }
         bool getUseMainCamera() { return m_UseMainCamera; }
-        glm::mat4 getVP() const {return m_CurrentVP;}
         glm::mat4 getView() const {return m_View;};
         glm::mat4 getProjection() const {return m_Projection;};
     private:
@@ -30,7 +29,6 @@ namespace ZEN {
         bool onMouseButtonReleased(const MouseButtonReleasedEvent& e);
         bool onMouseMove(const MouseMovedEvent& e);
 
-        glm::mat4 m_CurrentVP{};
         glm::mat4 m_View{};
         glm::mat4 m_Projection{};
         float m_AspectRatio{};

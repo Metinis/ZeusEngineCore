@@ -28,7 +28,6 @@ void CameraSystem::onUpdate(float deltaTime) {
             if (auto *transform = entity.tryGetComponent<TransformComp>()) {
                 m_View = transform->getViewMatrixWorld();
                 m_Projection = camera.projection;
-                m_CurrentVP = camera.projection * transform->getViewMatrixWorld();
             }
         }
         return;
@@ -77,7 +76,6 @@ void CameraSystem::onUpdate(float deltaTime) {
             }
             m_View = transform->getViewMatrixWorld();
             m_Projection = camera.projection;
-            m_CurrentVP = camera.projection * transform->getViewMatrixWorld();
         }
         camera.aspect = m_AspectRatio;
         camera.projection = glm::perspective(camera.fov, camera.aspect, camera.near, camera.far);

@@ -27,6 +27,10 @@ namespace ZEN {
         AllocatedImage image{};
         VkSampler sampler{};
     };
+    struct StoredTexture {
+        GPUTexture texture{};
+        uint32_t idx{};
+    };
     struct alignas(16) GPUMaterial {
         glm::vec4 u_Albedo{};   // xyz = color
         glm::vec4 u_Params{};   // x=metallic, y=roughness, z=ao, w=unused
@@ -38,9 +42,12 @@ namespace ZEN {
         uint32_t aoIndex{};
 
         uint32_t flags{};
-        //todo move this out
+    };
+    struct StoredMaterial {
+        GPUMaterial material{};
         VkPipeline pipeline{};
         bool useDepth{true};
+        uint32_t idx{};
     };
     struct alignas(16) GPUObjectData {
         uint32_t matIndex;

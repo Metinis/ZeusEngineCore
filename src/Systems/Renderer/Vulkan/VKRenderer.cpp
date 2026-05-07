@@ -214,13 +214,13 @@ std::vector<IndirectDrawCall> VKRenderer::processDrawCalls() {
         auto& gpuMat = m_MaterialMap[call.materialID];
 
         if (!indirectDrawCalls.empty() && &buf == indirectDrawCalls.back().mesh &&
-            &gpuMat.first == indirectDrawCalls.back().material) {
+            &gpuMat == indirectDrawCalls.back().material) {
             indirectDrawCalls.back().count++;
             }
         else {
                 IndirectDrawCall indirectDrawCall = {
                     .mesh = &buf,
-                    .material = &gpuMat.first,
+                    .material = &gpuMat,
                     .drawIndex = i,
                     .count = 1,
                 };
@@ -229,7 +229,7 @@ std::vector<IndirectDrawCall> VKRenderer::processDrawCalls() {
         }
 
         objectUniformData[i] = {
-            .matIndex = m_MaterialMap[call.materialID].second,
+            .matIndex = m_MaterialMap[call.materialID].idx,
             .model = call.model,
             .vertexBuffer = buf.vertexBufferAddress
         };
@@ -310,7 +310,7 @@ void VKRenderer::drawGeometry(VkCommandBuffer cmd) {
 
     const std::vector<IndirectDrawCall> indirectDrawCalls = processDrawCalls();
 
-    // Split draws into two groups
+    //Split draws into two groups
     std::vector<IndirectDrawCall> depthDraws;
     std::vector<IndirectDrawCall> noDepthDraws;
 
@@ -322,21 +322,17 @@ void VKRenderer::drawGeometry(VkCommandBuffer cmd) {
         }
     }
 
-    // Second pass: Render without depth (transparent/overlay)
     if (!noDepthDraws.empty()) {
         VkRenderingAttachmentInfo colorAttInfo = VKInit::attachmentInfo(
             m_DrawImage.imageView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-        // No depth attachment for this pass!
         VkRenderingInfo renderInfo = VKInit::renderingInfo(m_DrawExtent, &colorAttInfo, nullptr);
 
         vkCmdBeginRendering(cmd, &renderInfo);
         prepareViewport(cmd, m_DrawExtent);
 
-        // Optional: Disable depth testing in pipeline or use a separate pipeline
         executeDrawCalls(cmd, noDepthDraws);
         vkCmdEndRendering(cmd);
     }
-    // First pass: Render with depth testing
     if (!depthDraws.empty()) {
         VkRenderingAttachmentInfo colorAttInfo = VKInit::attachmentInfo(
             m_DrawImage.imageView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
@@ -349,8 +345,6 @@ void VKRenderer::drawGeometry(VkCommandBuffer cmd) {
         executeDrawCalls(cmd, depthDraws);
         vkCmdEndRendering(cmd);
     }
-
-
 }
 
 void VKRenderer::executeDrawCalls(VkCommandBuffer cmd, const std::vector<IndirectDrawCall>& draws) {
@@ -454,7 +448,7 @@ VkDescriptorSet VKRenderer::getImGUIDescSet(AssetID id) {
     if (m_TextureMap.contains(id)) {
         spdlog::debug("Renderer: Cached Thumbnail Tex: {}", (uint64_t)id);
         auto& tex = m_TextureMap[id];
-        m_ImGUIDescSetMap.insert({id, ImGui_ImplVulkan_AddTexture(m_Sampler, tex.first.image.imageView,
+        m_ImGUIDescSetMap.insert({id, ImGui_ImplVulkan_AddTexture(m_Sampler, tex.texture.image.imageView,
         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)});
         return m_ImGUIDescSetMap[id];
     }

@@ -103,7 +103,7 @@ void VKRenderer::cleanup() {
             destroyBuffer(buf.vertexBuffer);
         }
         for (auto &tex : m_TextureMap | std::views::values) {
-            destroyImage(tex.first.image);
+            destroyImage(tex.texture.image);
             //vkDestroySampler(m_Device, tex.sampler, nullptr);
         }
 

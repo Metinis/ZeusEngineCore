@@ -69,7 +69,7 @@ namespace ZEN {
 
     struct IndirectDrawCall {
         GPUMeshBuffers* mesh{};
-        GPUMaterial* material{};
+        StoredMaterial* material{};
         int drawIndex{};
         int count{};
     };
@@ -179,6 +179,7 @@ namespace ZEN {
         VkDescriptorSet m_ImGUIErrorSet{}; //no texture found
         std::unordered_map<AssetID, VkDescriptorSet> m_ImGUIDescSetMap{}; //used for thumbnails since imgui doesnt support bindless
 
+        //todo make these just like pipelines instead
         VkSampler m_Sampler{};
 
         VkPipelineLayout m_MainPipelineLayout{};
@@ -196,8 +197,8 @@ namespace ZEN {
         FrameGraph m_FrameGraph{};
 
         std::unordered_map<AssetID, GPUMeshBuffers> m_MeshMap{};
-        std::unordered_map<AssetID, std::pair<GPUTexture, uint32_t>> m_TextureMap{}; //texture and index into bindless
-        std::unordered_map<AssetID, std::pair<GPUMaterial, uint32_t>> m_MaterialMap{}; //material and index into material buff
+        std::unordered_map<AssetID, StoredTexture> m_TextureMap{}; //texture and index into bindless
+        std::unordered_map<AssetID, StoredMaterial> m_MaterialMap{}; //material and index into material buff
         //todo lazy load pipelines and samplers by hashing option combos from material
         std::unordered_map<PipelineInfo, VkPipeline> m_PipelineMap{};
 

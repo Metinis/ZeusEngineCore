@@ -73,7 +73,7 @@ GPUMeshBuffers VKRenderer::uploadMesh(AssetID id, const MeshData &mesh) {
 GPUTexture VKRenderer::uploadTexture(AssetID id, const TextureData &texture) {
     int texWidth, texHeight, texChannels;
     stbi_set_flip_vertically_on_load(true);
-    stbi_uc *pixels;
+    stbi_uc *pixels{};
     bool allocatedByUs = true;
 
     //---------------------ASSIMP TEXTURE--------------------
@@ -88,7 +88,7 @@ GPUTexture VKRenderer::uploadTexture(AssetID id, const TextureData &texture) {
         allocatedByUs = false;
     //--------------------------------------------------------
     //---------------------PATH TEXTURE-----------------------
-    } else {
+    } else{
         pixels = stbi_load(texture.path.data(), &texWidth,
                                     &texHeight, &texChannels, STBI_rgb_alpha);
     }
@@ -100,9 +100,9 @@ GPUTexture VKRenderer::uploadTexture(AssetID id, const TextureData &texture) {
     }
     if (m_TextureMap.contains(id)) {
         //todo replace texture data, then return
-        stbi_image_free(pixels);
+        //stbi_image_free(pixels);
         //removeTexture(id);
-        return m_TextureMap[id].first;
+        return m_TextureMap[id].texture;
 
     }
         AllocatedImage newTexture = createImage((void*)pixels, VkExtent3D{(unsigned int)texWidth, (unsigned int)texHeight, 1}, VK_FORMAT_R8G8B8A8_UNORM,
@@ -121,7 +121,7 @@ GPUTexture VKRenderer::uploadTexture(AssetID id, const TextureData &texture) {
         writer.updateSet(m_Device, m_TextureDescriptorSet);
         stbi_image_free(pixels);
         m_TextureMap[id] = {gpuTex, index};
-    spdlog::debug("Renderer: Created Texture ID: {}", (uint64_t)id);
+        spdlog::debug("Renderer: Created Texture ID: {}", (uint64_t)id);
         return gpuTex;
 
 }
@@ -133,19 +133,19 @@ GPUMaterial VKRenderer::uploadMaterial(const AssetID id, const Material &materia
     };
 
     if (m_TextureMap.contains(material.texture)) {
-        gpuMat.albedoIndex = m_TextureMap[material.texture].second;
+        gpuMat.albedoIndex = m_TextureMap[material.texture].idx;
     }
     if (m_TextureMap.contains(material.metallicTex)) {
-        gpuMat.metallicIndex = m_TextureMap[material.metallicTex].second;
+        gpuMat.metallicIndex = m_TextureMap[material.metallicTex].idx;
     }
     if (m_TextureMap.contains(material.roughnessTex)) {
-        gpuMat.roughnessIndex = m_TextureMap[material.roughnessTex].second;
+        gpuMat.roughnessIndex = m_TextureMap[material.roughnessTex].idx;
     }
     if (m_TextureMap.contains(material.normalTex)) {
-        gpuMat.normalIndex = m_TextureMap[material.normalTex].second;
+        gpuMat.normalIndex = m_TextureMap[material.normalTex].idx;
     }
     if (m_TextureMap.contains(material.aoTex)) {
-        gpuMat.aoIndex = m_TextureMap[material.aoTex].second;
+        gpuMat.aoIndex = m_TextureMap[material.aoTex].idx;
     }
 
     uint32_t flags{};
@@ -167,12 +167,13 @@ GPUMaterial VKRenderer::uploadMaterial(const AssetID id, const Material &materia
 
     gpuMat.flags = flags;
 
+    VkPipeline pipeline;
     if (m_PipelineMap.contains(material.pipelineInfo)) {
-        gpuMat.pipeline = m_PipelineMap[material.pipelineInfo];
+        pipeline = m_PipelineMap[material.pipelineInfo];
     } else {
-        gpuMat.pipeline = createMainPipeline(material.pipelineInfo);
+        pipeline = createMainPipeline(material.pipelineInfo);
     }
-    gpuMat.useDepth = material.pipelineInfo.depthTestEnabled;
+    bool useDepth = material.pipelineInfo.depthTestEnabled;
 
     DescriptorWriter writer;
 
@@ -182,10 +183,10 @@ GPUMaterial VKRenderer::uploadMaterial(const AssetID id, const Material &materia
     if (!m_MaterialMap.contains(id)) {
         idx = m_MaterialAllocator.allocate();
     } else {
-        idx = m_MaterialMap[id].second;
+        idx = m_MaterialMap[id].idx;
     }
 
-    m_MaterialMap[id] = {gpuMat, idx};
+    m_MaterialMap[id] = {gpuMat, pipeline, useDepth, idx};
 
     auto* mapped = (GPUMaterial*)m_MaterialBuffer.allocationInfo.pMappedData;
     mapped[idx] = gpuMat;
@@ -194,7 +195,7 @@ GPUMaterial VKRenderer::uploadMaterial(const AssetID id, const Material &materia
 void VKRenderer::deleteMaterial(AssetID id) {
     if (m_MaterialMap.contains(id)) {
         auto& material = m_MaterialMap[id];
-        m_MaterialAllocator.free(material.second);
+        m_MaterialAllocator.free(material.idx);
         m_MaterialMap.erase(id);
     }
 }
@@ -223,9 +224,9 @@ void VKRenderer::removeTexture(AssetID id) {
                 m_ImGUIDescSetMap.erase(id);
             }
             m_TextureMap.erase(id);
-            m_TextureAllocator.free(tex.second);
+            m_TextureAllocator.free(tex.idx);
             //todo check sampler freeing
-            destroyImage(tex.first.image);
+            destroyImage(tex.texture.image);
         });
         spdlog::debug("Deleted Texture ID: {}", (uint64_t)id);
         return;
