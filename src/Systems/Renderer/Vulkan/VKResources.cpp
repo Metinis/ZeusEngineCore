@@ -10,8 +10,7 @@
 using namespace ZEN;
 
 GPUMeshBuffers VKRenderer::uploadMesh(AssetID id, const MeshData &mesh) {
-
-    if (m_MeshMap.find(id) != m_MeshMap.end()) {
+    if (m_MeshMap.contains(id)) {
         spdlog::warn("AssetID already exists in GPU, overwriting..");
         deleteMesh(id);
     }
@@ -168,6 +167,12 @@ GPUMaterial VKRenderer::uploadMaterial(const AssetID id, const Material &materia
 
     gpuMat.flags = flags;
 
+    if (m_PipelineMap.contains(material.pipelineInfo)) {
+        gpuMat.pipeline = m_PipelineMap[material.pipelineInfo];
+    } else {
+        gpuMat.pipeline = createMainPipeline(material.pipelineInfo);
+    }
+
     DescriptorWriter writer;
 
     uint32_t idx{};
@@ -208,7 +213,7 @@ void VKRenderer::deleteMesh(AssetID id) {
 }
 
 void VKRenderer::removeTexture(AssetID id) {
-    if (m_TextureMap.find(id) != m_TextureMap.end()) {
+    if (m_TextureMap.contains(id)) {
         auto tex = m_TextureMap[id];
         uint32_t frameIndex = (m_FrameNumber + FRAME_OVERLAP) % FRAME_OVERLAP;
         m_Frames[frameIndex].m_DeletionQueue.pushFunction([=]() {

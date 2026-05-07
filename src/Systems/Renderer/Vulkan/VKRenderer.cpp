@@ -296,11 +296,11 @@ void VKRenderer::prepareDescriptors(VkCommandBuffer cmd) {
     writer.updateSet(m_Device, globalDescriptor);
 
     vkCmdBindDescriptorSets(cmd,VK_PIPELINE_BIND_POINT_GRAPHICS,
-    m_MeshPipelineLayout,0, 1, &globalDescriptor,0,nullptr);
+    m_MainPipelineLayout,0, 1, &globalDescriptor,0,nullptr);
     vkCmdBindDescriptorSets(cmd,VK_PIPELINE_BIND_POINT_GRAPHICS,
-        m_MeshPipelineLayout,1, 1, &m_TextureDescriptorSet,0,nullptr);
+        m_MainPipelineLayout,1, 1, &m_TextureDescriptorSet,0,nullptr);
     vkCmdBindDescriptorSets(cmd,VK_PIPELINE_BIND_POINT_GRAPHICS,
-        m_MeshPipelineLayout,2, 1, &m_MaterialDescriptorSet,0,nullptr);
+        m_MainPipelineLayout,2, 1, &m_MaterialDescriptorSet,0,nullptr);
 
 }
 
@@ -318,11 +318,14 @@ void VKRenderer::drawGeometry(VkCommandBuffer cmd) {
 
     vkCmdBeginRendering(cmd, &renderInfo);
 
-    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_MeshPipeline);
-
     prepareViewport(cmd, m_DrawExtent);
 
+    VkPipeline prevPipeline{};
     for (auto& draw : indirectDrawCalls) {
+        if (prevPipeline != draw.material->pipeline) {
+            prevPipeline = draw.material->pipeline;
+            vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, draw.material->pipeline);
+        }
         vkCmdBindIndexBuffer(cmd, draw.mesh->indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
 
         vkCmdDrawIndexedIndirect(cmd, getCurrentFrame().m_IndirectBuffer.buffer,

@@ -397,7 +397,9 @@ void VKRenderer::initDescriptors() {
 
 void VKRenderer::initPipelines() {
     initBackgroundPipeline();
-    initMeshPipeline();
+    //initMeshPipeline();
+    initMainPipeLayout();
+    //m_MeshPipeline = createMainPipeline(PipelineInfo());
 }
 
 void VKRenderer::initBackgroundPipeline() {
@@ -455,17 +457,7 @@ void VKRenderer::initSampler() {
     });
 }
 
-void VKRenderer::initMeshPipeline() {
-    VkShaderModule triangleFragShader;
-    if (!VKPipelines::loadShaderModule(Application::get().getResourceRoot() +
-        "/shaders/vulkan-shaders/testTriangle.frag.spv", m_Device, &triangleFragShader)) {
-        std::cout << "Failed to load triangle frag shader" << std::endl;
-    }
-    VkShaderModule triangleVertShader;
-    if (!VKPipelines::loadShaderModule(Application::get().getResourceRoot() +
-        "/shaders/vulkan-shaders/testTriangle.vert.spv", m_Device, &triangleVertShader)) {
-        std::cout << "Failed to load triangle vert shader" << std::endl;
-    }
+void VKRenderer::initMainPipeLayout() {
     VkPushConstantRange bufferRange{};
     bufferRange.offset = 0;
     bufferRange.size = sizeof(GPUDrawPushConstants);
@@ -476,6 +468,7 @@ void VKRenderer::initMeshPipeline() {
     layoutInfo.pNext = nullptr;
     layoutInfo.flags = 0;
 
+    //todo maybe in the future make this more flexible
     std::array<VkDescriptorSetLayout, 3> setLayouts = {
         m_FrameDescriptorLayout,
         m_TextureDescriptorSetLayout,
@@ -487,32 +480,64 @@ void VKRenderer::initMeshPipeline() {
 
     layoutInfo.pushConstantRangeCount = 1;
     layoutInfo.pPushConstantRanges = &bufferRange;
-    VK_CHECK(vkCreatePipelineLayout(m_Device, &layoutInfo, nullptr, &m_MeshPipelineLayout));
+
+    VK_CHECK(vkCreatePipelineLayout(m_Device, &layoutInfo, nullptr, &m_MainPipelineLayout));
+
+    m_DeletionQueue.pushFunction([=]() {
+        vkDestroyPipelineLayout(m_Device, m_MainPipelineLayout, nullptr);
+    });
+}
+
+VkPipeline VKRenderer::createMainPipeline(const PipelineInfo& pipelineInfo) {
+    VkShaderModule triangleFragShader;
+    if (!VKPipelines::loadShaderModule(Application::get().getResourceRoot() +
+        pipelineInfo.fragmentShader, m_Device, &triangleFragShader)) {
+        std::cout << "Failed to load triangle frag shader" << std::endl;
+        }
+    VkShaderModule triangleVertShader;
+    if (!VKPipelines::loadShaderModule(Application::get().getResourceRoot() +
+        pipelineInfo.vertexShader, m_Device, &triangleVertShader)) {
+        std::cout << "Failed to load triangle vert shader" << std::endl;
+        }
 
     VKPipelineBuilder builder;
-    builder.pipelineLayout = m_MeshPipelineLayout;
+    builder.pipelineLayout = m_MainPipelineLayout;
     builder.setShaders(triangleVertShader, triangleFragShader);
-    builder.setInputTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
-    builder.setPolygonMode(VK_POLYGON_MODE_FILL);
-    builder.setCullMode(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE);
-    builder.setMultiSamplingNone();
-    //builder.enableBlendingAdditive();
-    builder.disableBlending();
-    //builder.disableDepthTest();
-    builder.setColorAttachmentFormat(m_DrawImage.imageFormat);
-    builder.enableDepthTest(true, VK_COMPARE_OP_GREATER_OR_EQUAL);
-    builder.setDepthFormat(m_DepthImage.imageFormat);
+    builder.setInputTopology(pipelineInfo.topology);
+    builder.setPolygonMode(pipelineInfo.polygonMode);
+    builder.setCullMode(pipelineInfo.cullMode, pipelineInfo.frontFace);
+    if (!pipelineInfo.multisamplingEnabled)
+        builder.setMultiSamplingNone();
 
-    m_MeshPipeline = builder.buildPipeline(m_Device);
+    if (!pipelineInfo.depthTestEnabled) {
+        builder.disableDepthTest();
+    } else {
+        builder.enableDepthTest(true, pipelineInfo.depthCompareOp);
+        //todo allow different formats
+        builder.setDepthFormat(m_DepthImage.imageFormat);
+    }
+
+    if (pipelineInfo.blendingEnabled)
+        builder.enableBlendingAdditive();
+    else
+        builder.disableBlending();
+
+    builder.setColorAttachmentFormat(m_DrawImage.imageFormat);
+
+
+    VkPipeline pipeline = builder.buildPipeline(m_Device);
 
     vkDestroyShaderModule(m_Device, triangleFragShader, nullptr);
     vkDestroyShaderModule(m_Device, triangleVertShader, nullptr);
 
     m_DeletionQueue.pushFunction([=]() {
-        vkDestroyPipelineLayout(m_Device, m_MeshPipelineLayout, nullptr);
-        vkDestroyPipeline(m_Device, m_MeshPipeline, nullptr);
+        vkDestroyPipeline(m_Device, pipeline, nullptr);
     });
-    spdlog::debug("Renderer: Initialized Mesh Pipeline");
+    spdlog::debug("Renderer: Initialized new main pipeline");
+
+    m_PipelineMap[pipelineInfo] = pipeline;
+
+    return pipeline;
 }
 
 void VKRenderer::createSwapChain(uint32_t width, uint32_t height) {

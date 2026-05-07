@@ -5,6 +5,7 @@
 #include "Systems/Renderer/FrameGraph.h"
 #include "Systems/Renderer/Vulkan/VKDescriptors.h"
 #include "Systems/Renderer/Vulkan/VKImages.h"
+#include "Systems/Renderer/Vulkan/VKPipelines.h"
 #include "Systems/Renderer/Vulkan/VKTypes.h"
 #include "ZeusEngineCore/asset/AssetTypes.h"
 
@@ -112,7 +113,8 @@ namespace ZEN {
         void initPipelines();
         void initBackgroundPipeline();
         void initSampler();
-        void initMeshPipeline();
+        void initMainPipeLayout();
+        VkPipeline createMainPipeline(const PipelineInfo& pipelineInfo);
 
         std::vector<IndirectDrawCall> processDrawCalls();
         void prepareDescriptors(VkCommandBuffer cmd);
@@ -177,8 +179,8 @@ namespace ZEN {
 
         VkSampler m_Sampler{};
 
-        VkPipelineLayout m_MeshPipelineLayout{};
-        VkPipeline m_MeshPipeline{};
+        VkPipelineLayout m_MainPipelineLayout{};
+        //VkPipeline m_MeshPipeline{};
 
         GPUTexture m_ErrorTexture{};
 
@@ -194,7 +196,9 @@ namespace ZEN {
         std::unordered_map<AssetID, GPUMeshBuffers> m_MeshMap{};
         std::unordered_map<AssetID, std::pair<GPUTexture, uint32_t>> m_TextureMap{}; //texture and index into bindless
         std::unordered_map<AssetID, std::pair<GPUMaterial, uint32_t>> m_MaterialMap{}; //material and index into material buff
-        //todo lazy load pipelines and samplers
+        //todo lazy load pipelines and samplers by hashing option combos from material
+        std::unordered_map<PipelineInfo, VkPipeline> m_PipelineMap{};
+
 
         IndexAllocator m_TextureAllocator{};
         IndexAllocator m_MaterialAllocator{};

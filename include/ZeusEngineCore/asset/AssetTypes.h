@@ -4,7 +4,7 @@
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
-
+#include "../../src/Systems/Renderer/Vulkan/VKPipelines.h"
 #ifdef GENERATE_ENUM_STRINGS
 #include <string.h>
 
@@ -47,6 +47,7 @@ namespace ZEN {
         bool useRoughness{false};
         bool useNormal{false};
         bool useAO{false};
+        PipelineInfo pipelineInfo{};
     };
 
     struct MeshData {

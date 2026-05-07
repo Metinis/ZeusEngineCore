@@ -18,28 +18,6 @@ void AssetLibrary::init(VKRenderer* renderer) {
     //addAsset<MeshData>(defaultSkyboxID, createSkybox(), "Skybox");
     addAsset<MeshData>(defaultQuadID, createQuad(), "Quad");
     addAsset<MeshData>(defaultSphereID, createSphere(1.0f, 32, 16), "Sphere");
-
-    ShaderData quadShaderData {
-        .vertPath = "/shaders/screenQuad.vert",
-        .fragPath = "/shaders/screenQuad.frag",
-        .geoPath = ""
-    };
-    addAsset(defaultQuadShaderID, quadShaderData, "QuadShader");
-
-    ShaderData normalsShader {
-        .vertPath = "/shaders/normal-visual.vert",
-        .fragPath = "/shaders/normal-visual.frag",
-        .geoPath = "/shaders/normal-visual.geom"
-    };
-    addAsset(defaultNormalsShaderID, normalsShader, "NormalsShader");
-
-    ShaderData pickingShader {
-        .vertPath = "/shaders/pickingShader.vert",
-        .fragPath = "/shaders/pickingShader.frag"
-    };
-    addAsset(defaultPickingShaderID, pickingShader, "PickingShader");
-    //AssetSerializer serializer(this);
-    //serializer.deserialize("assets/default.zenpackage");
 }
 
 AssetLibrary::~AssetLibrary() {
@@ -202,7 +180,7 @@ MeshData AssetLibrary::createSkybox() {
 
 Material AssetLibrary::createDefaultMaterial(const std::string &vertPath,
                                                               const std::string &fragPath, const std::string &geoPath) {
-    TextureData defaultTex {
+    /*TextureData defaultTex {
         .type = Texture2DRaw,
     };
     addAsset<TextureData>(defaultTextureID, std::move(defaultTex), "Default");
@@ -211,7 +189,7 @@ Material AssetLibrary::createDefaultMaterial(const std::string &vertPath,
         .fragPath = fragPath,
         .geoPath = geoPath
     };
-    addAsset<ShaderData>(defaultShaderID, std::move(defaultShader), "Default");
+    addAsset<ShaderData>(defaultShaderID, std::move(defaultShader), "Default");*/
     Material defaultMat{.texture = defaultTextureID};
     return defaultMat;
 }

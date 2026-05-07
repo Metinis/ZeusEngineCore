@@ -109,6 +109,10 @@ void Scene::createDefaultScene() {
     auto texId = m_ModelLibrary->createAsset<TextureData>(std::move(texData));
     Material mat {
         .texture = texId,
+        .pipelineInfo = PipelineInfo{
+            .vertexShader = "/shaders/vulkan-shaders/testTriangle copy.vert.spv",
+            .fragmentShader = "/shaders/vulkan-shaders/testTriangle copy.frag.spv",
+        }
     };
     mat.useAlbedo = true;
     auto matID = m_ModelLibrary->createAsset<Material>(std::move(mat));
