@@ -85,7 +85,7 @@ namespace ZEN {
         void submitDrawCall(const DrawCall& call);
         void executeDrawCalls(VkCommandBuffer cmd, const std::vector<IndirectDrawCall>& draws);
         void setImGUIMode(const bool mode);
-        VkSampler getDefaultSampler();
+        VkSampler getSampler(const VkSamplerCreateInfo& info);
         VkDescriptorSet getImGUIDescSet(AssetID id);
         //will create mapping between assetID and GPU mesh to be used by renderer
         GPUMeshBuffers uploadMesh(AssetID id, const MeshData& mesh);

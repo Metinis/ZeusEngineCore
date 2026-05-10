@@ -3,6 +3,7 @@
 #include <GLFW/glfw3.h>
 #include <vulkan/vk_enum_string_helper.h>
 
+#include "VkHelpers.h"
 #include "VKInit.h"
 #include "VKPipelines.h"
 #include "ZeusEngineCore/engine/rendering/VKUtils.h"
@@ -37,10 +38,10 @@ void VKRenderer::init(EngineContext* ctx) {
     m_ErrorTexture = GPUTexture {
         .image = createImage(pixels.data(), VkExtent3D{16, 16, 1}, VK_FORMAT_R8G8B8A8_UNORM,
         VK_IMAGE_USAGE_SAMPLED_BIT),
-        .sampler = getDefaultSampler(),
+        .sampler = getSampler(VKHelpers::getDefaultSamplerInfo()),
     };
     DescriptorWriter writer;
-    writer.writeImage(0, m_ErrorTexture.image.imageView, getDefaultSampler(),
+    writer.writeImage(0, m_ErrorTexture.image.imageView, getSampler(VKHelpers::getDefaultSamplerInfo()),
                 VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, m_TextureAllocator.allocate());
     //index 0 reserved for error
 

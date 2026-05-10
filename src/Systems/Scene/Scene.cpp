@@ -5,6 +5,7 @@
 #include <ZeusEngineCore/core/InputEvents.h>
 #include <ZeusEngineCore/asset/AssetLibrary.h>
 
+#include "Systems/Renderer/Vulkan/VkHelpers.h"
 #include "ZeusEngineCore/engine/CameraSystem.h"
 #include "ZeusEngineCore/engine/SceneSerializer.h"
 #include "ZeusEngineCore/engine/rendering/VKRenderer.h"
@@ -106,6 +107,7 @@ void Scene::createDefaultScene() {
     TextureData texData{
         .path = Project::getActive()->getActiveProjectRoot() + "assets/textures/skybox/",
         .type = Cubemap,
+        .samplerInfo = VKHelpers::getCubeMapSamplerInfo(),
     };
     auto texId = m_ModelLibrary->createAsset<TextureData>(std::move(texData));
     Material mat {

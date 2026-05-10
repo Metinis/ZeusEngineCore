@@ -214,52 +214,13 @@ static LoadedTexture loadPixelData(const TextureData &texture) {
 }
 
 GPUTexture VKRenderer::uploadTexture(AssetID id, const TextureData &texture) {
-        LoadedTexture texturePixels = loadPixelData(texture);
-        AllocatedImage newTexture = createImage((void *) texturePixels.pixels.data(),
-                                                VkExtent3D{(unsigned int) texturePixels.texWidth, (unsigned int) texturePixels.texHeight, 1},
-                                                VK_FORMAT_R8G8B8A8_UNORM,
-                                                VK_IMAGE_USAGE_SAMPLED_BIT, false, texturePixels.layers);
-    VkSampler sampler = VK_NULL_HANDLE;
-    if (m_SamplerMap.contains(texture.samplerInfo)) {
-        sampler = m_SamplerMap[texture.samplerInfo];
-    } else {
-        //todo delete using ref counting
-        VK_CHECK(vkCreateSampler(m_Device, &texture.samplerInfo, nullptr, &sampler));
-        m_SamplerMap[texture.samplerInfo] = sampler;
+    LoadedTexture texturePixels = loadPixelData(texture);
+    AllocatedImage newTexture = createImage((void *) texturePixels.pixels.data(),
+        VkExtent3D{(unsigned int) texturePixels.texWidth, (unsigned int) texturePixels.texHeight, 1},
+        VK_FORMAT_R8G8B8A8_UNORM,
+        VK_IMAGE_USAGE_SAMPLED_BIT, false, texturePixels.layers);
 
-        m_DeletionQueue.pushFunction([=] {
-            vkDestroySampler(m_Device, sampler, nullptr);
-        });
-    }
-    //if (texture.type == Cubemap) {
-        //todo move this out
-        /*VkSamplerCreateInfo samplerInfo{};
-        samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-        samplerInfo.magFilter = VK_FILTER_LINEAR;
-        samplerInfo.minFilter = VK_FILTER_LINEAR;
-        samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-        samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-        samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-        samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-        samplerInfo.anisotropyEnable = VK_FALSE;
-        samplerInfo.maxAnisotropy = 1.0f;
-        samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK;
-        samplerInfo.unnormalizedCoordinates = VK_FALSE;
-        samplerInfo.compareEnable = VK_FALSE;
-        samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
-        samplerInfo.mipLodBias = 0.0f;
-        samplerInfo.minLod = 0.0f;
-        samplerInfo.maxLod = 1.0f;
-
-        VK_CHECK(vkCreateSampler(m_Device, &samplerInfo, nullptr, &sampler));
-
-        m_DeletionQueue.pushFunction([=] {
-            vkDestroySampler(m_Device, sampler, nullptr);
-        });*/
-    //}
-    //else {
-     //   sampler = m_DefaultSamplerNearest;
-    //}
+    VkSampler sampler = getSampler(texture.samplerInfo);
     //--------------------------------------------------------
     if (m_TextureMap.contains(id)) {
         //todo replace texture data, then return
