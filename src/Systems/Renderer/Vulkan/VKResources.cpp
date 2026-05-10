@@ -5,6 +5,7 @@
 #include <vulkan/vk_enum_string_helper.h>
 
 #include "VKInit.h"
+#include "ZeusEngineCore/core/Project.h"
 #include "ZeusEngineCore/engine/rendering/VKUtils.h"
 
 using namespace ZEN;
@@ -20,29 +21,29 @@ GPUMeshBuffers VKRenderer::uploadMesh(AssetID id, const MeshData &mesh) {
 
     GPUMeshBuffers newSurface;
     newSurface.vertexBuffer = createBuffer(vertexBufferSize,
-        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT
-        | VK_BUFFER_USAGE_TRANSFER_DST_BIT
-        | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
-        VMA_MEMORY_USAGE_GPU_ONLY);
+                                           VK_BUFFER_USAGE_STORAGE_BUFFER_BIT
+                                           | VK_BUFFER_USAGE_TRANSFER_DST_BIT
+                                           | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+                                           VMA_MEMORY_USAGE_GPU_ONLY);
 
-    VkBufferDeviceAddressInfo deviceAddressInfo {
+    VkBufferDeviceAddressInfo deviceAddressInfo{
         .sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,
         .buffer = newSurface.vertexBuffer.buffer,
     };
     newSurface.vertexBufferAddress = vkGetBufferDeviceAddress(m_Device, &deviceAddressInfo);
 
     newSurface.indexBuffer = createBuffer(indexBufferSize,
-        VK_BUFFER_USAGE_INDEX_BUFFER_BIT
-        | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-        VMA_MEMORY_USAGE_GPU_ONLY);
+                                          VK_BUFFER_USAGE_INDEX_BUFFER_BIT
+                                          | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                                          VMA_MEMORY_USAGE_GPU_ONLY);
 
     AllocatedBuffer staging = createBuffer(vertexBufferSize + indexBufferSize,
-        VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY);
+                                           VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY);
 
-    void* data = staging.allocationInfo.pMappedData;
+    void *data = staging.allocationInfo.pMappedData;
 
     memcpy(data, mesh.vertices.data(), vertexBufferSize);
-    memcpy((char*)data + vertexBufferSize, mesh.indices.data(), indexBufferSize);
+    memcpy((char *) data + vertexBufferSize, mesh.indices.data(), indexBufferSize);
 
     immediateSubmit([&](VkCommandBuffer cmd) {
         VkBufferCopy vertCopy{0};
@@ -51,7 +52,7 @@ GPUMeshBuffers VKRenderer::uploadMesh(AssetID id, const MeshData &mesh) {
         vertCopy.size = vertexBufferSize;
 
         vkCmdCopyBuffer(cmd, staging.buffer,
-            newSurface.vertexBuffer.buffer, 1, &vertCopy);
+                        newSurface.vertexBuffer.buffer, 1, &vertCopy);
 
         VkBufferCopy indexCopy{0};
         indexCopy.dstOffset = 0;
@@ -59,71 +60,227 @@ GPUMeshBuffers VKRenderer::uploadMesh(AssetID id, const MeshData &mesh) {
         indexCopy.size = indexBufferSize;
 
         vkCmdCopyBuffer(cmd, staging.buffer,
-            newSurface.indexBuffer.buffer, 1, &indexCopy);
+                        newSurface.indexBuffer.buffer, 1, &indexCopy);
     });
     newSurface.indexCount = mesh.indices.size();
 
     destroyBuffer(staging);
     m_MeshMap[id] = newSurface;
 
-    spdlog::debug("Renderer: Created GPU Mesh ID: {} of index count: {}", (uint64_t)id, newSurface.indexCount);
+    spdlog::debug("Renderer: Created GPU Mesh ID: {} of index count: {}", (uint64_t) id, newSurface.indexCount);
     return newSurface;
 }
 
-GPUTexture VKRenderer::uploadTexture(AssetID id, const TextureData &texture) {
-    int texWidth, texHeight, texChannels;
+struct LoadedTexture {
+    std::vector<uint8_t> pixels{};
+    int texWidth{};
+    int texHeight{};
+    int texChannels{};
+    int layers{1};
+};
+static LoadedTexture loadPixelData(const TextureData &texture) {
     stbi_set_flip_vertically_on_load(true);
-    stbi_uc *pixels{};
-    bool allocatedByUs = true;
+    constexpr size_t bytesPerPixel = 4;
 
-    //---------------------ASSIMP TEXTURE--------------------
-    if (texture.aiTex && texture.aiTex->mHeight == 0) {
-        pixels = stbi_load_from_memory(reinterpret_cast<unsigned char*>(texture.aiTex->pcData),texture.aiTex->mWidth,
-    &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
-    } else if (texture.aiTex) {
-        texWidth = texture.aiTex->mWidth;
-        texHeight = texture.aiTex->mHeight;
-        texChannels = 4;
-        pixels = reinterpret_cast<unsigned char*>(texture.aiTex->pcData);
-        allocatedByUs = false;
-    //--------------------------------------------------------
-    //---------------------PATH TEXTURE-----------------------
-    } else{
-        pixels = stbi_load(texture.path.data(), &texWidth,
-                                    &texHeight, &texChannels, STBI_rgb_alpha);
-    }
-    //--------------------------------------------------------
+    LoadedTexture loadedTexture{};
 
-    if (!pixels && allocatedByUs) {
-        std::cout<<"Invalid Image! Assigning default texture.."<<"\n";
-        return {};
+    auto calcSize = [&](int width, int height) {
+        return static_cast<size_t>(width) *
+               static_cast<size_t>(height) *
+               bytesPerPixel;
+    };
+
+    switch (texture.type) {
+        case Texture2DAssimp: {
+            stbi_uc *pixels = nullptr;
+            bool freePixels = true;
+
+            if (texture.aiTex && texture.aiTex->mHeight == 0) {
+                pixels = stbi_load_from_memory(
+                    reinterpret_cast<unsigned char *>(texture.aiTex->pcData),
+                    texture.aiTex->mWidth,
+                    &loadedTexture.texWidth,
+                    &loadedTexture.texHeight,
+                    &loadedTexture.texChannels,
+                    STBI_rgb_alpha
+                );
+            } else if (texture.aiTex){
+                loadedTexture.texWidth = texture.aiTex->mWidth;
+                loadedTexture.texHeight = texture.aiTex->mHeight;
+                loadedTexture.texChannels = 4;
+
+                pixels = reinterpret_cast<unsigned char *>(texture.aiTex->pcData);
+                freePixels = false;
+            } else if (!texture.path.empty()){
+                //todo will move to runtime asset manager anyways
+                pixels = stbi_load(std::string(Project::getActive()->getActiveProjectRoot() + texture.path).c_str(), &loadedTexture.texWidth,
+                                                &loadedTexture.texHeight, &loadedTexture.texChannels, STBI_rgb_alpha);
+            }
+
+            if (!pixels) {
+                throw std::runtime_error("Failed to load Assimp texture");
+            }
+
+            size_t size = calcSize(loadedTexture.texWidth, loadedTexture.texHeight);
+
+            loadedTexture.pixels.resize(size);
+            memcpy(loadedTexture.pixels.data(), pixels, size);
+
+            if (freePixels) {
+                stbi_image_free(pixels);
+            }
+
+            return loadedTexture;
+        }
+
+        case Texture2D: {
+            stbi_uc *pixels = stbi_load(
+                texture.path.c_str(),
+                &loadedTexture.texWidth,
+                &loadedTexture.texHeight,
+                &loadedTexture.texChannels,
+                STBI_rgb_alpha
+            );
+
+            if (!pixels) {
+                throw std::runtime_error("Failed to load texture: " + texture.path);
+            }
+
+            size_t size = calcSize(loadedTexture.texWidth, loadedTexture.texHeight);
+
+            loadedTexture.pixels.resize(size);
+            memcpy(loadedTexture.pixels.data(), pixels, size);
+
+            stbi_image_free(pixels);
+
+            return loadedTexture;
+        }
+
+        case Cubemap: {
+            stbi_set_flip_vertically_on_load(false);
+
+            std::array<std::string, 6> facePaths = {
+                "right.jpg",
+                "left.jpg",
+                "top.jpg",
+                "bottom.jpg",
+                "front.jpg",
+                "back.jpg"
+            };
+
+            std::array<stbi_uc*, 6> faces{};
+
+            for (size_t i{}; i < faces.size(); ++i) {
+                std::string fullPath = texture.path + facePaths[i];
+
+                faces[i] = stbi_load(
+                    fullPath.c_str(),
+                    &loadedTexture.texWidth,
+                &loadedTexture.texHeight,
+                &loadedTexture.texChannels,
+                    STBI_rgb_alpha
+                );
+
+                if (!faces[i]) {
+                    throw std::runtime_error(
+                        "Failed to load cubemap face: " + fullPath
+                    );
+                }
+            }
+
+            size_t faceSize = calcSize(loadedTexture.texWidth, loadedTexture.texHeight);
+            loadedTexture.pixels.resize(faceSize * 6);
+            loadedTexture.layers = 6;
+
+            for (size_t i{}; i < faces.size(); ++i) {
+                memcpy(
+                    loadedTexture.pixels.data() + (faceSize * i),
+                    faces[i],
+                    faceSize
+                );
+
+                stbi_image_free(faces[i]);
+            }
+
+            return loadedTexture;
+        }
+
+        case Texture2DRaw:
+            throw std::runtime_error("Texture2DRaw not implemented");
+
+        default:
+            throw std::runtime_error("Unknown texture type");
     }
+}
+
+GPUTexture VKRenderer::uploadTexture(AssetID id, const TextureData &texture) {
+        LoadedTexture texturePixels = loadPixelData(texture);
+        AllocatedImage newTexture = createImage((void *) texturePixels.pixels.data(),
+                                                VkExtent3D{(unsigned int) texturePixels.texWidth, (unsigned int) texturePixels.texHeight, 1},
+                                                VK_FORMAT_R8G8B8A8_UNORM,
+                                                VK_IMAGE_USAGE_SAMPLED_BIT, false, texturePixels.layers);
+    VkSampler sampler = VK_NULL_HANDLE;
+    if (m_SamplerMap.contains(texture.samplerInfo)) {
+        sampler = m_SamplerMap[texture.samplerInfo];
+    } else {
+        //todo delete using ref counting
+        VK_CHECK(vkCreateSampler(m_Device, &texture.samplerInfo, nullptr, &sampler));
+        m_SamplerMap[texture.samplerInfo] = sampler;
+
+        m_DeletionQueue.pushFunction([=] {
+            vkDestroySampler(m_Device, sampler, nullptr);
+        });
+    }
+    //if (texture.type == Cubemap) {
+        //todo move this out
+        /*VkSamplerCreateInfo samplerInfo{};
+        samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+        samplerInfo.magFilter = VK_FILTER_LINEAR;
+        samplerInfo.minFilter = VK_FILTER_LINEAR;
+        samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+        samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        samplerInfo.anisotropyEnable = VK_FALSE;
+        samplerInfo.maxAnisotropy = 1.0f;
+        samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK;
+        samplerInfo.unnormalizedCoordinates = VK_FALSE;
+        samplerInfo.compareEnable = VK_FALSE;
+        samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
+        samplerInfo.mipLodBias = 0.0f;
+        samplerInfo.minLod = 0.0f;
+        samplerInfo.maxLod = 1.0f;
+
+        VK_CHECK(vkCreateSampler(m_Device, &samplerInfo, nullptr, &sampler));
+
+        m_DeletionQueue.pushFunction([=] {
+            vkDestroySampler(m_Device, sampler, nullptr);
+        });*/
+    //}
+    //else {
+     //   sampler = m_DefaultSamplerNearest;
+    //}
+    //--------------------------------------------------------
     if (m_TextureMap.contains(id)) {
         //todo replace texture data, then return
-        //stbi_image_free(pixels);
         //removeTexture(id);
         return m_TextureMap[id].texture;
-
     }
-        AllocatedImage newTexture = createImage((void*)pixels, VkExtent3D{(unsigned int)texWidth, (unsigned int)texHeight, 1}, VK_FORMAT_R8G8B8A8_UNORM,
-        VK_IMAGE_USAGE_SAMPLED_BIT);
 
-        uint32_t index = m_TextureAllocator.allocate();
+    uint32_t index = m_TextureAllocator.allocate();
 
-        GPUTexture gpuTex = {
-            .image = newTexture,
-            .sampler = m_DefaultSamplerNearest,
-        };
-        DescriptorWriter writer;
+    GPUTexture gpuTex = {
+        .image = newTexture,
+        .sampler = sampler,
+    };
+    DescriptorWriter writer;
 
-        writer.writeImage(0, gpuTex.image.imageView, gpuTex.sampler,
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, index);
-        writer.updateSet(m_Device, m_TextureDescriptorSet);
-        stbi_image_free(pixels);
-        m_TextureMap[id] = {gpuTex, index};
-        spdlog::debug("Renderer: Created Texture ID: {}", (uint64_t)id);
-        return gpuTex;
-
+    writer.writeImage(0, gpuTex.image.imageView, gpuTex.sampler,
+                      VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, index);
+    writer.updateSet(m_Device, m_TextureDescriptorSet);
+    m_TextureMap[id] = {gpuTex, index};
+    spdlog::debug("Renderer: Created Texture ID: {}", (uint64_t) id);
+    return gpuTex;
 }
 
 GPUMaterial VKRenderer::uploadMaterial(const AssetID id, const Material &material) {
@@ -188,13 +345,14 @@ GPUMaterial VKRenderer::uploadMaterial(const AssetID id, const Material &materia
 
     m_MaterialMap[id] = {gpuMat, pipeline, useDepth, idx};
 
-    auto* mapped = (GPUMaterial*)m_MaterialBuffer.allocationInfo.pMappedData;
+    auto *mapped = (GPUMaterial *) m_MaterialBuffer.allocationInfo.pMappedData;
     mapped[idx] = gpuMat;
+    return gpuMat;
 }
 
 void VKRenderer::deleteMaterial(AssetID id) {
     if (m_MaterialMap.contains(id)) {
-        auto& material = m_MaterialMap[id];
+        auto &material = m_MaterialMap[id];
         m_MaterialAllocator.free(material.idx);
         m_MaterialMap.erase(id);
     }
@@ -202,16 +360,16 @@ void VKRenderer::deleteMaterial(AssetID id) {
 
 void VKRenderer::deleteMesh(AssetID id) {
     if (m_MeshMap.contains(id)) {
-        auto& meshBuf = m_MeshMap[id];
+        auto &meshBuf = m_MeshMap[id];
         getCurrentFrame().m_DeletionQueue.pushFunction([=]() {
             destroyBuffer(meshBuf.indexBuffer);
             destroyBuffer(meshBuf.vertexBuffer);
         });
         m_MeshMap.erase(id);
-        spdlog::debug("Deleted GPU Mesh ID: {}", (uint64_t)id);
+        spdlog::debug("Deleted GPU Mesh ID: {}", (uint64_t) id);
         return;
     }
-    spdlog::error("Attempt to delete non-existing GPU Mesh! ID: {}", (uint64_t)id);
+    spdlog::error("Attempt to delete non-existing GPU Mesh! ID: {}", (uint64_t) id);
 }
 
 void VKRenderer::removeTexture(AssetID id) {
@@ -228,13 +386,14 @@ void VKRenderer::removeTexture(AssetID id) {
             //todo check sampler freeing
             destroyImage(tex.texture.image);
         });
-        spdlog::debug("Deleted Texture ID: {}", (uint64_t)id);
+        spdlog::debug("Deleted Texture ID: {}", (uint64_t) id);
         return;
     }
-    spdlog::error("Attempt to delete non-existing Texture! ID: {}", (uint64_t)id);
+    spdlog::error("Attempt to delete non-existing Texture! ID: {}", (uint64_t) id);
 }
 
-AllocatedImage VKRenderer::createImage(VkExtent3D size, VkFormat format, VkImageUsageFlags usage, bool mipmapped) {
+AllocatedImage VKRenderer::createImage(VkExtent3D size, VkFormat format, VkImageUsageFlags usage, bool mipmapped,
+                                       int layers) {
     AllocatedImage newImage;
     newImage.imageFormat = format;
     newImage.imageExtent = size;
@@ -242,6 +401,10 @@ AllocatedImage VKRenderer::createImage(VkExtent3D size, VkFormat format, VkImage
     VkImageCreateInfo imgInfo = VKInit::imageCreateInfo(format, usage, size);
     if (mipmapped) {
         imgInfo.mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(size.width, size.height)))) + 1;
+    }
+    imgInfo.arrayLayers = layers;
+    if (layers == 6) {
+        imgInfo.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
     }
 
     VmaAllocationCreateInfo allocInfo{};
@@ -257,6 +420,11 @@ AllocatedImage VKRenderer::createImage(VkExtent3D size, VkFormat format, VkImage
 
     VkImageViewCreateInfo viewInfo = VKInit::imageViewCreateInfo(newImage.image, format, aspectFlag);
     viewInfo.subresourceRange.levelCount = imgInfo.mipLevels;
+    if (layers == 6) {
+        viewInfo.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
+        viewInfo.subresourceRange.layerCount = layers;
+    }
+
 
     VK_CHECK(vkCreateImageView(m_Device, &viewInfo, nullptr, &newImage.imageView));
 
@@ -266,34 +434,41 @@ AllocatedImage VKRenderer::createImage(VkExtent3D size, VkFormat format, VkImage
 }
 
 AllocatedImage VKRenderer::createImage(void *data, VkExtent3D size, VkFormat format, VkImageUsageFlags usage,
-    bool mipmapped) {
+                                       bool mipmapped, int layers) {
     size_t dataSize = size.depth * size.width * size.height * 4; //todo check if can use sizeof here
-    AllocatedBuffer uploadBuffer = createBuffer(dataSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
+    AllocatedBuffer uploadBuffer = createBuffer(layers * dataSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                                                VMA_MEMORY_USAGE_CPU_TO_GPU);
 
-    memcpy(uploadBuffer.allocationInfo.pMappedData, data, dataSize);
+    memcpy(uploadBuffer.allocationInfo.pMappedData, data, layers * dataSize);
 
     AllocatedImage newImage = createImage(size, format,
-        usage | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, mipmapped);
+                                          usage | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+                                          mipmapped, layers);
 
     immediateSubmit([&](VkCommandBuffer cmd) {
         VKImages::transitionImage(cmd, newImage.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
-        VkBufferImageCopy copyRegion{};
-        copyRegion.bufferOffset = 0;
-        copyRegion.bufferRowLength = 0;
-        copyRegion.bufferImageHeight = 0;
+        std::vector<VkBufferImageCopy> copyRegions(layers);
+        for (int i = 0; i < layers; i++) {
+            copyRegions[i].bufferOffset = i * dataSize;
+            copyRegions[i].bufferRowLength = 0;
+            copyRegions[i].bufferImageHeight = 0;
 
-        copyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        copyRegion.imageSubresource.mipLevel = 0;
-        copyRegion.imageSubresource.baseArrayLayer = 0;
-        copyRegion.imageSubresource.layerCount = 1;
-        copyRegion.imageExtent = size;
+            copyRegions[i].imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            copyRegions[i].imageSubresource.mipLevel = 0;
+            copyRegions[i].imageSubresource.baseArrayLayer = i;
+            copyRegions[i].imageSubresource.layerCount = 1;
 
-        vkCmdCopyBufferToImage(cmd, uploadBuffer.buffer, newImage.image,  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1,
-            &copyRegion);
+            copyRegions[i].imageOffset = {0, 0, 0};
+            copyRegions[i].imageExtent = size;
+        }
+
+        vkCmdCopyBufferToImage(cmd, uploadBuffer.buffer, newImage.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                               copyRegions.size(),
+                               copyRegions.data());
 
         VKImages::transitionImage(cmd, newImage.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+                                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         spdlog::debug("Renderer: Uploaded Image");
     });
 

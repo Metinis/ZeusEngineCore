@@ -122,6 +122,7 @@ namespace ZEN {
         uint32_t size{};
         bool mip{false};
         bool absPath{false};
+        VkSamplerCreateInfo samplerInfo{.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
     };
     struct ShaderData {
         std::string vertPath;

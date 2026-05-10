@@ -104,7 +104,8 @@ void Scene::createDefaultScene() {
     cubeEntity.addComponent<RigidBodyComp>();
 
     TextureData texData{
-        .path = Project::getActive()->getActiveProjectRoot() + "assets/textures/wall.jpg"
+        .path = Project::getActive()->getActiveProjectRoot() + "assets/textures/skybox/",
+        .type = Cubemap,
     };
     auto texId = m_ModelLibrary->createAsset<TextureData>(std::move(texData));
     Material mat {

@@ -14,8 +14,6 @@ namespace ZEN {
         bool blendingEnabled{false};
         bool blendingAdditive{false};
         bool blendingAlpha{false};
-        //VkFormat colorAttachmentFormat{VK_FORMAT_B8G8R8A8_UNORM};
-        //VkFormat depthFormat{VK_FORMAT_D32_SFLOAT};
         bool depthTestEnabled{true};
         bool depthWriteEnabled{true};
         VkCompareOp depthCompareOp{VK_COMPARE_OP_GREATER_OR_EQUAL};
@@ -32,8 +30,6 @@ namespace ZEN {
                    blendingEnabled == other.blendingEnabled &&
                    blendingAdditive == other.blendingAdditive &&
                    blendingAlpha == other.blendingAlpha &&
-                   //colorAttachmentFormat == other.colorAttachmentFormat &&
-                   //depthFormat == other.depthFormat &&
                    depthTestEnabled == other.depthTestEnabled &&
                    depthWriteEnabled == other.depthWriteEnabled &&
                    depthCompareOp == other.depthCompareOp;
@@ -91,8 +87,6 @@ namespace std {
             h ^= hash<bool>()(info.blendingEnabled) + 0x9e3779b9 + (h << 6) + (h >> 2);
             h ^= hash<bool>()(info.blendingAdditive) + 0x9e3779b9 + (h << 6) + (h >> 2);
             h ^= hash<bool>()(info.blendingAlpha) + 0x9e3779b9 + (h << 6) + (h >> 2);
-            //h ^= hash<int>()(static_cast<int>(info.colorAttachmentFormat)) + 0x9e3779b9 + (h << 6) + (h >> 2);
-            //h ^= hash<int>()(static_cast<int>(info.depthFormat)) + 0x9e3779b9 + (h << 6) + (h >> 2);
             h ^= hash<bool>()(info.depthTestEnabled) + 0x9e3779b9 + (h << 6) + (h >> 2);
             h ^= hash<bool>()(info.depthWriteEnabled) + 0x9e3779b9 + (h << 6) + (h >> 2);
             h ^= hash<int>()(static_cast<int>(info.depthCompareOp)) + 0x9e3779b9 + (h << 6) + (h >> 2);

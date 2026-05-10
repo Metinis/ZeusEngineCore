@@ -17,7 +17,6 @@ void VKRenderer::init(EngineContext* ctx) {
     m_CameraSystem = ctx->cameraSystem;
 
     initVulkan();
-    initSampler();
     initSwapChain();
     initCommands();
     initSyncStructures();
@@ -34,24 +33,14 @@ void VKRenderer::init(EngineContext* ctx) {
         }
     }
 
-    VkSamplerCreateInfo sampl = {.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
-
-    sampl.magFilter = VK_FILTER_NEAREST;
-    sampl.minFilter = VK_FILTER_NEAREST;
-
-    vkCreateSampler(m_Device, &sampl, nullptr, &m_DefaultSamplerNearest);
-
-    sampl.magFilter = VK_FILTER_LINEAR;
-    sampl.minFilter = VK_FILTER_LINEAR;
-    vkCreateSampler(m_Device, &sampl, nullptr, &m_DefaultSamplerLinear);
 
     m_ErrorTexture = GPUTexture {
         .image = createImage(pixels.data(), VkExtent3D{16, 16, 1}, VK_FORMAT_R8G8B8A8_UNORM,
         VK_IMAGE_USAGE_SAMPLED_BIT),
-        .sampler = m_DefaultSamplerNearest,
+        .sampler = getDefaultSampler(),
     };
     DescriptorWriter writer;
-    writer.writeImage(0, m_ErrorTexture.image.imageView, m_DefaultSamplerNearest,
+    writer.writeImage(0, m_ErrorTexture.image.imageView, getDefaultSampler(),
                 VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, m_TextureAllocator.allocate());
     //index 0 reserved for error
 
@@ -59,8 +48,6 @@ void VKRenderer::init(EngineContext* ctx) {
 
     m_DeletionQueue.pushFunction([=](){
         destroyImage(m_ErrorTexture.image);
-        vkDestroySampler(m_Device,m_DefaultSamplerNearest,nullptr);
-        vkDestroySampler(m_Device,m_DefaultSamplerLinear,nullptr);
     });
 
     {
@@ -439,22 +426,6 @@ void VKRenderer::initBackgroundPipeline() {
         vkDestroyPipeline(m_Device, m_GradientPipeline, nullptr);
     });
     spdlog::debug("Renderer: Initialized Background Compute Pipeline");
-}
-
-void VKRenderer::initSampler() {
-    VkSamplerCreateInfo samplerInfo{};
-    //todo make these editable
-    samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-    samplerInfo.magFilter = VK_FILTER_LINEAR;
-    samplerInfo.minFilter = VK_FILTER_LINEAR;
-    samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-    samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-    samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-    samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-    VK_CHECK(vkCreateSampler(m_Device, &samplerInfo, nullptr, &m_Sampler));
-    m_DeletionQueue.pushFunction([=]() {
-        vkDestroySampler(m_Device, m_Sampler, nullptr);
-    });
 }
 
 void VKRenderer::initMainPipeLayout() {

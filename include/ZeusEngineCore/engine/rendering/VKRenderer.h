@@ -85,6 +85,7 @@ namespace ZEN {
         void submitDrawCall(const DrawCall& call);
         void executeDrawCalls(VkCommandBuffer cmd, const std::vector<IndirectDrawCall>& draws);
         void setImGUIMode(const bool mode);
+        VkSampler getDefaultSampler();
         VkDescriptorSet getImGUIDescSet(AssetID id);
         //will create mapping between assetID and GPU mesh to be used by renderer
         GPUMeshBuffers uploadMesh(AssetID id, const MeshData& mesh);
@@ -101,8 +102,8 @@ namespace ZEN {
         void drawImgui(VkCommandBuffer cmd, VkImageView targetImageView);
         void drawGeometry(VkCommandBuffer);
         void immediateSubmit(std::function<void(VkCommandBuffer cmd)>&& function);
-        AllocatedImage createImage(VkExtent3D size, VkFormat format, VkImageUsageFlags usage, bool mipmapped = false);
-        AllocatedImage createImage(void* data, VkExtent3D size, VkFormat format, VkImageUsageFlags usage, bool mipmapped = false);
+        AllocatedImage createImage(VkExtent3D size, VkFormat format, VkImageUsageFlags usage, bool mipmapped = false, int layers = 1);
+        AllocatedImage createImage(void* data, VkExtent3D size, VkFormat format, VkImageUsageFlags usage, bool mipmapped = false, int layers = 1);
         void destroyImage(const AllocatedImage& img);
         void cleanup();
         ~VKRenderer();
@@ -114,7 +115,7 @@ namespace ZEN {
         void initDescriptors();
         void initPipelines();
         void initBackgroundPipeline();
-        void initSampler();
+        //void initSampler();
         void initMainPipeLayout();
         VkPipeline createMainPipeline(const PipelineInfo& pipelineInfo);
 
@@ -180,15 +181,15 @@ namespace ZEN {
         std::unordered_map<AssetID, VkDescriptorSet> m_ImGUIDescSetMap{}; //used for thumbnails since imgui doesnt support bindless
 
         //todo make these just like pipelines instead
-        VkSampler m_Sampler{};
+        //VkSampler m_Sampler{};
 
         VkPipelineLayout m_MainPipelineLayout{};
         //VkPipeline m_MeshPipeline{};
 
         GPUTexture m_ErrorTexture{};
 
-        VkSampler m_DefaultSamplerLinear;
-        VkSampler m_DefaultSamplerNearest;
+        //VkSampler m_DefaultSamplerLinear;
+        //VkSampler m_DefaultSamplerNearest;
         GPUSceneData m_SceneData{};
         VkDescriptorSetLayout m_FrameDescriptorLayout{};
 
@@ -199,9 +200,9 @@ namespace ZEN {
         std::unordered_map<AssetID, GPUMeshBuffers> m_MeshMap{};
         std::unordered_map<AssetID, StoredTexture> m_TextureMap{}; //texture and index into bindless
         std::unordered_map<AssetID, StoredMaterial> m_MaterialMap{}; //material and index into material buff
-        //todo lazy load pipelines and samplers by hashing option combos from material
+        //hashed infos todo: ref count delete
         std::unordered_map<PipelineInfo, VkPipeline> m_PipelineMap{};
-
+        std::unordered_map<VkSamplerCreateInfo, VkSampler, std::hash<VkSamplerCreateInfo>, VkSamplerCreateInfoEqual> m_SamplerMap{};
 
         IndexAllocator m_TextureAllocator{};
         IndexAllocator m_MaterialAllocator{};

@@ -87,11 +87,10 @@ ZEN::UUID ModelImporter::processTextureType(const aiScene* aiscene, aiTextureTyp
     for (uint32_t i{0}; i < count; ++i) {
         aiString texPath;
         aimaterial->GetTexture(type, i, &texPath);
-        std::cout<<texPath.data<<"\n";
         if (texPath.length > 0 && texPath.C_Str()[0] == '*') {
             return processTexturesEmbedded(aiscene, texPath);
         } else if (texPath.length > 0) {
-            std::cout<<"Trying to load external file!\n";
+            spdlog::debug("Trying to load external file!");
             auto it = m_ExternalTextureCache.find(texPath.C_Str());
             if (it != m_ExternalTextureCache.end()) {
                 return it->second;
@@ -109,7 +108,7 @@ ZEN::UUID ModelImporter::processTextureType(const aiScene* aiscene, aiTextureTyp
 
             }}
         else {
-            std::cout<<"Warning! No texture path found!\n";
+            spdlog::debug("Warning! No texture path found!");
         }
     }
     return 0;
@@ -180,6 +179,18 @@ void ModelImporter::processAiMesh(Entity& entity, aiMesh* aimesh,
             material.aoTex = processTextureType(aiscene, aiTextureType_AMBIENT_OCCLUSION, aiMaterial);
             material.useAO = true;
         }
+        aiVector3f colorFactor = aiVector3f(1.0f, 1.0f, 1.0f);
+        float metallicFactor = 1.0f;
+        float roughnessFactor = 1.0f;
+        float aoFactor = 1.0f;
+        aiMaterial->Get(AI_MATKEY_METALLIC_FACTOR, metallicFactor);
+        aiMaterial->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughnessFactor);
+        aiMaterial->Get(AI_MATKEY_BASE_COLOR, colorFactor);
+        aiMaterial->Get(AI_MATKEY_COLOR_AMBIENT, aoFactor);
+        material.albedo = glm::vec3(colorFactor.x, colorFactor.y, colorFactor.z);
+        material.roughness = roughnessFactor;
+        material.metallic = metallicFactor;
+        material.ao = aoFactor;
 
     }
     AssetID matID;
@@ -233,7 +244,7 @@ void ModelImporter::loadModel(const std::string &name, const std::string &path) 
 
 
     if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
-        std::cout << "ERROR::ASSIMP::" << import.GetErrorString() << std::endl;
+        spdlog::error("ERROR::ASSIMP::", import.GetErrorString());
         return;
     }
 
