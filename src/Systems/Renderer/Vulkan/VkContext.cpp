@@ -23,54 +23,7 @@ void VKRenderer::init(EngineContext* ctx) {
     initSyncStructures();
     initDescriptors();
     initPipelines();
-
-    //checkerboard image
-    uint32_t black = glm::packUnorm4x8(glm::vec4(0, 0, 0, 0));
-    uint32_t magenta = glm::packUnorm4x8(glm::vec4(1, 0, 1, 1));
-    std::array<uint32_t, 16 *16 > pixels; //for 16x16 checkerboard texture
-    for (int x = 0; x < 16; x++) {
-        for (int y = 0; y < 16; y++) {
-            pixels[y*16 + x] = ((x % 2) ^ (y % 2)) ? magenta : black;
-        }
-    }
-
-
-    m_ErrorTexture = GPUTexture {
-        .image = createImage(pixels.data(), VkExtent3D{16, 16, 1}, VK_FORMAT_R8G8B8A8_UNORM,
-        VK_IMAGE_USAGE_SAMPLED_BIT),
-        .sampler = getSampler(VKHelpers::getDefaultSamplerInfo()),
-    };
-    DescriptorWriter writer;
-    writer.writeImage(0, m_ErrorTexture.image.imageView, getSampler(VKHelpers::getDefaultSamplerInfo()),
-                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, m_TextureAllocator.allocate());
-    //index 0 reserved for error
-
-    writer.updateSet(m_Device, m_TextureDescriptorSet);
-
-    m_DeletionQueue.pushFunction([=](){
-        destroyImage(m_ErrorTexture.image);
-    });
-
-    {
-        DescriptorWriter writer;
-        m_MaterialBuffer = createBuffer(
-        sizeof(GPUMaterial) * 1000,
-        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-        VMA_MEMORY_USAGE_CPU_TO_GPU
-        );
-        writer.writeBuffer(
-        0,
-        m_MaterialBuffer.buffer,
-        sizeof(GPUMaterial) * 1000,
-        0,
-        VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-        writer.updateSet(m_Device, m_MaterialDescriptorSet);
-
-        m_DeletionQueue.pushFunction([=]() {
-            destroyBuffer(m_MaterialBuffer);
-        });
-    }
-
+    initErrorTexture();
     initFrameGraph();
     m_Initialized = true;
 }
@@ -346,6 +299,25 @@ void VKRenderer::initDescriptors() {
         writer.writeImage(0, m_DrawImage.imageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
         writer.updateSet(m_Device, m_DrawImageDescriptors);
     }
+    {
+        DescriptorWriter writer;
+        m_MaterialBuffer = createBuffer(
+        sizeof(GPUMaterial) * 1000,
+        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+        VMA_MEMORY_USAGE_CPU_TO_GPU
+        );
+        writer.writeBuffer(
+        0,
+        m_MaterialBuffer.buffer,
+        sizeof(GPUMaterial) * 1000,
+        0,
+        VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+        writer.updateSet(m_Device, m_MaterialDescriptorSet);
+
+        m_DeletionQueue.pushFunction([=]() {
+            destroyBuffer(m_MaterialBuffer);
+        });
+    }
 
     m_DeletionQueue.pushFunction([=]() {
         m_TextureDescriptorAllocator.destroyPool(m_Device);
@@ -427,6 +399,34 @@ void VKRenderer::initBackgroundPipeline() {
         vkDestroyPipeline(m_Device, m_GradientPipeline, nullptr);
     });
     spdlog::debug("Renderer: Initialized Background Compute Pipeline");
+}
+
+void VKRenderer::initErrorTexture() {
+    //checkerboard image
+    uint32_t black = glm::packUnorm4x8(glm::vec4(0, 0, 0, 0));
+    uint32_t magenta = glm::packUnorm4x8(glm::vec4(1, 0, 1, 1));
+    std::array<uint32_t, 16 *16 > pixels; //for 16x16 checkerboard texture
+    for (int x = 0; x < 16; x++) {
+        for (int y = 0; y < 16; y++) {
+            pixels[y*16 + x] = ((x % 2) ^ (y % 2)) ? magenta : black;
+        }
+    }
+
+    m_ErrorTexture = GPUTexture {
+        .image = createImage(pixels.data(), VkExtent3D{16, 16, 1}, VK_FORMAT_R8G8B8A8_UNORM,
+        VK_IMAGE_USAGE_SAMPLED_BIT),
+        .sampler = getSampler(VKHelpers::getDefaultSamplerInfo()),
+    };
+    DescriptorWriter writer;
+    writer.writeImage(0, m_ErrorTexture.image.imageView, getSampler(VKHelpers::getDefaultSamplerInfo()),
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, m_TextureAllocator.allocate());
+    //index 0 reserved for error
+
+    writer.updateSet(m_Device, m_TextureDescriptorSet);
+
+    m_DeletionQueue.pushFunction([=](){
+        destroyImage(m_ErrorTexture.image);
+    });
 }
 
 void VKRenderer::initMainPipeLayout() {

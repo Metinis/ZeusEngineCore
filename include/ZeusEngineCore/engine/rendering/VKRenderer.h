@@ -115,6 +115,7 @@ namespace ZEN {
         void initDescriptors();
         void initPipelines();
         void initBackgroundPipeline();
+        void initErrorTexture();
         //void initSampler();
         void initMainPipeLayout();
         VkPipeline createMainPipeline(const PipelineInfo& pipelineInfo);
