@@ -224,8 +224,8 @@ GPUTexture VKRenderer::uploadTexture(AssetID id, const TextureData &texture) {
     //--------------------------------------------------------
     if (m_TextureMap.contains(id)) {
         //todo replace texture data, then return
-        //removeTexture(id);
-        return m_TextureMap[id].texture;
+        removeTexture(id);
+        //return m_TextureMap[id].texture;
     }
 
     uint32_t index = m_TextureAllocator.allocate();
