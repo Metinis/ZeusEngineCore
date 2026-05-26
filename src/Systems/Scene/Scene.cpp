@@ -105,7 +105,7 @@ void Scene::createDefaultScene() {
     cubeEntity.addComponent<RigidBodyComp>();
 
     TextureData texData{
-        .path = Project::getActive()->getActiveProjectRoot() + "assets/textures/skybox/",
+        .path = Project::getActive()->getActiveProjectRoot() + "/assets/textures/skybox/",
         .type = Cubemap,
         .samplerInfo = VKHelpers::getCubeMapSamplerInfo(),
     };
