@@ -49,7 +49,7 @@ namespace ZEN {
     struct TagComp {
         std::string tag;
     };
-    struct TransformComp {
+    struct ZEN_API TransformComp {
         glm::vec3 localPosition{0.0f, 0.0f, 0.0f};
         glm::quat localRotation{1.0f, 0.0f, 0.0f, 0.0f};
         glm::vec3 localScale{1.0f, 1.0f, 1.0f};
@@ -86,7 +86,7 @@ namespace ZEN {
         bool lockRotY = false;
         bool lockRotZ = false;
     };
-    struct PhysicsBodyComp { //runtime only
+    struct ZEN_API PhysicsBodyComp { //runtime only
         PhysicsBodyComp(ZeusPhysicsSystem* physicsSystem) : m_PhysicsSystem(physicsSystem){}
 
         void addImpulse(glm::vec3 force);

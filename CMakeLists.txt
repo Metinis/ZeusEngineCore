@@ -40,6 +40,7 @@ target_sources(imgui PRIVATE
 target_link_libraries(imgui
         PRIVATE
         glfw
+        Vulkan::Vulkan
 )
 
 add_library(ImGuizmo STATIC)
