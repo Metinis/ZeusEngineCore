@@ -239,7 +239,7 @@ GPUTexture VKRenderer::uploadTexture(AssetID id, const TextureData &texture) {
     writer.writeImage(0, gpuTex.image.imageView, gpuTex.sampler,
                       VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, index);
     writer.updateSet(m_Device, m_TextureDescriptorSet);
-    m_TextureMap[id] = {gpuTex, index};
+    m_TextureMap[id] = {gpuTex, index, texture.type};
     spdlog::debug("Renderer: Created Texture ID: {}", (uint64_t) id);
     return gpuTex;
 }

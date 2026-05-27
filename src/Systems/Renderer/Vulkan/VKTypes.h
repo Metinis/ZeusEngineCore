@@ -3,6 +3,7 @@
 #include <vma/vk_mem_alloc.h>
 #include "VKImages.h"
 #include "glm/mat4x4.hpp"
+#include "ZeusEngineCore/asset/AssetTypes.h"
 
 namespace ZEN {
     enum MaterialFlags : uint32_t {
@@ -30,6 +31,7 @@ namespace ZEN {
     struct StoredTexture {
         GPUTexture texture{};
         uint32_t idx{};
+        TextureType type{Texture2D};
     };
     struct alignas(16) GPUMaterial {
         glm::vec4 u_Albedo{};   // xyz = color

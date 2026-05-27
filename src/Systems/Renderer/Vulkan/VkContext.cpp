@@ -238,11 +238,13 @@ void VKRenderer::initSyncStructures() {
 }
 
 void VKRenderer::initDescriptors() {
+    VkPhysicalDeviceProperties props;
+    vkGetPhysicalDeviceProperties(m_PhysicalDevice, &props);
     std::vector<DescriptorAllocator::PoolSizeRatio> sizes {
         {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1},
         {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 },
         {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1},
-        {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000},
+        {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, (float)props.limits.maxDescriptorSetSampledImages},
     };
     m_GlobalDescriptorAllocator.initPool(m_Device, 10, sizes);
     {
@@ -263,9 +265,6 @@ void VKRenderer::initDescriptors() {
     }
     {
         DescriptorLayoutBuilder builder;
-        VkPhysicalDeviceProperties props;
-        vkGetPhysicalDeviceProperties(m_PhysicalDevice, &props);
-
         m_TextureAllocator.init(props.limits.maxDescriptorSetSampledImages);
 
         builder.addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, props.limits.maxDescriptorSetSampledImages,
