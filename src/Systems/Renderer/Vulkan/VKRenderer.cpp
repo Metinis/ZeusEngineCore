@@ -186,17 +186,21 @@ VkSampler VKRenderer::getSampler(const VkSamplerCreateInfo& info) {
     return sampler;
 }
 
+static bool drawnBackground = false;
 void VKRenderer::drawBackground(VkCommandBuffer cmd) {
-    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, m_GradientPipeline);
-    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, m_GradientPipelineLayout,
-        0, 1, &m_DrawImageDescriptors, 0, nullptr);
-    float dt = Application::get().getWindow()->getDeltaTime();
-    static float totalTime = 0;
-    totalTime += dt;
-    vkCmdPushConstants(cmd, m_GradientPipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(float), &totalTime);
+    if (!drawnBackground) {
+        vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, m_GradientPipeline);
+        vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, m_MainPipelineLayout, 1,
+            1, &m_TextureDescriptorSet, 0, nullptr);
+        float dt = Application::get().getWindow()->getDeltaTime();
+        static float totalTime = 0;
+        totalTime += dt;
+        vkCmdPushConstants(cmd, m_MainPipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(float), &totalTime);
 
-    vkCmdDispatch(cmd, std::ceil(m_DrawExtent.width / 16.0),
-        std::ceil(m_DrawExtent.height / 16.0), 1);
+        vkCmdDispatch(cmd, std::ceil(m_DrawExtent.width / 16.0),
+            std::ceil(m_DrawExtent.height / 16.0), 1);
+    }
+    drawnBackground = true;
 }
 
 void VKRenderer::drawImgui(VkCommandBuffer cmd, VkImageView targetImageView) {

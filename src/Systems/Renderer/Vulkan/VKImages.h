@@ -10,6 +10,8 @@ namespace ZEN {
         VmaAllocation allocation{};
         VkExtent3D imageExtent{};
         VkFormat imageFormat{};
+        uint32_t readIdx{};
+        uint32_t writeIdx{};
     };
     class VKImages {
     public:

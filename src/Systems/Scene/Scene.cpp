@@ -27,7 +27,7 @@ void Scene::init(EngineContext *ctx) {
     std::filesystem::path scriptsBinPath =
         std::filesystem::path(Project::getActive()->getActiveProjectRoot())
         / "assets" / "scripts" / "bin";
-    ctx->systemManager->loadAllFromDirectory(scriptsBinPath.string(), this);
+    //ctx->systemManager->loadAllFromDirectory(scriptsBinPath.string(), this);
 }
 
 int Scene::computeDepth(Entity e) {

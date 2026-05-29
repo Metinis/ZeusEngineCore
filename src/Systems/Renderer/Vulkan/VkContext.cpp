@@ -241,7 +241,7 @@ void VKRenderer::initDescriptors() {
     VkPhysicalDeviceProperties props;
     vkGetPhysicalDeviceProperties(m_PhysicalDevice, &props);
     std::vector<DescriptorAllocator::PoolSizeRatio> sizes {
-        {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1},
+        {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, (float)props.limits.maxDescriptorSetStorageImages},
         {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 },
         {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1},
         {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, (float)props.limits.maxDescriptorSetSampledImages},
@@ -266,11 +266,16 @@ void VKRenderer::initDescriptors() {
     {
         DescriptorLayoutBuilder builder;
         m_TextureAllocator.init(props.limits.maxDescriptorSetSampledImages);
+        m_StorageImageAllocator.init(props.limits.maxDescriptorSetStorageImages);
 
         builder.addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, props.limits.maxDescriptorSetSampledImages,
             VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT |
                 VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT);
-        m_TextureDescriptorSetLayout = builder.build(m_Device, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+        builder.addBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, props.limits.maxDescriptorSetStorageImages,
+            VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT |
+                VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT);
+        m_TextureDescriptorSetLayout = builder.build(m_Device, VK_SHADER_STAGE_VERTEX_BIT |
+            VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT,
             nullptr, VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT);
 
         m_DeletionQueue.pushFunction([=]() {
@@ -355,9 +360,10 @@ void VKRenderer::initDescriptors() {
 }
 
 void VKRenderer::initPipelines() {
+    initMainPipeLayout();
     initBackgroundPipeline();
     //initMeshPipeline();
-    initMainPipeLayout();
+
     //m_MeshPipeline = createMainPipeline(PipelineInfo());
 }
 
@@ -367,13 +373,13 @@ void VKRenderer::initBackgroundPipeline() {
     push.offset = 0;
     push.size = sizeof(float);
 
-    VkPipelineLayoutCreateInfo computeLayout = VKInit::pipelineLayoutCreateInfo();
+    /*VkPipelineLayoutCreateInfo computeLayout = VKInit::pipelineLayoutCreateInfo();
     computeLayout.pSetLayouts = &m_DrawImageDescriptorLayout;
     computeLayout.setLayoutCount = 1;
     computeLayout.pushConstantRangeCount = 1;
     computeLayout.pPushConstantRanges = &push;
 
-    VK_CHECK(vkCreatePipelineLayout(m_Device, &computeLayout, nullptr, &m_GradientPipelineLayout));
+    VK_CHECK(vkCreatePipelineLayout(m_Device, &computeLayout, nullptr, &m_GradientPipelineLayout));*/
 
     VkShaderModule computeDrawShader;
     if (!VKPipelines::loadShaderModule(Application::get().getResourceRoot() +
@@ -386,7 +392,7 @@ void VKRenderer::initBackgroundPipeline() {
     VkComputePipelineCreateInfo computePipelineCreateInfo{};
     computePipelineCreateInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
     computePipelineCreateInfo.pNext = nullptr;
-    computePipelineCreateInfo.layout = m_GradientPipelineLayout;
+    computePipelineCreateInfo.layout = m_MainPipelineLayout;
     computePipelineCreateInfo.stage = stageInfo;
 
     VK_CHECK(vkCreateComputePipelines(m_Device, VK_NULL_HANDLE, 1, &computePipelineCreateInfo, nullptr,
@@ -394,7 +400,7 @@ void VKRenderer::initBackgroundPipeline() {
 
     vkDestroyShaderModule(m_Device, computeDrawShader, nullptr);
     m_DeletionQueue.pushFunction([=]() {
-        vkDestroyPipelineLayout(m_Device, m_GradientPipelineLayout, nullptr);
+        //vkDestroyPipelineLayout(m_Device, m_GradientPipelineLayout, nullptr);
         vkDestroyPipeline(m_Device, m_GradientPipeline, nullptr);
     });
     spdlog::debug("Renderer: Initialized Background Compute Pipeline");
@@ -413,12 +419,15 @@ void VKRenderer::initErrorTexture() {
 
     m_ErrorTexture = GPUTexture {
         .image = createImage(pixels.data(), VkExtent3D{16, 16, 1}, VK_FORMAT_R8G8B8A8_UNORM,
-        VK_IMAGE_USAGE_SAMPLED_BIT),
+        VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT),
         .sampler = getSampler(VKHelpers::getDefaultSamplerInfo()),
     };
     DescriptorWriter writer;
+    auto idx = m_TextureAllocator.allocate();
     writer.writeImage(0, m_ErrorTexture.image.imageView, getSampler(VKHelpers::getDefaultSamplerInfo()),
-                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, m_TextureAllocator.allocate());
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, idx);
+    writer.writeImage(1, m_ErrorTexture.image.imageView, getSampler(VKHelpers::getDefaultSamplerInfo()),
+                VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, idx);
     //index 0 reserved for error
 
     writer.updateSet(m_Device, m_TextureDescriptorSet);

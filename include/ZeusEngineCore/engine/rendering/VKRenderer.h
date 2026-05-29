@@ -74,7 +74,7 @@ namespace ZEN {
         int count{};
     };
 
-    class ZEN_API VKRenderer {
+    class VKRenderer {
     public:
         VKRenderer();
         void init(EngineContext* ctx);
@@ -171,7 +171,7 @@ namespace ZEN {
         VkDescriptorSetLayout m_DrawImageDescriptorLayout{};
 
         VkPipeline m_GradientPipeline{};
-        VkPipelineLayout m_GradientPipelineLayout{};
+        // m_GradientPipelineLayout{};
 
         VkFence m_ImmediateFence{};
         VkCommandBuffer m_ImmediateCommandBuffer{};
@@ -181,16 +181,10 @@ namespace ZEN {
         VkDescriptorSet m_ImGUIErrorSet{}; //no texture found
         std::unordered_map<AssetID, VkDescriptorSet> m_ImGUIDescSetMap{}; //used for thumbnails since imgui doesnt support bindless
 
-        //todo make these just like pipelines instead
-        //VkSampler m_Sampler{};
-
         VkPipelineLayout m_MainPipelineLayout{};
-        //VkPipeline m_MeshPipeline{};
 
         GPUTexture m_ErrorTexture{};
 
-        //VkSampler m_DefaultSamplerLinear;
-        //VkSampler m_DefaultSamplerNearest;
         GPUSceneData m_SceneData{};
         VkDescriptorSetLayout m_FrameDescriptorLayout{};
 
@@ -206,6 +200,7 @@ namespace ZEN {
         std::unordered_map<VkSamplerCreateInfo, VkSampler, std::hash<VkSamplerCreateInfo>, VkSamplerCreateInfoEqual> m_SamplerMap{};
 
         IndexAllocator m_TextureAllocator{};
+        IndexAllocator m_StorageImageAllocator{};
         IndexAllocator m_MaterialAllocator{};
 
         std::vector<DrawCall> m_DrawCalls{};
