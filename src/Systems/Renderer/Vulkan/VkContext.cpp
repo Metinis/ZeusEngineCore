@@ -25,6 +25,13 @@ void VKRenderer::init(EngineContext* ctx) {
     initPipelines();
     initErrorTexture();
     //skybox stuff
+    TextureData data {
+        .path = Application::get().getResourceRoot() + "/env-maps/HDR_029_Sky_Cloudy_Ref.hdr",
+        .type = Texture2D,
+        .dimensions = {1024, 1024},
+    };
+    auto eqTex = uploadTexture(AssetID(), data);
+
     m_EqMap = createImage(VkExtent3D {1024, 1024, 1}, VK_FORMAT_R8G8B8A8_UNORM,
         VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT, false, 6);
     m_DeletionQueue.pushFunction([=] {

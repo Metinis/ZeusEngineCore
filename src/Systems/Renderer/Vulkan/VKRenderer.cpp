@@ -193,7 +193,7 @@ void VKRenderer::drawBackground(VkCommandBuffer cmd) {
         vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, m_ComputePipelineLayout, 1,
             1, &m_TextureDescriptorSet, 0, nullptr);
         GPUComputePushConstants pc {
-            .eqTextureIdx = 0,
+            .eqTextureIdx = 1,
             .skyboxIdx = m_EqMap.writeIdx
         };
         vkCmdPushConstants(cmd, m_ComputePipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(GPUComputePushConstants), &pc);
