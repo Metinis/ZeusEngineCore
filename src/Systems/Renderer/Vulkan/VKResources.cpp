@@ -403,7 +403,7 @@ AllocatedImage VKRenderer::createImage(VkExtent3D size, VkFormat format, VkImage
         writer.updateSet(m_Device, m_TextureDescriptorSet);
         //todo allocate to map here
     }
-    if ((usage & VK_IMAGE_USAGE_STORAGE_BIT) != 0) {
+    if ((usage & VK_IMAGE_USAGE_STORAGE_BIT) != 0 || isCubeMap) {
         uint32_t index = m_StorageImageAllocator.allocate();
         newImage.writeIdx = index;
         DescriptorWriter writer;

@@ -114,10 +114,11 @@ namespace ZEN {
         void initSyncStructures();
         void initDescriptors();
         void initPipelines();
-        void initBackgroundPipeline();
+        void initComputePipeline();
         void initErrorTexture();
         //void initSampler();
         void initMainPipeLayout();
+        void initMainComputeLayout();
         VkPipeline createMainPipeline(const PipelineInfo& pipelineInfo);
 
         std::vector<IndirectDrawCall> processDrawCalls();
@@ -170,9 +171,6 @@ namespace ZEN {
         VkDescriptorSet m_DrawImageDescriptors{};
         VkDescriptorSetLayout m_DrawImageDescriptorLayout{};
 
-        VkPipeline m_GradientPipeline{};
-        // m_GradientPipelineLayout{};
-
         VkFence m_ImmediateFence{};
         VkCommandBuffer m_ImmediateCommandBuffer{};
         VkCommandPool m_ImmediateCommandPool{};
@@ -182,6 +180,9 @@ namespace ZEN {
         std::unordered_map<AssetID, VkDescriptorSet> m_ImGUIDescSetMap{}; //used for thumbnails since imgui doesnt support bindless
 
         VkPipelineLayout m_MainPipelineLayout{};
+        VkPipelineLayout m_ComputePipelineLayout{};
+        //todo access this within the pipeline cache
+        VkPipeline m_ComputePipeline{};
 
         GPUTexture m_ErrorTexture{};
 
@@ -189,6 +190,7 @@ namespace ZEN {
         VkDescriptorSetLayout m_FrameDescriptorLayout{};
 
         AllocatedBuffer m_MaterialBuffer{};
+        AllocatedImage m_EqMap{}; //todo placeholder
 
         FrameGraph m_FrameGraph{};
 
@@ -196,6 +198,7 @@ namespace ZEN {
         std::unordered_map<AssetID, StoredTexture> m_TextureMap{}; //texture and index into bindless
         std::unordered_map<AssetID, StoredMaterial> m_MaterialMap{}; //material and index into material buff
         //hashed infos todo: ref count delete
+        //todo need compute working
         std::unordered_map<PipelineInfo, VkPipeline> m_PipelineMap{};
         std::unordered_map<VkSamplerCreateInfo, VkSampler, std::hash<VkSamplerCreateInfo>, VkSamplerCreateInfoEqual> m_SamplerMap{};
 

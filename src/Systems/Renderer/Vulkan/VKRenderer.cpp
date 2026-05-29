@@ -189,16 +189,16 @@ VkSampler VKRenderer::getSampler(const VkSamplerCreateInfo& info) {
 static bool drawnBackground = false;
 void VKRenderer::drawBackground(VkCommandBuffer cmd) {
     if (!drawnBackground) {
-        vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, m_GradientPipeline);
-        vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, m_MainPipelineLayout, 1,
+        vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, m_ComputePipeline);
+        vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, m_ComputePipelineLayout, 1,
             1, &m_TextureDescriptorSet, 0, nullptr);
         float dt = Application::get().getWindow()->getDeltaTime();
         static float totalTime = 0;
         totalTime += dt;
-        vkCmdPushConstants(cmd, m_MainPipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(float), &totalTime);
+        vkCmdPushConstants(cmd, m_ComputePipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(float), &totalTime);
 
         vkCmdDispatch(cmd, std::ceil(m_DrawExtent.width / 16.0),
-            std::ceil(m_DrawExtent.height / 16.0), 1);
+            std::ceil(m_DrawExtent.height / 16.0), 6);
     }
     drawnBackground = true;
 }

@@ -62,7 +62,7 @@ namespace ZEN {
         VkDrawIndexedIndirectCommand draw;
         uint32_t objectIndex;
     };
-    struct GPUDrawPushConstants {
+    struct GPUComputePushConstants {
         int i;
     };
 

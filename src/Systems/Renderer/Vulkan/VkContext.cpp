@@ -24,6 +24,12 @@ void VKRenderer::init(EngineContext* ctx) {
     initDescriptors();
     initPipelines();
     initErrorTexture();
+    //skybox stuff
+    m_EqMap = createImage(VkExtent3D {1024, 1024, 1}, VK_FORMAT_R8G8B8A8_UNORM,
+        VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT, false, 6);
+    m_DeletionQueue.pushFunction([=] {
+        destroyImage(m_EqMap);
+    });
     initFrameGraph();
     m_Initialized = true;
 }
@@ -361,26 +367,14 @@ void VKRenderer::initDescriptors() {
 
 void VKRenderer::initPipelines() {
     initMainPipeLayout();
-    initBackgroundPipeline();
+    initMainComputeLayout();
+    initComputePipeline();
     //initMeshPipeline();
 
     //m_MeshPipeline = createMainPipeline(PipelineInfo());
 }
 
-void VKRenderer::initBackgroundPipeline() {
-    VkPushConstantRange push{};
-    push.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-    push.offset = 0;
-    push.size = sizeof(float);
-
-    /*VkPipelineLayoutCreateInfo computeLayout = VKInit::pipelineLayoutCreateInfo();
-    computeLayout.pSetLayouts = &m_DrawImageDescriptorLayout;
-    computeLayout.setLayoutCount = 1;
-    computeLayout.pushConstantRangeCount = 1;
-    computeLayout.pPushConstantRanges = &push;
-
-    VK_CHECK(vkCreatePipelineLayout(m_Device, &computeLayout, nullptr, &m_GradientPipelineLayout));*/
-
+void VKRenderer::initComputePipeline() {
     VkShaderModule computeDrawShader;
     if (!VKPipelines::loadShaderModule(Application::get().getResourceRoot() +
         "/shaders/vulkan-shaders/gradient.comp.spv", m_Device, &computeDrawShader)) {
@@ -392,16 +386,15 @@ void VKRenderer::initBackgroundPipeline() {
     VkComputePipelineCreateInfo computePipelineCreateInfo{};
     computePipelineCreateInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
     computePipelineCreateInfo.pNext = nullptr;
-    computePipelineCreateInfo.layout = m_MainPipelineLayout;
+    computePipelineCreateInfo.layout = m_ComputePipelineLayout;
     computePipelineCreateInfo.stage = stageInfo;
 
     VK_CHECK(vkCreateComputePipelines(m_Device, VK_NULL_HANDLE, 1, &computePipelineCreateInfo, nullptr,
-        &m_GradientPipeline));
+        &m_ComputePipeline));
 
     vkDestroyShaderModule(m_Device, computeDrawShader, nullptr);
     m_DeletionQueue.pushFunction([=]() {
-        //vkDestroyPipelineLayout(m_Device, m_GradientPipelineLayout, nullptr);
-        vkDestroyPipeline(m_Device, m_GradientPipeline, nullptr);
+        vkDestroyPipeline(m_Device, m_ComputePipeline, nullptr);
     });
     spdlog::debug("Renderer: Initialized Background Compute Pipeline");
 }
@@ -433,7 +426,7 @@ void VKRenderer::initErrorTexture() {
 void VKRenderer::initMainPipeLayout() {
     VkPushConstantRange bufferRange{};
     bufferRange.offset = 0;
-    bufferRange.size = sizeof(GPUDrawPushConstants);
+    bufferRange.size = sizeof(GPUComputePushConstants);
     bufferRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
     VkPipelineLayoutCreateInfo layoutInfo = VKInit::pipelineLayoutCreateInfo();
@@ -461,7 +454,40 @@ void VKRenderer::initMainPipeLayout() {
     });
 }
 
+void VKRenderer::initMainComputeLayout() {
+    VkPushConstantRange bufferRange{};
+    bufferRange.offset = 0;
+    bufferRange.size = sizeof(GPUComputePushConstants);
+    bufferRange.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+    VkPipelineLayoutCreateInfo layoutInfo = VKInit::pipelineLayoutCreateInfo();
+    layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    layoutInfo.pNext = nullptr;
+    layoutInfo.flags = 0;
+
+    //todo maybe in the future make this more flexible
+    //frame descriptor unused
+    std::array<VkDescriptorSetLayout, 2> setLayouts = {
+        m_FrameDescriptorLayout,
+        m_TextureDescriptorSetLayout,
+    };
+
+    layoutInfo.pSetLayouts = setLayouts.data();
+    layoutInfo.setLayoutCount = static_cast<uint32_t>(setLayouts.size());
+
+    layoutInfo.pushConstantRangeCount = 1;
+    layoutInfo.pPushConstantRanges = &bufferRange;
+
+    VK_CHECK(vkCreatePipelineLayout(m_Device, &layoutInfo, nullptr, &m_ComputePipelineLayout));
+
+    m_DeletionQueue.pushFunction([=]() {
+        vkDestroyPipelineLayout(m_Device, m_ComputePipelineLayout, nullptr);
+    });
+}
+
 VkPipeline VKRenderer::createMainPipeline(const PipelineInfo& pipelineInfo) {
+    //todo check pipeline type, compute vs graphics, call this create in a getfunction
+    //do lazy load
     VkShaderModule triangleFragShader;
     if (!VKPipelines::loadShaderModule(Application::get().getResourceRoot() +
         pipelineInfo.fragmentShader, m_Device, &triangleFragShader)) {
