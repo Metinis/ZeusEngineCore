@@ -4,6 +4,7 @@
 #include <vma/vk_mem_alloc.h>
 #include <vulkan/vk_enum_string_helper.h>
 
+#include "VkHelpers.h"
 #include "VKInit.h"
 #include "ZeusEngineCore/core/Project.h"
 #include "ZeusEngineCore/engine/rendering/VKUtils.h"
@@ -228,18 +229,12 @@ GPUTexture VKRenderer::uploadTexture(AssetID id, const TextureData &texture) {
         //return m_TextureMap[id].texture;
     }
 
-    uint32_t index = m_TextureAllocator.allocate();
-
     GPUTexture gpuTex = {
         .image = newTexture,
         .sampler = sampler,
     };
-    DescriptorWriter writer;
 
-    writer.writeImage(0, gpuTex.image.imageView, gpuTex.sampler,
-                      VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, index);
-    writer.updateSet(m_Device, m_TextureDescriptorSet);
-    m_TextureMap[id] = {gpuTex, index, texture.type};
+    m_TextureMap[id] = {gpuTex, newTexture.readIdx, texture.type};
     spdlog::debug("Renderer: Created Texture ID: {}", (uint64_t) id);
     return gpuTex;
 }
@@ -359,12 +354,14 @@ AllocatedImage VKRenderer::createImage(VkExtent3D size, VkFormat format, VkImage
     newImage.imageFormat = format;
     newImage.imageExtent = size;
 
+    bool isCubeMap = layers == 6;
+
     VkImageCreateInfo imgInfo = VKInit::imageCreateInfo(format, usage, size);
     if (mipmapped) {
         imgInfo.mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(size.width, size.height)))) + 1;
     }
     imgInfo.arrayLayers = layers;
-    if (layers == 6) {
+    if (isCubeMap) {
         imgInfo.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
     }
 
@@ -381,13 +378,49 @@ AllocatedImage VKRenderer::createImage(VkExtent3D size, VkFormat format, VkImage
 
     VkImageViewCreateInfo viewInfo = VKInit::imageViewCreateInfo(newImage.image, format, aspectFlag);
     viewInfo.subresourceRange.levelCount = imgInfo.mipLevels;
-    if (layers == 6) {
+    if (isCubeMap) {
         viewInfo.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
         viewInfo.subresourceRange.layerCount = layers;
     }
 
 
     VK_CHECK(vkCreateImageView(m_Device, &viewInfo, nullptr, &newImage.imageView));
+
+    if ((usage & VK_IMAGE_USAGE_SAMPLED_BIT) != 0) {
+        uint32_t index = m_TextureAllocator.allocate();
+        newImage.readIdx = index;
+        DescriptorWriter writer;
+
+        //todo get appropriate sampler
+        if (isCubeMap) {
+            writer.writeImage(0, newImage.imageView, getSampler(VKHelpers::getDefaultSamplerInfo()),
+                          VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, index);
+        } else {
+            writer.writeImage(0, newImage.imageView, getSampler(VKHelpers::getCubeMapSamplerInfo()),
+                          VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, index);
+        }
+
+        writer.updateSet(m_Device, m_TextureDescriptorSet);
+        //todo allocate to map here
+    }
+    if ((usage & VK_IMAGE_USAGE_STORAGE_BIT) != 0) {
+        uint32_t index = m_StorageImageAllocator.allocate();
+        newImage.writeIdx = index;
+        DescriptorWriter writer;
+
+        //todo get appropriate sampler
+        if (isCubeMap) {
+            writer.writeImage(1, newImage.imageView, getSampler(VKHelpers::getDefaultSamplerInfo()),
+                          VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, index);
+        } else {
+            writer.writeImage(1, newImage.imageView, getSampler(VKHelpers::getCubeMapSamplerInfo()),
+                          VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, index);
+        }
+
+        writer.updateSet(m_Device, m_TextureDescriptorSet);
+    }
+
+
 
     spdlog::debug("Renderer: Created Image");
 

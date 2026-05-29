@@ -423,13 +423,6 @@ void VKRenderer::initErrorTexture() {
         .sampler = getSampler(VKHelpers::getDefaultSamplerInfo()),
     };
     DescriptorWriter writer;
-    auto idx = m_TextureAllocator.allocate();
-    writer.writeImage(0, m_ErrorTexture.image.imageView, getSampler(VKHelpers::getDefaultSamplerInfo()),
-                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, idx);
-    writer.writeImage(1, m_ErrorTexture.image.imageView, getSampler(VKHelpers::getDefaultSamplerInfo()),
-                VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, idx);
-    //index 0 reserved for error
-
     writer.updateSet(m_Device, m_TextureDescriptorSet);
 
     m_DeletionQueue.pushFunction([=](){
