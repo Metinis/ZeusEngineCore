@@ -63,7 +63,11 @@ namespace ZEN {
         uint32_t objectIndex;
     };
     struct GPUComputePushConstants {
-        int i;
+        uint32_t eqTextureIdx{};
+        uint32_t skyboxIdx{};
+    };
+    struct GPUMainPushConstants {
+        uint32_t skyboxIdx{};
     };
 
 }

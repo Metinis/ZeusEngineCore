@@ -426,7 +426,7 @@ void VKRenderer::initErrorTexture() {
 void VKRenderer::initMainPipeLayout() {
     VkPushConstantRange bufferRange{};
     bufferRange.offset = 0;
-    bufferRange.size = sizeof(GPUComputePushConstants);
+    bufferRange.size = sizeof(GPUMainPushConstants);
     bufferRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
     VkPipelineLayoutCreateInfo layoutInfo = VKInit::pipelineLayoutCreateInfo();

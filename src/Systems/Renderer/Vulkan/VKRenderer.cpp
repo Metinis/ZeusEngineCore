@@ -192,13 +192,14 @@ void VKRenderer::drawBackground(VkCommandBuffer cmd) {
         vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, m_ComputePipeline);
         vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, m_ComputePipelineLayout, 1,
             1, &m_TextureDescriptorSet, 0, nullptr);
-        float dt = Application::get().getWindow()->getDeltaTime();
-        static float totalTime = 0;
-        totalTime += dt;
-        vkCmdPushConstants(cmd, m_ComputePipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(float), &totalTime);
+        GPUComputePushConstants pc {
+            .eqTextureIdx = 0,
+            .skyboxIdx = m_EqMap.writeIdx
+        };
+        vkCmdPushConstants(cmd, m_ComputePipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(GPUComputePushConstants), &pc);
 
-        vkCmdDispatch(cmd, std::ceil(m_DrawExtent.width / 16.0),
-            std::ceil(m_DrawExtent.height / 16.0), 6);
+        vkCmdDispatch(cmd, std::ceil(m_EqMap.imageExtent.width / 16.0),
+            std::ceil(m_EqMap.imageExtent.height / 16.0), 6);
     }
     drawnBackground = true;
 }
@@ -321,6 +322,11 @@ void VKRenderer::prepareDescriptors(VkCommandBuffer cmd) {
         m_MainPipelineLayout,1, 1, &m_TextureDescriptorSet,0,nullptr);
     vkCmdBindDescriptorSets(cmd,VK_PIPELINE_BIND_POINT_GRAPHICS,
         m_MainPipelineLayout,2, 1, &m_MaterialDescriptorSet,0,nullptr);
+
+    GPUMainPushConstants pc {
+        .skyboxIdx = m_EqMap.readIdx
+    };
+    vkCmdPushConstants(cmd, m_MainPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(GPUMainPushConstants), &pc);
 
 }
 
