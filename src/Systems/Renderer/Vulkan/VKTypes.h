@@ -69,6 +69,7 @@ namespace ZEN {
     };
     struct GPUMainPushConstants {
         uint32_t skyboxIdx{};
+        uint32_t irradianceIdx{};
     };
 
 }
