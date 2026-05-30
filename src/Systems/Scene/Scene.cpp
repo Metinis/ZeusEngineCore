@@ -113,8 +113,8 @@ void Scene::createDefaultScene() {
     Material mat {
         .texture = texId,
         .pipelineInfo = PipelineInfo{
-            .vertexShader = "/shaders/vulkan-shaders/testTriangle copy.vert.spv",
-            .fragmentShader = "/shaders/vulkan-shaders/testTriangle copy.frag.spv",
+            .vertexShader = "/shaders/vulkan-shaders/skybox.vert.spv",
+            .fragmentShader = "/shaders/vulkan-shaders/skybox.frag.spv",
             .depthTestEnabled = false,
             .depthWriteEnabled = false,
         }

@@ -27,6 +27,45 @@ void VKImages::transitionImage(VkCommandBuffer cmd, VkImage image, VkImageLayout
 
     vkCmdPipelineBarrier2(cmd, &dep);
 }
+void VKImages::transitionImage(
+    VkCommandBuffer cmd,
+    VkImage image,
+    VkImageLayout oldLayout,
+    VkImageLayout newLayout,
+    VkPipelineStageFlags2 srcStage,
+    VkPipelineStageFlags2 dstStage,
+    VkAccessFlags2 srcAccess,
+    VkAccessFlags2 dstAccess)
+{
+    VkImageMemoryBarrier2 barrier{
+        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2
+    };
+
+    barrier.oldLayout = oldLayout;
+    barrier.newLayout = newLayout;
+
+    barrier.srcStageMask = srcStage;
+    barrier.dstStageMask = dstStage;
+
+    barrier.srcAccessMask = srcAccess;
+    barrier.dstAccessMask = dstAccess;
+
+    VkImageAspectFlags aspectMask =
+        (newLayout == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL)
+        ? VK_IMAGE_ASPECT_DEPTH_BIT
+        : VK_IMAGE_ASPECT_COLOR_BIT;
+
+    barrier.subresourceRange = VKInit::imageSubresourceRange(aspectMask);
+    barrier.image = image;
+
+    VkDependencyInfo dep{
+        .sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+        .imageMemoryBarrierCount = 1,
+        .pImageMemoryBarriers = &barrier
+    };
+
+    vkCmdPipelineBarrier2(cmd, &dep);
+}
 
 void VKImages::copyImageToImage(VkCommandBuffer cmd, VkImage source, VkImage destination, VkExtent2D srcSize,
     VkExtent2D dstSize) {

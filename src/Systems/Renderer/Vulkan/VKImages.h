@@ -16,6 +16,16 @@ namespace ZEN {
     class VKImages {
     public:
         static void transitionImage(VkCommandBuffer cmd, VkImage image, VkImageLayout currentLayout, VkImageLayout newLayout);
+        static void transitionImage(
+    VkCommandBuffer cmd,
+    VkImage image,
+    VkImageLayout oldLayout,
+    VkImageLayout newLayout,
+    VkPipelineStageFlags2 srcStage,
+    VkPipelineStageFlags2 dstStage,
+    VkAccessFlags2 srcAccess,
+    VkAccessFlags2 dstAccess);
+
         static void copyImageToImage(VkCommandBuffer cmd, VkImage source, VkImage destination, VkExtent2D srcSize,
             VkExtent2D dstSize);
     };

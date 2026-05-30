@@ -3,8 +3,8 @@
 
 namespace ZEN {
     struct PipelineInfo {
-        std::string vertexShader{"/shaders/vulkan-shaders/testTriangle.vert.spv"};
-        std::string fragmentShader{"/shaders/vulkan-shaders/testTriangle.frag.spv"};
+        std::string vertexShader{"/shaders/vulkan-shaders/pbrLighting.vert.spv"};
+        std::string fragmentShader{"/shaders/vulkan-shaders/pbrLighting.frag.spv"};
         VkPrimitiveTopology topology{VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST};
         VkPolygonMode polygonMode{VK_POLYGON_MODE_FILL};
         VkCullModeFlags cullMode{VK_CULL_MODE_BACK_BIT};

@@ -64,7 +64,8 @@ namespace ZEN {
     };
     struct GPUComputePushConstants {
         uint32_t eqTextureIdx{};
-        uint32_t skyboxIdx{};
+        uint32_t eqMapIdx{};
+        uint conMapIdx{};
     };
     struct GPUMainPushConstants {
         uint32_t skyboxIdx{};
