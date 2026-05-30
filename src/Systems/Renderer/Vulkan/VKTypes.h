@@ -65,11 +65,18 @@ namespace ZEN {
     struct GPUComputePushConstants {
         uint32_t eqTextureIdx{};
         uint32_t eqMapIdx{};
-        uint conMapIdx{};
+        uint32_t conMapIdx{};
+        uint32_t prefilterMapIdx{};
+        uint32_t prefilterBaseWidth{};
+        uint32_t prefilterBaseHeight{};
+        float roughness{};
+        uint32_t brdfTexIdx{};
     };
     struct GPUMainPushConstants {
         uint32_t skyboxIdx{};
         uint32_t irradianceIdx{};
+        uint32_t prefilterMapIdx{};
+        uint32_t brdfTexIdx{};
     };
 
 }

@@ -6,12 +6,22 @@
 namespace ZEN {
     struct AllocatedImage {
         VkImage image{};
+
+        //Full image view
         VkImageView imageView{};
+
+        //One view per mip level
+        std::vector<VkImageView> mipViews{};
+
         VmaAllocation allocation{};
         VkExtent3D imageExtent{};
         VkFormat imageFormat{};
+
+        uint32_t mipLevels{};
+
         uint32_t readIdx{};
-        uint32_t writeIdx{};
+
+        std::vector<uint32_t> writeIdx{};
     };
     class VKImages {
     public:

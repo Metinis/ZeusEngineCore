@@ -115,11 +115,13 @@ namespace ZEN {
         void initDescriptors();
         void initPipelines();
         void initErrorTexture();
+
         //void initSampler();
         void initMainPipeLayout();
         void initMainComputeLayout();
         VkPipeline createMainPipeline(const PipelineInfo& pipelineInfo);
-
+        void generateMipmaps(VkCommandBuffer cmd, VkImage image, VkExtent3D size,
+            uint32_t mipLevels, uint32_t layerCount);
         std::vector<IndirectDrawCall> processDrawCalls();
         void prepareDescriptors(VkCommandBuffer cmd);
 
