@@ -10,6 +10,7 @@ namespace ZEN {
         SkyboxRenderer(VKRenderer* renderer);
         void init(std::filesystem::path const &path);
         void render(VkCommandBuffer cmd);
+        uint32_t getSkyboxReadIdx() const {return m_EqMap.readIdx;}
         void setDirty(const bool value) {m_IsDirty = value;}
         void cleanup();
         ~SkyboxRenderer();
@@ -19,7 +20,6 @@ namespace ZEN {
         VKRenderer* m_Renderer{};
 
         //pipelines needed
-        VkPipelineLayout m_SkyboxPipelineLayout{};
         VkPipeline m_EqMapPipeline{};
 
         //images loaded/generated
@@ -27,8 +27,5 @@ namespace ZEN {
         AllocatedImage m_EqMap{};
 
         bool m_IsDirty{true};
-
-        //todo temp, just give the cubemap idx
-        friend class VKRenderer;
     };
 }

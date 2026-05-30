@@ -307,7 +307,7 @@ void VKRenderer::prepareDescriptors(VkCommandBuffer cmd) {
         m_MainPipelineLayout,2, 1, &m_MaterialDescriptorSet,0,nullptr);
 
     GPUMainPushConstants pc {
-        .skyboxIdx = m_SkyboxRenderer->m_EqMap.readIdx
+        .skyboxIdx = m_SkyboxRenderer->getSkyboxReadIdx()
     };
     vkCmdPushConstants(cmd, m_MainPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(GPUMainPushConstants), &pc);
 

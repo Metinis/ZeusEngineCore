@@ -18,13 +18,13 @@ void SkyboxRenderer::init(std::filesystem::path const &path) {
     //skybox stuff
     TextureData data {
         .path = Application::get().getResourceRoot() + path.string(),
-        .type = Texture2D,
+        .type = Texture2DHDR,
+        .format = VK_FORMAT_R32G32B32A32_SFLOAT,
         .dimensions = {1024, 1024},
     };
-    //todo use higher precision rgb format
     m_UploadedImage = m_Renderer->uploadTexture(AssetID(), data);
 
-    m_EqMap = m_Renderer->createImage(VkExtent3D {1024, 1024, 1}, VK_FORMAT_R8G8B8A8_UNORM,
+    m_EqMap = m_Renderer->createImage(VkExtent3D {512, 512, 1}, VK_FORMAT_R32G32B32A32_SFLOAT,
         VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT, false, 6);
     m_Renderer->m_DeletionQueue.pushFunction([=] {
         m_Renderer->destroyImage(m_EqMap);

@@ -95,6 +95,7 @@ namespace ZEN {
 
     #define TEXTURE_TYPE_LIST(X) \
         X(Texture2D)             \
+        X(Texture2DHDR)          \
         X(Texture2DRaw)          \
         X(Texture2DAssimp)       \
         X(Cubemap)               \
@@ -117,6 +118,7 @@ namespace ZEN {
     struct TextureData {
         std::string path{};
         TextureType type{Texture2D};
+        VkFormat format{VK_FORMAT_R8G8B8A8_UNORM};
         glm::vec2 dimensions{};
         aiTexture* aiTex{nullptr};
         uint32_t size{};

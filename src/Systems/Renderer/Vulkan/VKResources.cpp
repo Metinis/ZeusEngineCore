@@ -156,7 +156,32 @@ static LoadedTexture loadPixelData(const TextureData &texture) {
 
             return loadedTexture;
         }
+        case Texture2DHDR: {
+            float *pixels = stbi_loadf(
+                texture.path.c_str(),
+                &loadedTexture.texWidth,
+                &loadedTexture.texHeight,
+                &loadedTexture.texChannels,
+                STBI_rgb_alpha
+            );
 
+            if (!pixels) {
+                throw std::runtime_error("Failed to load texture: " + texture.path);
+            }
+
+            const size_t size =
+                size_t(loadedTexture.texWidth) *
+                size_t(loadedTexture.texHeight) *
+                4 *
+                sizeof(float);
+
+            loadedTexture.pixels.resize(size);
+            memcpy(loadedTexture.pixels.data(), pixels, size);
+
+            stbi_image_free(pixels);
+
+            return loadedTexture;
+        }
         case Cubemap: {
             stbi_set_flip_vertically_on_load(false);
 
@@ -218,8 +243,7 @@ GPUTexture VKRenderer::uploadTexture(AssetID id, const TextureData &texture) {
     LoadedTexture texturePixels = loadPixelData(texture);
     AllocatedImage newTexture = createImage((void *) texturePixels.pixels.data(),
         VkExtent3D{(unsigned int) texturePixels.texWidth, (unsigned int) texturePixels.texHeight, 1},
-        VK_FORMAT_R8G8B8A8_UNORM,
-        VK_IMAGE_USAGE_SAMPLED_BIT, false, texturePixels.layers);
+        texture.format, VK_IMAGE_USAGE_SAMPLED_BIT, false, texturePixels.layers);
 
     VkSampler sampler = getSampler(texture.samplerInfo);
     //--------------------------------------------------------
@@ -348,6 +372,25 @@ void VKRenderer::removeTexture(AssetID id) {
     spdlog::error("Attempt to delete non-existing Texture! ID: {}", (uint64_t) id);
 }
 
+static size_t formatSize(VkFormat format)
+{
+    switch (format)
+    {
+        case VK_FORMAT_R8G8B8A8_UNORM:
+        case VK_FORMAT_R8G8B8A8_SRGB:
+            return 4;
+
+        case VK_FORMAT_R16G16B16A16_SFLOAT:
+            return 8;
+
+        case VK_FORMAT_R32G32B32A32_SFLOAT:
+            return 16;
+
+        default:
+            throw std::runtime_error("Unsupported format size");
+    }
+}
+
 AllocatedImage VKRenderer::createImage(VkExtent3D size, VkFormat format, VkImageUsageFlags usage, bool mipmapped,
                                        int layers) {
     AllocatedImage newImage;
@@ -429,7 +472,8 @@ AllocatedImage VKRenderer::createImage(VkExtent3D size, VkFormat format, VkImage
 
 AllocatedImage VKRenderer::createImage(void *data, VkExtent3D size, VkFormat format, VkImageUsageFlags usage,
                                        bool mipmapped, int layers) {
-    size_t dataSize = size.depth * size.width * size.height * 4; //todo check if can use sizeof here
+    size_t pixelSize = formatSize(format);
+    size_t dataSize = size.width * size.height * pixelSize;
     AllocatedBuffer uploadBuffer = createBuffer(layers * dataSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                                                 VMA_MEMORY_USAGE_CPU_TO_GPU);
 
