@@ -7,6 +7,7 @@
 #include "VKInit.h"
 #include "VKPipelines.h"
 #include "ZeusEngineCore/engine/rendering/VKUtils.h"
+#include "SkyboxRenderer.h"
 
 using namespace ZEN;
 
@@ -16,6 +17,7 @@ VKRenderer::VKRenderer() {
 void VKRenderer::init(EngineContext* ctx) {
     m_Scene = ctx->scene;
     m_CameraSystem = ctx->cameraSystem;
+    m_SkyboxRenderer = std::make_unique<SkyboxRenderer>(this);
 
     initVulkan();
     initSwapChain();
@@ -24,20 +26,10 @@ void VKRenderer::init(EngineContext* ctx) {
     initDescriptors();
     initPipelines();
     initErrorTexture();
-    //skybox stuff
-    TextureData data {
-        .path = Application::get().getResourceRoot() + "/env-maps/HDR_029_Sky_Cloudy_Ref.hdr",
-        .type = Texture2D,
-        .dimensions = {1024, 1024},
-    };
-    auto eqTex = uploadTexture(AssetID(), data);
-
-    m_EqMap = createImage(VkExtent3D {1024, 1024, 1}, VK_FORMAT_R8G8B8A8_UNORM,
-        VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT, false, 6);
-    m_DeletionQueue.pushFunction([=] {
-        destroyImage(m_EqMap);
-    });
     initFrameGraph();
+
+    m_SkyboxRenderer->init("/env-maps/HDR_029_Sky_Cloudy_Ref.hdr");
+
     m_Initialized = true;
 }
 
@@ -375,35 +367,6 @@ void VKRenderer::initDescriptors() {
 void VKRenderer::initPipelines() {
     initMainPipeLayout();
     initMainComputeLayout();
-    initComputePipeline();
-    //initMeshPipeline();
-
-    //m_MeshPipeline = createMainPipeline(PipelineInfo());
-}
-
-void VKRenderer::initComputePipeline() {
-    VkShaderModule computeDrawShader;
-    if (!VKPipelines::loadShaderModule(Application::get().getResourceRoot() +
-        "/shaders/vulkan-shaders/gradient.comp.spv", m_Device, &computeDrawShader)) {
-        std::cout << "Failed to load compute draw shader" << std::endl;
-    }
-    VkPipelineShaderStageCreateInfo stageInfo = VKInit::pipelineShaderStageCreateInfo(
-        VK_SHADER_STAGE_COMPUTE_BIT, computeDrawShader);
-
-    VkComputePipelineCreateInfo computePipelineCreateInfo{};
-    computePipelineCreateInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
-    computePipelineCreateInfo.pNext = nullptr;
-    computePipelineCreateInfo.layout = m_ComputePipelineLayout;
-    computePipelineCreateInfo.stage = stageInfo;
-
-    VK_CHECK(vkCreateComputePipelines(m_Device, VK_NULL_HANDLE, 1, &computePipelineCreateInfo, nullptr,
-        &m_ComputePipeline));
-
-    vkDestroyShaderModule(m_Device, computeDrawShader, nullptr);
-    m_DeletionQueue.pushFunction([=]() {
-        vkDestroyPipeline(m_Device, m_ComputePipeline, nullptr);
-    });
-    spdlog::debug("Renderer: Initialized Background Compute Pipeline");
 }
 
 void VKRenderer::initErrorTexture() {

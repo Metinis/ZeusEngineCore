@@ -10,6 +10,7 @@
 #include "ZeusEngineCore/asset/AssetTypes.h"
 
 namespace ZEN {
+    class SkyboxRenderer;
     class Scene;
     class CameraSystem;
     struct EngineContext;
@@ -98,7 +99,6 @@ namespace ZEN {
         //void createMesh()
         ImGui_ImplVulkan_InitInfo initImgui();
         [[nodiscard]] VkDescriptorSet getImDescSet() const {return m_ImGuiDescriptorSet;}
-        void drawBackground(VkCommandBuffer cmd);
         void drawImgui(VkCommandBuffer cmd, VkImageView targetImageView);
         void drawGeometry(VkCommandBuffer);
         void immediateSubmit(std::function<void(VkCommandBuffer cmd)>&& function);
@@ -114,7 +114,6 @@ namespace ZEN {
         void initSyncStructures();
         void initDescriptors();
         void initPipelines();
-        void initComputePipeline();
         void initErrorTexture();
         //void initSampler();
         void initMainPipeLayout();
@@ -182,7 +181,6 @@ namespace ZEN {
         VkPipelineLayout m_MainPipelineLayout{};
         VkPipelineLayout m_ComputePipelineLayout{};
         //todo access this within the pipeline cache
-        VkPipeline m_ComputePipeline{};
 
         GPUTexture m_ErrorTexture{};
 
@@ -190,7 +188,6 @@ namespace ZEN {
         VkDescriptorSetLayout m_FrameDescriptorLayout{};
 
         AllocatedBuffer m_MaterialBuffer{};
-        AllocatedImage m_EqMap{}; //todo placeholder
 
         FrameGraph m_FrameGraph{};
 
@@ -213,5 +210,9 @@ namespace ZEN {
 
         Scene* m_Scene{};
         CameraSystem* m_CameraSystem{};
+
+        //todo just pass a context struct rather than expose everything
+        std::unique_ptr<SkyboxRenderer> m_SkyboxRenderer{};
+        friend class SkyboxRenderer;
     };
 }

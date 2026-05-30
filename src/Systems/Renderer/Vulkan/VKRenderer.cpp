@@ -11,6 +11,7 @@
 #include "ZeusEngineCore/engine/Components.h"
 #include <vma/vk_mem_alloc.h>
 
+#include "SkyboxRenderer.h"
 #include "VkHelpers.h"
 
 using namespace ZEN;
@@ -47,7 +48,7 @@ void VKRenderer::initFrameGraph() {
     RenderPass computePass{.name = "computePass"};
     computePass.m_WriteResources.push_back({"DrawImageCompute", ResourceUsage::COMPUTE_READ_WRITE});
     computePass.execute = [this](VkCommandBuffer cmd) {
-        drawBackground(cmd);
+        m_SkyboxRenderer->render(cmd);
     };
     RenderPass geometryPass{.name = "geometryPass"};
     geometryPass.m_ReadResources.push_back({"DrawImageCompute", ResourceUsage::SHADER_READ});
@@ -186,24 +187,6 @@ VkSampler VKRenderer::getSampler(const VkSamplerCreateInfo& info) {
     return sampler;
 }
 
-static bool drawnBackground = false;
-void VKRenderer::drawBackground(VkCommandBuffer cmd) {
-    if (!drawnBackground) {
-        vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, m_ComputePipeline);
-        vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, m_ComputePipelineLayout, 1,
-            1, &m_TextureDescriptorSet, 0, nullptr);
-        GPUComputePushConstants pc {
-            .eqTextureIdx = 1,
-            .skyboxIdx = m_EqMap.writeIdx
-        };
-        vkCmdPushConstants(cmd, m_ComputePipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(GPUComputePushConstants), &pc);
-
-        vkCmdDispatch(cmd, std::ceil(m_EqMap.imageExtent.width / 16.0),
-            std::ceil(m_EqMap.imageExtent.height / 16.0), 6);
-    }
-    drawnBackground = true;
-}
-
 void VKRenderer::drawImgui(VkCommandBuffer cmd, VkImageView targetImageView) {
     VkRenderingAttachmentInfo colorAttachment = VKInit::attachmentInfo(targetImageView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
     VkRenderingInfo renderInfo = VKInit::renderingInfo(m_SwapChainExtent, &colorAttachment, nullptr);
@@ -324,7 +307,7 @@ void VKRenderer::prepareDescriptors(VkCommandBuffer cmd) {
         m_MainPipelineLayout,2, 1, &m_MaterialDescriptorSet,0,nullptr);
 
     GPUMainPushConstants pc {
-        .skyboxIdx = m_EqMap.readIdx
+        .skyboxIdx = m_SkyboxRenderer->m_EqMap.readIdx
     };
     vkCmdPushConstants(cmd, m_MainPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(GPUMainPushConstants), &pc);
 
