@@ -51,6 +51,7 @@ namespace ZEN {
         bool onWindowResize(const WindowResizeEvent& event);
 
         Window* getWindow() {return m_Ctx.window.get();}
+        EngineContext* getCtx() {return &m_Ctx; }
         static Application& get() { return *s_Instance; }
         std::string getResourceRoot() { return m_ResourceRoot; }
         void close();
