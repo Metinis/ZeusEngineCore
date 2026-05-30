@@ -10,7 +10,7 @@ namespace ZEN {
         SkyboxRenderer(VKRenderer* renderer);
         void init(std::filesystem::path const &path);
         void render(VkCommandBuffer cmd);
-        uint32_t getSkyboxReadIdx() const {return m_IrradianceMap.readIdx;}
+        uint32_t getSkyboxReadIdx() const {return m_EqMap.readIdx;}
         void setDirty(const bool value) {m_IsDirty = value;}
         void cleanup();
         ~SkyboxRenderer();
