@@ -1,15 +1,16 @@
 #pragma once
 #include <entt/entt.hpp>
 #include "ZeusEngineCore/core/InputEvents.h"
+#include "ZeusEngineCore/core/Layer.h"
 #include "ZeusEngineCore/scripting/CompRegistry.h"
 #include "ZeusEngineCore/scripting/SystemManager.h"
-#include "ZeusEngineCore/engine/RenderSystem.h"
 #include "ZeusEngineCore/engine/Entity.h"
 
 namespace ZEN {
 	class AssetLibrary;
 	class ModelImporter;
 	class ZEngine;
+	class VKRenderer;
 	struct RemoveMeshEvent;
 	struct RemoveMaterialEvent;
 	struct RemoveTextureEvent;
@@ -26,15 +27,19 @@ namespace ZEN {
 	public:
 		Scene();
 		~Scene();
+		void init(EngineContext* ctx);
 		void onUpdate(float dt) override;
+		void onRender() override;
 		void createDefaultScene();
 		void onCollisionEnter(Entity a, Entity b, glm::vec3 contactNormal = {});
 		void onCollisionStay(Entity a, Entity b, glm::vec3 contactNormal = {});
 		void onCollisionExit(Entity a, Entity b, glm::vec3 contactNormal = {});
+		glm::vec3 getLightDir();
 		Entity createEntity(const std::string& name = "");
 		Entity createEntity(const std::string& name, UUID id);
 		Entity getEntity(UUID id);
 		Entity getEntityByRegistryID(uint32_t registryID);
+		Entity getCamera(); //returns current active camera
 		Entity getSceneCamera();
 		bool isDescendantOf(Entity parent, Entity possibleChild);
 		void removeEntity(Entity entity);
@@ -57,8 +62,12 @@ namespace ZEN {
 	private:
 		entt::registry m_Registry{};
 		std::unordered_map<Entity, std::unordered_map<std::string, RuntimeComponent>> m_RuntimeComponents;
+		std::unordered_map<UUID, Entity> m_UUIDToEntityMap; //for cache
 		AssetLibrary* m_ModelLibrary{};
 		ZeusPhysicsSystem* m_PhysicsSystem{};
+		SystemManager* m_SystemManager{};
+		VKRenderer* m_Renderer{};
+		CameraSystem* m_CameraSystem{};
 
 		std::vector<CollisionEvent> m_PendingCollisionEvents;
 

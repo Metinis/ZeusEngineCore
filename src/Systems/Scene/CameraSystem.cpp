@@ -1,17 +1,19 @@
 #include "ZeusEngineCore/engine/CameraSystem.h"
 #include "ZeusEngineCore/engine/Components.h"
 #include "ZeusEngineCore/engine/Scene.h"
-#include <glm/gtc/matrix_transform.hpp>
 #include <ZeusEngineCore/core/Application.h>
 #include "ZeusEngineCore/core/InputEvents.h"
 #include "ZeusEngineCore/input/KeyCodes.h"
 #include "ZeusEngineCore/input/MouseCodes.h"
-
+#include <glm/gtc/matrix_transform.hpp>
 using namespace ZEN;
+CameraSystem::CameraSystem(){
 
-CameraSystem::CameraSystem() : m_Scene(&Application::get().getEngine()->getScene()){
+}
 
-
+void CameraSystem::init(EngineContext *ctx) {
+    m_Scene = ctx->scene;
+    m_AspectRatio = ctx->window->getHandleWidth() / ctx->window->getHandleHeight();
 }
 
 void CameraSystem::onUpdate(float deltaTime) {
@@ -22,6 +24,11 @@ void CameraSystem::onUpdate(float deltaTime) {
             auto &camera = entity.getComponent<CameraComp>();
             camera.aspect = m_AspectRatio;
             camera.projection = glm::perspective(camera.fov, camera.aspect, camera.near, camera.far);
+            camera.projection[1][1] *= -1;
+            if (auto *transform = entity.tryGetComponent<TransformComp>()) {
+                m_View = transform->getViewMatrixWorld();
+                m_Projection = camera.projection;
+            }
         }
         return;
     }
@@ -67,21 +74,28 @@ void CameraSystem::onUpdate(float deltaTime) {
                 m_CursorPosLastX = m_CursorPosX;
                 m_CursorPosLastY = m_CursorPosY;
             }
+            m_View = transform->getViewMatrixWorld();
+            m_Projection = camera.projection;
         }
         camera.aspect = m_AspectRatio;
         camera.projection = glm::perspective(camera.fov, camera.aspect, camera.near, camera.far);
+        camera.projection[1][1] *= -1;
+
     }
 }
 
 void CameraSystem::onEvent(Event &event) {
     EventDispatcher dispatcher(event);
-    dispatcher.dispatch<KeyPressedEvent>([this](KeyPressedEvent& e) {return onKeyPressed(e); });
-    dispatcher.dispatch<KeyReleasedEvent>([this](KeyReleasedEvent& e) {return onKeyReleased(e); });
-    dispatcher.dispatch<MouseButtonPressedEvent>([this](MouseButtonPressedEvent& e) {return onMouseButtonPressed(e); });
-    dispatcher.dispatch<MouseButtonReleasedEvent>([this](MouseButtonReleasedEvent& e) {return onMouseButtonReleased(e); });
-    dispatcher.dispatch<MouseMovedEvent>([this](MouseMovedEvent& e) {return onMouseMove(e); });
-    dispatcher.dispatch<RunPlayModeEvent>([this](RunPlayModeEvent& e) {return onPlayMode(e); });
-
+    dispatcher.dispatch<KeyPressedEvent>([this](KeyPressedEvent &e) { return onKeyPressed(e); });
+    dispatcher.dispatch<KeyReleasedEvent>([this](KeyReleasedEvent &e) { return onKeyReleased(e); });
+    dispatcher.dispatch<MouseButtonPressedEvent>([this](MouseButtonPressedEvent &e) {
+        return onMouseButtonPressed(e);
+    });
+    dispatcher.dispatch<MouseButtonReleasedEvent>([this](MouseButtonReleasedEvent &e) {
+        return onMouseButtonReleased(e);
+    });
+    dispatcher.dispatch<MouseMovedEvent>([this](MouseMovedEvent &e) { return onMouseMove(e); });
+    dispatcher.dispatch<RunPlayModeEvent>([this](RunPlayModeEvent &e) { return onPlayMode(e); });
 }
 
 bool CameraSystem::onPlayMode(RunPlayModeEvent &e) {
@@ -104,7 +118,7 @@ bool CameraSystem::onKeyReleased(const KeyReleasedEvent &e) {
 }
 
 bool CameraSystem::onMouseButtonPressed(const MouseButtonPressedEvent &e) {
-    if(e.getKeyCode() == Mouse::Button::ButtonRight && !m_PlayMode) {
+    if (e.getKeyCode() == Mouse::Button::ButtonRight && !m_PlayMode) {
         Application::get().getWindow()->setCursorLock(true, m_CursorPosX, m_CursorPosY);
         m_CursorLocked = true;
         m_CursorPosLastX = m_CursorPosX;
@@ -114,7 +128,7 @@ bool CameraSystem::onMouseButtonPressed(const MouseButtonPressedEvent &e) {
 }
 
 bool CameraSystem::onMouseButtonReleased(const MouseButtonReleasedEvent &e) {
-    if(e.getKeyCode() == Mouse::Button::ButtonRight && !m_PlayMode) {
+    if (e.getKeyCode() == Mouse::Button::ButtonRight && !m_PlayMode) {
         Application::get().getWindow()->setCursorLock(false, m_CursorPosX, m_CursorPosY);
         m_CursorLocked = false;
     }

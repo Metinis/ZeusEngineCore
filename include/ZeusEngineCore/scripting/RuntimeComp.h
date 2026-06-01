@@ -45,7 +45,7 @@ offsetof(Type, Member)                               \
 namespace {                                              \
 struct Type##_Registrar {                            \
 Type##_Registrar() {                             \
-ZEN::Application::get().getEngine()->getCompRegistry().registerComponent(    \
+ZEN::Application::get().getCtx()->compRegistry->registerComponent(    \
 ZEN::ComponentInfo{                      \
 #Type,                               \
 sizeof(Type),                        \

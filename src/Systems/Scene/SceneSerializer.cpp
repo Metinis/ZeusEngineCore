@@ -5,10 +5,11 @@
 
 using namespace ZEN;
 
-SceneSerializer::SceneSerializer(Scene *scene) : m_Scene(scene) {
+SceneSerializer::SceneSerializer(Scene *scene, CompRegistry* compRegistry) :
+m_Scene(scene), m_CompRegistry(compRegistry) {
 }
 
-static void serializeEntity(YAML::Emitter &out, Entity entity) {
+static void serializeEntity(CompRegistry* reg, YAML::Emitter &out, Entity entity) {
     out << YAML::BeginMap;
     assert(entity.hasComponent<UUIDComp>());
     out << YAML::Key << "Entity" << YAML::Value << entity.getComponent<UUIDComp>().uuid;
@@ -142,33 +143,44 @@ static void serializeEntity(YAML::Emitter &out, Entity entity) {
         out << YAML::Key << "IsTrigger" << YAML::Value << meshCol.isTrigger;
         out << YAML::EndMap;
     }
-    auto &runtimeCompMap = Application::get().getEngine()->getCompRegistry().getComponents();
+    auto &runtimeCompMap = reg->getComponents();
 
-    out << YAML::Key << "RuntimeComponents";
-    out << YAML::BeginMap;
-
-    for (auto &runtimeComp: runtimeCompMap) {
+    bool hasRuntime = false;
+    for (auto &runtimeComp : runtimeCompMap) {
         if (entity.hasRuntimeComponent(runtimeComp.name)) {
+            hasRuntime = true;
+            break;
+        }
+    }
+
+    if (hasRuntime) {
+        out << YAML::Key << "RuntimeComponents";
+        out << YAML::BeginMap;
+
+        for (auto &runtimeComp : runtimeCompMap) {
+            if (!entity.hasRuntimeComponent(runtimeComp.name))
+                continue;
+
             out << YAML::Key << runtimeComp.name;
             out << YAML::BeginMap;
 
-            for (auto &field: runtimeComp.fields) {
+            for (auto &field : runtimeComp.fields) {
                 if (field.type == FieldType::Float)
-                    out << YAML::Key << field.name << YAML::Value << entity.getRuntimeField<float>(
-                        runtimeComp.name, field.name);
+                    out << YAML::Key << field.name << YAML::Value
+                        << entity.getRuntimeField<float>(runtimeComp.name, field.name);
                 else if (field.type == FieldType::Bool)
-                    out << YAML::Key << field.name << YAML::Value << entity.getRuntimeField<bool>(
-                        runtimeComp.name, field.name);
+                    out << YAML::Key << field.name << YAML::Value
+                        << entity.getRuntimeField<bool>(runtimeComp.name, field.name);
                 else if (field.type == FieldType::Int)
-                    out << YAML::Key << field.name << YAML::Value << entity.getRuntimeField<int>(
-                        runtimeComp.name, field.name);
+                    out << YAML::Key << field.name << YAML::Value
+                        << entity.getRuntimeField<int>(runtimeComp.name, field.name);
             }
 
             out << YAML::EndMap;
         }
-    }
 
-    out << YAML::EndMap;
+        out << YAML::EndMap;
+    }
 
     out << YAML::EndMap;
 }
@@ -181,7 +193,7 @@ bool SceneSerializer::serialize(const std::string &path) {
 
     for (auto entityID: m_Scene->m_Registry.storage<entt::entity>()) {
         Entity entity = Entity(m_Scene, entityID);
-        serializeEntity(out, entity);
+        serializeEntity(m_CompRegistry, out, entity);
     }
 
     out << YAML::EndSeq;
@@ -194,6 +206,7 @@ bool SceneSerializer::serialize(const std::string &path) {
 bool SceneSerializer::deserialize(const std::string &path) {
     m_Scene->m_Registry.clear();
     m_Scene->m_RuntimeComponents.clear();
+    m_Scene->m_UUIDToEntityMap.clear();
     YAML::Node data;
     try {
         data = YAML::LoadFile(Project::getActive()->getActiveProjectRoot() + path);
@@ -353,7 +366,7 @@ bool SceneSerializer::deserialize(const std::string &path) {
                     if (!compNode.IsMap())
                         continue;
 
-                    for (const auto &comp: Application::get().getEngine()->getCompRegistry().getComponents()) {
+                    for (const auto &comp: m_CompRegistry->getComponents()) {
                         if (comp.name != compName) continue;
 
                         entityInst.addRuntimeComponent(comp);

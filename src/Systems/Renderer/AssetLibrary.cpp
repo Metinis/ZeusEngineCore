@@ -1,12 +1,16 @@
 #include "ZeusEngineCore/asset/AssetLibrary.h"
-#include "IResourceManager.h"
 #include "ZeusEngineCore/core/Application.h"
 #include "ZeusEngineCore/asset/AssetSerializer.h"
 #include "ZeusEngineCore/engine/Components.h"
 
 using namespace ZEN;
 
-AssetLibrary::AssetLibrary() : m_ResourceManager(Application::get().getEngine()->getRenderer().getResourceManager()) {
+AssetLibrary::AssetLibrary() {
+
+}
+
+void AssetLibrary::init(VKRenderer* renderer) {
+    m_Renderer = renderer;
     addAsset<Material>(defaultMaterialID,
         createDefaultMaterial("/shaders/pbr.vert", "/shaders/pbr.frag", ""),
         "Default");
@@ -14,65 +18,14 @@ AssetLibrary::AssetLibrary() : m_ResourceManager(Application::get().getEngine()-
     addAsset<MeshData>(defaultSkyboxID, createSkybox(), "Skybox");
     addAsset<MeshData>(defaultQuadID, createQuad(), "Quad");
     addAsset<MeshData>(defaultSphereID, createSphere(1.0f, 32, 16), "Sphere");
-
-    ShaderData quadShaderData {
-        .vertPath = "/shaders/screenQuad.vert",
-        .fragPath = "/shaders/screenQuad.frag",
-        .geoPath = ""
-    };
-    addAsset(defaultQuadShaderID, quadShaderData, "QuadShader");
-
-    ShaderData normalsShader {
-        .vertPath = "/shaders/normal-visual.vert",
-        .fragPath = "/shaders/normal-visual.frag",
-        .geoPath = "/shaders/normal-visual.geom"
-    };
-    addAsset(defaultNormalsShaderID, normalsShader, "NormalsShader");
-
-    ShaderData pickingShader {
-        .vertPath = "/shaders/pickingShader.vert",
-        .fragPath = "/shaders/pickingShader.frag"
-    };
-    addAsset(defaultPickingShaderID, pickingShader, "PickingShader");
-    //AssetSerializer serializer(this);
-    //serializer.deserialize("assets/default.zenpackage");
 }
 
 AssetLibrary::~AssetLibrary() {
     //AssetSerializer serializer(this);
     //serializer.serialize("assets/default.zenpackage");
-}
-
-MaterialRaw AssetLibrary::getMaterialRaw(const Material &material) {
-    AssetHandle<Material> def = defaultMaterialID;
-    uint32_t shaderID = m_ResourceManager->get<GPUShader>(def->shader)->drawableID;
-    if (m_ResourceManager->get<GPUShader>(material.shader)) {
-        auto shader = m_ResourceManager->get<GPUShader>(material.shader);
-        shaderID = shader->drawableID;
-    }
-    MaterialRaw ret {
-        .shaderID = shaderID,
-        .textureID = m_ResourceManager->get<GPUTexture>(material.texture)->drawableID,
-        .metallicTexID = m_ResourceManager->get<GPUTexture>(material.metallicTex)->drawableID,
-        .roughnessTexID = m_ResourceManager->get<GPUTexture>(material.roughnessTex)->drawableID,
-        .normalTexID = m_ResourceManager->get<GPUTexture>(material.normalTex)->drawableID,
-        .aoTexID = m_ResourceManager->get<GPUTexture>(material.aoTex)->drawableID,
-        .albedo = material.albedo,
-        .metallic = material.metallic,
-        .roughness = material.roughness,
-        .metal = material.metal,
-        .useAlbedo = material.useAlbedo,
-        .useMetallic = material.useMetallic,
-        .useRoughness = material.useRoughness,
-        .useNormal = material.useNormal,
-        .useAO = material.useAO,
-    };
-    return ret;
-}
-
-MaterialRaw AssetLibrary::getMaterialRaw(const AssetID &material) {
-    auto mat = get<Material>(material);
-    return getMaterialRaw(*mat);
+    //for (const auto &id: m_AssetMap | std::views::keys) {
+        //remove(id);
+    //}
 }
 std::string removePrefix(const std::string& full, const std::string& prefix) {
     if (full.starts_with(prefix)) {
@@ -124,45 +77,51 @@ void computeTangents(MeshData &mesh) {
 void AssetLibrary::clearNonDefaults() {
     auto cpy = m_AssetMap;
     for (auto& [id, asset] : cpy) {
-        if (id > maxDefault || id < minDefault) {
+        //if (id > maxDefault || id < minDefault) {
             remove(id);
-        }
+        //}
     }
 }
-
+constexpr auto V = [](glm::vec3 p, glm::vec3 n, glm::vec2 uv) {
+    Vertex v{};
+    v.position  = p;
+    v.Normal    = n;
+    v.TexCoords = uv;
+    return v;
+};
 MeshData AssetLibrary::createCube() {
     MeshData mesh;
 
     mesh.vertices = {
-        {{-0.5f, 0.5f, 0.5f}, {0, 0, 1}, {0.0f, 1.0f}}, // Front
-        {{0.5f, 0.5f, 0.5f}, {0, 0, 1}, {1.0f, 1.0f}},
-        {{0.5f, -0.5f, 0.5f}, {0, 0, 1}, {1.0f, 0.0f}},
-        {{-0.5f, -0.5f, 0.5f}, {0, 0, 1}, {0.0f, 0.0f}},
+        V({-0.5f, 0.5f, 0.5f}, {0, 0, 1}, {0.0f, 1.0f}), // Front
+        V({0.5f, 0.5f, 0.5f}, {0, 0, 1}, {1.0f, 1.0f}),
+        V({0.5f, -0.5f, 0.5f}, {0, 0, 1}, {1.0f, 0.0f}),
+        V({-0.5f, -0.5f, 0.5f}, {0, 0, 1}, {0.0f, 0.0f}),
 
-        {{0.5f, 0.5f, -0.5f}, {0, 0, -1}, {0.0f, 1.0f}},
-        {{-0.5f, 0.5f, -0.5f}, {0, 0, -1}, {1.0f, 1.0f}},
-        {{-0.5f, -0.5f, -0.5f}, {0, 0, -1}, {1.0f, 0.0f}},
-        {{0.5f, -0.5f, -0.5f}, {0, 0, -1}, {0.0f, 0.0f}},
+        V({0.5f, 0.5f, -0.5f}, {0, 0, -1}, {0.0f, 1.0f}),
+        V({-0.5f, 0.5f, -0.5f}, {0, 0, -1}, {1.0f, 1.0f}),
+        V({-0.5f, -0.5f, -0.5f}, {0, 0, -1}, {1.0f, 0.0f}),
+        V({0.5f, -0.5f, -0.5f}, {0, 0, -1}, {0.0f, 0.0f}),
 
-        {{-0.5f, 0.5f, -0.5f}, {-1, 0, 0}, {0.0f, 1.0f}},
-        {{-0.5f, 0.5f, 0.5f}, {-1, 0, 0}, {1.0f, 1.0f}},
-        {{-0.5f, -0.5f, 0.5f}, {-1, 0, 0}, {1.0f, 0.0f}},
-        {{-0.5f, -0.5f, -0.5f}, {-1, 0, 0}, {0.0f, 0.0f}},
+        V({-0.5f, 0.5f, -0.5f}, {-1, 0, 0}, {0.0f, 1.0f}),
+        V({-0.5f, 0.5f, 0.5f}, {-1, 0, 0}, {1.0f, 1.0f}),
+        V({-0.5f, -0.5f, 0.5f}, {-1, 0, 0}, {1.0f, 0.0f}),
+        V({-0.5f, -0.5f, -0.5f}, {-1, 0, 0}, {0.0f, 0.0f}),
 
-        {{0.5f, 0.5f, 0.5f}, {1, 0, 0}, {0.0f, 1.0f}},
-        {{0.5f, 0.5f, -0.5f}, {1, 0, 0}, {1.0f, 1.0f}},
-        {{0.5f, -0.5f, -0.5f}, {1, 0, 0}, {1.0f, 0.0f}},
-        {{0.5f, -0.5f, 0.5f}, {1, 0, 0}, {0.0f, 0.0f}},
+        V({0.5f, 0.5f, 0.5f}, {1, 0, 0}, {0.0f, 1.0f}),
+        V({0.5f, 0.5f, -0.5f}, {1, 0, 0}, {1.0f, 1.0f}),
+        V({0.5f, -0.5f, -0.5f}, {1, 0, 0}, {1.0f, 0.0f}),
+        V({0.5f, -0.5f, 0.5f}, {1, 0, 0}, {0.0f, 0.0f}),
 
-        {{-0.5f, 0.5f, -0.5f}, {0, 1, 0}, {0.0f, 1.0f}},
-        {{0.5f, 0.5f, -0.5f}, {0, 1, 0}, {1.0f, 1.0f}},
-        {{0.5f, 0.5f, 0.5f}, {0, 1, 0}, {1.0f, 0.0f}},
-        {{-0.5f, 0.5f, 0.5f}, {0, 1, 0}, {0.0f, 0.0f}},
+        V({-0.5f, 0.5f, -0.5f}, {0, 1, 0}, {0.0f, 1.0f}),
+        V({0.5f, 0.5f, -0.5f}, {0, 1, 0}, {1.0f, 1.0f}),
+        V({0.5f, 0.5f, 0.5f}, {0, 1, 0}, {1.0f, 0.0f}),
+        V({-0.5f, 0.5f, 0.5f}, {0, 1, 0}, {0.0f, 0.0f}),
 
-        {{-0.5f, -0.5f, 0.5f}, {0, -1, 0}, {0.0f, 1.0f}},
-        {{0.5f, -0.5f, 0.5f}, {0, -1, 0}, {1.0f, 1.0f}},
-        {{0.5f, -0.5f, -0.5f}, {0, -1, 0}, {1.0f, 0.0f}},
-        {{-0.5f, -0.5f, -0.5f}, {0, -1, 0}, {0.0f, 0.0f}}
+        V({-0.5f, -0.5f, 0.5f}, {0, -1, 0}, {0.0f, 1.0f}),
+        V({0.5f, -0.5f, 0.5f}, {0, -1, 0}, {1.0f, 1.0f}),
+        V({0.5f, -0.5f, -0.5f}, {0, -1, 0}, {1.0f, 0.0f}),
+        V({-0.5f, -0.5f, -0.5f}, {0, -1, 0}, {0.0f, 0.0f})
     };
 
     mesh.indices = {
@@ -181,10 +140,10 @@ MeshData AssetLibrary::createQuad() {
     MeshData mesh;
 
     mesh.vertices = {
-        {{-1.0f, -1.0f, 0.0f}, {0, 0, 1}, {0.0f, 0.0f}}, // Bottom-left
-        {{1.0f, -1.0f, 0.0f}, {0, 0, 1}, {1.0f, 0.0f}}, // Bottom-right
-        {{1.0f, 1.0f, 0.0f}, {0, 0, 1}, {1.0f, 1.0f}}, // Top-right
-        {{-1.0f, 1.0f, 0.0f}, {0, 0, 1}, {0.0f, 1.0f}} // Top-left
+        V({-1.0f, -1.0f, 0.0f}, {0, 0, 1}, {0.0f, 0.0f}), // Bottom-left
+        V({1.0f, -1.0f, 0.0f}, {0, 0, 1}, {1.0f, 0.0f}), // Bottom-right
+        V({1.0f, 1.0f, 0.0f}, {0, 0, 1}, {1.0f, 1.0f}), // Top-right
+        V({-1.0f, 1.0f, 0.0f}, {0, 0, 1}, {0.0f, 1.0f}) // Top-left
     };
 
     mesh.indices = {
@@ -198,29 +157,80 @@ MeshData AssetLibrary::createQuad() {
 
 MeshData AssetLibrary::createSkybox() {
     MeshData skyboxMesh{};
+
+    // Skybox vertices: position, normal (unused for skybox but kept for format), UV (unused)
+    // Using a cube from -1 to 1 in all directions
     skyboxMesh.vertices = {
-        {{-1.0f, 1.0f, -1.0f}}, {{-1.0f, -1.0f, -1.0f}}, {{1.0f, -1.0f, -1.0f}}, {{1.0f, 1.0f, -1.0f}}, // Back
-        {{-1.0f, -1.0f, 1.0f}}, {{-1.0f, 1.0f, 1.0f}}, {{1.0f, 1.0f, 1.0f}}, {{1.0f, -1.0f, 1.0f}}, // Front
-        {{-1.0f, 1.0f, 1.0f}}, {{-1.0f, -1.0f, 1.0f}}, {{-1.0f, -1.0f, -1.0f}}, {{-1.0f, 1.0f, -1.0f}}, // Left
-        {{1.0f, 1.0f, -1.0f}}, {{1.0f, -1.0f, -1.0f}}, {{1.0f, -1.0f, 1.0f}}, {{1.0f, 1.0f, 1.0f}}, // Right
-        {{-1.0f, 1.0f, 1.0f}}, {{-1.0f, 1.0f, -1.0f}}, {{1.0f, 1.0f, -1.0f}}, {{1.0f, 1.0f, 1.0f}}, // Top
-        {{-1.0f, -1.0f, -1.0f}}, {{-1.0f, -1.0f, 1.0f}}, {{1.0f, -1.0f, 1.0f}}, {{1.0f, -1.0f, -1.0f}} // Bottom
+        // Back face (z = -1)
+        V({-1.0f, -1.0f, -1.0f}, {0, 0, 1}, {0.0f, 0.0f}), // Bottom-left
+        V({ 1.0f, -1.0f, -1.0f}, {0, 0, 1}, {1.0f, 0.0f}), // Bottom-right
+        V({ 1.0f,  1.0f, -1.0f}, {0, 0, 1}, {1.0f, 1.0f}), // Top-right
+        V({-1.0f,  1.0f, -1.0f}, {0, 0, 1}, {0.0f, 1.0f}), // Top-left
+
+        // Front face (z = 1) - alternate ordering
+        V({-1.0f,  1.0f,  1.0f}, {0, 0, -1}, {0.0f, 1.0f}), // 4: Top-left
+        V({ 1.0f,  1.0f,  1.0f}, {0, 0, -1}, {1.0f, 1.0f}), // 5: Top-right
+        V({ 1.0f, -1.0f,  1.0f}, {0, 0, -1}, {1.0f, 0.0f}), // 6: Bottom-right
+        V({-1.0f, -1.0f,  1.0f}, {0, 0, -1}, {0.0f, 0.0f}), // 7: Bottom-left
+
+        // Left face (x = -1)
+        V({-1.0f, -1.0f,  1.0f}, {0, 0, 1}, {0.0f, 0.0f}), // Front-bottom
+        V({-1.0f, -1.0f, -1.0f}, {0, 0, 1}, {1.0f, 0.0f}), // Back-bottom
+        V({-1.0f,  1.0f, -1.0f}, {0, 0, 1}, {1.0f, 1.0f}), // Back-top
+        V({-1.0f,  1.0f,  1.0f}, {0, 0, 1}, {0.0f, 1.0f}), // Front-top
+
+        // Right face (x = 1)
+        V({ 1.0f, -1.0f, -1.0f}, {0, 0, 1}, {0.0f, 0.0f}), // Back-bottom
+        V({ 1.0f, -1.0f,  1.0f}, {0, 0, 1}, {1.0f, 0.0f}), // Front-bottom
+        V({ 1.0f,  1.0f,  1.0f}, {0, 0, 1}, {1.0f, 1.0f}), // Front-top
+        V({ 1.0f,  1.0f, -1.0f}, {0, 0, 1}, {0.0f, 1.0f}), // Back-top
+
+        // Top face (y = 1)
+        V({-1.0f,  1.0f, -1.0f}, {0, 0, 1}, {0.0f, 0.0f}),
+        V({ 1.0f,  1.0f, -1.0f}, {0, 0, 1}, {1.0f, 0.0f}),
+        V({ 1.0f,  1.0f,  1.0f}, {0, 0, 1}, {1.0f, 1.0f}),
+        V({-1.0f,  1.0f,  1.0f}, {0, 0, 1}, {0.0f, 1.0f}),
+
+        // Bottom face (y = -1)
+        V({-1.0f, -1.0f,  1.0f}, {0, 0, 1}, {0.0f, 0.0f}),
+        V({ 1.0f, -1.0f,  1.0f}, {0, 0, 1}, {1.0f, 0.0f}),
+        V({ 1.0f, -1.0f, -1.0f}, {0, 0, 1}, {1.0f, 1.0f}),
+        V({-1.0f, -1.0f, -1.0f}, {0, 0, 1}, {0.0f, 1.0f})
     };
 
+    // Indices for 6 faces * 2 triangles per face = 12 triangles * 3 indices = 36 indices
     skyboxMesh.indices = {
-        0, 1, 2, 0, 2, 3, // Back (flipped)
-        4, 5, 6, 4, 6, 7, // Front
-        8, 9, 10, 8, 10, 11, // Left
-        12, 13, 14, 12, 14, 15, // Right
-        16, 17, 18, 16, 18, 19, // Top
-        20, 21, 22, 20, 22, 23 // Bottom
+        // Back face
+        0, 1, 2,
+        2, 3, 0,
+
+        // Front face
+        4, 5, 6,
+        6, 7, 4,
+
+        // Left face
+        8, 9, 10,
+        10, 11, 8,
+
+        // Right face
+        12, 13, 14,
+        14, 15, 12,
+
+        // Top face
+        16, 17, 18,
+        18, 19, 16,
+
+        // Bottom face
+        20, 21, 22,
+        22, 23, 20
     };
+
     return skyboxMesh;
 }
 
 Material AssetLibrary::createDefaultMaterial(const std::string &vertPath,
                                                               const std::string &fragPath, const std::string &geoPath) {
-    TextureData defaultTex {
+    /*TextureData defaultTex {
         .type = Texture2DRaw,
     };
     addAsset<TextureData>(defaultTextureID, std::move(defaultTex), "Default");
@@ -229,8 +239,8 @@ Material AssetLibrary::createDefaultMaterial(const std::string &vertPath,
         .fragPath = fragPath,
         .geoPath = geoPath
     };
-    addAsset<ShaderData>(defaultShaderID, std::move(defaultShader), "Default");
-    Material defaultMat{.shader = defaultShaderID, .texture = defaultTextureID};
+    addAsset<ShaderData>(defaultShaderID, std::move(defaultShader), "Default");*/
+    Material defaultMat{};
     return defaultMat;
 }
 

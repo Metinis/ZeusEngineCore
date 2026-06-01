@@ -1,19 +1,24 @@
 #pragma once
+#include "glm/mat4x4.hpp"
 #include "ZeusEngineCore/core/Layer.h"
 #include "ZeusEngineCore/core/InputEvents.h"
 
 namespace ZEN {
     class Scene;
     class EventDispatcher;
+    struct EngineContext;
 
     class CameraSystem : public Layer {
     public:
         explicit CameraSystem();
+        void init(EngineContext* ctx);
         void onUpdate(float deltaTime) override;
         void onEvent(Event& event) override;
         void setAspectRatio(float aspectRatio) { m_Resized = true; m_AspectRatio = aspectRatio; }
         void setUseMainCamera(bool useMainCamera) { m_UseMainCamera = useMainCamera; }
         bool getUseMainCamera() { return m_UseMainCamera; }
+        glm::mat4 getView() const {return m_View;};
+        glm::mat4 getProjection() const {return m_Projection;};
     private:
         bool onPlayMode(RunPlayModeEvent& e);
         bool onKeyPressed(const KeyPressedEvent& e);
@@ -24,6 +29,8 @@ namespace ZEN {
         bool onMouseButtonReleased(const MouseButtonReleasedEvent& e);
         bool onMouseMove(const MouseMovedEvent& e);
 
+        glm::mat4 m_View{};
+        glm::mat4 m_Projection{};
         float m_AspectRatio{};
         float m_MoveSpeed{5.0f};
         double m_CursorPosLastX{};

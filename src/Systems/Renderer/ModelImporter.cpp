@@ -3,15 +3,17 @@
 #include <ZeusEngineCore/engine/Components.h>
 #include <ZeusEngineCore/asset/AssetLibrary.h>
 #include <ZeusEngineCore/engine/Scene.h>
-
+#include "ZeusEngineCore/core/Application.h"
 #include "ZeusEngineCore/stream/FileStreamWriter.h"
 
 using namespace ZEN;
 
-ModelImporter::ModelImporter() :
-m_Scene(&Application::get().getEngine()->getScene()),
-m_ResourceManager(Application::get().getEngine()->getRenderer().getResourceManager()),
-m_AssetLibrary(Project::getActive()->getAssetLibrary()) {
+void ModelImporter::init(EngineContext *ctx) {
+    m_Scene = ctx->scene;
+    m_AssetLibrary = Project::getActive()->getAssetLibrary();
+}
+
+ModelImporter::ModelImporter(){
 
 }
 
@@ -85,11 +87,10 @@ ZEN::UUID ModelImporter::processTextureType(const aiScene* aiscene, aiTextureTyp
     for (uint32_t i{0}; i < count; ++i) {
         aiString texPath;
         aimaterial->GetTexture(type, i, &texPath);
-        std::cout<<texPath.data<<"\n";
         if (texPath.length > 0 && texPath.C_Str()[0] == '*') {
             return processTexturesEmbedded(aiscene, texPath);
         } else if (texPath.length > 0) {
-            std::cout<<"Trying to load external file!\n";
+            spdlog::debug("Trying to load external file!");
             auto it = m_ExternalTextureCache.find(texPath.C_Str());
             if (it != m_ExternalTextureCache.end()) {
                 return it->second;
@@ -107,7 +108,7 @@ ZEN::UUID ModelImporter::processTextureType(const aiScene* aiscene, aiTextureTyp
 
             }}
         else {
-            std::cout<<"Warning! No texture path found!\n";
+            spdlog::debug("Warning! No texture path found!");
         }
     }
     return 0;
@@ -120,35 +121,44 @@ bool hasTextureType(aiTextureType type, const aiMaterial* aimaterial) {
 }
 void ModelImporter::processAiMesh(Entity& entity, aiMesh* aimesh,
                                   const aiScene* aiscene, const glm::mat4& transform) {
-    MeshData mesh{};
-    for (uint32_t i{0}; i < aimesh->mNumVertices; ++i) {
-        Vertex vertex{};
-        vertex.position = processMeshPos(aimesh->mVertices[i], transform);
-        vertex.Normal   = glm::vec3(0.0f);
-        vertex.TexCoords= glm::vec2(0.0f, 0.0f);
-        vertex.Tangent.x = aimesh->mTangents[i].x;
-        vertex.Tangent.y = aimesh->mTangents[i].y;
-        vertex.Tangent.z = aimesh->mTangents[i].z;
+    AssetID meshID;
+    if (!m_MeshCache.contains(aimesh)) {
+        MeshData mesh{};
+        for (uint32_t i{0}; i < aimesh->mNumVertices; ++i) {
+            Vertex vertex{};
+            vertex.position = processMeshPos(aimesh->mVertices[i], transform);
+            vertex.Normal   = glm::vec3(0.0f);
+            vertex.TexCoords= glm::vec2(0.0f, 0.0f);
+            if (aimesh->HasTangentsAndBitangents()) {
+                vertex.Tangent.x = aimesh->mTangents[i].x;
+                vertex.Tangent.y = aimesh->mTangents[i].y;
+                vertex.Tangent.z = aimesh->mTangents[i].z;
+            }
+            if (aimesh->HasNormals())
+                vertex.Normal = processMeshNormals(aimesh->mNormals[i], transform);
 
-        if (aimesh->HasNormals())
-            vertex.Normal = processMeshNormals(aimesh->mNormals[i], transform);
 
+            if (aimesh->mTextureCoords[0])
+                vertex.TexCoords = processMeshUVs(aimesh->mTextureCoords[0][i]);
 
-        if (aimesh->mTextureCoords[0])
-            vertex.TexCoords = processMeshUVs(aimesh->mTextureCoords[0][i]);
+            mesh.vertices.push_back(vertex);
+        }
 
-        mesh.vertices.push_back(vertex);
+        for (uint32_t i{0}; i < aimesh->mNumFaces; ++i) {
+            aiFace face = aimesh->mFaces[i];
+            for (uint32_t j{0}; j < face.mNumIndices; ++j)
+                mesh.indices.push_back(face.mIndices[j]);
+        }
+        meshID = m_AssetLibrary->createAsset<MeshData>(std::move(mesh), aimesh->mName.C_Str());
+    } else {
+        meshID = m_MeshCache[aimesh];
     }
 
-    for (uint32_t i{0}; i < aimesh->mNumFaces; ++i) {
-        aiFace face = aimesh->mFaces[i];
-        for (uint32_t j{0}; j < face.mNumIndices; ++j)
-            mesh.indices.push_back(face.mIndices[j]);
-    }
+    entity.addComponent<MeshComp>(meshID);
 
+    const aiMaterial* aiMaterial = aiscene->mMaterials[aimesh->mMaterialIndex];
     Material material = *AssetHandle<Material>(defaultMaterialID).get();
     if (aimesh->mMaterialIndex >= 0) {
-        const aiMaterial* aiMaterial = aiscene->mMaterials[aimesh->mMaterialIndex];
         if (hasTextureType(aiTextureType_DIFFUSE, aiMaterial)) {
             material.texture = processTextureType(aiscene, aiTextureType_DIFFUSE, aiMaterial);
             material.useAlbedo = true;
@@ -169,11 +179,29 @@ void ModelImporter::processAiMesh(Entity& entity, aiMesh* aimesh,
             material.aoTex = processTextureType(aiscene, aiTextureType_AMBIENT_OCCLUSION, aiMaterial);
             material.useAO = true;
         }
-    }
-    auto matID = m_AssetLibrary->createAsset<Material>(std::move(material), aiscene->mMaterials[aimesh->mMaterialIndex]->GetName().C_Str());
-    auto meshID = m_AssetLibrary->createAsset<MeshData>(std::move(mesh), aimesh->mName.C_Str());
+        aiVector3f colorFactor = aiVector3f(1.0f, 1.0f, 1.0f);
+        float metallicFactor = 1.0f;
+        float roughnessFactor = 1.0f;
+        float aoFactor = 1.0f;
+        aiMaterial->Get(AI_MATKEY_METALLIC_FACTOR, metallicFactor);
+        aiMaterial->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughnessFactor);
+        aiMaterial->Get(AI_MATKEY_BASE_COLOR, colorFactor);
+        aiMaterial->Get(AI_MATKEY_COLOR_AMBIENT, aoFactor);
+        material.albedo = glm::vec3(colorFactor.x, colorFactor.y, colorFactor.z);
+        material.roughness = roughnessFactor;
+        material.metallic = metallicFactor;
+        material.ao = aoFactor;
 
-    entity.addComponent<MeshComp>(meshID);
+    }
+    AssetID matID;
+    if (m_MaterialCache.contains(aiMaterial)) {
+        matID = m_MaterialCache[aiMaterial];
+    } else {
+        matID = m_AssetLibrary->createAsset<Material>(std::move(material),
+            aiscene->mMaterials[aimesh->mMaterialIndex]->GetName().C_Str());
+        m_MaterialCache[aiMaterial] = matID;
+    }
+
     entity.addComponent<MaterialComp>(matID);
 
 }
@@ -216,7 +244,7 @@ void ModelImporter::loadModel(const std::string &name, const std::string &path) 
 
 
     if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
-        std::cout << "ERROR::ASSIMP::" << import.GetErrorString() << std::endl;
+        spdlog::error("ERROR::ASSIMP::", import.GetErrorString());
         return;
     }
 

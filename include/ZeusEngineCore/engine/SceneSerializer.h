@@ -5,10 +5,11 @@
 namespace ZEN {
     class ZEN_API SceneSerializer {
     public:
-        SceneSerializer(Scene* scene);
+        SceneSerializer(Scene* scene, CompRegistry* compRegistry);
         bool serialize(const std::string& path);
         bool deserialize(const std::string& path);
     private:
         Scene* m_Scene{};
+        CompRegistry* m_CompRegistry{};
     };
 }

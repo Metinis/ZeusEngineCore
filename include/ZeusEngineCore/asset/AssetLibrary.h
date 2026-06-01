@@ -1,7 +1,6 @@
 #pragma once
-#include "ZeusEngineCore/core/Util.h"
-#include "../../../src/Systems/Renderer/IResourceManager.h"
 #include "AssetTypes.h"
+#include "ZeusEngineCore/engine/rendering/VKRenderer.h"
 
 namespace ZEN {
     //cant remove these
@@ -32,12 +31,26 @@ namespace ZEN {
     class ZEN_API AssetLibrary {
     public:
         explicit AssetLibrary();
+        void init(VKRenderer* renderer);
         ~AssetLibrary();
 
         template<typename T>
         AssetID createAsset(T&& asset, const std::string& name = "") {
             AssetID id;
-            m_ResourceManager->create(id, asset);
+
+            spdlog::debug("Creating asset id: {}", (uint64_t)id);
+
+            //todo move to ref counting
+            if constexpr (std::is_same_v<T, MeshData>) {
+                m_Renderer->uploadMesh(id, asset);
+            }
+            if constexpr (std::is_same_v<T, TextureData>) {
+                m_Renderer->uploadTexture(id, asset);
+            }
+            if constexpr (std::is_same_v<T, Material>) {
+                m_Renderer->uploadMaterial(id, asset);
+            }
+
             m_AssetMap.emplace(id, std::forward<T>(asset));
             m_NameMap.emplace(id, name);
             return id;
@@ -45,8 +58,15 @@ namespace ZEN {
 
         template<typename T>
         void addAsset(AssetID id, T&& asset, const std::string& name = "") {
-            if (!m_ResourceManager->has(id)) {
-                m_ResourceManager->create(id, asset);
+            spdlog::debug("Adding asset id: {}", (uint64_t)id);
+            if constexpr (std::is_same_v<T, MeshData>) {
+                m_Renderer->uploadMesh(id, asset);
+            }
+            if constexpr (std::is_same_v<T, TextureData>) {
+                m_Renderer->uploadTexture(id, asset);
+            }
+            if constexpr (std::is_same_v<T, Material>) {
+                m_Renderer->uploadMaterial(id, asset);
             }
             m_AssetMap[id] = std::forward<T>(asset);
             m_NameMap.emplace(id, name);
@@ -86,10 +106,17 @@ namespace ZEN {
         }
 
         void remove(AssetID id) {
-            m_AssetMap.erase(id);
-            if (m_ResourceManager->has(id)) {
-                m_ResourceManager->remove(id);
+            spdlog::debug("Removing asset {}", (uint64_t)id);
+            if (std::holds_alternative<MeshData>(m_AssetMap[id])) {
+                m_Renderer->deleteMesh(id);
             }
+            if (std::holds_alternative<TextureData>(m_AssetMap[id])) {
+                m_Renderer->deleteTexture(id);
+            }
+            if (std::holds_alternative<Material>(m_AssetMap[id])) {
+                m_Renderer->deleteMaterial(id);
+            }
+            m_AssetMap.erase(id);
         }
 
         const AssetMap& getAll() const { return m_AssetMap; }
@@ -101,13 +128,11 @@ namespace ZEN {
             return "";
         }
 
-        MaterialRaw getMaterialRaw(const Material &material);
-        MaterialRaw getMaterialRaw(const AssetID &material);
-
     private:
         AssetMap m_AssetMap{};
         NameMap m_NameMap{};
-        IResourceManager* m_ResourceManager{};
+        //IResourceManager* m_ResourceManager{};
+        VKRenderer* m_Renderer{};
 
         void clearNonDefaults();
 

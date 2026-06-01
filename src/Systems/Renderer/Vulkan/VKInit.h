@@ -1,0 +1,28 @@
+#pragma once
+#include "vulkan/vulkan.h"
+
+namespace ZEN {
+    class VKInit {
+    public:
+        static VkCommandPoolCreateInfo commandPoolCreateInfo(uint32_t queueFamilyIndex, VkCommandPoolCreateFlags flags = 0);
+        static VkCommandBufferAllocateInfo commandBufferAllocateInfo(VkCommandPool pool, uint32_t count);
+        static VkFenceCreateInfo fenceCreateInfo(VkFenceCreateFlags flags = 0);
+        static VkSemaphoreCreateInfo semaphoreCreateInfo(VkSemaphoreCreateFlags flags = 0);
+        static VkCommandBufferBeginInfo cmdBufferBeginInfo(VkCommandBufferUsageFlags flags = 0);
+        static VkImageSubresourceRange imageSubresourceRange(VkImageAspectFlags aspectMask);
+        static VkSemaphoreSubmitInfo semaphoreSubmitInfo(VkPipelineStageFlags2 stageMask, VkSemaphore semaphore);
+        static VkCommandBufferSubmitInfo cmdBufferSubmitInfo(VkCommandBuffer cmd);
+        static VkSubmitInfo2 submitInfo(VkCommandBufferSubmitInfo* cmd, VkSemaphoreSubmitInfo* signalSemaphoreInfo,
+            VkSemaphoreSubmitInfo* waitSemaphoreInfo);
+        static VkImageCreateInfo imageCreateInfo(VkFormat format, VkImageUsageFlags usageFlags, VkExtent3D extent);
+        static VkImageViewCreateInfo imageViewCreateInfo(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
+        static VkRenderingAttachmentInfo attachmentInfo(VkImageView view, VkClearValue* clear,
+            VkImageLayout layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+        static VkRenderingInfo renderingInfo(VkExtent2D extent, VkRenderingAttachmentInfo* colorAttachmentInfo,
+            VkRenderingAttachmentInfo* depthAttachmentInfo);
+        static VkPipelineShaderStageCreateInfo pipelineShaderStageCreateInfo(VkShaderStageFlagBits flagBits, VkShaderModule shaderModule);
+        static VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo();
+        static VkRenderingAttachmentInfo depthAttachmentInfo(VkImageView view, VkImageLayout layout);
+
+    };
+}

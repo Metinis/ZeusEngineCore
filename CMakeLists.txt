@@ -4,16 +4,21 @@ project(ZeusEngineCore LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/include/glfw glfw)
 
-add_library(ZeusEngineCore SHARED)
+add_library(ZeusEngineCore SHARED
+        src/Systems/Renderer/Vulkan/SkyboxRenderer.cpp
+        src/Systems/Renderer/Vulkan/SkyboxRenderer.h)
 
 target_compile_definitions(ZeusEngineCore
     PRIVATE ENGINE_EXPORTS
 )
 
 target_compile_features(ZeusEngineCore PUBLIC cxx_std_23)
+
+find_package(Vulkan REQUIRED)
 
 add_library(imgui STATIC)
 
@@ -31,11 +36,13 @@ target_sources(imgui PRIVATE
         include/imgui/imgui_demo.cpp
         include/imgui/backends/imgui_impl_glfw.cpp
         include/imgui/backends/imgui_impl_opengl3.cpp
+        include/imgui/backends/imgui_impl_vulkan.cpp
 )
 
 target_link_libraries(imgui
         PRIVATE
         glfw
+        Vulkan::Vulkan
 )
 
 add_library(ImGuizmo STATIC)
@@ -81,6 +88,7 @@ target_precompile_headers(ZeusEngineCore
 
 target_include_directories(ZeusEngineCore
         PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
         ${CMAKE_CURRENT_SOURCE_DIR}/include
         ${CMAKE_CURRENT_SOURCE_DIR}/include/entt
         ${CMAKE_CURRENT_SOURCE_DIR}/include/glad/include
@@ -117,6 +125,21 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(yaml-cpp)
 
+include(FetchContent)
+FetchContent_Declare(
+        fetch_vk_bootstrap
+        GIT_REPOSITORY https://github.com/charles-lunarg/vk-bootstrap
+        GIT_TAG        v1.4.342
+)
+FetchContent_MakeAvailable(fetch_vk_bootstrap)
+
+FetchContent_Declare(
+        spdlog
+        GIT_REPOSITORY https://github.com/gabime/spdlog
+        GIT_TAG v1.17.0
+)
+FetchContent_MakeAvailable(spdlog)
+
 
 target_link_libraries(ZeusEngineCore
         PRIVATE
@@ -128,6 +151,9 @@ target_link_libraries(ZeusEngineCore
         yaml-cpp::yaml-cpp
         Jolt::Jolt
         tinyfd
+        Vulkan::Vulkan
+        vk-bootstrap::vk-bootstrap
+        spdlog::spdlog
 )
 
 if(APPLE)

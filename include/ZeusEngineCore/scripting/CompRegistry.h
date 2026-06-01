@@ -3,7 +3,7 @@
 #include "RuntimeComp.h"
 
 namespace ZEN {
-
+    struct EngineContext;
     class CompRegistry {
     public:
         CompRegistry() = default;
@@ -11,6 +11,8 @@ namespace ZEN {
         ~CompRegistry() {
             clearComponents();
         }
+
+        void init(EngineContext* ctx) {};
 
         std::vector<ComponentInfo>& getComponents() {
             return m_Components;
@@ -27,4 +29,5 @@ namespace ZEN {
     private:
         std::vector<ComponentInfo> m_Components{};
     };
+
 }

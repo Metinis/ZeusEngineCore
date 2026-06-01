@@ -17,6 +17,10 @@ SystemManager::SystemManager() = default;
 SystemManager::~SystemManager() {
     clearAll();
 }
+
+void SystemManager::init(EngineContext *ctx) {
+
+}
 #if defined(_WIN32)
 constexpr const char* DYLIB_EXT = ".dll";
 #elif defined(__APPLE__)

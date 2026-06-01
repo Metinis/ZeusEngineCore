@@ -4,7 +4,7 @@
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
-
+#include "../../src/Systems/Renderer/Vulkan/VKPipelines.h"
 #ifdef GENERATE_ENUM_STRINGS
 #include <string.h>
 
@@ -32,7 +32,7 @@ return false; \
 namespace ZEN {
     using AssetID = UUID;
     struct Material {
-        AssetID shader{0};
+        //AssetID shader{0};
         AssetID texture{0};
         AssetID metallicTex{0};
         AssetID roughnessTex{0};
@@ -42,30 +42,12 @@ namespace ZEN {
         float metallic{1.0f};
         float roughness{1.0f};
         float ao{1.0f};
-        bool metal{false};
         bool useAlbedo{false};
         bool useMetallic{false};
         bool useRoughness{false};
         bool useNormal{false};
         bool useAO{false};
-    };
-    struct MaterialRaw {
-        uint32_t shaderID{0};
-        uint32_t textureID{0};
-        uint32_t metallicTexID{0};
-        uint32_t roughnessTexID{0};
-        uint32_t normalTexID{0};
-        uint32_t aoTexID{0};
-        glm::vec3 albedo{1.0f, 1.0f, 1.0f};
-        float metallic{1.0f};
-        float roughness{1.0f};
-        float ao{1.0f};
-        bool metal{false};
-        bool useAlbedo{false};
-        bool useMetallic{false};
-        bool useRoughness{false};
-        bool useNormal{false};
-        bool useAO{false};
+        PipelineInfo pipelineInfo{};
     };
 
     struct MeshData {
@@ -113,6 +95,7 @@ namespace ZEN {
 
     #define TEXTURE_TYPE_LIST(X) \
         X(Texture2D)             \
+        X(Texture2DHDR)          \
         X(Texture2DRaw)          \
         X(Texture2DAssimp)       \
         X(Cubemap)               \
@@ -132,14 +115,40 @@ namespace ZEN {
     const char* getStringTextureType(TextureType type);
     bool getEnumTextureTypeFromString(const char* str, TextureType* out);
 
+    struct SamplerInfo {
+        VkFilter magFilter{VK_FILTER_LINEAR};
+        VkFilter minFilter{VK_FILTER_LINEAR};
+
+        VkSamplerMipmapMode mipmapMode{VK_SAMPLER_MIPMAP_MODE_LINEAR};
+
+        VkSamplerAddressMode addressModeU{VK_SAMPLER_ADDRESS_MODE_REPEAT};
+        VkSamplerAddressMode addressModeV{VK_SAMPLER_ADDRESS_MODE_REPEAT};
+        VkSamplerAddressMode addressModeW{VK_SAMPLER_ADDRESS_MODE_REPEAT};
+
+        float mipLodBias{0.0f};
+        float minLod{0.0f};
+        float maxLod{VK_LOD_CLAMP_NONE};
+
+        bool anisotropyEnable{false};
+        float maxAnisotropy{16.0f};
+
+        bool compareEnable{false};
+        VkCompareOp compareOp{VK_COMPARE_OP_ALWAYS};
+
+        VkBorderColor borderColor{VK_BORDER_COLOR_INT_OPAQUE_BLACK};
+
+        bool unnormalizedCoordinates{false};
+    };
     struct TextureData {
         std::string path{};
         TextureType type{Texture2D};
+        VkFormat format{VK_FORMAT_R8G8B8A8_UNORM};
         glm::vec2 dimensions{};
         aiTexture* aiTex{nullptr};
         uint32_t size{};
         bool mip{false};
         bool absPath{false};
+        SamplerInfo samplerInfo{};
     };
     struct ShaderData {
         std::string vertPath;

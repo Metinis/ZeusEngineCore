@@ -17,3 +17,9 @@
 #include <filesystem>
 #include <variant>
 #include <Jolt/Jolt.h>
+#include <cstring>
+#include <cmath>
+#include <deque>
+#include <queue>
+#include <ranges>
+#include <spdlog/spdlog.h>
