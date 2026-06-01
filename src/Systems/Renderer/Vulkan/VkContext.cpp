@@ -108,6 +108,7 @@ void VKRenderer::initVulkan() {
     features12.descriptorBindingUpdateUnusedWhilePending = true;
     features12.descriptorBindingSampledImageUpdateAfterBind = true;
     features12.descriptorBindingStorageBufferUpdateAfterBind = true;
+    features12.descriptorBindingStorageImageUpdateAfterBind = true;
     features12.runtimeDescriptorArray = true;
 
     VkPhysicalDeviceFeatures features {};
@@ -397,7 +398,7 @@ void VKRenderer::initMainPipeLayout() {
     VkPushConstantRange bufferRange{};
     bufferRange.offset = 0;
     bufferRange.size = sizeof(GPUMainPushConstants);
-    bufferRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+    bufferRange.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
     VkPipelineLayoutCreateInfo layoutInfo = VKInit::pipelineLayoutCreateInfo();
     layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;

@@ -213,8 +213,13 @@ std::vector<IndirectDrawCall> VKRenderer::processDrawCalls() {
     int i = 0;
     std::vector<IndirectDrawCall> indirectDrawCalls{};
     for (auto& call : m_DrawCalls) {
+        if (!m_MeshMap.contains(call.meshID) || !m_MaterialMap.contains(call.materialID)) {
+            spdlog::warn("Renderer: Trying to render invalid draw");
+            continue;
+        }
         auto& buf = m_MeshMap[call.meshID];
         auto& gpuMat = m_MaterialMap[call.materialID];
+
 
         if (!indirectDrawCalls.empty() && &buf == indirectDrawCalls.back().mesh &&
             &gpuMat == indirectDrawCalls.back().material) {

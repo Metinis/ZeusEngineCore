@@ -11,6 +11,8 @@ ZEN::AssetSerializer::AssetSerializer(AssetLibrary *library) : m_AssetLibrary(li
 }
 
 bool ZEN::AssetSerializer::serialize(const std::string &path) {
+    //todo need to update texture serialization,
+    //todo also might just keep serialization/deserialization in their respective structs for the future
     //save all meshes to binary file
     YAML::Emitter out;
     out << YAML::BeginMap;
@@ -67,27 +69,79 @@ bool ZEN::AssetSerializer::serialize(const std::string &path) {
     out << YAML::EndSeq;
     out << YAML::Key << "Materials" << YAML::BeginSeq;
     for(auto& ID : m_AssetLibrary->getAllIDsOfType<Material>()) {
-        out << YAML::BeginMap;
-        out << YAML::Key << "Material" << YAML::Value << ID;
-        out << YAML::Key << "Name" << YAML::Value << m_AssetLibrary->getName(ID);
-        auto mat = m_AssetLibrary->get<Material>(ID);
+    out << YAML::BeginMap;
 
-        out << YAML::Key << "Texture" << YAML::Value << mat->texture;
-        out << YAML::Key << "MetallicTexture" << YAML::Value << mat->metallicTex;
-        out << YAML::Key << "RoughnessTexture" << YAML::Value << mat->roughnessTex;
-        out << YAML::Key << "NormalTexture" << YAML::Value << mat->normalTex;
-        out << YAML::Key << "AoTexture" << YAML::Value << mat->aoTex;
-        out << YAML::Key << "Albedo" << YAML::Value << mat->albedo;
-        out << YAML::Key << "Metallic" << YAML::Value << mat->metallic;
-        out << YAML::Key << "Roughness" << YAML::Value << mat->roughness;
-        out << YAML::Key << "AO" << YAML::Value << mat->ao;
-        out << YAML::Key << "UseAlbedo" << YAML::Value << mat->useAlbedo;
-        out << YAML::Key << "UseMetallic" << YAML::Value << mat->useMetallic;
-        out << YAML::Key << "UseRoughness" << YAML::Value << mat->useRoughness;
-        out << YAML::Key << "UseNormal" << YAML::Value << mat->useNormal;
-        out << YAML::Key << "UseAO" << YAML::Value << mat->useAO;
+    out << YAML::Key << "Material" << YAML::Value << ID;
+    out << YAML::Key << "Name" << YAML::Value << m_AssetLibrary->getName(ID);
 
-        out << YAML::EndMap;
+    auto mat = m_AssetLibrary->get<Material>(ID);
+
+    out << YAML::Key << "Texture" << YAML::Value << mat->texture;
+    out << YAML::Key << "MetallicTexture" << YAML::Value << mat->metallicTex;
+    out << YAML::Key << "RoughnessTexture" << YAML::Value << mat->roughnessTex;
+    out << YAML::Key << "NormalTexture" << YAML::Value << mat->normalTex;
+    out << YAML::Key << "AoTexture" << YAML::Value << mat->aoTex;
+
+    out << YAML::Key << "Albedo" << YAML::Value << mat->albedo;
+    out << YAML::Key << "Metallic" << YAML::Value << mat->metallic;
+    out << YAML::Key << "Roughness" << YAML::Value << mat->roughness;
+    out << YAML::Key << "AO" << YAML::Value << mat->ao;
+
+    out << YAML::Key << "UseAlbedo" << YAML::Value << mat->useAlbedo;
+    out << YAML::Key << "UseMetallic" << YAML::Value << mat->useMetallic;
+    out << YAML::Key << "UseRoughness" << YAML::Value << mat->useRoughness;
+    out << YAML::Key << "UseNormal" << YAML::Value << mat->useNormal;
+    out << YAML::Key << "UseAO" << YAML::Value << mat->useAO;
+
+    // PipelineInfo
+    out << YAML::Key << "PipelineInfo" << YAML::Value;
+    out << YAML::BeginMap;
+
+    out << YAML::Key << "VertexShader"
+        << YAML::Value << mat->pipelineInfo.vertexShader;
+
+    out << YAML::Key << "FragmentShader"
+        << YAML::Value << mat->pipelineInfo.fragmentShader;
+
+    out << YAML::Key << "Topology"
+        << YAML::Value << static_cast<uint32_t>(mat->pipelineInfo.topology);
+
+    out << YAML::Key << "PolygonMode"
+        << YAML::Value << static_cast<uint32_t>(mat->pipelineInfo.polygonMode);
+
+    out << YAML::Key << "CullMode"
+        << YAML::Value << static_cast<uint32_t>(mat->pipelineInfo.cullMode);
+
+    out << YAML::Key << "FrontFace"
+        << YAML::Value << static_cast<uint32_t>(mat->pipelineInfo.frontFace);
+
+    out << YAML::Key << "Samples"
+        << YAML::Value << static_cast<uint32_t>(mat->pipelineInfo.samples);
+
+    out << YAML::Key << "MultisamplingEnabled"
+        << YAML::Value << mat->pipelineInfo.multisamplingEnabled;
+
+    out << YAML::Key << "BlendingEnabled"
+        << YAML::Value << mat->pipelineInfo.blendingEnabled;
+
+    out << YAML::Key << "BlendingAdditive"
+        << YAML::Value << mat->pipelineInfo.blendingAdditive;
+
+    out << YAML::Key << "BlendingAlpha"
+        << YAML::Value << mat->pipelineInfo.blendingAlpha;
+
+    out << YAML::Key << "DepthTestEnabled"
+        << YAML::Value << mat->pipelineInfo.depthTestEnabled;
+
+    out << YAML::Key << "DepthWriteEnabled"
+        << YAML::Value << mat->pipelineInfo.depthWriteEnabled;
+
+    out << YAML::Key << "DepthCompareOp"
+        << YAML::Value << static_cast<uint32_t>(mat->pipelineInfo.depthCompareOp);
+
+    out << YAML::EndMap; // PipelineInfo
+
+    out << YAML::EndMap; // Material
     }
 
     out << YAML::EndSeq;
@@ -177,30 +231,70 @@ bool ZEN::AssetSerializer::deserialize(const std::string &path) {
     }
     auto materials = data["Materials"];
     if(materials) {
-        for(auto material : materials) {
-            auto id = material["Material"];
-            auto name = material["Name"];
-            if(id) {
-                Material mat {
-                    .texture = AssetID(material["Texture"].as<uint64_t>()),
-                    .metallicTex = AssetID(material["MetallicTexture"].as<uint64_t>()),
-                    .roughnessTex = AssetID(material["RoughnessTexture"].as<uint64_t>()),
-                    .normalTex = AssetID(material["NormalTexture"].as<uint64_t>()),
-                    .aoTex = AssetID(material["AoTexture"].as<uint64_t>()),
-                    .albedo = material["Albedo"].as<glm::vec3>(),
-                    .metallic = material["Metallic"].as<float>(),
-                    .roughness = material["Roughness"].as<float>(),
-                    .ao = material["AO"].as<float>(),
-                    .useAlbedo = material["UseAlbedo"].as<bool>(),
-                    .useMetallic = material["UseMetallic"].as<bool>(),
-                    .useRoughness = material["UseRoughness"].as<bool>(),
-                    .useNormal = material["UseNormal"].as<bool>(),
-                    .useAO = material["UseAO"].as<bool>(),
+    for(auto material : materials) {
+        auto id = material["Material"];
+        auto name = material["Name"];
 
-                };
-                m_AssetLibrary->addAsset<Material>(id.as<uint64_t>(), std::move(mat), name.as<std::string>());
+        if(id) {
+            PipelineInfo pipelineInfo{};
+
+            if(auto pipeline = material["PipelineInfo"]) {
+                pipelineInfo.vertexShader = pipeline["VertexShader"].as<std::string>();
+                pipelineInfo.fragmentShader = pipeline["FragmentShader"].as<std::string>();
+                pipelineInfo.topology = static_cast<VkPrimitiveTopology>(
+                    pipeline["Topology"].as<uint32_t>());
+                pipelineInfo.polygonMode = static_cast<VkPolygonMode>(
+                    pipeline["PolygonMode"].as<uint32_t>());
+                pipelineInfo.cullMode = static_cast<VkCullModeFlags>(
+                    pipeline["CullMode"].as<uint32_t>());
+                pipelineInfo.frontFace = static_cast<VkFrontFace>(
+                    pipeline["FrontFace"].as<uint32_t>());
+                pipelineInfo.samples = static_cast<VkSampleCountFlagBits>(
+                    pipeline["Samples"].as<uint32_t>());
+
+                pipelineInfo.multisamplingEnabled =
+                    pipeline["MultisamplingEnabled"].as<bool>();
+                pipelineInfo.blendingEnabled =
+                    pipeline["BlendingEnabled"].as<bool>();
+                pipelineInfo.blendingAdditive =
+                    pipeline["BlendingAdditive"].as<bool>();
+                pipelineInfo.blendingAlpha =
+                    pipeline["BlendingAlpha"].as<bool>();
+                pipelineInfo.depthTestEnabled =
+                    pipeline["DepthTestEnabled"].as<bool>();
+                pipelineInfo.depthWriteEnabled =
+                    pipeline["DepthWriteEnabled"].as<bool>();
+                pipelineInfo.depthCompareOp = static_cast<VkCompareOp>(
+                    pipeline["DepthCompareOp"].as<uint32_t>());
             }
+
+            Material mat{
+                .texture = AssetID(material["Texture"].as<uint64_t>()),
+                .metallicTex = AssetID(material["MetallicTexture"].as<uint64_t>()),
+                .roughnessTex = AssetID(material["RoughnessTexture"].as<uint64_t>()),
+                .normalTex = AssetID(material["NormalTexture"].as<uint64_t>()),
+                .aoTex = AssetID(material["AoTexture"].as<uint64_t>()),
+
+                .albedo = material["Albedo"].as<glm::vec3>(),
+                .metallic = material["Metallic"].as<float>(),
+                .roughness = material["Roughness"].as<float>(),
+                .ao = material["AO"].as<float>(),
+
+                .useAlbedo = material["UseAlbedo"].as<bool>(),
+                .useMetallic = material["UseMetallic"].as<bool>(),
+                .useRoughness = material["UseRoughness"].as<bool>(),
+                .useNormal = material["UseNormal"].as<bool>(),
+                .useAO = material["UseAO"].as<bool>(),
+
+                .pipelineInfo = std::move(pipelineInfo)
+            };
+
+            m_AssetLibrary->addAsset<Material>(
+                id.as<uint64_t>(),
+                std::move(mat),
+                name.as<std::string>());
         }
     }
+}
     return true;
 }

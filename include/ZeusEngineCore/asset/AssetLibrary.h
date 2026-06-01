@@ -111,7 +111,7 @@ namespace ZEN {
                 m_Renderer->deleteMesh(id);
             }
             if (std::holds_alternative<TextureData>(m_AssetMap[id])) {
-                m_Renderer->removeTexture(id);
+                m_Renderer->deleteTexture(id);
             }
             if (std::holds_alternative<Material>(m_AssetMap[id])) {
                 m_Renderer->deleteMaterial(id);

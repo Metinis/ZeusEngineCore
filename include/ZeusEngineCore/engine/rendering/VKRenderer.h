@@ -93,7 +93,7 @@ namespace ZEN {
         GPUTexture uploadTexture(AssetID id, const TextureData& texture);
         GPUMaterial uploadMaterial(AssetID id, const Material& material);
         void deleteMesh(AssetID id);
-        void removeTexture(AssetID id);
+        void deleteTexture(AssetID id);
         void deleteMaterial(AssetID id);
         const FrameGraph& getFrameGraph() {return m_FrameGraph;}
         //void createMesh()
