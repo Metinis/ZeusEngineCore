@@ -145,31 +145,42 @@ static void serializeEntity(CompRegistry* reg, YAML::Emitter &out, Entity entity
     }
     auto &runtimeCompMap = reg->getComponents();
 
-    out << YAML::Key << "RuntimeComponents";
-    out << YAML::BeginMap;
-
-    for (auto &runtimeComp: runtimeCompMap) {
+    bool hasRuntime = false;
+    for (auto &runtimeComp : runtimeCompMap) {
         if (entity.hasRuntimeComponent(runtimeComp.name)) {
+            hasRuntime = true;
+            break;
+        }
+    }
+
+    if (hasRuntime) {
+        out << YAML::Key << "RuntimeComponents";
+        out << YAML::BeginMap;
+
+        for (auto &runtimeComp : runtimeCompMap) {
+            if (!entity.hasRuntimeComponent(runtimeComp.name))
+                continue;
+
             out << YAML::Key << runtimeComp.name;
             out << YAML::BeginMap;
 
-            for (auto &field: runtimeComp.fields) {
+            for (auto &field : runtimeComp.fields) {
                 if (field.type == FieldType::Float)
-                    out << YAML::Key << field.name << YAML::Value << entity.getRuntimeField<float>(
-                        runtimeComp.name, field.name);
+                    out << YAML::Key << field.name << YAML::Value
+                        << entity.getRuntimeField<float>(runtimeComp.name, field.name);
                 else if (field.type == FieldType::Bool)
-                    out << YAML::Key << field.name << YAML::Value << entity.getRuntimeField<bool>(
-                        runtimeComp.name, field.name);
+                    out << YAML::Key << field.name << YAML::Value
+                        << entity.getRuntimeField<bool>(runtimeComp.name, field.name);
                 else if (field.type == FieldType::Int)
-                    out << YAML::Key << field.name << YAML::Value << entity.getRuntimeField<int>(
-                        runtimeComp.name, field.name);
+                    out << YAML::Key << field.name << YAML::Value
+                        << entity.getRuntimeField<int>(runtimeComp.name, field.name);
             }
 
             out << YAML::EndMap;
         }
-    }
 
-    out << YAML::EndMap;
+        out << YAML::EndMap;
+    }
 
     out << YAML::EndMap;
 }
@@ -195,6 +206,7 @@ bool SceneSerializer::serialize(const std::string &path) {
 bool SceneSerializer::deserialize(const std::string &path) {
     m_Scene->m_Registry.clear();
     m_Scene->m_RuntimeComponents.clear();
+    m_Scene->m_UUIDToEntityMap.clear();
     YAML::Node data;
     try {
         data = YAML::LoadFile(Project::getActive()->getActiveProjectRoot() + path);
@@ -348,10 +360,11 @@ bool SceneSerializer::deserialize(const std::string &path) {
             auto runtimeComps = entity["RuntimeComponents"];
             if (runtimeComps && runtimeComps.IsMap()) {
                 for (auto it = runtimeComps.begin(); it != runtimeComps.end(); ++it) {
-                    const auto &compName = it->first.as<std::string>();
-                    const auto &compNode = it->second;
+                    const std::string compName = (*it).first.as<std::string>();
+                    const YAML::Node compNode = (*it).second;
 
-                    if (!compNode.IsMap()) continue;
+                    if (!compNode.IsMap())
+                        continue;
 
                     for (const auto &comp: m_CompRegistry->getComponents()) {
                         if (comp.name != compName) continue;
