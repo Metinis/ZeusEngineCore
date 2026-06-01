@@ -250,7 +250,7 @@ GPUTexture VKRenderer::uploadTexture(AssetID id, const TextureData &texture) {
                                             },
                                             texture.format, VK_IMAGE_USAGE_SAMPLED_BIT, false, texturePixels.layers);
 
-    VkSampler sampler = getSampler(texture.samplerInfo);
+    VkSampler sampler = getSampler(VKHelpers::toVkSamplerCreateInfo(texture.samplerInfo));
     //--------------------------------------------------------
     if (m_TextureMap.contains(id)) {
         destroyImage(m_TextureMap[id].texture.image);
@@ -268,10 +268,6 @@ GPUTexture VKRenderer::uploadTexture(AssetID id, const TextureData &texture) {
 }
 
 GPUMaterial VKRenderer::uploadMaterial(const AssetID id, const Material &material) {
-    //todo cant do this, need to overload existing
-    if (m_MaterialMap.contains(id)) {
-        return m_MaterialMap[id].material;
-    }
     GPUMaterial gpuMat = {
         .u_Albedo = glm::vec4(material.albedo.x, material.albedo.y, material.albedo.z, 1.0f),
         .u_Params = glm::vec4(material.metallic, material.roughness, material.ao, 1.0),
@@ -345,8 +341,8 @@ void VKRenderer::deleteMaterial(AssetID id) {
         uint32_t frameIndex = (m_FrameNumber + FRAME_OVERLAP) % FRAME_OVERLAP;
         m_Frames[frameIndex].m_DeletionQueue.pushFunction([=]() {
             m_MaterialAllocator.free(material.idx);
-            m_MaterialMap.erase(id);
         });
+        m_MaterialMap.erase(id);
 
         spdlog::debug("Renderer: Deleted Material ID: {}", (uint64_t) id);
         return;
@@ -361,7 +357,6 @@ void VKRenderer::deleteMesh(AssetID id) {
         m_Frames[frameIndex].m_DeletionQueue.pushFunction([=]() {
             destroyBuffer(meshBuf.indexBuffer);
             destroyBuffer(meshBuf.vertexBuffer);
-
         });
         m_MeshMap.erase(id);
         spdlog::debug("Deleted GPU Mesh ID: {}", (uint64_t) id);

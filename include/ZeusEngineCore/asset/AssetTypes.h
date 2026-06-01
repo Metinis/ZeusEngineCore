@@ -115,6 +115,30 @@ namespace ZEN {
     const char* getStringTextureType(TextureType type);
     bool getEnumTextureTypeFromString(const char* str, TextureType* out);
 
+    struct SamplerInfo {
+        VkFilter magFilter{VK_FILTER_LINEAR};
+        VkFilter minFilter{VK_FILTER_LINEAR};
+
+        VkSamplerMipmapMode mipmapMode{VK_SAMPLER_MIPMAP_MODE_LINEAR};
+
+        VkSamplerAddressMode addressModeU{VK_SAMPLER_ADDRESS_MODE_REPEAT};
+        VkSamplerAddressMode addressModeV{VK_SAMPLER_ADDRESS_MODE_REPEAT};
+        VkSamplerAddressMode addressModeW{VK_SAMPLER_ADDRESS_MODE_REPEAT};
+
+        float mipLodBias{0.0f};
+        float minLod{0.0f};
+        float maxLod{VK_LOD_CLAMP_NONE};
+
+        bool anisotropyEnable{false};
+        float maxAnisotropy{16.0f};
+
+        bool compareEnable{false};
+        VkCompareOp compareOp{VK_COMPARE_OP_ALWAYS};
+
+        VkBorderColor borderColor{VK_BORDER_COLOR_INT_OPAQUE_BLACK};
+
+        bool unnormalizedCoordinates{false};
+    };
     struct TextureData {
         std::string path{};
         TextureType type{Texture2D};
@@ -124,7 +148,7 @@ namespace ZEN {
         uint32_t size{};
         bool mip{false};
         bool absPath{false};
-        VkSamplerCreateInfo samplerInfo{.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
+        SamplerInfo samplerInfo{};
     };
     struct ShaderData {
         std::string vertPath;

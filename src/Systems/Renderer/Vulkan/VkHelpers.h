@@ -45,4 +45,67 @@ namespace ZEN::VKHelpers {
         samplerInfo.maxLod = 1.0f;
         return samplerInfo;
     }
+    inline VkSamplerCreateInfo toVkSamplerCreateInfo(const SamplerInfo& info) {
+        VkSamplerCreateInfo samplerInfo{};
+        samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+
+        samplerInfo.magFilter = info.magFilter;
+        samplerInfo.minFilter = info.minFilter;
+
+        samplerInfo.mipmapMode = info.mipmapMode;
+
+        samplerInfo.addressModeU = info.addressModeU;
+        samplerInfo.addressModeV = info.addressModeV;
+        samplerInfo.addressModeW = info.addressModeW;
+
+        samplerInfo.mipLodBias = info.mipLodBias;
+
+        samplerInfo.anisotropyEnable =
+            info.anisotropyEnable ? VK_TRUE : VK_FALSE;
+        samplerInfo.maxAnisotropy = info.maxAnisotropy;
+
+        samplerInfo.compareEnable =
+            info.compareEnable ? VK_TRUE : VK_FALSE;
+        samplerInfo.compareOp = info.compareOp;
+
+        samplerInfo.minLod = info.minLod;
+        samplerInfo.maxLod = info.maxLod;
+
+        samplerInfo.borderColor = info.borderColor;
+
+        samplerInfo.unnormalizedCoordinates =
+            info.unnormalizedCoordinates ? VK_TRUE : VK_FALSE;
+
+        return samplerInfo;
+    }
+    inline SamplerInfo fromVkSamplerCreateInfo(const VkSamplerCreateInfo& vk)
+    {
+        SamplerInfo info{};
+
+        info.magFilter = vk.magFilter;
+        info.minFilter = vk.minFilter;
+
+        info.mipmapMode = vk.mipmapMode;
+
+        info.addressModeU = vk.addressModeU;
+        info.addressModeV = vk.addressModeV;
+        info.addressModeW = vk.addressModeW;
+
+        info.mipLodBias = vk.mipLodBias;
+
+        info.anisotropyEnable = (vk.anisotropyEnable == VK_TRUE);
+        info.maxAnisotropy = vk.maxAnisotropy;
+
+        info.compareEnable = (vk.compareEnable == VK_TRUE);
+        info.compareOp = vk.compareOp;
+
+        info.minLod = vk.minLod;
+        info.maxLod = vk.maxLod;
+
+        info.borderColor = vk.borderColor;
+
+        info.unnormalizedCoordinates = (vk.unnormalizedCoordinates == VK_TRUE);
+
+        return info;
+    }
 }

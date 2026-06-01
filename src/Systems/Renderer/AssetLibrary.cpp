@@ -77,9 +77,9 @@ void computeTangents(MeshData &mesh) {
 void AssetLibrary::clearNonDefaults() {
     auto cpy = m_AssetMap;
     for (auto& [id, asset] : cpy) {
-        if (id > maxDefault || id < minDefault) {
+        //if (id > maxDefault || id < minDefault) {
             remove(id);
-        }
+        //}
     }
 }
 constexpr auto V = [](glm::vec3 p, glm::vec3 n, glm::vec2 uv) {
@@ -240,7 +240,7 @@ Material AssetLibrary::createDefaultMaterial(const std::string &vertPath,
         .geoPath = geoPath
     };
     addAsset<ShaderData>(defaultShaderID, std::move(defaultShader), "Default");*/
-    Material defaultMat{.texture = defaultTextureID};
+    Material defaultMat{};
     return defaultMat;
 }
 

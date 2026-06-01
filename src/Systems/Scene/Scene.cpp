@@ -107,7 +107,7 @@ void Scene::createDefaultScene() {
     TextureData texData{
         .path = Project::getActive()->getActiveProjectRoot() + "/assets/textures/skybox/",
         .type = Cubemap,
-        .samplerInfo = VKHelpers::getCubeMapSamplerInfo(),
+        .samplerInfo = VKHelpers::fromVkSamplerCreateInfo(VKHelpers::getCubeMapSamplerInfo()),
     };
     auto texId = m_ModelLibrary->createAsset<TextureData>(std::move(texData));
     Material mat {
