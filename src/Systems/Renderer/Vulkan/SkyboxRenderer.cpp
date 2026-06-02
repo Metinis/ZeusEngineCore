@@ -197,8 +197,8 @@ void SkyboxRenderer::render(VkCommandBuffer cmd) {
                 1, &m_Renderer->m_TextureDescriptorSet, 0, nullptr);
 
             for (int mip = 0; mip < m_PrefilterMap.mipLevels; ++mip) {
-                uint w = m_PrefilterMap.imageExtent.width >> mip;
-                uint h = m_PrefilterMap.imageExtent.height >> mip;
+                uint32_t w = m_PrefilterMap.imageExtent.width >> mip;
+                uint32_t h = m_PrefilterMap.imageExtent.height >> mip;
 
                 pc.prefilterMapIdx = m_PrefilterMap.writeIdx[mip];
                 pc.prefilterBaseWidth  = w;
