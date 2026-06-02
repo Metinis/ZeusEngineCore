@@ -57,6 +57,7 @@ namespace ZEN {
         std::vector<uint32_t> freeList{};
 
         uint32_t allocate();
+        uint32_t allocate(uint32_t idx);
         void free(uint32_t idx);
         void init(uint32_t max);
         void flush();
@@ -115,6 +116,7 @@ namespace ZEN {
         void initDescriptors();
         void initPipelines();
         void initErrorTexture();
+        void initMainSamplers();
 
         //void initSampler();
         void initMainPipeLayout();

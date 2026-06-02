@@ -45,7 +45,96 @@ namespace ZEN::VKHelpers {
         samplerInfo.maxLod = 1.0f;
         return samplerInfo;
     }
-    inline VkSamplerCreateInfo toVkSamplerCreateInfo(const SamplerInfo& info) {
+
+    // Linear filtered, clamp to edge
+    inline VkSamplerCreateInfo linearClampedSampler() {
+        VkSamplerCreateInfo info{};
+        info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+        info.magFilter = VK_FILTER_LINEAR;
+        info.minFilter = VK_FILTER_LINEAR;
+        info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+        info.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        info.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        info.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        info.anisotropyEnable = VK_FALSE;
+        info.maxAnisotropy = 1.0f;
+        info.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK;
+        info.unnormalizedCoordinates = VK_FALSE;
+        info.compareEnable = VK_FALSE;
+        info.compareOp = VK_COMPARE_OP_ALWAYS;
+        info.mipLodBias = 0.0f;
+        info.minLod = 0.0f;
+        info.maxLod = VK_LOD_CLAMP_NONE;
+        return info;
+    }
+
+    // Nearest neighbor, clamp to edge
+    inline VkSamplerCreateInfo nearestClampedSampler() {
+        VkSamplerCreateInfo info{};
+        info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+        info.magFilter = VK_FILTER_NEAREST;
+        info.minFilter = VK_FILTER_NEAREST;
+        info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+        info.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        info.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        info.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        info.anisotropyEnable = VK_FALSE;
+        info.maxAnisotropy = 1.0f;
+        info.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK;
+        info.unnormalizedCoordinates = VK_FALSE;
+        info.compareEnable = VK_FALSE;
+        info.compareOp = VK_COMPARE_OP_ALWAYS;
+        info.mipLodBias = 0.0f;
+        info.minLod = 0.0f;
+        info.maxLod = VK_LOD_CLAMP_NONE;
+        return info;
+    }
+
+    // Linear filtered, repeat
+    inline VkSamplerCreateInfo linearRepeatSampler() {
+        VkSamplerCreateInfo info{};
+        info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+        info.magFilter = VK_FILTER_LINEAR;
+        info.minFilter = VK_FILTER_LINEAR;
+        info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+        info.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        info.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        info.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        //info.anisotropyEnable = VK_FALSE;
+        //info.maxAnisotropy = 1.0f;
+        info.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK;
+        info.unnormalizedCoordinates = VK_FALSE;
+        info.compareEnable = VK_FALSE;
+        info.compareOp = VK_COMPARE_OP_ALWAYS;
+        info.mipLodBias = 0.0f;
+        info.minLod = 0.0f;
+        info.maxLod = VK_LOD_CLAMP_NONE;
+        return info;
+    }
+
+    // Nearest neighbor, repeat
+    inline VkSamplerCreateInfo nearestRepeatSampler() {
+        VkSamplerCreateInfo info{};
+        info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+        info.magFilter = VK_FILTER_NEAREST;
+        info.minFilter = VK_FILTER_NEAREST;
+        info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+        info.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        info.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        info.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        info.anisotropyEnable = VK_FALSE;
+        info.maxAnisotropy = 1.0f;
+        info.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK;
+        info.unnormalizedCoordinates = VK_FALSE;
+        info.compareEnable = VK_FALSE;
+        info.compareOp = VK_COMPARE_OP_ALWAYS;
+        info.mipLodBias = 0.0f;
+        info.minLod = 0.0f;
+        info.maxLod = VK_LOD_CLAMP_NONE;
+        return info;
+    }
+
+    inline VkSamplerCreateInfo toVkSamplerCreateInfo(const SamplerInfo &info) {
         VkSamplerCreateInfo samplerInfo{};
         samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
 
@@ -61,11 +150,11 @@ namespace ZEN::VKHelpers {
         samplerInfo.mipLodBias = info.mipLodBias;
 
         samplerInfo.anisotropyEnable =
-            info.anisotropyEnable ? VK_TRUE : VK_FALSE;
+                info.anisotropyEnable ? VK_TRUE : VK_FALSE;
         samplerInfo.maxAnisotropy = info.maxAnisotropy;
 
         samplerInfo.compareEnable =
-            info.compareEnable ? VK_TRUE : VK_FALSE;
+                info.compareEnable ? VK_TRUE : VK_FALSE;
         samplerInfo.compareOp = info.compareOp;
 
         samplerInfo.minLod = info.minLod;
@@ -74,12 +163,12 @@ namespace ZEN::VKHelpers {
         samplerInfo.borderColor = info.borderColor;
 
         samplerInfo.unnormalizedCoordinates =
-            info.unnormalizedCoordinates ? VK_TRUE : VK_FALSE;
+                info.unnormalizedCoordinates ? VK_TRUE : VK_FALSE;
 
         return samplerInfo;
     }
-    inline SamplerInfo fromVkSamplerCreateInfo(const VkSamplerCreateInfo& vk)
-    {
+
+    inline SamplerInfo fromVkSamplerCreateInfo(const VkSamplerCreateInfo &vk) {
         SamplerInfo info{};
 
         info.magFilter = vk.magFilter;

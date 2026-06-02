@@ -414,8 +414,7 @@ AllocatedImage VKRenderer::createImage(VkExtent3D size, VkFormat format,
 
     bool isCubeMap = (layers == 6);
 
-    VkImageCreateInfo imgInfo =
-            VKInit::imageCreateInfo(format, usage, size);
+    VkImageCreateInfo imgInfo = VKInit::imageCreateInfo(format, usage, size);
 
     if (mipmapped)
         imgInfo.mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(size.width, size.height)))) + 1;

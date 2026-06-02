@@ -22,7 +22,18 @@ uint32_t IndexAllocator::allocate() {
         availableList.pop_back();
         return idx;
     }
-    spdlog::warn("Renderer: No available slot for texture!");
+    spdlog::error("Renderer: No available slot for texture!");
+    return 0;
+}
+
+uint32_t IndexAllocator::allocate(uint32_t idx) {
+    auto it = std::find(availableList.begin(), availableList.end(), idx);
+    if (it != availableList.end()) {
+        availableList.erase(it);
+        return idx;
+    }
+
+    spdlog::error("Renderer: Requested index {} not available!", idx);
     return 0;
 }
 
@@ -173,9 +184,6 @@ void VKRenderer::submitDrawCall(const DrawCall &call) {
 void VKRenderer::setImGUIMode(const bool mode) {
     m_RenderToIMGUITexture = mode;
 }
-
-
-
 
 void VKRenderer::drawImgui(VkCommandBuffer cmd, VkImageView targetImageView) {
     VkRenderingAttachmentInfo colorAttachment = VKInit::attachmentInfo(targetImageView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
@@ -455,7 +463,7 @@ VkDescriptorSet VKRenderer::getImGUIDescSet(AssetID id) {
     if (m_TextureMap.contains(id) && m_TextureMap[id].texture.image.imageView != VK_NULL_HANDLE) {
         spdlog::debug("Renderer: Cached Thumbnail Tex: {}", (uint64_t)id);
         auto& tex = m_TextureMap[id];
-        if (tex.type == TextureType::Texture2D) {
+        if (tex.type == TextureType::Texture2D || tex.type == Texture2DAssimp) {
             m_ImGUIDescSetMap.insert({id, ImGui_ImplVulkan_AddTexture(getSampler(VKHelpers::getDefaultSamplerInfo()).sampler, tex.texture.image.imageView,
          VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)});
         } else {

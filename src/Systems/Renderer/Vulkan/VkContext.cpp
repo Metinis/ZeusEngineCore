@@ -24,6 +24,7 @@ void VKRenderer::init(EngineContext* ctx) {
     initCommands();
     initSyncStructures();
     initDescriptors();
+    initMainSamplers();
     initPipelines();
     initErrorTexture();
     initFrameGraph();
@@ -401,6 +402,24 @@ void VKRenderer::initErrorTexture() {
     m_DeletionQueue.pushFunction([=](){
         destroyImage(m_ErrorTexture.image);
     });
+}
+
+void VKRenderer::initMainSamplers() {
+    std::array<VkSamplerCreateInfo, 4> samplerInfos{
+        VKHelpers::linearClampedSampler(),
+        VKHelpers::nearestClampedSampler(),
+        VKHelpers::linearRepeatSampler(),
+        VKHelpers::nearestRepeatSampler(),
+    };
+    for (uint32_t i{}; i < samplerInfos.size(); ++i) {
+        VkSampler sampler{};
+        vkCreateSampler(m_Device, &samplerInfos[i], nullptr, &sampler);
+        m_SamplerAllocator.allocate(i);
+        DescriptorWriter writer;
+        writer.writeSampler(2, m_ErrorTexture.image.imageView, sampler, i); //dummy image view
+        writer.updateSet(m_Device, m_TextureDescriptorSet);
+        m_SamplerMap[samplerInfos[i]] = {sampler, i};
+    }
 }
 
 void VKRenderer::initMainPipeLayout() {
