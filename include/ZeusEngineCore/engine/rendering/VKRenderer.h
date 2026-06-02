@@ -75,7 +75,7 @@ namespace ZEN {
         int count{};
     };
 
-    class VKRenderer {
+    class ZEN_API VKRenderer {
     public:
         VKRenderer();
         void init(EngineContext* ctx);
