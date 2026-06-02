@@ -31,7 +31,6 @@ Window::Window(std::string title) : m_Title(std::move(title)) {
     m_Width = mode->width;
     m_Height = mode->height;
     m_Window = glfwCreateWindow(m_Width, m_Height, m_Title.c_str(), nullptr, nullptr);
-    //glfwSetWindowMonitor(m_Window, monitor, 0, 0, mode->width, mode->height, mode->refreshRate);
 
     if (!m_Window)
         throw std::runtime_error("Failed to create window");

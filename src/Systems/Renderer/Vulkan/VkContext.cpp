@@ -419,6 +419,9 @@ void VKRenderer::initMainSamplers() {
         writer.writeSampler(2, m_ErrorTexture.image.imageView, sampler, i); //dummy image view
         writer.updateSet(m_Device, m_TextureDescriptorSet);
         m_SamplerMap[samplerInfos[i]] = {sampler, i};
+        m_DeletionQueue.pushFunction([=]() {
+            vkDestroySampler(m_Device, sampler, nullptr);
+        });
     }
 }
 
