@@ -109,6 +109,7 @@ void VKRenderer::initVulkan() {
     features12.descriptorBindingSampledImageUpdateAfterBind = true;
     features12.descriptorBindingStorageBufferUpdateAfterBind = true;
     features12.descriptorBindingStorageImageUpdateAfterBind = true;
+    features12.shaderSampledImageArrayNonUniformIndexing = true;
     features12.runtimeDescriptorArray = true;
 
     VkPhysicalDeviceFeatures features {};
@@ -246,12 +247,19 @@ void VKRenderer::initSyncStructures() {
 void VKRenderer::initDescriptors() {
     VkPhysicalDeviceProperties props;
     vkGetPhysicalDeviceProperties(m_PhysicalDevice, &props);
+    VkPhysicalDeviceDescriptorIndexingPropertiesEXT indexingProps{};
+    indexingProps.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_PROPERTIES_EXT;
+
+    VkPhysicalDeviceProperties2 props2{};
+    props2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+    props2.pNext = &indexingProps;
+    vkGetPhysicalDeviceProperties2(m_PhysicalDevice, &props2);
     std::vector<DescriptorAllocator::PoolSizeRatio> sizes {
         {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, (float)props.limits.maxDescriptorSetStorageImages},
         {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 },
         {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1},
         {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, (float)props.limits.maxDescriptorSetSampledImages},
-        {VK_DESCRIPTOR_TYPE_SAMPLER, (float)props.limits.maxDescriptorSetSamplers},
+        {VK_DESCRIPTOR_TYPE_SAMPLER, (float)indexingProps.maxPerStageDescriptorUpdateAfterBindSamplers},
     };
     m_GlobalDescriptorAllocator.initPool(m_Device, 10, sizes);
     {
@@ -274,15 +282,15 @@ void VKRenderer::initDescriptors() {
         DescriptorLayoutBuilder builder;
         m_TextureAllocator.init(props.limits.maxDescriptorSetSampledImages);
         m_StorageImageAllocator.init(props.limits.maxDescriptorSetStorageImages);
-        m_SamplerAllocator.init(props.limits.maxDescriptorSetSamplers);
+        m_SamplerAllocator.init(indexingProps.maxPerStageDescriptorUpdateAfterBindSamplers);
 
-        builder.addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, props.limits.maxDescriptorSetSampledImages,
+        builder.addBinding(0, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, props.limits.maxDescriptorSetSampledImages,
             VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT |
                 VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT);
         builder.addBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, props.limits.maxDescriptorSetStorageImages,
             VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT |
                 VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT);
-        builder.addBinding(2, VK_DESCRIPTOR_TYPE_SAMPLER, props.limits.maxDescriptorSetSamplers,
+        builder.addBinding(2, VK_DESCRIPTOR_TYPE_SAMPLER, indexingProps.maxPerStageDescriptorUpdateAfterBindSamplers,
             VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT |
                 VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT);
         m_TextureDescriptorSetLayout = builder.build(m_Device, VK_SHADER_STAGE_VERTEX_BIT |

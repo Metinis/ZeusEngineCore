@@ -177,10 +177,10 @@ void DescriptorWriter::writeBuffer(int binding, VkBuffer buffer, size_t size, si
 
 }
 
-void DescriptorWriter::writeSampler(int binding, VkSampler sampler, uint32_t arrayIndex) {
+void DescriptorWriter::writeSampler(int binding, VkImageView image, VkSampler sampler, uint32_t arrayIndex) {
     VkDescriptorImageInfo& info = imageInfos.emplace_back();
     info.sampler = sampler;
-    info.imageView = VK_NULL_HANDLE;
+    info.imageView = image;
     info.imageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
 

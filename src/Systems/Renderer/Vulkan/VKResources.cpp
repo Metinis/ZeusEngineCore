@@ -482,7 +482,7 @@ AllocatedImage VKRenderer::createImage(VkExtent3D size, VkFormat format,
             img.imageView,
             getSampler(VKHelpers::getDefaultSamplerInfo()).sampler,
             VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-            VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
             img.readIdx);
         } else {
             writer.writeImage(
@@ -490,7 +490,7 @@ AllocatedImage VKRenderer::createImage(VkExtent3D size, VkFormat format,
             img.imageView,
             getSampler(VKHelpers::getCubeMapSamplerInfo()).sampler,
             VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-            VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
             img.readIdx);
         }
 
@@ -526,7 +526,7 @@ StoredSampler VKRenderer::getSampler(const VkSamplerCreateInfo& info) {
     uint32_t idx = m_SamplerAllocator.allocate();
     m_SamplerMap[info] = {sampler, idx};
     DescriptorWriter writer;
-    writer.writeSampler(2, sampler, idx);
+    writer.writeSampler(2, m_ErrorTexture.image.imageView, sampler, idx); //dummy image view
     writer.updateSet(m_Device, m_TextureDescriptorSet);
     return {sampler, idx};
 }

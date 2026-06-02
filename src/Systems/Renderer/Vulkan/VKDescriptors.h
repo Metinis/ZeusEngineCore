@@ -39,7 +39,7 @@ namespace ZEN {
             VkSampler sampler, VkImageLayout layout, VkDescriptorType type, uint32_t arrayIndex = 0);
         void writeBuffer(int binding, VkBuffer buffer,
             size_t size, size_t offset, VkDescriptorType type, uint32_t arrayIndex = 0);
-        void writeSampler(int binding, VkSampler sampler, uint32_t arrayIndex = 0);
+        void writeSampler(int binding, VkImageView image, VkSampler sampler, uint32_t arrayIndex = 0); //dummy image view
         void clear();
         void updateSet(VkDevice device, VkDescriptorSet set);
 

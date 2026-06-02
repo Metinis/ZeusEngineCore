@@ -451,7 +451,8 @@ VkDescriptorSet VKRenderer::getImGUIDescSet(AssetID id) {
         return m_ImGUIDescSetMap[id];
     }
     //if not found, add this id for cache
-    if (m_TextureMap.contains(id)) {
+    //todo check the sketchy NULL HANDLE
+    if (m_TextureMap.contains(id) && m_TextureMap[id].texture.image.imageView != VK_NULL_HANDLE) {
         spdlog::debug("Renderer: Cached Thumbnail Tex: {}", (uint64_t)id);
         auto& tex = m_TextureMap[id];
         if (tex.type == TextureType::Texture2D) {
