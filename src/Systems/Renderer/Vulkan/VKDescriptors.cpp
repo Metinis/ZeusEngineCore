@@ -183,6 +183,7 @@ void DescriptorWriter::writeSampler(int binding, VkSampler sampler, uint32_t arr
     info.imageView = VK_NULL_HANDLE;
     info.imageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
+
     VkWriteDescriptorSet write{
         .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET
     };
