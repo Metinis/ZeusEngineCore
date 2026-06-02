@@ -177,6 +177,25 @@ void DescriptorWriter::writeBuffer(int binding, VkBuffer buffer, size_t size, si
 
 }
 
+void DescriptorWriter::writeSampler(int binding, VkSampler sampler, uint32_t arrayIndex) {
+    VkDescriptorImageInfo& info = imageInfos.emplace_back();
+    info.sampler = sampler;
+    info.imageView = VK_NULL_HANDLE;
+    info.imageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+    VkWriteDescriptorSet write{
+        .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET
+    };
+    write.dstBinding = binding;
+    write.dstSet = VK_NULL_HANDLE;
+    write.dstArrayElement = arrayIndex;
+    write.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
+    write.descriptorCount = 1;
+    write.pImageInfo = &info;
+
+    writes.push_back(write);
+}
+
 void DescriptorWriter::clear() {
     imageInfos.clear();
     bufferInfos.clear();

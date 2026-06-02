@@ -251,6 +251,7 @@ void VKRenderer::initDescriptors() {
         {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 },
         {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1},
         {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, (float)props.limits.maxDescriptorSetSampledImages},
+        {VK_DESCRIPTOR_TYPE_SAMPLER, (float)props.limits.maxDescriptorSetSamplers},
     };
     m_GlobalDescriptorAllocator.initPool(m_Device, 10, sizes);
     {
@@ -273,11 +274,15 @@ void VKRenderer::initDescriptors() {
         DescriptorLayoutBuilder builder;
         m_TextureAllocator.init(props.limits.maxDescriptorSetSampledImages);
         m_StorageImageAllocator.init(props.limits.maxDescriptorSetStorageImages);
+        m_SamplerAllocator.init(props.limits.maxDescriptorSetSamplers);
 
         builder.addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, props.limits.maxDescriptorSetSampledImages,
             VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT |
                 VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT);
         builder.addBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, props.limits.maxDescriptorSetStorageImages,
+            VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT |
+                VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT);
+        builder.addBinding(2, VK_DESCRIPTOR_TYPE_SAMPLER, props.limits.maxDescriptorSetSamplers,
             VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT |
                 VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT);
         m_TextureDescriptorSetLayout = builder.build(m_Device, VK_SHADER_STAGE_VERTEX_BIT |
@@ -311,17 +316,13 @@ void VKRenderer::initDescriptors() {
     }
     {
         DescriptorWriter writer;
-        m_MaterialBuffer = createBuffer(
-        sizeof(GPUMaterial) * 1000,
-        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-        VMA_MEMORY_USAGE_CPU_TO_GPU
-        );
-        writer.writeBuffer(
-        0,
-        m_MaterialBuffer.buffer,
-        sizeof(GPUMaterial) * 1000,
-        0,
-        VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+
+        m_MaterialBuffer = createBuffer(sizeof(GPUMaterial) * 1000, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+            VMA_MEMORY_USAGE_CPU_TO_GPU);
+
+        writer.writeBuffer(0, m_MaterialBuffer.buffer, sizeof(GPUMaterial) * 1000, 0,
+            VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+
         writer.updateSet(m_Device, m_MaterialDescriptorSet);
 
         m_DeletionQueue.pushFunction([=]() {
@@ -384,7 +385,7 @@ void VKRenderer::initErrorTexture() {
     m_ErrorTexture = GPUTexture {
         .image = createImage(pixels.data(), VkExtent3D{16, 16, 1}, VK_FORMAT_R8G8B8A8_UNORM,
         VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT),
-        .sampler = getSampler(VKHelpers::getDefaultSamplerInfo()),
+        .samplerIdx = getSampler(VKHelpers::getDefaultSamplerInfo()).idx,
     };
     DescriptorWriter writer;
     writer.updateSet(m_Device, m_TextureDescriptorSet);

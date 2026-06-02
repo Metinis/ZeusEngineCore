@@ -174,18 +174,8 @@ void VKRenderer::setImGUIMode(const bool mode) {
     m_RenderToIMGUITexture = mode;
 }
 
-VkSampler VKRenderer::getSampler(const VkSamplerCreateInfo& info) {
-    if (m_SamplerMap.contains(info)) {
-        return m_SamplerMap[info];
-    }
-    VkSampler sampler{};
-    VK_CHECK(vkCreateSampler(m_Device, &info, nullptr, &sampler));
-    m_DeletionQueue.pushFunction([=]() {
-        vkDestroySampler(m_Device, sampler, nullptr);
-    });
-    m_SamplerMap[info] = sampler;
-    return sampler;
-}
+
+
 
 void VKRenderer::drawImgui(VkCommandBuffer cmd, VkImageView targetImageView) {
     VkRenderingAttachmentInfo colorAttachment = VKInit::attachmentInfo(targetImageView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
@@ -437,11 +427,11 @@ ImGui_ImplVulkan_InitInfo VKRenderer::initImgui() {
     initInfo.PipelineInfoMain.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
 
     ImGui_ImplVulkan_Init(&initInfo);
-    m_ImGuiDescriptorSet = ImGui_ImplVulkan_AddTexture(getSampler(VKHelpers::getDefaultSamplerInfo()), m_DrawImage.imageView,
+    m_ImGuiDescriptorSet = ImGui_ImplVulkan_AddTexture(getSampler(VKHelpers::getDefaultSamplerInfo()).sampler, m_DrawImage.imageView,
         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
     );
 
-    m_ImGUIErrorSet = ImGui_ImplVulkan_AddTexture(getSampler(VKHelpers::getDefaultSamplerInfo()), m_ErrorTexture.image.imageView,
+    m_ImGUIErrorSet = ImGui_ImplVulkan_AddTexture(getSampler(VKHelpers::getDefaultSamplerInfo()).sampler, m_ErrorTexture.image.imageView,
         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
     );
 
@@ -465,10 +455,10 @@ VkDescriptorSet VKRenderer::getImGUIDescSet(AssetID id) {
         spdlog::debug("Renderer: Cached Thumbnail Tex: {}", (uint64_t)id);
         auto& tex = m_TextureMap[id];
         if (tex.type == TextureType::Texture2D) {
-            m_ImGUIDescSetMap.insert({id, ImGui_ImplVulkan_AddTexture(getSampler(VKHelpers::getDefaultSamplerInfo()), tex.texture.image.imageView,
+            m_ImGUIDescSetMap.insert({id, ImGui_ImplVulkan_AddTexture(getSampler(VKHelpers::getDefaultSamplerInfo()).sampler, tex.texture.image.imageView,
          VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)});
         } else {
-            m_ImGUIDescSetMap.insert({id, ImGui_ImplVulkan_AddTexture(getSampler(VKHelpers::getDefaultSamplerInfo()), m_ErrorTexture.image.imageView,
+            m_ImGUIDescSetMap.insert({id, ImGui_ImplVulkan_AddTexture(getSampler(VKHelpers::getDefaultSamplerInfo()).sampler, m_ErrorTexture.image.imageView,
          VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)});
         }
 

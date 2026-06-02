@@ -26,7 +26,11 @@ namespace ZEN {
     };
     struct GPUTexture {
         AllocatedImage image{};
+        uint32_t samplerIdx{};
+    };
+    struct StoredSampler {
         VkSampler sampler{};
+        uint32_t idx{};
     };
     struct StoredTexture {
         GPUTexture texture{};
@@ -42,6 +46,8 @@ namespace ZEN {
         uint32_t roughnessIndex{};
         uint32_t normalIndex{};
         uint32_t aoIndex{};
+
+        uint32_t samplerIndex{};
 
         uint32_t flags{};
     };

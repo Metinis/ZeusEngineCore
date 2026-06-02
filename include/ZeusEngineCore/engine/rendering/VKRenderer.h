@@ -86,7 +86,7 @@ namespace ZEN {
         void submitDrawCall(const DrawCall& call);
         void executeDrawCalls(VkCommandBuffer cmd, const std::vector<IndirectDrawCall>& draws);
         void setImGUIMode(const bool mode);
-        VkSampler getSampler(const VkSamplerCreateInfo& info);
+        StoredSampler getSampler(const VkSamplerCreateInfo& info);
         VkDescriptorSet getImGUIDescSet(AssetID id);
         //will create mapping between assetID and GPU mesh to be used by renderer
         GPUMeshBuffers uploadMesh(AssetID id, const MeshData& mesh);
@@ -199,11 +199,12 @@ namespace ZEN {
         //hashed infos todo: ref count delete
         //todo need compute working
         std::unordered_map<PipelineInfo, VkPipeline> m_PipelineMap{};
-        std::unordered_map<VkSamplerCreateInfo, VkSampler, std::hash<VkSamplerCreateInfo>, VkSamplerCreateInfoEqual> m_SamplerMap{};
+        std::unordered_map<VkSamplerCreateInfo, StoredSampler, std::hash<VkSamplerCreateInfo>, VkSamplerCreateInfoEqual> m_SamplerMap{};
 
         IndexAllocator m_TextureAllocator{};
         IndexAllocator m_StorageImageAllocator{};
         IndexAllocator m_MaterialAllocator{};
+        IndexAllocator m_SamplerAllocator{};
 
         std::vector<DrawCall> m_DrawCalls{};
 

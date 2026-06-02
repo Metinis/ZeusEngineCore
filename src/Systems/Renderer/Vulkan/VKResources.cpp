@@ -250,7 +250,7 @@ GPUTexture VKRenderer::uploadTexture(AssetID id, const TextureData &texture) {
                                             },
                                             texture.format, VK_IMAGE_USAGE_SAMPLED_BIT, false, texturePixels.layers);
 
-    VkSampler sampler = getSampler(VKHelpers::toVkSamplerCreateInfo(texture.samplerInfo));
+    StoredSampler sampler = getSampler(VKHelpers::toVkSamplerCreateInfo(texture.samplerInfo));
     //--------------------------------------------------------
     if (m_TextureMap.contains(id)) {
         destroyImage(m_TextureMap[id].texture.image);
@@ -259,7 +259,7 @@ GPUTexture VKRenderer::uploadTexture(AssetID id, const TextureData &texture) {
 
     GPUTexture gpuTex = {
         .image = newTexture,
-        .sampler = sampler,
+        .samplerIdx = sampler.idx,
     };
 
     m_TextureMap[id] = {gpuTex, newTexture.readIdx, texture.type};
@@ -288,6 +288,9 @@ GPUMaterial VKRenderer::uploadMaterial(const AssetID id, const Material &materia
     if (m_TextureMap.contains(material.aoTex)) {
         gpuMat.aoIndex = m_TextureMap[material.aoTex].idx;
     }
+
+    //todo do this appropriately
+    gpuMat.samplerIndex = m_TextureMap[material.texture].texture.samplerIdx;
 
     uint32_t flags{};
     if (material.useAlbedo) {
@@ -471,12 +474,13 @@ AllocatedImage VKRenderer::createImage(VkExtent3D size, VkFormat format,
     if (usage & VK_IMAGE_USAGE_SAMPLED_BIT) {
         img.readIdx = m_TextureAllocator.allocate();
 
+        //todo store samplers seperately
         DescriptorWriter writer;
         if (isCubeMap) {
             writer.writeImage(
             0,
             img.imageView,
-            getSampler(VKHelpers::getDefaultSamplerInfo()),
+            getSampler(VKHelpers::getDefaultSamplerInfo()).sampler,
             VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
             VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
             img.readIdx);
@@ -484,7 +488,7 @@ AllocatedImage VKRenderer::createImage(VkExtent3D size, VkFormat format,
             writer.writeImage(
             0,
             img.imageView,
-            getSampler(VKHelpers::getCubeMapSamplerInfo()),
+            getSampler(VKHelpers::getCubeMapSamplerInfo()).sampler,
             VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
             VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
             img.readIdx);
@@ -510,7 +514,22 @@ AllocatedImage VKRenderer::createImage(VkExtent3D size, VkFormat format,
 
     return img;
 }
-
+StoredSampler VKRenderer::getSampler(const VkSamplerCreateInfo& info) {
+    if (m_SamplerMap.contains(info)) {
+        return m_SamplerMap[info];
+    }
+    VkSampler sampler{};
+    VK_CHECK(vkCreateSampler(m_Device, &info, nullptr, &sampler));
+    m_DeletionQueue.pushFunction([=]() {
+        vkDestroySampler(m_Device, sampler, nullptr);
+    });
+    uint32_t idx = m_SamplerAllocator.allocate();
+    m_SamplerMap[info] = {sampler, idx};
+    DescriptorWriter writer;
+    writer.writeSampler(2, sampler, idx);
+    writer.updateSet(m_Device, m_TextureDescriptorSet);
+    return {sampler, idx};
+}
 void VKRenderer::generateMipmaps(VkCommandBuffer cmd, VkImage image, VkExtent3D size,
     uint32_t mipLevels, uint32_t layerCount) {
     if (mipLevels == 1) return;
