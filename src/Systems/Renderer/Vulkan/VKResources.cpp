@@ -12,7 +12,7 @@
 using namespace ZEN;
 
 GPUMeshBuffers VKRenderer::uploadMesh(AssetID id, const MeshData &mesh) {
-    if (m_MeshMap.contains(id)) {
+    if (m_ResourceCtx.m_MeshMap.contains(id)) {
         spdlog::warn("AssetID already exists in GPU, overwriting..");
         deleteMesh(id);
     }
@@ -31,7 +31,7 @@ GPUMeshBuffers VKRenderer::uploadMesh(AssetID id, const MeshData &mesh) {
         .sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,
         .buffer = newSurface.vertexBuffer.buffer,
     };
-    newSurface.vertexBufferAddress = vkGetBufferDeviceAddress(m_Device, &deviceAddressInfo);
+    newSurface.vertexBufferAddress = vkGetBufferDeviceAddress(m_StateCtx.m_Device, &deviceAddressInfo);
 
     newSurface.indexBuffer = createBuffer(indexBufferSize,
                                           VK_BUFFER_USAGE_INDEX_BUFFER_BIT
@@ -66,7 +66,7 @@ GPUMeshBuffers VKRenderer::uploadMesh(AssetID id, const MeshData &mesh) {
     newSurface.indexCount = mesh.indices.size();
 
     destroyBuffer(staging);
-    m_MeshMap[id] = newSurface;
+    m_ResourceCtx.m_MeshMap[id] = newSurface;
 
     spdlog::debug("Renderer: Created GPU Mesh ID: {} of index count: {}", (uint64_t) id, newSurface.indexCount);
     return newSurface;
@@ -252,9 +252,9 @@ GPUTexture VKRenderer::uploadTexture(AssetID id, const TextureData &texture) {
 
     StoredSampler sampler = getSampler(VKHelpers::toVkSamplerCreateInfo(texture.samplerInfo));
     //--------------------------------------------------------
-    if (m_TextureMap.contains(id)) {
-        destroyImage(m_TextureMap[id].texture.image);
-        m_TextureAllocator.free(m_TextureMap[id].idx);
+    if (m_ResourceCtx.m_TextureMap.contains(id)) {
+        destroyImage(m_ResourceCtx.m_TextureMap[id].texture.image);
+        m_ResourceCtx.m_TextureAllocator.free(m_ResourceCtx.m_TextureMap[id].idx);
     }
 
     GPUTexture gpuTex = {
@@ -262,7 +262,7 @@ GPUTexture VKRenderer::uploadTexture(AssetID id, const TextureData &texture) {
         .samplerIdx = sampler.idx,
     };
 
-    m_TextureMap[id] = {gpuTex, newTexture.readIdx, texture.type};
+    m_ResourceCtx.m_TextureMap[id] = {gpuTex, newTexture.readIdx, texture.type};
     spdlog::debug("Renderer: Created Texture ID: {}", (uint64_t) id);
     return gpuTex;
 }
@@ -273,24 +273,24 @@ GPUMaterial VKRenderer::uploadMaterial(const AssetID id, const Material &materia
         .u_Params = glm::vec4(material.metallic, material.roughness, material.ao, 1.0),
     };
 
-    if (m_TextureMap.contains(material.texture)) {
-        gpuMat.albedoIndex = m_TextureMap[material.texture].idx;
+    if (m_ResourceCtx.m_TextureMap.contains(material.texture)) {
+        gpuMat.albedoIndex = m_ResourceCtx.m_TextureMap[material.texture].idx;
     }
-    if (m_TextureMap.contains(material.metallicTex)) {
-        gpuMat.metallicIndex = m_TextureMap[material.metallicTex].idx;
+    if (m_ResourceCtx.m_TextureMap.contains(material.metallicTex)) {
+        gpuMat.metallicIndex = m_ResourceCtx.m_TextureMap[material.metallicTex].idx;
     }
-    if (m_TextureMap.contains(material.roughnessTex)) {
-        gpuMat.roughnessIndex = m_TextureMap[material.roughnessTex].idx;
+    if (m_ResourceCtx.m_TextureMap.contains(material.roughnessTex)) {
+        gpuMat.roughnessIndex = m_ResourceCtx.m_TextureMap[material.roughnessTex].idx;
     }
-    if (m_TextureMap.contains(material.normalTex)) {
-        gpuMat.normalIndex = m_TextureMap[material.normalTex].idx;
+    if (m_ResourceCtx.m_TextureMap.contains(material.normalTex)) {
+        gpuMat.normalIndex = m_ResourceCtx.m_TextureMap[material.normalTex].idx;
     }
-    if (m_TextureMap.contains(material.aoTex)) {
-        gpuMat.aoIndex = m_TextureMap[material.aoTex].idx;
+    if (m_ResourceCtx.m_TextureMap.contains(material.aoTex)) {
+        gpuMat.aoIndex = m_ResourceCtx.m_TextureMap[material.aoTex].idx;
     }
 
     //todo do this appropriately
-    gpuMat.samplerIndex = m_TextureMap[material.texture].texture.samplerIdx;
+    gpuMat.samplerIndex = m_ResourceCtx.m_TextureMap[material.texture].texture.samplerIdx;
 
     uint32_t flags{};
     if (material.useAlbedo) {
@@ -312,8 +312,8 @@ GPUMaterial VKRenderer::uploadMaterial(const AssetID id, const Material &materia
     gpuMat.flags = flags;
 
     VkPipeline pipeline;
-    if (m_PipelineMap.contains(material.pipelineInfo)) {
-        pipeline = m_PipelineMap[material.pipelineInfo];
+    if (m_ResourceCtx.m_PipelineMap.contains(material.pipelineInfo)) {
+        pipeline = m_ResourceCtx.m_PipelineMap[material.pipelineInfo];
     } else {
         pipeline = createMainPipeline(material.pipelineInfo);
     }
@@ -324,28 +324,28 @@ GPUMaterial VKRenderer::uploadMaterial(const AssetID id, const Material &materia
     uint32_t idx{};
 
     //create new, otherwise replace
-    if (!m_MaterialMap.contains(id)) {
-        idx = m_MaterialAllocator.allocate();
+    if (!m_ResourceCtx.m_MaterialMap.contains(id)) {
+        idx = m_ResourceCtx.m_MaterialAllocator.allocate();
     } else {
-        idx = m_MaterialMap[id].idx;
+        idx = m_ResourceCtx.m_MaterialMap[id].idx;
     }
 
-    m_MaterialMap[id] = {gpuMat, pipeline, useDepth, idx};
+    m_ResourceCtx.m_MaterialMap[id] = {gpuMat, pipeline, useDepth, idx};
 
-    auto *mapped = (GPUMaterial *) m_MaterialBuffer.allocationInfo.pMappedData;
+    auto *mapped = (GPUMaterial *) m_ResourceCtx.m_MaterialBuffer.allocationInfo.pMappedData;
     mapped[idx] = gpuMat;
     spdlog::debug("Renderer: Created Material ID: {}", (uint64_t) id);
     return gpuMat;
 }
 
 void VKRenderer::deleteMaterial(AssetID id) {
-    if (m_MaterialMap.contains(id)) {
-        auto material = m_MaterialMap[id];
-        uint32_t frameIndex = (m_FrameNumber + FRAME_OVERLAP) % FRAME_OVERLAP;
-        m_Frames[frameIndex].m_DeletionQueue.pushFunction([=]() {
-            m_MaterialAllocator.free(material.idx);
+    if (m_ResourceCtx.m_MaterialMap.contains(id)) {
+        auto material = m_ResourceCtx.m_MaterialMap[id];
+        uint32_t frameIndex = (m_RenderCtx.m_FrameNumber + FRAME_OVERLAP) % FRAME_OVERLAP;
+        m_RenderCtx.m_Frames[frameIndex].m_DeletionQueue.pushFunction([=]() {
+            m_ResourceCtx.m_MaterialAllocator.free(material.idx);
         });
-        m_MaterialMap.erase(id);
+        m_ResourceCtx.m_MaterialMap.erase(id);
 
         spdlog::debug("Renderer: Deleted Material ID: {}", (uint64_t) id);
         return;
@@ -354,14 +354,14 @@ void VKRenderer::deleteMaterial(AssetID id) {
 }
 
 void VKRenderer::deleteMesh(AssetID id) {
-    if (m_MeshMap.contains(id)) {
-        auto &meshBuf = m_MeshMap[id];
-        uint32_t frameIndex = (m_FrameNumber + FRAME_OVERLAP) % FRAME_OVERLAP;
-        m_Frames[frameIndex].m_DeletionQueue.pushFunction([=]() {
+    if (m_ResourceCtx.m_MeshMap.contains(id)) {
+        auto &meshBuf = m_ResourceCtx.m_MeshMap[id];
+        uint32_t frameIndex = (m_RenderCtx.m_FrameNumber + FRAME_OVERLAP) % FRAME_OVERLAP;
+        m_RenderCtx.m_Frames[frameIndex].m_DeletionQueue.pushFunction([=]() {
             destroyBuffer(meshBuf.indexBuffer);
             destroyBuffer(meshBuf.vertexBuffer);
         });
-        m_MeshMap.erase(id);
+        m_ResourceCtx.m_MeshMap.erase(id);
         spdlog::debug("Deleted GPU Mesh ID: {}", (uint64_t) id);
         return;
     }
@@ -369,18 +369,18 @@ void VKRenderer::deleteMesh(AssetID id) {
 }
 
 void VKRenderer::deleteTexture(AssetID id) {
-    if (m_TextureMap.contains(id)) {
-        auto tex = m_TextureMap[id];
-        uint32_t frameIndex = (m_FrameNumber + FRAME_OVERLAP) % FRAME_OVERLAP;
-        m_Frames[frameIndex].m_DeletionQueue.pushFunction([=]() {
-            if (m_ImGUIDescSetMap.contains(id)) {
-                ImGui_ImplVulkan_RemoveTexture(m_ImGUIDescSetMap[id]);
-                m_ImGUIDescSetMap.erase(id);
+    if (m_ResourceCtx.m_TextureMap.contains(id)) {
+        auto tex = m_ResourceCtx.m_TextureMap[id];
+        uint32_t frameIndex = (m_RenderCtx.m_FrameNumber + FRAME_OVERLAP) % FRAME_OVERLAP;
+        m_RenderCtx.m_Frames[frameIndex].m_DeletionQueue.pushFunction([=]() {
+            if (m_ResourceCtx.m_ImGUIDescSetMap.contains(id)) {
+                ImGui_ImplVulkan_RemoveTexture(m_ResourceCtx.m_ImGUIDescSetMap[id]);
+                m_ResourceCtx.m_ImGUIDescSetMap.erase(id);
             }
-            m_TextureAllocator.free(tex.idx);
+            m_ResourceCtx.m_TextureAllocator.free(tex.idx);
             destroyImage(tex.texture.image);
         });
-        m_TextureMap.erase(id);
+        m_ResourceCtx.m_TextureMap.erase(id);
         spdlog::debug("Deleted Texture ID: {}", (uint64_t) id);
         return;
     }
@@ -431,7 +431,7 @@ AllocatedImage VKRenderer::createImage(VkExtent3D size, VkFormat format,
     allocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
     allocInfo.requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
-    VK_CHECK(vmaCreateImage(m_Allocator, &imgInfo, &allocInfo, &img.image, &img.allocation, nullptr));
+    VK_CHECK(vmaCreateImage(m_ResourceCtx.m_Allocator, &imgInfo, &allocInfo, &img.image, &img.allocation, nullptr));
 
     VkImageAspectFlags aspect = VK_IMAGE_ASPECT_COLOR_BIT;
     if (format == VK_FORMAT_D32_SFLOAT)
@@ -448,7 +448,7 @@ AllocatedImage VKRenderer::createImage(VkExtent3D size, VkFormat format,
     if (isCubeMap)
         fullView.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
 
-    VK_CHECK(vkCreateImageView(m_Device, &fullView, nullptr, &img.imageView));
+    VK_CHECK(vkCreateImageView(m_StateCtx.m_Device, &fullView, nullptr, &img.imageView));
 
     if (usage & VK_IMAGE_USAGE_STORAGE_BIT) {
         img.mipViews.resize(img.mipLevels);
@@ -467,11 +467,11 @@ AllocatedImage VKRenderer::createImage(VkExtent3D size, VkFormat format,
             if (isCubeMap)
                 mipView.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
 
-            VK_CHECK(vkCreateImageView(m_Device, &mipView, nullptr, &img.mipViews[mip]));
+            VK_CHECK(vkCreateImageView(m_StateCtx.m_Device, &mipView, nullptr, &img.mipViews[mip]));
         }
     }
     if (usage & VK_IMAGE_USAGE_SAMPLED_BIT) {
-        img.readIdx = m_TextureAllocator.allocate();
+        img.readIdx = m_ResourceCtx.m_TextureAllocator.allocate();
 
         //todo store samplers seperately
         DescriptorWriter writer;
@@ -494,18 +494,18 @@ AllocatedImage VKRenderer::createImage(VkExtent3D size, VkFormat format,
         }
 
 
-        writer.updateSet(m_Device, m_TextureDescriptorSet);
+        writer.updateSet(m_StateCtx.m_Device, m_ResourceCtx.m_TextureDescriptorSet);
     }
     if (usage & VK_IMAGE_USAGE_STORAGE_BIT) {
         for (uint32_t mip = 0; mip < img.mipLevels; mip++) {
-            uint32_t index = m_StorageImageAllocator.allocate();
+            uint32_t index = m_ResourceCtx.m_StorageImageAllocator.allocate();
             img.writeIdx[mip] = index;
 
             DescriptorWriter writer;
             writer.writeImage(1, img.mipViews[mip], VK_NULL_HANDLE,
                               VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, index);
 
-            writer.updateSet(m_Device, m_TextureDescriptorSet);
+            writer.updateSet(m_StateCtx.m_Device, m_ResourceCtx.m_TextureDescriptorSet);
         }
     }
 
@@ -514,19 +514,19 @@ AllocatedImage VKRenderer::createImage(VkExtent3D size, VkFormat format,
     return img;
 }
 StoredSampler VKRenderer::getSampler(const VkSamplerCreateInfo& info) {
-    if (m_SamplerMap.contains(info)) {
-        return m_SamplerMap[info];
+    if (m_ResourceCtx.m_SamplerMap.contains(info)) {
+        return m_ResourceCtx.m_SamplerMap[info];
     }
     VkSampler sampler{};
-    VK_CHECK(vkCreateSampler(m_Device, &info, nullptr, &sampler));
-    m_DeletionQueue.pushFunction([=]() {
-        vkDestroySampler(m_Device, sampler, nullptr);
+    VK_CHECK(vkCreateSampler(m_StateCtx.m_Device, &info, nullptr, &sampler));
+    m_ResourceCtx.m_DeletionQueue.pushFunction([=]() {
+        vkDestroySampler(m_StateCtx.m_Device, sampler, nullptr);
     });
-    uint32_t idx = m_SamplerAllocator.allocate();
-    m_SamplerMap[info] = {sampler, idx};
+    uint32_t idx = m_ResourceCtx.m_SamplerAllocator.allocate();
+    m_ResourceCtx.m_SamplerMap[info] = {sampler, idx};
     DescriptorWriter writer;
-    writer.writeSampler(2, m_ErrorTexture.image.imageView, sampler, idx); //dummy image view
-    writer.updateSet(m_Device, m_TextureDescriptorSet);
+    writer.writeSampler(2, m_ResourceCtx.m_ErrorTexture.image.imageView, sampler, idx); //dummy image view
+    writer.updateSet(m_StateCtx.m_Device, m_ResourceCtx.m_TextureDescriptorSet);
     return {sampler, idx};
 }
 void VKRenderer::generateMipmaps(VkCommandBuffer cmd, VkImage image, VkExtent3D size,
@@ -676,11 +676,11 @@ AllocatedImage VKRenderer::createImage(void *data, VkExtent3D size, VkFormat for
 }
 
 void VKRenderer::destroyImage(const AllocatedImage &img) {
-    vkDestroyImageView(m_Device, img.imageView, nullptr);
+    vkDestroyImageView(m_StateCtx.m_Device, img.imageView, nullptr);
     for (auto &imgView : img.mipViews) {
-        vkDestroyImageView(m_Device, imgView, nullptr);
+        vkDestroyImageView(m_StateCtx.m_Device, imgView, nullptr);
     }
-    vmaDestroyImage(m_Allocator, img.image, img.allocation);
+    vmaDestroyImage(m_ResourceCtx.m_Allocator, img.image, img.allocation);
     spdlog::debug("Renderer: Deleted Image");
 }
 
@@ -696,7 +696,7 @@ AllocatedBuffer VKRenderer::createBuffer(size_t allocSize, VkBufferUsageFlags us
 
     AllocatedBuffer buffer;
 
-    VK_CHECK(vmaCreateBuffer(m_Allocator, &bufferInfo, &allocInfo, &buffer.buffer,
+    VK_CHECK(vmaCreateBuffer(m_ResourceCtx.m_Allocator, &bufferInfo, &allocInfo, &buffer.buffer,
         &buffer.allocation, &buffer.allocationInfo));
 
     //spdlog::debug("Renderer: Buffer Created");
@@ -705,6 +705,6 @@ AllocatedBuffer VKRenderer::createBuffer(size_t allocSize, VkBufferUsageFlags us
 }
 
 void VKRenderer::destroyBuffer(const AllocatedBuffer &buffer) {
-    vmaDestroyBuffer(m_Allocator, buffer.buffer, buffer.allocation);
+    vmaDestroyBuffer(m_ResourceCtx.m_Allocator, buffer.buffer, buffer.allocation);
     //spdlog::debug("Renderer: Buffer Destroyed");
 }

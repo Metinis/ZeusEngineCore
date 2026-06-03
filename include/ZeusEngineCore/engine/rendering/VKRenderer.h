@@ -76,6 +76,87 @@ namespace ZEN {
         int count{};
     };
 
+    struct VKContext {
+        VkInstance m_Instance{};
+        VkDebugUtilsMessengerEXT m_DebugMessenger{};
+        VkPhysicalDevice m_PhysicalDevice{};
+        VkDevice m_Device{};
+        VkSurfaceKHR m_Surface{};
+        VkQueue m_GraphicsQueue{};
+        uint32_t m_GraphicsQueueFamily{};
+        bool m_Initialized{};
+    };
+
+    struct SwapchainContext {
+        VkSwapchainKHR m_SwapChain{};
+        bool m_SwapChainRecreated{false};
+        VkFormat m_SwapChainImageFormat{};
+        std::vector<VkImage> m_SwapChainImages{};
+        std::vector<VkImageView> m_SwapChainImageViews{};
+        VkExtent2D m_SwapChainExtent{};
+    };
+
+    struct RenderContext {
+        FrameData m_Frames[FRAME_OVERLAP];
+        FrameData& getCurrentFrame() {return m_Frames[m_FrameNumber % FRAME_OVERLAP];}
+        uint64_t m_FrameNumber{0};
+        VkFence m_ImmediateFence{};
+        VkCommandBuffer m_ImmediateCommandBuffer{};
+        VkCommandPool m_ImmediateCommandPool{};
+        FrameGraph m_FrameGraph{};
+        SwapchainContext m_SwapchainCtx{};
+        AllocatedImage m_DrawImage{};
+        VkExtent2D m_DrawExtent{};
+        AllocatedImage m_DepthImage{};
+        std::vector<DrawCall> m_DrawCalls{};
+        bool m_RenderToIMGUITexture{true};
+    };
+
+    struct ResourceContext {
+        VmaAllocator m_Allocator{};
+
+        DescriptorAllocator m_GlobalDescriptorAllocator{};
+        DescriptorAllocator m_TextureDescriptorAllocator{};
+        VkDescriptorSet m_TextureDescriptorSet{};
+        VkDescriptorSetLayout m_TextureDescriptorSetLayout{};
+
+        VkDescriptorSet m_MaterialDescriptorSet{};
+        VkDescriptorSetLayout m_MaterialDescriptorSetLayout{};
+
+        VkDescriptorSet m_DrawImageDescriptors{};
+        VkDescriptorSetLayout m_DrawImageDescriptorLayout{};
+
+        VkDescriptorSet m_ImGuiDescriptorSet{}; //used for color image
+        VkDescriptorSet m_ImGUIErrorSet{}; //no texture found
+        std::unordered_map<AssetID, VkDescriptorSet> m_ImGUIDescSetMap{}; //used for thumbnails since imgui doesnt support bindless
+
+        VkPipelineLayout m_MainPipelineLayout{};
+        VkPipelineLayout m_ComputePipelineLayout{};
+        //todo access this within the pipeline cache
+
+        GPUTexture m_ErrorTexture{};
+
+        GPUSceneData m_SceneData{};
+        VkDescriptorSetLayout m_FrameDescriptorLayout{};
+
+        AllocatedBuffer m_MaterialBuffer{};
+
+        std::unordered_map<AssetID, GPUMeshBuffers> m_MeshMap{};
+        std::unordered_map<AssetID, StoredTexture> m_TextureMap{}; //texture and index into bindless
+        std::unordered_map<AssetID, StoredMaterial> m_MaterialMap{}; //material and index into material buff
+        //hashed infos todo: ref count delete
+        //todo need compute working
+        std::unordered_map<PipelineInfo, VkPipeline> m_PipelineMap{};
+        std::unordered_map<VkSamplerCreateInfo, StoredSampler, std::hash<VkSamplerCreateInfo>, VkSamplerCreateInfoEqual> m_SamplerMap{};
+
+        IndexAllocator m_TextureAllocator{};
+        IndexAllocator m_StorageImageAllocator{};
+        IndexAllocator m_MaterialAllocator{};
+        IndexAllocator m_SamplerAllocator{};
+
+        DeletionQueue m_DeletionQueue{};
+    };
+
     class ZEN_API VKRenderer {
     public:
         VKRenderer();
@@ -96,10 +177,10 @@ namespace ZEN {
         void deleteMesh(AssetID id);
         void deleteTexture(AssetID id);
         void deleteMaterial(AssetID id);
-        const FrameGraph& getFrameGraph() {return m_FrameGraph;}
+        const FrameGraph& getFrameGraph() {return m_RenderCtx.m_FrameGraph;}
         //void createMesh()
         ImGui_ImplVulkan_InitInfo initImgui();
-        [[nodiscard]] VkDescriptorSet getImDescSet() const {return m_ImGuiDescriptorSet;}
+        [[nodiscard]] VkDescriptorSet getImDescSet() const {return m_ResourceCtx.m_ImGuiDescriptorSet;}
         void drawImgui(VkCommandBuffer cmd, VkImageView targetImageView);
         void drawGeometry(VkCommandBuffer);
         void immediateSubmit(std::function<void(VkCommandBuffer cmd)>&& function);
@@ -118,7 +199,6 @@ namespace ZEN {
         void initErrorTexture();
         void initMainSamplers();
 
-        //void initSampler();
         void initMainPipeLayout();
         void initMainComputeLayout();
         VkPipeline createMainPipeline(const PipelineInfo& pipelineInfo);
@@ -134,84 +214,9 @@ namespace ZEN {
         AllocatedBuffer createBuffer(size_t allocSize, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage);
         void destroyBuffer(const AllocatedBuffer& buffer);
 
-        DeletionQueue m_DeletionQueue{};
-
-        VkInstance m_Instance{};
-        VkDebugUtilsMessengerEXT m_DebugMessenger{};
-        VkPhysicalDevice m_PhysicalDevice{};
-        VkDevice m_Device{};
-        VkSurfaceKHR m_Surface{};
-
-        VkSwapchainKHR m_SwapChain{};
-        bool m_SwapChainRecreated{false};
-        VkFormat m_SwapChainImageFormat{};
-        std::vector<VkImage> m_SwapChainImages{};
-        std::vector<VkImageView> m_SwapChainImageViews{};
-        VkExtent2D m_SwapChainExtent{};
-
-        FrameData m_Frames[FRAME_OVERLAP];
-        FrameData& getCurrentFrame() {return m_Frames[m_FrameNumber % FRAME_OVERLAP];}
-
-        VkQueue m_GraphicsQueue{};
-        uint32_t m_GraphicsQueueFamily{};
-
-        uint64_t m_FrameNumber{0};
-
-        VmaAllocator m_Allocator{};
-
-        AllocatedImage m_DrawImage{};
-        VkExtent2D m_DrawExtent{};
-        AllocatedImage m_DepthImage{};
-
-        DescriptorAllocator m_GlobalDescriptorAllocator{};
-        DescriptorAllocator m_TextureDescriptorAllocator{};
-        VkDescriptorSet m_TextureDescriptorSet{};
-        VkDescriptorSetLayout m_TextureDescriptorSetLayout{};
-
-        VkDescriptorSet m_MaterialDescriptorSet{};
-        VkDescriptorSetLayout m_MaterialDescriptorSetLayout{};
-
-        VkDescriptorSet m_DrawImageDescriptors{};
-        VkDescriptorSetLayout m_DrawImageDescriptorLayout{};
-
-        VkFence m_ImmediateFence{};
-        VkCommandBuffer m_ImmediateCommandBuffer{};
-        VkCommandPool m_ImmediateCommandPool{};
-
-        VkDescriptorSet m_ImGuiDescriptorSet{}; //used for color image
-        VkDescriptorSet m_ImGUIErrorSet{}; //no texture found
-        std::unordered_map<AssetID, VkDescriptorSet> m_ImGUIDescSetMap{}; //used for thumbnails since imgui doesnt support bindless
-
-        VkPipelineLayout m_MainPipelineLayout{};
-        VkPipelineLayout m_ComputePipelineLayout{};
-        //todo access this within the pipeline cache
-
-        GPUTexture m_ErrorTexture{};
-
-        GPUSceneData m_SceneData{};
-        VkDescriptorSetLayout m_FrameDescriptorLayout{};
-
-        AllocatedBuffer m_MaterialBuffer{};
-
-        FrameGraph m_FrameGraph{};
-
-        std::unordered_map<AssetID, GPUMeshBuffers> m_MeshMap{};
-        std::unordered_map<AssetID, StoredTexture> m_TextureMap{}; //texture and index into bindless
-        std::unordered_map<AssetID, StoredMaterial> m_MaterialMap{}; //material and index into material buff
-        //hashed infos todo: ref count delete
-        //todo need compute working
-        std::unordered_map<PipelineInfo, VkPipeline> m_PipelineMap{};
-        std::unordered_map<VkSamplerCreateInfo, StoredSampler, std::hash<VkSamplerCreateInfo>, VkSamplerCreateInfoEqual> m_SamplerMap{};
-
-        IndexAllocator m_TextureAllocator{};
-        IndexAllocator m_StorageImageAllocator{};
-        IndexAllocator m_MaterialAllocator{};
-        IndexAllocator m_SamplerAllocator{};
-
-        std::vector<DrawCall> m_DrawCalls{};
-
-        bool m_Initialized{};
-        bool m_RenderToIMGUITexture{true};
+        VKContext m_StateCtx{};
+        RenderContext m_RenderCtx{};
+        ResourceContext m_ResourceCtx{};
 
         Scene* m_Scene{};
         CameraSystem* m_CameraSystem{};

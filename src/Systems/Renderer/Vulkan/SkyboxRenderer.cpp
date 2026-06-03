@@ -1,7 +1,5 @@
 #include "SkyboxRenderer.h"
-
 #include <vulkan/vk_enum_string_helper.h>
-
 #include "VKInit.h"
 #include "ZeusEngineCore/core/Application.h"
 #include "ZeusEngineCore/engine/rendering/VKRenderer.h"
@@ -9,7 +7,8 @@
 
 using namespace ZEN;
 
-SkyboxRenderer::SkyboxRenderer(VKRenderer* renderer) : m_Renderer(renderer) {
+SkyboxRenderer::SkyboxRenderer(VKContext* stateCtx, ResourceContext* resourceCtx, VKRenderer* renderer) :
+m_StateCtx(stateCtx), m_ResourceCtx(resourceCtx), m_Renderer(renderer) {
 
 }
 
@@ -39,7 +38,7 @@ void SkyboxRenderer::init(std::filesystem::path const &path) {
     m_BRDFTex = m_Renderer->createImage(VkExtent3D {512, 512, 1}, VK_FORMAT_R32G32B32A32_SFLOAT,
         VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT, false, 1);
 
-    m_Renderer->m_DeletionQueue.pushFunction([=] {
+    m_ResourceCtx->m_DeletionQueue.pushFunction([=] {
         m_Renderer->destroyImage(m_EqMap);
         m_Renderer->destroyImage(m_IrradianceMap);
         m_Renderer->destroyImage(m_PrefilterMap);
@@ -51,7 +50,7 @@ void SkyboxRenderer::init(std::filesystem::path const &path) {
 void SkyboxRenderer::initEqMapPipeline() {
     VkShaderModule computeDrawShader;
     if (!VKPipelines::loadShaderModule(Application::get().getResourceRoot() +
-        "/shaders/vulkan-shaders/eq-to-cubemap.comp.spv", m_Renderer->m_Device, &computeDrawShader)) {
+        "/shaders/vulkan-shaders/eq-to-cubemap.comp.spv", m_StateCtx->m_Device, &computeDrawShader)) {
         std::cout << "Failed to load compute draw shader" << std::endl;
         }
     VkPipelineShaderStageCreateInfo stageInfo = VKInit::pipelineShaderStageCreateInfo(
@@ -60,15 +59,15 @@ void SkyboxRenderer::initEqMapPipeline() {
     VkComputePipelineCreateInfo computePipelineCreateInfo{};
     computePipelineCreateInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
     computePipelineCreateInfo.pNext = nullptr;
-    computePipelineCreateInfo.layout = m_Renderer->m_ComputePipelineLayout;
+    computePipelineCreateInfo.layout = m_ResourceCtx->m_ComputePipelineLayout;
     computePipelineCreateInfo.stage = stageInfo;
 
-    VK_CHECK(vkCreateComputePipelines(m_Renderer->m_Device, VK_NULL_HANDLE, 1, &computePipelineCreateInfo, nullptr,
+    VK_CHECK(vkCreateComputePipelines(m_StateCtx->m_Device, VK_NULL_HANDLE, 1, &computePipelineCreateInfo, nullptr,
         &m_EqMapPipeline));
 
-    vkDestroyShaderModule(m_Renderer->m_Device, computeDrawShader, nullptr);
-    m_Renderer->m_DeletionQueue.pushFunction([=]() {
-        vkDestroyPipeline(m_Renderer->m_Device, m_EqMapPipeline, nullptr);
+    vkDestroyShaderModule(m_StateCtx->m_Device, computeDrawShader, nullptr);
+    m_ResourceCtx->m_DeletionQueue.pushFunction([=]() {
+        vkDestroyPipeline(m_StateCtx->m_Device, m_EqMapPipeline, nullptr);
     });
     spdlog::debug("Skybox: Eq Map Pipeline Initialized");
 }
@@ -76,7 +75,7 @@ void SkyboxRenderer::initEqMapPipeline() {
 void SkyboxRenderer::initIrradiancePipeline() {
     VkShaderModule computeDrawShader;
     if (!VKPipelines::loadShaderModule(Application::get().getResourceRoot() +
-        "/shaders/vulkan-shaders/irradiance.comp.spv", m_Renderer->m_Device, &computeDrawShader)) {
+        "/shaders/vulkan-shaders/irradiance.comp.spv", m_StateCtx->m_Device, &computeDrawShader)) {
         std::cout << "Failed to load compute draw shader" << std::endl;
         }
     VkPipelineShaderStageCreateInfo stageInfo = VKInit::pipelineShaderStageCreateInfo(
@@ -85,15 +84,15 @@ void SkyboxRenderer::initIrradiancePipeline() {
     VkComputePipelineCreateInfo computePipelineCreateInfo{};
     computePipelineCreateInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
     computePipelineCreateInfo.pNext = nullptr;
-    computePipelineCreateInfo.layout = m_Renderer->m_ComputePipelineLayout;
+    computePipelineCreateInfo.layout = m_ResourceCtx->m_ComputePipelineLayout;
     computePipelineCreateInfo.stage = stageInfo;
 
-    VK_CHECK(vkCreateComputePipelines(m_Renderer->m_Device, VK_NULL_HANDLE, 1, &computePipelineCreateInfo, nullptr,
+    VK_CHECK(vkCreateComputePipelines(m_StateCtx->m_Device, VK_NULL_HANDLE, 1, &computePipelineCreateInfo, nullptr,
         &m_IrradianceMapPipeline));
 
-    vkDestroyShaderModule(m_Renderer->m_Device, computeDrawShader, nullptr);
-    m_Renderer->m_DeletionQueue.pushFunction([=]() {
-        vkDestroyPipeline(m_Renderer->m_Device, m_IrradianceMapPipeline, nullptr);
+    vkDestroyShaderModule(m_StateCtx->m_Device, computeDrawShader, nullptr);
+    m_ResourceCtx->m_DeletionQueue.pushFunction([=]() {
+        vkDestroyPipeline(m_StateCtx->m_Device, m_IrradianceMapPipeline, nullptr);
     });
     spdlog::debug("Skybox: Irradiance Pipeline Initialized");
 }
@@ -101,7 +100,7 @@ void SkyboxRenderer::initIrradiancePipeline() {
 void SkyboxRenderer::initPrefilterPipeline() {
     VkShaderModule computeDrawShader;
     if (!VKPipelines::loadShaderModule(Application::get().getResourceRoot() +
-        "/shaders/vulkan-shaders/prefilter.comp.spv", m_Renderer->m_Device, &computeDrawShader)) {
+        "/shaders/vulkan-shaders/prefilter.comp.spv", m_StateCtx->m_Device, &computeDrawShader)) {
         std::cout << "Failed to load compute draw shader" << std::endl;
         }
     VkPipelineShaderStageCreateInfo stageInfo = VKInit::pipelineShaderStageCreateInfo(
@@ -110,15 +109,15 @@ void SkyboxRenderer::initPrefilterPipeline() {
     VkComputePipelineCreateInfo computePipelineCreateInfo{};
     computePipelineCreateInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
     computePipelineCreateInfo.pNext = nullptr;
-    computePipelineCreateInfo.layout = m_Renderer->m_ComputePipelineLayout;
+    computePipelineCreateInfo.layout = m_ResourceCtx->m_ComputePipelineLayout;
     computePipelineCreateInfo.stage = stageInfo;
 
-    VK_CHECK(vkCreateComputePipelines(m_Renderer->m_Device, VK_NULL_HANDLE, 1, &computePipelineCreateInfo, nullptr,
+    VK_CHECK(vkCreateComputePipelines(m_StateCtx->m_Device, VK_NULL_HANDLE, 1, &computePipelineCreateInfo, nullptr,
         &m_PrefilterPipeline));
 
-    vkDestroyShaderModule(m_Renderer->m_Device, computeDrawShader, nullptr);
-    m_Renderer->m_DeletionQueue.pushFunction([=]() {
-        vkDestroyPipeline(m_Renderer->m_Device, m_PrefilterPipeline, nullptr);
+    vkDestroyShaderModule(m_StateCtx->m_Device, computeDrawShader, nullptr);
+    m_ResourceCtx->m_DeletionQueue.pushFunction([=]() {
+        vkDestroyPipeline(m_StateCtx->m_Device, m_PrefilterPipeline, nullptr);
     });
     spdlog::debug("Skybox: Prefilter Pipeline Initialized");
 }
@@ -126,7 +125,7 @@ void SkyboxRenderer::initPrefilterPipeline() {
 void SkyboxRenderer::initBRDFPipeline() {
     VkShaderModule computeDrawShader;
     if (!VKPipelines::loadShaderModule(Application::get().getResourceRoot() +
-        "/shaders/vulkan-shaders/brdf.comp.spv", m_Renderer->m_Device, &computeDrawShader)) {
+        "/shaders/vulkan-shaders/brdf.comp.spv", m_StateCtx->m_Device, &computeDrawShader)) {
         std::cout << "Failed to load compute draw shader" << std::endl;
         }
     VkPipelineShaderStageCreateInfo stageInfo = VKInit::pipelineShaderStageCreateInfo(
@@ -135,15 +134,15 @@ void SkyboxRenderer::initBRDFPipeline() {
     VkComputePipelineCreateInfo computePipelineCreateInfo{};
     computePipelineCreateInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
     computePipelineCreateInfo.pNext = nullptr;
-    computePipelineCreateInfo.layout = m_Renderer->m_ComputePipelineLayout;
+    computePipelineCreateInfo.layout = m_ResourceCtx->m_ComputePipelineLayout;
     computePipelineCreateInfo.stage = stageInfo;
 
-    VK_CHECK(vkCreateComputePipelines(m_Renderer->m_Device, VK_NULL_HANDLE, 1, &computePipelineCreateInfo, nullptr,
+    VK_CHECK(vkCreateComputePipelines(m_StateCtx->m_Device, VK_NULL_HANDLE, 1, &computePipelineCreateInfo, nullptr,
         &m_BRDFPipeline));
 
-    vkDestroyShaderModule(m_Renderer->m_Device, computeDrawShader, nullptr);
-    m_Renderer->m_DeletionQueue.pushFunction([=]() {
-        vkDestroyPipeline(m_Renderer->m_Device, m_BRDFPipeline, nullptr);
+    vkDestroyShaderModule(m_StateCtx->m_Device, computeDrawShader, nullptr);
+    m_ResourceCtx->m_DeletionQueue.pushFunction([=]() {
+        vkDestroyPipeline(m_StateCtx->m_Device, m_BRDFPipeline, nullptr);
     });
     spdlog::debug("Skybox: Prefilter Pipeline Initialized");
 }
@@ -159,9 +158,9 @@ void SkyboxRenderer::render(VkCommandBuffer cmd) {
                 .prefilterMapIdx = m_PrefilterMap.readIdx
             };
             vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, m_EqMapPipeline);
-            vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, m_Renderer->m_ComputePipelineLayout, 1,
-                1, &m_Renderer->m_TextureDescriptorSet, 0, nullptr);
-            vkCmdPushConstants(cmd, m_Renderer->m_ComputePipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(GPUComputePushConstants), &pc);
+            vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, m_ResourceCtx->m_ComputePipelineLayout, 1,
+                1, &m_ResourceCtx->m_TextureDescriptorSet, 0, nullptr);
+            vkCmdPushConstants(cmd, m_ResourceCtx->m_ComputePipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(GPUComputePushConstants), &pc);
 
             vkCmdDispatch(cmd, std::ceil(m_EqMap.imageExtent.width / 16.0),
                 std::ceil(m_EqMap.imageExtent.height / 16.0), 6);
@@ -176,9 +175,9 @@ void SkyboxRenderer::render(VkCommandBuffer cmd) {
                 .prefilterMapIdx = m_PrefilterMap.readIdx
             };
             vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, m_IrradianceMapPipeline);
-            vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, m_Renderer->m_ComputePipelineLayout, 1,
-                1, &m_Renderer->m_TextureDescriptorSet, 0, nullptr);
-            vkCmdPushConstants(cmd, m_Renderer->m_ComputePipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(GPUComputePushConstants), &pc);
+            vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, m_ResourceCtx->m_ComputePipelineLayout, 1,
+                1, &m_ResourceCtx->m_TextureDescriptorSet, 0, nullptr);
+            vkCmdPushConstants(cmd, m_ResourceCtx->m_ComputePipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(GPUComputePushConstants), &pc);
 
             vkCmdDispatch(cmd, std::ceil(m_IrradianceMap.imageExtent.width / 16.0),
                 std::ceil(m_IrradianceMap.imageExtent.height / 16.0), 6);
@@ -193,8 +192,8 @@ void SkyboxRenderer::render(VkCommandBuffer cmd) {
                 .prefilterMapIdx = m_PrefilterMap.writeIdx[0],
             };
             vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, m_PrefilterPipeline);
-            vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, m_Renderer->m_ComputePipelineLayout, 1,
-                1, &m_Renderer->m_TextureDescriptorSet, 0, nullptr);
+            vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, m_ResourceCtx->m_ComputePipelineLayout, 1,
+                1, &m_ResourceCtx->m_TextureDescriptorSet, 0, nullptr);
 
             for (int mip = 0; mip < m_PrefilterMap.mipLevels; ++mip) {
                 uint32_t w = m_PrefilterMap.imageExtent.width >> mip;
@@ -206,7 +205,7 @@ void SkyboxRenderer::render(VkCommandBuffer cmd) {
                 float roughness = (float)mip / (float)(m_PrefilterMap.mipLevels - 1);
                 pc.roughness = roughness;
 
-                vkCmdPushConstants(cmd, m_Renderer->m_ComputePipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT,
+                vkCmdPushConstants(cmd, m_ResourceCtx->m_ComputePipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT,
                     0, sizeof(GPUComputePushConstants), &pc);
 
                 vkCmdDispatch(cmd,(w + 15) / 16.0,(h + 15) / 16.0, 6);
@@ -223,9 +222,9 @@ void SkyboxRenderer::render(VkCommandBuffer cmd) {
                 .brdfTexIdx = m_BRDFTex.writeIdx[0],
             };
             vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, m_BRDFPipeline);
-            vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, m_Renderer->m_ComputePipelineLayout, 1,
-                1, &m_Renderer->m_TextureDescriptorSet, 0, nullptr);
-            vkCmdPushConstants(cmd, m_Renderer->m_ComputePipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(GPUComputePushConstants), &pc);
+            vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, m_ResourceCtx->m_ComputePipelineLayout, 1,
+                1, &m_ResourceCtx->m_TextureDescriptorSet, 0, nullptr);
+            vkCmdPushConstants(cmd, m_ResourceCtx->m_ComputePipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(GPUComputePushConstants), &pc);
 
             vkCmdDispatch(cmd, std::ceil(m_BRDFTex.imageExtent.width / 16.0),
                 std::ceil(m_BRDFTex.imageExtent.height / 16.0), 6);
