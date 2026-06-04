@@ -4,15 +4,423 @@
 #include <vma/vk_mem_alloc.h>
 #include <vulkan/vk_enum_string_helper.h>
 
+#include "imgui_impl_vulkan.h"
+#include "SkyboxRenderer.h"
 #include "VkHelpers.h"
 #include "VKInit.h"
+#include "ZeusEngineCore/core/Application.h"
 #include "ZeusEngineCore/core/Project.h"
+#include "ZeusEngineCore/engine/CameraSystem.h"
+#include "ZeusEngineCore/engine/Components.h"
+#include "ZeusEngineCore/engine/Scene.h"
+#include "ZeusEngineCore/engine/rendering/VKBackend.h"
+#include "ZeusEngineCore/engine/rendering/VKContext.h"
 #include "ZeusEngineCore/engine/rendering/VKUtils.h"
 
 using namespace ZEN;
 
-GPUMeshBuffers VKRenderer::uploadMesh(AssetID id, const MeshData &mesh) {
-    if (m_ResourceCtx.m_MeshMap.contains(id)) {
+uint32_t IndexAllocator::allocate() {
+    if (!availableList.empty()) {
+        uint32_t idx = availableList.back();
+        availableList.pop_back();
+        return idx;
+    }
+    spdlog::error("Renderer: No available slot for texture!");
+    return 0;
+}
+
+uint32_t IndexAllocator::allocate(uint32_t idx) {
+    auto it = std::find(availableList.begin(), availableList.end(), idx);
+    if (it != availableList.end()) {
+        availableList.erase(it);
+        return idx;
+    }
+
+    spdlog::error("Renderer: Requested index {} not available!", idx);
+    return 0;
+}
+
+void IndexAllocator::free(uint32_t idx) {
+    freeList.push_back(idx);
+}
+
+void IndexAllocator::init(uint32_t max) {
+    availableList.resize(max);
+    for (uint32_t i = 0; i < max; i++) {
+        availableList[i] = max - 1 - i;
+    }
+}
+
+void IndexAllocator::flush() {
+    availableList.insert(availableList.end(), freeList.begin(), freeList.end());
+    freeList.clear();
+}
+
+VKResources::VKResources() {
+}
+
+void VKResources::init(VKContext *stateCtx, RenderContext *renderCtx) {
+    m_StateCtx = stateCtx;
+    m_RenderCtx = renderCtx;
+
+    initDescriptors();
+    initMainSamplers();
+    initPipelines();
+    initErrorTexture();
+}
+
+void VKResources::initDescriptors() {
+    VkPhysicalDeviceProperties props;
+    vkGetPhysicalDeviceProperties(m_StateCtx->m_PhysicalDevice, &props);
+    VkPhysicalDeviceDescriptorIndexingPropertiesEXT indexingProps{};
+    indexingProps.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_PROPERTIES_EXT;
+
+    VkPhysicalDeviceProperties2 props2{};
+    props2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+    props2.pNext = &indexingProps;
+    vkGetPhysicalDeviceProperties2(m_StateCtx->m_PhysicalDevice, &props2);
+    std::vector<DescriptorAllocator::PoolSizeRatio> sizes {
+        {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, (float)props.limits.maxDescriptorSetStorageImages},
+        {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 },
+        {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1},
+        {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, (float)props.limits.maxDescriptorSetSampledImages},
+        {VK_DESCRIPTOR_TYPE_SAMPLER, (float)indexingProps.maxPerStageDescriptorUpdateAfterBindSamplers},
+    };
+    m_GlobalDescriptorAllocator.initPool(m_StateCtx->m_Device, 10, sizes);
+    {
+        DescriptorLayoutBuilder builder;
+        builder.addBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+        m_DrawImageDescriptorLayout = builder.build(m_StateCtx->m_Device, VK_SHADER_STAGE_COMPUTE_BIT);
+    }
+    {
+        DescriptorLayoutBuilder builder;
+        builder.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+        builder.addBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+        m_FrameDescriptorLayout = builder.build(m_StateCtx->m_Device, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+            nullptr, VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT);
+
+        m_DeletionQueue.pushFunction([=]() {
+            vkDestroyDescriptorSetLayout(m_StateCtx->m_Device, m_FrameDescriptorLayout, nullptr);
+        });
+    }
+    {
+        DescriptorLayoutBuilder builder;
+        m_TextureAllocator.init(props.limits.maxDescriptorSetSampledImages);
+        m_StorageImageAllocator.init(props.limits.maxDescriptorSetStorageImages);
+        m_SamplerAllocator.init(indexingProps.maxPerStageDescriptorUpdateAfterBindSamplers);
+
+        builder.addBinding(0, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, props.limits.maxDescriptorSetSampledImages,
+            VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT |
+                VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT);
+        builder.addBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, props.limits.maxDescriptorSetStorageImages,
+            VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT |
+                VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT);
+        builder.addBinding(2, VK_DESCRIPTOR_TYPE_SAMPLER, indexingProps.maxPerStageDescriptorUpdateAfterBindSamplers,
+            VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT |
+                VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT);
+        m_TextureDescriptorSetLayout = builder.build(m_StateCtx->m_Device, VK_SHADER_STAGE_VERTEX_BIT |
+            VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT,
+            nullptr, VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT);
+
+        m_DeletionQueue.pushFunction([=]() {
+            vkDestroyDescriptorSetLayout(m_StateCtx->m_Device, m_TextureDescriptorSetLayout, nullptr);
+        });
+    }
+    {
+        DescriptorLayoutBuilder builder;
+        VkPhysicalDeviceProperties props;
+        vkGetPhysicalDeviceProperties(m_StateCtx->m_PhysicalDevice, &props);
+
+        m_MaterialAllocator.init(1000);
+
+        builder.addBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+        m_MaterialDescriptorSetLayout = builder.build(m_StateCtx->m_Device, VK_SHADER_STAGE_FRAGMENT_BIT);
+        m_DeletionQueue.pushFunction([=]() {
+            vkDestroyDescriptorSetLayout(m_StateCtx->m_Device, m_MaterialDescriptorSetLayout, nullptr);
+        });
+    }
+    m_DrawImageDescriptors = m_GlobalDescriptorAllocator.allocate(m_StateCtx->m_Device, m_DrawImageDescriptorLayout);
+    m_MaterialDescriptorSet = m_GlobalDescriptorAllocator.allocate(m_StateCtx->m_Device, m_MaterialDescriptorSetLayout);
+    m_TextureDescriptorSet = m_GlobalDescriptorAllocator.allocate(m_StateCtx->m_Device, m_TextureDescriptorSetLayout);
+    {
+        DescriptorWriter writer;
+        writer.writeImage(0, m_RenderCtx->m_DrawImage.imageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+        writer.updateSet(m_StateCtx->m_Device, m_DrawImageDescriptors);
+    }
+    {
+        DescriptorWriter writer;
+
+        m_MaterialBuffer = createBuffer(sizeof(GPUMaterial) * 1000, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+            VMA_MEMORY_USAGE_CPU_TO_GPU);
+
+        writer.writeBuffer(0, m_MaterialBuffer.buffer, sizeof(GPUMaterial) * 1000, 0,
+            VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+
+        writer.updateSet(m_StateCtx->m_Device, m_MaterialDescriptorSet);
+
+        m_DeletionQueue.pushFunction([=]() {
+            destroyBuffer(m_MaterialBuffer);
+        });
+    }
+
+    m_DeletionQueue.pushFunction([=]() {
+        m_TextureDescriptorAllocator.destroyPool(m_StateCtx->m_Device);
+        m_GlobalDescriptorAllocator.destroyPool(m_StateCtx->m_Device);
+        vkDestroyDescriptorSetLayout(m_StateCtx->m_Device, m_DrawImageDescriptorLayout, nullptr);
+    });
+
+    for (int i{}; i < FRAME_OVERLAP; ++i) {
+        std::vector<DescriptorAllocatorGrowable::PoolSizeRatio> frameSizes {
+                { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 3 },
+                { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 3 },
+                { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 3 },
+                { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 4 },
+        };
+        m_RenderCtx->m_Frames[i].m_FrameDescriptors = DescriptorAllocatorGrowable{};
+        m_RenderCtx->m_Frames[i].m_FrameDescriptors.init(m_StateCtx->m_Device, 1000, frameSizes);
+        m_RenderCtx->m_Frames[i].m_SceneBuffer = createBuffer(sizeof(GPUSceneData),
+        VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
+        m_RenderCtx->m_Frames[i].m_ObjectBuffer = createBuffer(sizeof(GPUObjectData) * 10000,
+        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
+        m_RenderCtx->m_Frames[i].m_IndirectBuffer = createBuffer(
+        sizeof(VkDrawIndexedIndirectCommand) * 10000,
+        VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT,
+        VMA_MEMORY_USAGE_CPU_TO_GPU
+        );
+        m_DeletionQueue.pushFunction([=]() {
+            destroyBuffer(m_RenderCtx->m_Frames[i].m_IndirectBuffer);
+            destroyBuffer(m_RenderCtx->m_Frames[i].m_ObjectBuffer);
+            destroyBuffer(m_RenderCtx->m_Frames[i].m_SceneBuffer);
+            m_RenderCtx->m_Frames[i].m_FrameDescriptors.destroyPools(m_StateCtx->m_Device);
+        });
+    }
+    spdlog::debug("Renderer: Initialized Descriptors");
+}
+
+void VKResources::prepareDescriptors(VkCommandBuffer cmd) {
+    //write to scene data buffer
+    Scene* scene = Application::get().getCtx()->scene;
+    CameraSystem* cameraSystem = Application::get().getCtx()->cameraSystem;
+    auto lightDir = scene->getLightDir();
+    glm::vec4 light = glm::vec4(lightDir.x, lightDir.y, lightDir.z, 1);
+    auto cameraPos = scene->getCamera().getComponent<TransformComp>().getWorldPosition();
+
+    auto* sceneUniformData = (GPUSceneData*)m_RenderCtx->getCurrentFrame().m_SceneBuffer.allocationInfo.pMappedData;
+    m_SceneData = {};
+    m_SceneData.view = cameraSystem->getView();
+    m_SceneData.proj = cameraSystem->getProjection();
+    m_SceneData.ambientColor = {0.5f, 0.5f, 0.5f, 1.0f};
+    m_SceneData.sunlightColor = {1.0f, 1.0f, 1.0f, 1.0f};
+    m_SceneData.sunlightDirection = light;
+    m_SceneData.cameraPosition = glm::vec4(cameraPos.x, cameraPos.y, cameraPos.z, 1);
+
+    *sceneUniformData = m_SceneData;
+
+    VkDescriptorSet globalDescriptor = m_RenderCtx->getCurrentFrame().m_FrameDescriptors.
+    allocate(m_StateCtx->m_Device, m_FrameDescriptorLayout);
+
+    DescriptorWriter writer;
+    writer.writeBuffer(0, m_RenderCtx->getCurrentFrame().m_SceneBuffer.buffer,
+        sizeof(GPUSceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+
+    writer.writeBuffer(1, m_RenderCtx->getCurrentFrame().m_ObjectBuffer.buffer,
+        sizeof(GPUObjectData) * 10000, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    writer.updateSet(m_StateCtx->m_Device, globalDescriptor);
+
+    vkCmdBindDescriptorSets(cmd,VK_PIPELINE_BIND_POINT_GRAPHICS,
+    m_MainPipelineLayout,0, 1, &globalDescriptor,0,nullptr);
+    vkCmdBindDescriptorSets(cmd,VK_PIPELINE_BIND_POINT_GRAPHICS,
+        m_MainPipelineLayout,1, 1, &m_TextureDescriptorSet,0,nullptr);
+    vkCmdBindDescriptorSets(cmd,VK_PIPELINE_BIND_POINT_GRAPHICS,
+        m_MainPipelineLayout,2, 1, &m_MaterialDescriptorSet,0,nullptr);
+
+    GPUMainPushConstants pc {
+        .skyboxIdx = m_RenderCtx->m_SkyboxRenderer->getSkyboxReadIdx(),
+        .irradianceIdx = m_RenderCtx->m_SkyboxRenderer->getIrradianceReadIdx(),
+        .prefilterMapIdx = m_RenderCtx->m_SkyboxRenderer->getPrefilterReadIdx(),
+        .brdfTexIdx = m_RenderCtx->m_SkyboxRenderer->getBRDFReadIdx(),
+    };
+    vkCmdPushConstants(cmd, m_MainPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(GPUMainPushConstants), &pc);
+
+}
+void VKResources::initPipelines() {
+    initMainPipeLayout();
+    initMainComputeLayout();
+}
+
+void VKResources::initErrorTexture() {
+    //checkerboard image
+    uint32_t black = glm::packUnorm4x8(glm::vec4(0, 0, 0, 0));
+    uint32_t magenta = glm::packUnorm4x8(glm::vec4(1, 0, 1, 1));
+    std::array<uint32_t, 16 *16 > pixels; //for 16x16 checkerboard texture
+    for (int x = 0; x < 16; x++) {
+        for (int y = 0; y < 16; y++) {
+            pixels[y*16 + x] = ((x % 2) ^ (y % 2)) ? magenta : black;
+        }
+    }
+
+    m_ErrorTexture = GPUTexture {
+        .image = createImage(pixels.data(), VkExtent3D{16, 16, 1}, VK_FORMAT_R8G8B8A8_UNORM,
+        VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT),
+        .samplerIdx = getSampler(VKHelpers::getDefaultSamplerInfo()).idx,
+    };
+    DescriptorWriter writer;
+    writer.updateSet(m_StateCtx->m_Device, m_TextureDescriptorSet);
+
+    m_DeletionQueue.pushFunction([=](){
+        destroyImage(m_ErrorTexture.image);
+    });
+}
+
+void VKResources::initMainSamplers() {
+    std::array<VkSamplerCreateInfo, 4> samplerInfos{
+        VKHelpers::linearClampedSampler(),
+        VKHelpers::nearestClampedSampler(),
+        VKHelpers::linearRepeatSampler(),
+        VKHelpers::nearestRepeatSampler(),
+    };
+    for (uint32_t i{}; i < samplerInfos.size(); ++i) {
+        VkSampler sampler{};
+        vkCreateSampler(m_StateCtx->m_Device, &samplerInfos[i], nullptr, &sampler);
+        m_SamplerAllocator.allocate(i);
+        DescriptorWriter writer;
+        writer.writeSampler(2, m_ErrorTexture.image.imageView, sampler, i); //dummy image view
+        writer.updateSet(m_StateCtx->m_Device, m_TextureDescriptorSet);
+        m_SamplerMap[samplerInfos[i]] = {sampler, i};
+        m_DeletionQueue.pushFunction([=]() {
+            vkDestroySampler(m_StateCtx->m_Device, sampler, nullptr);
+        });
+    }
+}
+
+void VKResources::initMainPipeLayout() {
+    VkPushConstantRange bufferRange{};
+    bufferRange.offset = 0;
+    bufferRange.size = sizeof(GPUMainPushConstants);
+    bufferRange.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+    VkPipelineLayoutCreateInfo layoutInfo = VKInit::pipelineLayoutCreateInfo();
+    layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    layoutInfo.pNext = nullptr;
+    layoutInfo.flags = 0;
+
+    //todo maybe in the future make this more flexible
+    std::array<VkDescriptorSetLayout, 3> setLayouts = {
+        m_FrameDescriptorLayout,
+        m_TextureDescriptorSetLayout,
+        m_MaterialDescriptorSetLayout
+    };
+
+    layoutInfo.pSetLayouts = setLayouts.data();
+    layoutInfo.setLayoutCount = static_cast<uint32_t>(setLayouts.size());
+
+    layoutInfo.pushConstantRangeCount = 1;
+    layoutInfo.pPushConstantRanges = &bufferRange;
+
+    VK_CHECK(vkCreatePipelineLayout(m_StateCtx->m_Device, &layoutInfo, nullptr, &m_MainPipelineLayout));
+
+    m_DeletionQueue.pushFunction([=]() {
+        vkDestroyPipelineLayout(m_StateCtx->m_Device, m_MainPipelineLayout, nullptr);
+    });
+}
+
+void VKResources::initMainComputeLayout() {
+    VkPushConstantRange bufferRange{};
+    bufferRange.offset = 0;
+    bufferRange.size = sizeof(GPUComputePushConstants);
+    bufferRange.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+    VkPipelineLayoutCreateInfo layoutInfo = VKInit::pipelineLayoutCreateInfo();
+    layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    layoutInfo.pNext = nullptr;
+    layoutInfo.flags = 0;
+
+    //todo maybe in the future make this more flexible
+    //frame descriptor unused
+    std::array<VkDescriptorSetLayout, 2> setLayouts = {
+        m_FrameDescriptorLayout,
+        m_TextureDescriptorSetLayout,
+    };
+
+    layoutInfo.pSetLayouts = setLayouts.data();
+    layoutInfo.setLayoutCount = static_cast<uint32_t>(setLayouts.size());
+
+    layoutInfo.pushConstantRangeCount = 1;
+    layoutInfo.pPushConstantRanges = &bufferRange;
+
+    VK_CHECK(vkCreatePipelineLayout(m_StateCtx->m_Device, &layoutInfo, nullptr, &m_ComputePipelineLayout));
+
+    m_DeletionQueue.pushFunction([=]() {
+        vkDestroyPipelineLayout(m_StateCtx->m_Device, m_ComputePipelineLayout, nullptr);
+    });
+}
+
+void VKResources::cleanup() {
+    for (auto &buf: m_MeshMap | std::views::values) {
+        destroyBuffer(buf.indexBuffer);
+        destroyBuffer(buf.vertexBuffer);
+    }
+    for (auto &tex : m_TextureMap | std::views::values) {
+        destroyImage(tex.texture.image);
+    }
+    m_DeletionQueue.flush();
+}
+
+VkPipeline VKResources::createMainPipeline(const PipelineInfo& pipelineInfo) {
+    //todo check pipeline type, compute vs graphics, call this create in a getfunction
+    //do lazy load
+    VkShaderModule triangleFragShader;
+    if (!VKPipelines::loadShaderModule(Application::get().getResourceRoot() +
+        pipelineInfo.fragmentShader, m_StateCtx->m_Device, &triangleFragShader)) {
+        std::cout << "Failed to load triangle frag shader" << std::endl;
+        }
+    VkShaderModule triangleVertShader;
+    if (!VKPipelines::loadShaderModule(Application::get().getResourceRoot() +
+        pipelineInfo.vertexShader, m_StateCtx->m_Device, &triangleVertShader)) {
+        std::cout << "Failed to load triangle vert shader" << std::endl;
+        }
+
+    VKPipelineBuilder builder;
+    builder.pipelineLayout = m_MainPipelineLayout;
+    builder.setShaders(triangleVertShader, triangleFragShader);
+    builder.setInputTopology(pipelineInfo.topology);
+    builder.setPolygonMode(pipelineInfo.polygonMode);
+    builder.setCullMode(pipelineInfo.cullMode, pipelineInfo.frontFace);
+    if (!pipelineInfo.multisamplingEnabled)
+        builder.setMultiSamplingNone();
+
+    if (!pipelineInfo.depthTestEnabled) {
+        builder.disableDepthTest();
+    } else {
+        builder.enableDepthTest(true, pipelineInfo.depthCompareOp);
+        //todo allow different formats
+        builder.setDepthFormat(m_RenderCtx->m_DepthImage.imageFormat);
+    }
+
+    if (pipelineInfo.blendingEnabled)
+        builder.enableBlendingAdditive();
+    else
+        builder.disableBlending();
+
+    builder.setColorAttachmentFormat(m_RenderCtx->m_DrawImage.imageFormat);
+
+
+    VkPipeline pipeline = builder.buildPipeline(m_StateCtx->m_Device);
+
+    vkDestroyShaderModule(m_StateCtx->m_Device, triangleFragShader, nullptr);
+    vkDestroyShaderModule(m_StateCtx->m_Device, triangleVertShader, nullptr);
+
+    m_DeletionQueue.pushFunction([=]() {
+        vkDestroyPipeline(m_StateCtx->m_Device, pipeline, nullptr);
+    });
+    spdlog::debug("Renderer: Initialized new main pipeline");
+
+    m_PipelineMap[pipelineInfo] = pipeline;
+
+    return pipeline;
+}
+GPUMeshBuffers VKResources::uploadMesh(AssetID id, const MeshData &mesh) {
+    if (m_MeshMap.contains(id)) {
         spdlog::warn("AssetID already exists in GPU, overwriting..");
         deleteMesh(id);
     }
@@ -31,7 +439,7 @@ GPUMeshBuffers VKRenderer::uploadMesh(AssetID id, const MeshData &mesh) {
         .sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,
         .buffer = newSurface.vertexBuffer.buffer,
     };
-    newSurface.vertexBufferAddress = vkGetBufferDeviceAddress(m_StateCtx.m_Device, &deviceAddressInfo);
+    newSurface.vertexBufferAddress = vkGetBufferDeviceAddress(m_StateCtx->m_Device, &deviceAddressInfo);
 
     newSurface.indexBuffer = createBuffer(indexBufferSize,
                                           VK_BUFFER_USAGE_INDEX_BUFFER_BIT
@@ -46,7 +454,7 @@ GPUMeshBuffers VKRenderer::uploadMesh(AssetID id, const MeshData &mesh) {
     memcpy(data, mesh.vertices.data(), vertexBufferSize);
     memcpy((char *) data + vertexBufferSize, mesh.indices.data(), indexBufferSize);
 
-    immediateSubmit([&](VkCommandBuffer cmd) {
+    m_RenderCtx->immediateSubmit([&](VkCommandBuffer cmd) {
         VkBufferCopy vertCopy{0};
         vertCopy.dstOffset = 0;
         vertCopy.srcOffset = 0;
@@ -66,7 +474,7 @@ GPUMeshBuffers VKRenderer::uploadMesh(AssetID id, const MeshData &mesh) {
     newSurface.indexCount = mesh.indices.size();
 
     destroyBuffer(staging);
-    m_ResourceCtx.m_MeshMap[id] = newSurface;
+    m_MeshMap[id] = newSurface;
 
     spdlog::debug("Renderer: Created GPU Mesh ID: {} of index count: {}", (uint64_t) id, newSurface.indexCount);
     return newSurface;
@@ -241,7 +649,7 @@ static LoadedTexture loadPixelData(const TextureData &texture) {
     }
 }
 
-GPUTexture VKRenderer::uploadTexture(AssetID id, const TextureData &texture) {
+GPUTexture VKResources::uploadTexture(AssetID id, const TextureData &texture) {
     LoadedTexture texturePixels = loadPixelData(texture);
     AllocatedImage newTexture = createImage((void *) texturePixels.pixels.data(),
                                             VkExtent3D{
@@ -252,9 +660,9 @@ GPUTexture VKRenderer::uploadTexture(AssetID id, const TextureData &texture) {
 
     StoredSampler sampler = getSampler(VKHelpers::toVkSamplerCreateInfo(texture.samplerInfo));
     //--------------------------------------------------------
-    if (m_ResourceCtx.m_TextureMap.contains(id)) {
-        destroyImage(m_ResourceCtx.m_TextureMap[id].texture.image);
-        m_ResourceCtx.m_TextureAllocator.free(m_ResourceCtx.m_TextureMap[id].idx);
+    if (m_TextureMap.contains(id)) {
+        destroyImage(m_TextureMap[id].texture.image);
+        m_TextureAllocator.free(m_TextureMap[id].idx);
     }
 
     GPUTexture gpuTex = {
@@ -262,35 +670,35 @@ GPUTexture VKRenderer::uploadTexture(AssetID id, const TextureData &texture) {
         .samplerIdx = sampler.idx,
     };
 
-    m_ResourceCtx.m_TextureMap[id] = {gpuTex, newTexture.readIdx, texture.type};
+    m_TextureMap[id] = {gpuTex, newTexture.readIdx, texture.type};
     spdlog::debug("Renderer: Created Texture ID: {}", (uint64_t) id);
     return gpuTex;
 }
 
-GPUMaterial VKRenderer::uploadMaterial(const AssetID id, const Material &material) {
+GPUMaterial VKResources::uploadMaterial(const AssetID id, const Material &material) {
     GPUMaterial gpuMat = {
         .u_Albedo = glm::vec4(material.albedo.x, material.albedo.y, material.albedo.z, 1.0f),
         .u_Params = glm::vec4(material.metallic, material.roughness, material.ao, 1.0),
     };
 
-    if (m_ResourceCtx.m_TextureMap.contains(material.texture)) {
-        gpuMat.albedoIndex = m_ResourceCtx.m_TextureMap[material.texture].idx;
+    if (m_TextureMap.contains(material.texture)) {
+        gpuMat.albedoIndex = m_TextureMap[material.texture].idx;
     }
-    if (m_ResourceCtx.m_TextureMap.contains(material.metallicTex)) {
-        gpuMat.metallicIndex = m_ResourceCtx.m_TextureMap[material.metallicTex].idx;
+    if (m_TextureMap.contains(material.metallicTex)) {
+        gpuMat.metallicIndex = m_TextureMap[material.metallicTex].idx;
     }
-    if (m_ResourceCtx.m_TextureMap.contains(material.roughnessTex)) {
-        gpuMat.roughnessIndex = m_ResourceCtx.m_TextureMap[material.roughnessTex].idx;
+    if (m_TextureMap.contains(material.roughnessTex)) {
+        gpuMat.roughnessIndex = m_TextureMap[material.roughnessTex].idx;
     }
-    if (m_ResourceCtx.m_TextureMap.contains(material.normalTex)) {
-        gpuMat.normalIndex = m_ResourceCtx.m_TextureMap[material.normalTex].idx;
+    if (m_TextureMap.contains(material.normalTex)) {
+        gpuMat.normalIndex = m_TextureMap[material.normalTex].idx;
     }
-    if (m_ResourceCtx.m_TextureMap.contains(material.aoTex)) {
-        gpuMat.aoIndex = m_ResourceCtx.m_TextureMap[material.aoTex].idx;
+    if (m_TextureMap.contains(material.aoTex)) {
+        gpuMat.aoIndex = m_TextureMap[material.aoTex].idx;
     }
 
     //todo do this appropriately
-    gpuMat.samplerIndex = m_ResourceCtx.m_TextureMap[material.texture].texture.samplerIdx;
+    gpuMat.samplerIndex = m_TextureMap[material.texture].texture.samplerIdx;
 
     uint32_t flags{};
     if (material.useAlbedo) {
@@ -312,8 +720,8 @@ GPUMaterial VKRenderer::uploadMaterial(const AssetID id, const Material &materia
     gpuMat.flags = flags;
 
     VkPipeline pipeline;
-    if (m_ResourceCtx.m_PipelineMap.contains(material.pipelineInfo)) {
-        pipeline = m_ResourceCtx.m_PipelineMap[material.pipelineInfo];
+    if (m_PipelineMap.contains(material.pipelineInfo)) {
+        pipeline = m_PipelineMap[material.pipelineInfo];
     } else {
         pipeline = createMainPipeline(material.pipelineInfo);
     }
@@ -324,28 +732,28 @@ GPUMaterial VKRenderer::uploadMaterial(const AssetID id, const Material &materia
     uint32_t idx{};
 
     //create new, otherwise replace
-    if (!m_ResourceCtx.m_MaterialMap.contains(id)) {
-        idx = m_ResourceCtx.m_MaterialAllocator.allocate();
+    if (!m_MaterialMap.contains(id)) {
+        idx = m_MaterialAllocator.allocate();
     } else {
-        idx = m_ResourceCtx.m_MaterialMap[id].idx;
+        idx = m_MaterialMap[id].idx;
     }
 
-    m_ResourceCtx.m_MaterialMap[id] = {gpuMat, pipeline, useDepth, idx};
+    m_MaterialMap[id] = {gpuMat, pipeline, useDepth, idx};
 
-    auto *mapped = (GPUMaterial *) m_ResourceCtx.m_MaterialBuffer.allocationInfo.pMappedData;
+    auto *mapped = (GPUMaterial *) m_MaterialBuffer.allocationInfo.pMappedData;
     mapped[idx] = gpuMat;
     spdlog::debug("Renderer: Created Material ID: {}", (uint64_t) id);
     return gpuMat;
 }
 
-void VKRenderer::deleteMaterial(AssetID id) {
-    if (m_ResourceCtx.m_MaterialMap.contains(id)) {
-        auto material = m_ResourceCtx.m_MaterialMap[id];
-        uint32_t frameIndex = (m_RenderCtx.m_FrameNumber + FRAME_OVERLAP) % FRAME_OVERLAP;
-        m_RenderCtx.m_Frames[frameIndex].m_DeletionQueue.pushFunction([=]() {
-            m_ResourceCtx.m_MaterialAllocator.free(material.idx);
+void VKResources::deleteMaterial(AssetID id) {
+    if (m_MaterialMap.contains(id)) {
+        auto material = m_MaterialMap[id];
+        uint32_t frameIndex = (m_RenderCtx->m_FrameNumber + FRAME_OVERLAP) % FRAME_OVERLAP;
+        m_RenderCtx->m_Frames[frameIndex].m_DeletionQueue.pushFunction([=]() {
+            m_MaterialAllocator.free(material.idx);
         });
-        m_ResourceCtx.m_MaterialMap.erase(id);
+        m_MaterialMap.erase(id);
 
         spdlog::debug("Renderer: Deleted Material ID: {}", (uint64_t) id);
         return;
@@ -353,34 +761,34 @@ void VKRenderer::deleteMaterial(AssetID id) {
     spdlog::error("Renderer: Attempt to delete non-existing Material! ID: {}", (uint64_t) id);
 }
 
-void VKRenderer::deleteMesh(AssetID id) {
-    if (m_ResourceCtx.m_MeshMap.contains(id)) {
-        auto &meshBuf = m_ResourceCtx.m_MeshMap[id];
-        uint32_t frameIndex = (m_RenderCtx.m_FrameNumber + FRAME_OVERLAP) % FRAME_OVERLAP;
-        m_RenderCtx.m_Frames[frameIndex].m_DeletionQueue.pushFunction([=]() {
+void VKResources::deleteMesh(AssetID id) {
+    if (m_MeshMap.contains(id)) {
+        auto &meshBuf = m_MeshMap[id];
+        uint32_t frameIndex = (m_RenderCtx->m_FrameNumber + FRAME_OVERLAP) % FRAME_OVERLAP;
+        m_RenderCtx->m_Frames[frameIndex].m_DeletionQueue.pushFunction([=]() {
             destroyBuffer(meshBuf.indexBuffer);
             destroyBuffer(meshBuf.vertexBuffer);
         });
-        m_ResourceCtx.m_MeshMap.erase(id);
+        m_MeshMap.erase(id);
         spdlog::debug("Deleted GPU Mesh ID: {}", (uint64_t) id);
         return;
     }
     spdlog::error("Attempt to delete non-existing GPU Mesh! ID: {}", (uint64_t) id);
 }
 
-void VKRenderer::deleteTexture(AssetID id) {
-    if (m_ResourceCtx.m_TextureMap.contains(id)) {
-        auto tex = m_ResourceCtx.m_TextureMap[id];
-        uint32_t frameIndex = (m_RenderCtx.m_FrameNumber + FRAME_OVERLAP) % FRAME_OVERLAP;
-        m_RenderCtx.m_Frames[frameIndex].m_DeletionQueue.pushFunction([=]() {
-            if (m_ResourceCtx.m_ImGUIDescSetMap.contains(id)) {
-                ImGui_ImplVulkan_RemoveTexture(m_ResourceCtx.m_ImGUIDescSetMap[id]);
-                m_ResourceCtx.m_ImGUIDescSetMap.erase(id);
+void VKResources::deleteTexture(AssetID id) {
+    if (m_TextureMap.contains(id)) {
+        auto tex = m_TextureMap[id];
+        uint32_t frameIndex = (m_RenderCtx->m_FrameNumber + FRAME_OVERLAP) % FRAME_OVERLAP;
+        m_RenderCtx->m_Frames[frameIndex].m_DeletionQueue.pushFunction([=]() {
+            if (m_ImGUIDescSetMap.contains(id)) {
+                ImGui_ImplVulkan_RemoveTexture(m_ImGUIDescSetMap[id]);
+                m_ImGUIDescSetMap.erase(id);
             }
-            m_ResourceCtx.m_TextureAllocator.free(tex.idx);
+            m_TextureAllocator.free(tex.idx);
             destroyImage(tex.texture.image);
         });
-        m_ResourceCtx.m_TextureMap.erase(id);
+        m_TextureMap.erase(id);
         spdlog::debug("Deleted Texture ID: {}", (uint64_t) id);
         return;
     }
@@ -404,7 +812,7 @@ static size_t formatSize(VkFormat format) {
     }
 }
 
-AllocatedImage VKRenderer::createImage(VkExtent3D size, VkFormat format,
+AllocatedImage VKResources::createImage(VkExtent3D size, VkFormat format,
                                        VkImageUsageFlags usage,
                                        bool mipmapped,
                                        int layers) {
@@ -431,7 +839,7 @@ AllocatedImage VKRenderer::createImage(VkExtent3D size, VkFormat format,
     allocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
     allocInfo.requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
-    VK_CHECK(vmaCreateImage(m_ResourceCtx.m_Allocator, &imgInfo, &allocInfo, &img.image, &img.allocation, nullptr));
+    VK_CHECK(vmaCreateImage(m_Allocator, &imgInfo, &allocInfo, &img.image, &img.allocation, nullptr));
 
     VkImageAspectFlags aspect = VK_IMAGE_ASPECT_COLOR_BIT;
     if (format == VK_FORMAT_D32_SFLOAT)
@@ -448,7 +856,7 @@ AllocatedImage VKRenderer::createImage(VkExtent3D size, VkFormat format,
     if (isCubeMap)
         fullView.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
 
-    VK_CHECK(vkCreateImageView(m_StateCtx.m_Device, &fullView, nullptr, &img.imageView));
+    VK_CHECK(vkCreateImageView(m_StateCtx->m_Device, &fullView, nullptr, &img.imageView));
 
     if (usage & VK_IMAGE_USAGE_STORAGE_BIT) {
         img.mipViews.resize(img.mipLevels);
@@ -467,11 +875,11 @@ AllocatedImage VKRenderer::createImage(VkExtent3D size, VkFormat format,
             if (isCubeMap)
                 mipView.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
 
-            VK_CHECK(vkCreateImageView(m_StateCtx.m_Device, &mipView, nullptr, &img.mipViews[mip]));
+            VK_CHECK(vkCreateImageView(m_StateCtx->m_Device, &mipView, nullptr, &img.mipViews[mip]));
         }
     }
     if (usage & VK_IMAGE_USAGE_SAMPLED_BIT) {
-        img.readIdx = m_ResourceCtx.m_TextureAllocator.allocate();
+        img.readIdx = m_TextureAllocator.allocate();
 
         //todo store samplers seperately
         DescriptorWriter writer;
@@ -494,18 +902,18 @@ AllocatedImage VKRenderer::createImage(VkExtent3D size, VkFormat format,
         }
 
 
-        writer.updateSet(m_StateCtx.m_Device, m_ResourceCtx.m_TextureDescriptorSet);
+        writer.updateSet(m_StateCtx->m_Device, m_TextureDescriptorSet);
     }
     if (usage & VK_IMAGE_USAGE_STORAGE_BIT) {
         for (uint32_t mip = 0; mip < img.mipLevels; mip++) {
-            uint32_t index = m_ResourceCtx.m_StorageImageAllocator.allocate();
+            uint32_t index = m_StorageImageAllocator.allocate();
             img.writeIdx[mip] = index;
 
             DescriptorWriter writer;
             writer.writeImage(1, img.mipViews[mip], VK_NULL_HANDLE,
                               VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, index);
 
-            writer.updateSet(m_StateCtx.m_Device, m_ResourceCtx.m_TextureDescriptorSet);
+            writer.updateSet(m_StateCtx->m_Device, m_TextureDescriptorSet);
         }
     }
 
@@ -513,23 +921,23 @@ AllocatedImage VKRenderer::createImage(VkExtent3D size, VkFormat format,
 
     return img;
 }
-StoredSampler VKRenderer::getSampler(const VkSamplerCreateInfo& info) {
-    if (m_ResourceCtx.m_SamplerMap.contains(info)) {
-        return m_ResourceCtx.m_SamplerMap[info];
+StoredSampler VKResources::getSampler(const VkSamplerCreateInfo& info) {
+    if (m_SamplerMap.contains(info)) {
+        return m_SamplerMap[info];
     }
     VkSampler sampler{};
-    VK_CHECK(vkCreateSampler(m_StateCtx.m_Device, &info, nullptr, &sampler));
-    m_ResourceCtx.m_DeletionQueue.pushFunction([=]() {
-        vkDestroySampler(m_StateCtx.m_Device, sampler, nullptr);
+    VK_CHECK(vkCreateSampler(m_StateCtx->m_Device, &info, nullptr, &sampler));
+    m_DeletionQueue.pushFunction([=]() {
+        vkDestroySampler(m_StateCtx->m_Device, sampler, nullptr);
     });
-    uint32_t idx = m_ResourceCtx.m_SamplerAllocator.allocate();
-    m_ResourceCtx.m_SamplerMap[info] = {sampler, idx};
+    uint32_t idx = m_SamplerAllocator.allocate();
+    m_SamplerMap[info] = {sampler, idx};
     DescriptorWriter writer;
-    writer.writeSampler(2, m_ResourceCtx.m_ErrorTexture.image.imageView, sampler, idx); //dummy image view
-    writer.updateSet(m_StateCtx.m_Device, m_ResourceCtx.m_TextureDescriptorSet);
+    writer.writeSampler(2, m_ErrorTexture.image.imageView, sampler, idx); //dummy image view
+    writer.updateSet(m_StateCtx->m_Device, m_TextureDescriptorSet);
     return {sampler, idx};
 }
-void VKRenderer::generateMipmaps(VkCommandBuffer cmd, VkImage image, VkExtent3D size,
+void VKResources::generateMipmaps(VkCommandBuffer cmd, VkImage image, VkExtent3D size,
     uint32_t mipLevels, uint32_t layerCount) {
     if (mipLevels == 1) return;
 
@@ -629,7 +1037,7 @@ void VKRenderer::generateMipmaps(VkCommandBuffer cmd, VkImage image, VkExtent3D 
         1, &barrier);
 }
 
-AllocatedImage VKRenderer::createImage(void *data, VkExtent3D size, VkFormat format, VkImageUsageFlags usage,
+AllocatedImage VKResources::createImage(void *data, VkExtent3D size, VkFormat format, VkImageUsageFlags usage,
                                        bool mipmapped, int layers) {
     size_t pixelSize = formatSize(format);
     size_t dataSize = size.width * size.height * pixelSize;
@@ -642,7 +1050,7 @@ AllocatedImage VKRenderer::createImage(void *data, VkExtent3D size, VkFormat for
                                           usage | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
                                           mipmapped, layers);
 
-    immediateSubmit([&](VkCommandBuffer cmd) {
+    m_RenderCtx->immediateSubmit([&](VkCommandBuffer cmd) {
         VKImages::transitionImage(cmd, newImage.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
         std::vector<VkBufferImageCopy> copyRegions(layers);
@@ -675,16 +1083,16 @@ AllocatedImage VKRenderer::createImage(void *data, VkExtent3D size, VkFormat for
     return newImage;
 }
 
-void VKRenderer::destroyImage(const AllocatedImage &img) {
-    vkDestroyImageView(m_StateCtx.m_Device, img.imageView, nullptr);
+void VKResources::destroyImage(const AllocatedImage &img) {
+    vkDestroyImageView(m_StateCtx->m_Device, img.imageView, nullptr);
     for (auto &imgView : img.mipViews) {
-        vkDestroyImageView(m_StateCtx.m_Device, imgView, nullptr);
+        vkDestroyImageView(m_StateCtx->m_Device, imgView, nullptr);
     }
-    vmaDestroyImage(m_ResourceCtx.m_Allocator, img.image, img.allocation);
+    vmaDestroyImage(m_Allocator, img.image, img.allocation);
     spdlog::debug("Renderer: Deleted Image");
 }
 
-AllocatedBuffer VKRenderer::createBuffer(size_t allocSize, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage) {
+AllocatedBuffer VKResources::createBuffer(size_t allocSize, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage) {
     VkBufferCreateInfo bufferInfo{.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
     bufferInfo.size = allocSize;
     bufferInfo.usage = usage;
@@ -696,7 +1104,7 @@ AllocatedBuffer VKRenderer::createBuffer(size_t allocSize, VkBufferUsageFlags us
 
     AllocatedBuffer buffer;
 
-    VK_CHECK(vmaCreateBuffer(m_ResourceCtx.m_Allocator, &bufferInfo, &allocInfo, &buffer.buffer,
+    VK_CHECK(vmaCreateBuffer(m_Allocator, &bufferInfo, &allocInfo, &buffer.buffer,
         &buffer.allocation, &buffer.allocationInfo));
 
     //spdlog::debug("Renderer: Buffer Created");
@@ -704,7 +1112,103 @@ AllocatedBuffer VKRenderer::createBuffer(size_t allocSize, VkBufferUsageFlags us
     return buffer;
 }
 
-void VKRenderer::destroyBuffer(const AllocatedBuffer &buffer) {
-    vmaDestroyBuffer(m_ResourceCtx.m_Allocator, buffer.buffer, buffer.allocation);
+void VKResources::destroyBuffer(const AllocatedBuffer &buffer) {
+    vmaDestroyBuffer(m_Allocator, buffer.buffer, buffer.allocation);
     //spdlog::debug("Renderer: Buffer Destroyed");
+}
+
+void VKResources::initAllocator(VKContext* stateCtx) {
+    VmaAllocatorCreateInfo allocatorCreateInfo {};
+    allocatorCreateInfo.device = stateCtx->m_Device;
+    allocatorCreateInfo.instance = stateCtx->m_Instance;
+    allocatorCreateInfo.physicalDevice = stateCtx->m_PhysicalDevice;
+    allocatorCreateInfo.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
+
+    vmaCreateAllocator(&allocatorCreateInfo, &m_Allocator);
+    m_DeletionQueue.pushFunction([=]() {
+        vmaDestroyAllocator(m_Allocator);
+    });
+}
+
+ImGui_ImplVulkan_InitInfo VKResources::initImgui() {
+    VkDescriptorPoolSize poolSizes[] = { { VK_DESCRIPTOR_TYPE_SAMPLER, 1000 },
+        { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000 },
+        { VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000 },
+        { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000 },
+        { VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1000 },
+        { VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1000 },
+        { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000 },
+        { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000 },
+        { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000 },
+        { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000 },
+        { VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000 } };
+
+    VkDescriptorPoolCreateInfo poolInfo{};
+    poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+    poolInfo.maxSets = 1000;
+    poolInfo.poolSizeCount = (uint32_t)std::size(poolSizes);
+    poolInfo.pPoolSizes = poolSizes;
+
+    VkDescriptorPool imguiPool;
+    VK_CHECK(vkCreateDescriptorPool(m_StateCtx->m_Device, &poolInfo, nullptr, &imguiPool));
+
+    ImGui_ImplVulkan_InitInfo initInfo{};
+    initInfo.Instance = m_StateCtx->m_Instance;
+    initInfo.PhysicalDevice = m_StateCtx->m_PhysicalDevice;
+    initInfo.Device = m_StateCtx->m_Device;
+    initInfo.Queue = m_StateCtx->m_GraphicsQueue;
+    initInfo.DescriptorPool = imguiPool;
+    initInfo.MinImageCount = 3;
+    initInfo.ImageCount = 3;
+    initInfo.UseDynamicRendering = true;
+
+    //dynamic rendering parameters stuff
+    initInfo.PipelineInfoMain.PipelineRenderingCreateInfo = {.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO};
+    initInfo.PipelineInfoMain.PipelineRenderingCreateInfo.colorAttachmentCount = 1;
+    initInfo.PipelineInfoMain.PipelineRenderingCreateInfo.pColorAttachmentFormats = &m_RenderCtx->m_SwapChainImageFormat;
+    initInfo.PipelineInfoMain.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+
+    ImGui_ImplVulkan_Init(&initInfo);
+    m_ImGuiDescriptorSet = ImGui_ImplVulkan_AddTexture(getSampler(VKHelpers::getDefaultSamplerInfo()).sampler, m_RenderCtx->m_DrawImage.imageView,
+        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+    );
+
+    m_ImGUIErrorSet = ImGui_ImplVulkan_AddTexture(getSampler(VKHelpers::getDefaultSamplerInfo()).sampler, m_ErrorTexture.image.imageView,
+        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+    );
+
+
+    m_DeletionQueue.pushFunction([=]() {
+        ImGui_ImplVulkan_Shutdown();
+        vkDestroyDescriptorPool(m_StateCtx->m_Device, imguiPool, nullptr);
+
+    });
+    spdlog::debug("Renderer: ImGUI Initialized");
+
+    return initInfo;
+}
+
+VkDescriptorSet VKResources::getImGUIDescSet(AssetID id) {
+    if (m_ImGUIDescSetMap.contains(id)) {
+        return m_ImGUIDescSetMap[id];
+    }
+    //if not found, add this id for cache
+    //todo check the sketchy NULL HANDLE
+    if (m_TextureMap.contains(id) && m_TextureMap[id].texture.image.imageView != VK_NULL_HANDLE) {
+        spdlog::debug("Renderer: Cached Thumbnail Tex: {}", (uint64_t)id);
+        auto& tex = m_TextureMap[id];
+        if (tex.type == TextureType::Texture2D || tex.type == Texture2DAssimp) {
+            m_ImGUIDescSetMap.insert({id, ImGui_ImplVulkan_AddTexture(getSampler(
+                VKHelpers::getDefaultSamplerInfo()).sampler, tex.texture.image.imageView,
+         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)});
+        } else {
+            m_ImGUIDescSetMap.insert({id, ImGui_ImplVulkan_AddTexture(getSampler(
+                VKHelpers::getDefaultSamplerInfo()).sampler, m_ErrorTexture.image.imageView,
+         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)});
+        }
+
+        return m_ImGUIDescSetMap[id];
+    }
+    return m_ImGUIErrorSet;
 }

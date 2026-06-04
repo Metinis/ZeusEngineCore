@@ -7,6 +7,7 @@
 #include "ZeusEngineCore/engine/Entity.h"
 
 namespace ZEN {
+	class CameraSystem;
 	class AssetLibrary;
 	class ModelImporter;
 	class ZEngine;

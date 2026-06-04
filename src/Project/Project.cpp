@@ -38,5 +38,5 @@ void Project::init(const std::string& projectRoot, VKRenderer* renderer) {
     std::filesystem::create_directories(assets / "scripts/components");
     m_ProjectRoot = projectRoot;
     m_AssetLibrary = std::make_shared<AssetLibrary>();
-    m_AssetLibrary->init(renderer);
+    m_AssetLibrary->init(renderer->getResources());
 }

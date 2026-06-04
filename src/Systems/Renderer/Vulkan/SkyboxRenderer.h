@@ -4,12 +4,12 @@
 #include "VKTypes.h"
 
 namespace ZEN {
-    struct ResourceContext;
+    struct VKResources;
     struct VKContext;
     class VKRenderer;
     class SkyboxRenderer {
     public:
-        SkyboxRenderer(VKContext* stateCtx, ResourceContext* resourceCtx, VKRenderer* renderer);
+        SkyboxRenderer(VKContext* stateCtx, VKResources* resourceCtx);
         void init(std::filesystem::path const &path);
         void render(VkCommandBuffer cmd);
         uint32_t getSkyboxReadIdx() const {return m_EqMap.readIdx;}
@@ -26,9 +26,7 @@ namespace ZEN {
         void initBRDFPipeline();
 
         VKContext* m_StateCtx{};
-        ResourceContext* m_ResourceCtx{};
-        //todo temp
-        VKRenderer* m_Renderer{};
+        VKResources* m_ResourceCtx{};
 
         //pipelines needed
         VkPipeline m_EqMapPipeline{};

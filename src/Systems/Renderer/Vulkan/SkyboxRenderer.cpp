@@ -2,13 +2,14 @@
 #include <vulkan/vk_enum_string_helper.h>
 #include "VKInit.h"
 #include "ZeusEngineCore/core/Application.h"
+#include "ZeusEngineCore/engine/rendering/VKContext.h"
 #include "ZeusEngineCore/engine/rendering/VKRenderer.h"
 #include "ZeusEngineCore/engine/rendering/VKUtils.h"
 
 using namespace ZEN;
 
-SkyboxRenderer::SkyboxRenderer(VKContext* stateCtx, ResourceContext* resourceCtx, VKRenderer* renderer) :
-m_StateCtx(stateCtx), m_ResourceCtx(resourceCtx), m_Renderer(renderer) {
+SkyboxRenderer::SkyboxRenderer(VKContext* stateCtx, VKResources* resourceCtx) :
+m_StateCtx(stateCtx), m_ResourceCtx(resourceCtx) {
 
 }
 
@@ -24,25 +25,25 @@ void SkyboxRenderer::init(std::filesystem::path const &path) {
         .format = VK_FORMAT_R32G32B32A32_SFLOAT,
         .dimensions = {512, 512},
     };
-    m_UploadedImage = m_Renderer->uploadTexture(AssetID(), data);
+    m_UploadedImage = m_ResourceCtx->uploadTexture(AssetID(), data);
 
-    m_EqMap = m_Renderer->createImage(VkExtent3D {512, 512, 1}, VK_FORMAT_R32G32B32A32_SFLOAT,
+    m_EqMap = m_ResourceCtx->createImage(VkExtent3D {512, 512, 1}, VK_FORMAT_R32G32B32A32_SFLOAT,
         VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT, false, 6);
 
-    m_IrradianceMap = m_Renderer->createImage(VkExtent3D {32, 32, 1}, VK_FORMAT_R32G32B32A32_SFLOAT,
+    m_IrradianceMap = m_ResourceCtx->createImage(VkExtent3D {32, 32, 1}, VK_FORMAT_R32G32B32A32_SFLOAT,
         VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT, false, 6);
 
-    m_PrefilterMap = m_Renderer->createImage(VkExtent3D {128, 128, 1}, VK_FORMAT_R32G32B32A32_SFLOAT,
+    m_PrefilterMap = m_ResourceCtx->createImage(VkExtent3D {128, 128, 1}, VK_FORMAT_R32G32B32A32_SFLOAT,
         VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT, true, 6);
 
-    m_BRDFTex = m_Renderer->createImage(VkExtent3D {512, 512, 1}, VK_FORMAT_R32G32B32A32_SFLOAT,
+    m_BRDFTex = m_ResourceCtx->createImage(VkExtent3D {512, 512, 1}, VK_FORMAT_R32G32B32A32_SFLOAT,
         VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT, false, 1);
 
     m_ResourceCtx->m_DeletionQueue.pushFunction([=] {
-        m_Renderer->destroyImage(m_EqMap);
-        m_Renderer->destroyImage(m_IrradianceMap);
-        m_Renderer->destroyImage(m_PrefilterMap);
-        m_Renderer->destroyImage(m_BRDFTex);
+        m_ResourceCtx->destroyImage(m_EqMap);
+        m_ResourceCtx->destroyImage(m_IrradianceMap);
+        m_ResourceCtx->destroyImage(m_PrefilterMap);
+        m_ResourceCtx->destroyImage(m_BRDFTex);
     });
 
     spdlog::debug("Skybox: Initialized Skybox Resources");

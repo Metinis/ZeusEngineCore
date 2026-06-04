@@ -31,7 +31,7 @@ namespace ZEN {
     class ZEN_API AssetLibrary {
     public:
         explicit AssetLibrary();
-        void init(VKRenderer* renderer);
+        void init(VKResources* renderRes);
         ~AssetLibrary();
 
         template<typename T>
@@ -42,13 +42,13 @@ namespace ZEN {
 
             //todo move to ref counting
             if constexpr (std::is_same_v<T, MeshData>) {
-                m_Renderer->uploadMesh(id, asset);
+                m_RenderRes->uploadMesh(id, asset);
             }
             if constexpr (std::is_same_v<T, TextureData>) {
-                m_Renderer->uploadTexture(id, asset);
+                m_RenderRes->uploadTexture(id, asset);
             }
             if constexpr (std::is_same_v<T, Material>) {
-                m_Renderer->uploadMaterial(id, asset);
+                m_RenderRes->uploadMaterial(id, asset);
             }
 
             m_AssetMap.emplace(id, std::forward<T>(asset));
@@ -60,13 +60,13 @@ namespace ZEN {
         void addAsset(AssetID id, T&& asset, const std::string& name = "") {
             spdlog::debug("Adding asset id: {}", (uint64_t)id);
             if constexpr (std::is_same_v<T, MeshData>) {
-                m_Renderer->uploadMesh(id, asset);
+                m_RenderRes->uploadMesh(id, asset);
             }
             if constexpr (std::is_same_v<T, TextureData>) {
-                m_Renderer->uploadTexture(id, asset);
+                m_RenderRes->uploadTexture(id, asset);
             }
             if constexpr (std::is_same_v<T, Material>) {
-                m_Renderer->uploadMaterial(id, asset);
+                m_RenderRes->uploadMaterial(id, asset);
             }
             m_AssetMap[id] = std::forward<T>(asset);
             m_NameMap.emplace(id, name);
@@ -108,13 +108,13 @@ namespace ZEN {
         void remove(AssetID id) {
             spdlog::debug("Removing asset {}", (uint64_t)id);
             if (std::holds_alternative<MeshData>(m_AssetMap[id])) {
-                m_Renderer->deleteMesh(id);
+                m_RenderRes->deleteMesh(id);
             }
             if (std::holds_alternative<TextureData>(m_AssetMap[id])) {
-                m_Renderer->deleteTexture(id);
+                m_RenderRes->deleteTexture(id);
             }
             if (std::holds_alternative<Material>(m_AssetMap[id])) {
-                m_Renderer->deleteMaterial(id);
+                m_RenderRes->deleteMaterial(id);
             }
             m_AssetMap.erase(id);
         }
@@ -132,7 +132,7 @@ namespace ZEN {
         AssetMap m_AssetMap{};
         NameMap m_NameMap{};
         //IResourceManager* m_ResourceManager{};
-        VKRenderer* m_Renderer{};
+        VKResources* m_RenderRes{};
 
         void clearNonDefaults();
 

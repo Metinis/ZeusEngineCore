@@ -8,9 +8,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/include/glfw glfw)
 
-add_library(ZeusEngineCore SHARED
-        src/Systems/Renderer/Vulkan/SkyboxRenderer.cpp
-        src/Systems/Renderer/Vulkan/SkyboxRenderer.h)
+add_library(ZeusEngineCore SHARED)
 
 target_compile_definitions(ZeusEngineCore
     PRIVATE ENGINE_EXPORTS
