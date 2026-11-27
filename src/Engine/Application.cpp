@@ -39,7 +39,7 @@ Application::~Application() {
     Project::shutdown();
 }
 
-void Application::init() {
+void Application::init() {;
     spdlog::set_level(spdlog::level::debug);
 
     const char* title = "Select a project";

@@ -13,3 +13,4 @@ CMakeUserPresets.json
 .idea
 cmake-build-*
 .DS_Store
+*.spv

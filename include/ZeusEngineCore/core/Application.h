@@ -53,7 +53,7 @@ namespace ZEN {
         Window* getWindow() {return m_Ctx.window.get();}
         EngineContext* getCtx() {return &m_Ctx; }
         static Application& get() { return *s_Instance; }
-        std::string getResourceRoot() { return m_ResourceRoot; }
+
         void close();
         void run();
     private:
@@ -64,7 +64,6 @@ namespace ZEN {
         std::unique_ptr<ImGUILayerVulkan> m_ImGUILayer{};
         EngineContext m_Ctx;
 
-        std::string m_ResourceRoot{};
         bool m_Running { false };
         bool m_IsPlaying { false };
     };
