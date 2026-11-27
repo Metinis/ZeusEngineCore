@@ -12,13 +12,51 @@ add_library(ZeusEngineCore SHARED
         src/Systems/Renderer/Vulkan/SkyboxRenderer.cpp
         src/Systems/Renderer/Vulkan/SkyboxRenderer.h)
 
-target_compile_definitions(ZeusEngineCore
-    PRIVATE ENGINE_EXPORTS
+set(RESOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/resources")
+
+target_compile_definitions(ZeusEngineCore PRIVATE 
+    ENGINE_EXPORTS
+    ENGINE_ROOT="${CMAKE_CURRENT_SOURCE_DIR}"
+    ENGINE_RES="${RESOURCE_DIR}"
 )
 
 target_compile_features(ZeusEngineCore PUBLIC cxx_std_23)
 
 find_package(Vulkan REQUIRED)
+
+#------------------------------------------SHADER STUFF------------------------------------------
+set(SHADER_DIR "${RESOURCE_DIR}/shaders/vulkan-shaders")
+
+if (WIN32)
+    set(SHADER_COMPILE_CMD cmd /c "${SHADER_DIR}/compile.bat")
+    set(SHADER_COMPILE_SCRIPT "${SHADER_DIR}/compile.bat")
+else()
+    set(SHADER_COMPILE_CMD "${SHADER_DIR}/compile.sh")
+    set(SHADER_COMPILE_SCRIPT "${SHADER_DIR}/compile.sh")
+endif()
+
+
+file(GLOB SHADER_SOURCES CONFIGURE_DEPENDS
+        "${SHADER_DIR}/*.vert"
+        "${SHADER_DIR}/*.frag"
+        "${SHADER_DIR}/*.comp"
+)
+
+set(SHADER_OUTPUTS "")
+foreach(shader ${SHADER_SOURCES})
+    list(APPEND SHADER_OUTPUTS "${shader}.spv")
+endforeach()
+
+add_custom_target(Shaders ALL
+        #OUTPUT ${SHADER_OUTPUTS}
+        COMMAND ${SHADER_COMPILE_CMD}
+        WORKING_DIRECTORY "${SHADER_DIR}"
+        DEPENDS ${SHADER_SOURCES} "${SHADER_DIR}/bindless.glsl" "${SHADER_COMPILE_SCRIPT}"
+        COMMENT "Compiling Vulkan Shaders"
+        VERBATIM
+)
+add_dependencies(ZeusEngineCore Shaders)
+#-------------------------------------------------------------------------------------------------
 
 add_library(imgui STATIC)
 

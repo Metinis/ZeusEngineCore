@@ -2,7 +2,6 @@
 #include "ZeusEngineCore/engine/rendering/VKRenderer.h"
 #include <GLFW/glfw3.h>
 #include <vulkan/vk_enum_string_helper.h>
-
 #include "VkHelpers.h"
 #include "VKInit.h"
 #include "VKPipelines.h"
@@ -29,7 +28,7 @@ void VKRenderer::init(EngineContext* ctx) {
     initErrorTexture();
     initFrameGraph();
 
-    m_SkyboxRenderer->init("/env-maps/HDR_029_Sky_Cloudy_Ref.hdr");
+    m_SkyboxRenderer->init(ENGINE_RES "/env-maps/HDR_029_Sky_Cloudy_Ref.hdr");
 
     m_StateCtx.m_Initialized = true;
 }
@@ -486,18 +485,15 @@ void VKRenderer::initMainComputeLayout() {
         vkDestroyPipelineLayout(m_StateCtx.m_Device, m_ResourceCtx.m_ComputePipelineLayout, nullptr);
     });
 }
-
 VkPipeline VKRenderer::createMainPipeline(const PipelineInfo& pipelineInfo) {
     //todo check pipeline type, compute vs graphics, call this create in a getfunction
     //do lazy load
     VkShaderModule triangleFragShader;
-    if (!VKPipelines::loadShaderModule(Application::get().getResourceRoot() +
-        pipelineInfo.fragmentShader, m_StateCtx.m_Device, &triangleFragShader)) {
+    if (!VKPipelines::loadShaderModule(ENGINE_RES + pipelineInfo.fragmentShader, m_StateCtx.m_Device, &triangleFragShader)) {
         std::cout << "Failed to load triangle frag shader" << std::endl;
         }
     VkShaderModule triangleVertShader;
-    if (!VKPipelines::loadShaderModule(Application::get().getResourceRoot() +
-        pipelineInfo.vertexShader, m_StateCtx.m_Device, &triangleVertShader)) {
+    if (!VKPipelines::loadShaderModule(ENGINE_RES + pipelineInfo.vertexShader, m_StateCtx.m_Device, &triangleVertShader)) {
         std::cout << "Failed to load triangle vert shader" << std::endl;
         }
 

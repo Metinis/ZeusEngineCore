@@ -19,7 +19,7 @@ void SkyboxRenderer::init(std::filesystem::path const &path) {
     initBRDFPipeline();
     //skybox stuff
     TextureData data {
-        .path = Application::get().getResourceRoot() + path.string(),
+        .path = path.string(),
         .type = Texture2DHDR,
         .format = VK_FORMAT_R32G32B32A32_SFLOAT,
         .dimensions = {512, 512},
@@ -49,7 +49,7 @@ void SkyboxRenderer::init(std::filesystem::path const &path) {
 }
 void SkyboxRenderer::initEqMapPipeline() {
     VkShaderModule computeDrawShader;
-    if (!VKPipelines::loadShaderModule(Application::get().getResourceRoot() +
+    if (!VKPipelines::loadShaderModule(ENGINE_RES
         "/shaders/vulkan-shaders/eq-to-cubemap.comp.spv", m_StateCtx->m_Device, &computeDrawShader)) {
         std::cout << "Failed to load compute draw shader" << std::endl;
         }
@@ -74,7 +74,7 @@ void SkyboxRenderer::initEqMapPipeline() {
 
 void SkyboxRenderer::initIrradiancePipeline() {
     VkShaderModule computeDrawShader;
-    if (!VKPipelines::loadShaderModule(Application::get().getResourceRoot() +
+    if (!VKPipelines::loadShaderModule(ENGINE_RES
         "/shaders/vulkan-shaders/irradiance.comp.spv", m_StateCtx->m_Device, &computeDrawShader)) {
         std::cout << "Failed to load compute draw shader" << std::endl;
         }
@@ -99,7 +99,7 @@ void SkyboxRenderer::initIrradiancePipeline() {
 
 void SkyboxRenderer::initPrefilterPipeline() {
     VkShaderModule computeDrawShader;
-    if (!VKPipelines::loadShaderModule(Application::get().getResourceRoot() +
+    if (!VKPipelines::loadShaderModule(ENGINE_RES
         "/shaders/vulkan-shaders/prefilter.comp.spv", m_StateCtx->m_Device, &computeDrawShader)) {
         std::cout << "Failed to load compute draw shader" << std::endl;
         }
@@ -124,7 +124,7 @@ void SkyboxRenderer::initPrefilterPipeline() {
 
 void SkyboxRenderer::initBRDFPipeline() {
     VkShaderModule computeDrawShader;
-    if (!VKPipelines::loadShaderModule(Application::get().getResourceRoot() +
+    if (!VKPipelines::loadShaderModule(ENGINE_RES
         "/shaders/vulkan-shaders/brdf.comp.spv", m_StateCtx->m_Device, &computeDrawShader)) {
         std::cout << "Failed to load compute draw shader" << std::endl;
         }
